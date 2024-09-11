@@ -13,6 +13,7 @@
  */
 #include "fossil/io/stream.h"
 #include "fossil/io/error.h"
+#include <string.h>
 
 typedef enum {
     FOSSIL_BUFFER_SMALL  = 100,
