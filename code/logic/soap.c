@@ -55,6 +55,23 @@ static const char *offensive_words[] = {
     // Support for other languages can be added via PR to this repository
 };
 
+static inline char* _custom_fossil_strdup(const char* str) {
+    if (!str) return NULL; // Handle NULL pointer gracefully
+
+    size_t len = 0;
+    while (str[len] != '\0') len++; // Calculate the length of the string
+
+    char* dup = (char*)malloc((len + 1) * sizeof(char)); // Allocate memory for the duplicate string
+    if (!dup) return NULL; // Check if malloc failed
+
+    for (size_t i = 0; i < len; i++) {
+        dup[i] = str[i]; // Copy each character from the original string to the duplicate
+    }
+    dup[len] = '\0'; // Add null terminator to the end of the duplicate string
+
+    return dup;
+}
+
 // Fallback implementation for platforms that don't support strcasestr
 static char *custom_strcasestr(const char *haystack, const char *needle) {
     while (*haystack) {
