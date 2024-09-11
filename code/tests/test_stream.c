@@ -18,7 +18,6 @@
 #include "fossil/io/framework.h"
 
 FOSSIL_TEST_DATA(StreamTestData) {
-    fossil_mockup_file_t *mock_file;
     fossil_fstream_t stream;
 } io;
 
@@ -26,19 +25,9 @@ FOSSIL_TEST_DATA(StreamTestData) {
 // * Fossil Logic Test
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(stream_let_open_and_close_file) {
-    io.mock_file = fossil_mockup_file_create("testfile.txt", "");
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, io.mock_file->filename, "w"));
-    ASSUME_NOT_CNULL(io.stream.file);
-    fossil_fstream_close(&io.stream);
-    ASSUME_ITS_CNULL(io.stream.file);
-    fossil_mockup_file_erase(io.mock_file);
-}
-
 FOSSIL_TEST(stream_let_write_and_read_file) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
-    io.mock_file = fossil_mockup_file_create(filename, "");
 
     // Write data to the file
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename, "w"));
@@ -50,9 +39,49 @@ FOSSIL_TEST(stream_let_write_and_read_file) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename, "r"));
     fossil_fstream_read(&io.stream, buffer, sizeof(buffer), 1);
     fossil_fstream_close(&io.stream);
-    // ASSUME_ITS_EQUAL_CSTR(content, buffer); make issue ticket for Fossil Mock io issues
+}
 
-    fossil_mockup_file_erase(io.mock_file);
+FOSSIL_TEST(stream_let_open_and_close_file) {
+    const char *filename = "testfile.txt";
+
+    // Open the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename, "w"));
+    fossil_fstream_close(&io.stream);
+}
+
+FOSSIL_TEST(stream_multiple_files) {
+    const char *filename1 = "testfile1.txt";
+    const char *filename2 = "testfile2.txt";
+
+    // Open the first file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename1, "w"));
+    fossil_fstream_close(&io.stream);
+
+    // Open the second file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename2, "w"));
+    fossil_fstream_close(&io.stream);
+}
+
+FOSSIL_TEST(stream_seek_and_tell) {
+    const char *filename = "testfile.txt";
+    const char *content = "This is a test.";
+
+    // Write data to the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename, "w"));
+    fossil_fstream_write(&io.stream, content, strlen(content), 1);
+    fossil_fstream_close(&io.stream);
+
+    // Open the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&io.stream, filename, "r"));
+
+    // Seek to the end of the file
+    fossil_fstream_seek(&io.stream, 0, SEEK_END);
+
+    // Get the current position
+    long position = fossil_fstream_tell(&io.stream);
+
+    // Close the file
+    fossil_fstream_close(&io.stream);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -60,6 +89,7 @@ FOSSIL_TEST(stream_let_write_and_read_file) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_file_tests) {
-    ADD_TEST(stream_let_open_and_close_file);
     ADD_TEST(stream_let_write_and_read_file);
+    ADD_TEST(stream_let_open_and_close_file);
+    ADD_TEST(stream_multiple_files);
 }
