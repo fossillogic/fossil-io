@@ -22,7 +22,7 @@
 #define FOSSIL_IO_BUFFER_SIZE 1024
 
 // Internal utility function for color printing
-static void fossil_io_print_color(const char *color, const char *format, ...) {
+void fossil_io_print_color(const char *color, const char *format, ...) {
     va_list args;
     va_start(args, format);
     printf("%s", color);

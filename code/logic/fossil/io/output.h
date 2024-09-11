@@ -44,6 +44,14 @@ void fossil_io_puts(const char *str);
 void fossil_io_printf(const char *format, ...);
 
 /**
+ * Prints a string to the output with a specified color.
+ *
+ * @param color The color code to be applied.
+ * @param str The string to be printed.
+ */
+void fossil_io_print_color(const char *color, const char *format, ...);
+
+/**
  * Prints a character to the output.
  *
  * @param c The character to be printed.
