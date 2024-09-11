@@ -13,6 +13,7 @@
  */
 #include "fossil/io/input.h"
 #include "fossil/io/soap.h"
+#include "fossil/io/output.h"
 
 #include <stdio.h>
 #include <stdlib.h>

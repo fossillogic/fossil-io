@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/output.h"
+#include "fossil/io/soap.h"
 
 #include <stdio.h>
 #include <stdarg.h>
