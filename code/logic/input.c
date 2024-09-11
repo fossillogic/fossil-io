@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Function to get a sanitized line of input
 char *fossil_io_gets(char *buf, size_t size) {
