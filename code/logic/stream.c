@@ -125,6 +125,23 @@ int32_t fossil_fstream_seek(fossil_fstream_t *stream, int64_t offset, int32_t or
     return FOSSIL_ERROR_OK;
 }
 
+// Get the current position of the file pointer in an open stream
+int32_t fossil_fstream_tell(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    long position = ftell(stream->file);
+
+    if (position == -1L && ferror(stream->file)) {
+        fprintf(stderr, "Error: IO error from getting file position\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return (int32_t)position;
+}
+
 // Save an open stream to a new file
 int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename) {
     if (stream == NULL || stream->file == NULL || new_filename == NULL) {

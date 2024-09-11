@@ -102,6 +102,16 @@ int32_t fossil_fstream_append(fossil_fstream_t *stream, const void *buffer, size
 int32_t fossil_fstream_seek(fossil_fstream_t *stream, int64_t offset, int32_t origin);
 
 /**
+ * Get the current position of the file pointer in an open stream.
+ *
+ * This function retrieves the current position of the file pointer in an open stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+ * @return       The current position of the file pointer.
+ */
+int32_t fossil_fstream_tell(fossil_fstream_t *stream);
+
+/**
  * Save an open stream to a new file.
  *
  * This function saves the contents of an open stream to a new file.
