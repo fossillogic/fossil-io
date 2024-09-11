@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FOSSIL_IO_BUFFER_SIZE 1024
 
