@@ -80,6 +80,8 @@ FOSSIL_TEST(stream_seek_and_tell) {
     // Get the current position
     long position = fossil_fstream_tell(&io.stream);
 
+    ASSUME_ITS_TRUE(position > 0);
+
     // Close the file
     fossil_fstream_close(&io.stream);
 }
