@@ -42,15 +42,15 @@ FOSSIL_TEST(test_fossil_io_gets) {
     char buf[50];
 
     // Redirect stdin to the mock input
-    FILE *old_stdin = stdin;
-    stdin = mock_input;
+    FILE *old_stdin = freopen(NULL, "r", stdin);
+    freopen("/dev/null", "r", stdin); // Simulate the redirection of stdin
 
     char *result = fossil_io_gets(buf, sizeof(buf));
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", buf);
 
     fclose(mock_input);
-    stdin = old_stdin; // Restore stdin
+    freopen(NULL, "r", stdin); // Restore stdin
 }
 
 FOSSIL_TEST(test_fossil_io_gets_buffer_too_small) {
@@ -59,15 +59,15 @@ FOSSIL_TEST(test_fossil_io_gets_buffer_too_small) {
     char buf[5]; // Buffer smaller than the input
 
     // Redirect stdin to the mock input
-    FILE *old_stdin = stdin;
-    stdin = mock_input;
+    FILE *old_stdin = freopen(NULL, "r", stdin);
+    freopen("/dev/null", "r", stdin); // Simulate the redirection of stdin
 
     char *result = fossil_io_gets(buf, sizeof(buf));
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hell", buf); // Only part of the input should fit
 
     fclose(mock_input);
-    stdin = old_stdin; // Restore stdin
+    freopen(NULL, "r", stdin); // Restore stdin
 }
 
 FOSSIL_TEST(test_fossil_io_gets_empty_buffer) {
@@ -84,15 +84,15 @@ FOSSIL_TEST(test_fossil_io_gets_with_dialog) {
     const char *dialog = "Please enter input: ";
 
     // Redirect stdin to the mock input
-    FILE *old_stdin = stdin;
-    stdin = mock_input;
+    FILE *old_stdin = freopen(NULL, "r", stdin);
+    freopen("/dev/null", "r", stdin); // Simulate the redirection of stdin
 
     char *result = fossil_io_gets_with_dialog(buf, sizeof(buf), dialog);
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hello, Dialog!", buf);
 
     fclose(mock_input);
-    stdin = old_stdin; // Restore stdin
+    freopen(NULL, "r", stdin); // Restore stdin
 }
 
 FOSSIL_TEST(test_fossil_io_gets_with_dialog_buffer_too_small) {
@@ -102,15 +102,15 @@ FOSSIL_TEST(test_fossil_io_gets_with_dialog_buffer_too_small) {
     const char *dialog = "Please enter input: ";
 
     // Redirect stdin to the mock input
-    FILE *old_stdin = stdin;
-    stdin = mock_input;
+    FILE *old_stdin = freopen(NULL, "r", stdin);
+    freopen("/dev/null", "r", stdin); // Simulate the redirection of stdin
 
     char *result = fossil_io_gets_with_dialog(buf, sizeof(buf), dialog);
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hell", buf); // Only part of the input should fit
 
     fclose(mock_input);
-    stdin = old_stdin; // Restore stdin
+    freopen(NULL, "r", stdin); // Restore stdin
 }
 
 FOSSIL_TEST(test_fossil_io_gets_with_dialog_empty_buffer) {
