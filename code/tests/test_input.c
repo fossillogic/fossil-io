@@ -13,7 +13,7 @@
  */
 #include <fossil/unittest/framework.h>
 #include <fossil/mockup/framework.h>
-#include <fossil/xassume.h>
+#include <fossil/unittest/assume.h>
 
 #include "fossil/io/framework.h"
 
