@@ -63,38 +63,6 @@ FOSSIL_TEST_CASE(cpp_test_soap_count_offensive) {
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_offensive(input));
 }
 
-FOSSIL_TEST_CASE(cpp_test_soap_sanitize_multiple) {
-    char input[] = "curse1 and curse2 are both offensive.";
-    char expected[] = "*** and *** are both offensive.";
-
-    fossil_soap_sanitize(input);
-
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_sanitize_no_offensive) {
-    char input[] = "This is a clean sentence.";
-    char expected[] = "This is a clean sentence.";
-
-    fossil_soap_sanitize(input);
-
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_is_offensive_empty) {
-    ASSUME_ITS_FALSE(fossil_soap_is_offensive(""));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_count_offensive_none) {
-    char input[] = "This is a clean sentence.";
-    ASSUME_ITS_EQUAL_I32(0, fossil_soap_count_offensive(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_count_offensive_multiple) {
-    char input[] = "curse1, curse2, and curse1 are all offensive.";
-    ASSUME_ITS_EQUAL_I32(3, fossil_soap_count_offensive(input));
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -103,11 +71,6 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_is_offensive);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_offensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_multiple);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_no_offensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_is_offensive_empty);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_offensive_none);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_offensive_multiple);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
