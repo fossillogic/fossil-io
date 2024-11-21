@@ -11,9 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/unittest/framework.h>
-#include <fossil/mockup/framework.h>
-#include <fossil/unittest/assume.h>
+#include <fossil/test/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -33,10 +31,34 @@ FILE *create_mock_input(const char *input) {
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test
+// * Fossil Logic Test Utilites
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// Setup steps for things like test fixtures and
+// mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(test_fossil_io_gets) {
+// Define the test suite and add test cases
+FOSSIL_TEST_SUITE(cpp_input_suite);
+
+// Setup function for the test suite
+FOSSIL_SETUP(cpp_input_suite) {
+    // Setup code here
+}
+
+// Teardown function for the test suite
+FOSSIL_TEARDOWN(cpp_input_suite) {
+    // Teardown code here
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// * Fossil Logic Test Cases
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// The test cases below are provided as samples, inspired
+// by the Meson build system's approach of using test cases
+// as samples for library usage.
+// * * * * * * * * * * * * * * * * * * * * * * * *
+
+FOSSIL_TEST_CASE(cpp_test_io_gets) {
     const char *input = "Hello, World!\n";
     FILE *mock_input = create_mock_input(input);
     char buf[50];
@@ -50,7 +72,7 @@ FOSSIL_TEST(test_fossil_io_gets) {
     fclose(mock_input);
 }
 
-FOSSIL_TEST(test_fossil_io_gets_buffer_too_small) {
+FOSSIL_TEST_CASE(cpp_test_io_gets_buffer_too_small) {
     const char *input = "Hello, World!\n";
     FILE *mock_input = create_mock_input(input);
     char buf[5]; // Buffer smaller than the input
@@ -64,7 +86,7 @@ FOSSIL_TEST(test_fossil_io_gets_buffer_too_small) {
     fclose(mock_input);
 }
 
-FOSSIL_TEST(test_fossil_io_gets_with_dialog) {
+FOSSIL_TEST_CASE(cpp_test_io_gets_with_dialog) {
     const char *input = "Hello, Dialog!\n";
     FILE *mock_input = create_mock_input(input);
     char buf[50];
@@ -79,7 +101,7 @@ FOSSIL_TEST(test_fossil_io_gets_with_dialog) {
     fclose(mock_input);
 }
 
-FOSSIL_TEST(test_fossil_io_gets_with_dialog_empty_buffer) {
+FOSSIL_TEST_CASE(cpp_test_io_gets_with_dialog_empty_buffer) {
     const char *dialog = "Please enter input: ";
     char buf[1]; // Buffer size is too small to read anything
 
@@ -93,9 +115,11 @@ FOSSIL_TEST(test_fossil_io_gets_with_dialog_empty_buffer) {
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(c_input_tests) {
-    ADD_TEST(test_fossil_io_gets);
-    ADD_TEST(test_fossil_io_gets_buffer_too_small);
-    ADD_TEST(test_fossil_io_gets_with_dialog);
-    ADD_TEST(test_fossil_io_gets_with_dialog_empty_buffer);
+FOSSIL_TEST_GROUP(cpp_input_tests) {
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_buffer_too_small);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_with_dialog);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_with_dialog_empty_buffer);
+
+    FOSSIL_TEST_REGISTER(cpp_input_suite);
 }
