@@ -106,7 +106,7 @@ static void replace_substring_case_insensitive(char *str, const char *old_substr
 }
 
 void fossil_soap_sanitize(char *input) {
-    if (input == NULL) return;
+    if (input == NULL || *input == '\0') return;
 
     // Perform single-threaded sanitization
     for (size_t i = 0; i < sizeof(offensive_words) / sizeof(offensive_words[0]); ++i) {
@@ -118,7 +118,7 @@ void fossil_soap_sanitize(char *input) {
 
 // Function to check if a word is an offensive word or phrase
 int32_t fossil_soap_is_offensive(const char *word) {
-    if (word == NULL) return EXIT_SUCCESS;
+    if (word == NULL || *word == '\0') return EXIT_SUCCESS;
 
     for (size_t i = 0; i < sizeof(offensive_words) / sizeof(offensive_words[0]); ++i) {
         if (strcasecmp(word, offensive_words[i]) == 0) {
@@ -130,7 +130,7 @@ int32_t fossil_soap_is_offensive(const char *word) {
 
 // Function to get the number of offensive words found in a string
 int32_t fossil_soap_count_offensive(const char *input) {
-    if (input == NULL) return 0;
+    if (input == NULL || *input == '\0') return 0;
 
     int count = 0;
     char *copy = _custom_fossil_strdup(input);
