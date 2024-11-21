@@ -9,7 +9,7 @@ if get_option('with_test').enabled()
         test_c += ['cases' / 'test_' + cases + '.cpp']
     endforeach
 
-    pizza_c = executable('testbed-c', test_c, include_directories: dir, dependencies: [fossil_test_dep])
+    pizza_c = executable('testbed-c', test_c, include_directories: dir, dependencies: [fossil_io_dep, dependency('fossil-test')])
 
     test('fossil testing C', pizza_c)
 endif
