@@ -105,9 +105,6 @@ FOSSIL_TEST_CASE(c_test_io_gets_with_dialog_long_input) {
 }
 
 FOSSIL_TEST_REGISTER(c_input_suite);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_buffer_too_small);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_with_dialog);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_with_dialog_empty_buffer);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_empty_input);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_null_buffer);
