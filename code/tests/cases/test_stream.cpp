@@ -25,7 +25,7 @@
 
 // Define the test suite and add test cases
 FOSSIL_TEST_SUITE(cpp_stream_suite);
-fossil_fstream_t stream;
+fossil_fstream_t cpp_stream;
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_stream_suite) {
@@ -50,23 +50,23 @@ FOSSIL_TEST_CASE(cpp_test_stream_let_write_and_read_file) {
     const char *content = "This is a test.";
 
     // Write data to the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename, "w"));
-    fossil_fstream_write(&stream, content, strlen(content), 1);
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
 
     // Read data from the file
     char buffer[1024];
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename, "r"));
-    fossil_fstream_read(&stream, buffer, sizeof(buffer), 1);
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
+    fossil_fstream_read(&cpp_stream, buffer, sizeof(buffer), 1);
+    fossil_fstream_close(&cpp_stream);
 }
 
 FOSSIL_TEST_CASE(cpp_test_stream_let_open_and_close_file) {
     const char *filename = "testfile.txt";
 
     // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename, "w"));
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
 }
 
 FOSSIL_TEST_CASE(cpp_test_stream_multiple_files) {
@@ -74,12 +74,12 @@ FOSSIL_TEST_CASE(cpp_test_stream_multiple_files) {
     const char *filename2 = "testfile2.txt";
 
     // Open the first file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename1, "w"));
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename1, "w"));
+    fossil_fstream_close(&cpp_stream);
 
     // Open the second file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename2, "w"));
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename2, "w"));
+    fossil_fstream_close(&cpp_stream);
 }
 
 FOSSIL_TEST_CASE(cpp_test_stream_seek_and_tell) {
@@ -87,23 +87,23 @@ FOSSIL_TEST_CASE(cpp_test_stream_seek_and_tell) {
     const char *content = "This is a test.";
 
     // Write data to the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename, "w"));
-    fossil_fstream_write(&stream, content, strlen(content), 1);
-    fossil_fstream_close(&stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
 
     // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
 
     // Seek to the end of the file
-    fossil_fstream_seek(&stream, 0, SEEK_END);
+    fossil_fstream_seek(&cpp_stream, 0, SEEK_END);
 
     // Get the current position
-    long position = fossil_fstream_tell(&stream);
+    long position = fossil_fstream_tell(&cpp_stream);
 
     ASSUME_ITS_TRUE(position > 0);
 
     // Close the file
-    fossil_fstream_close(&stream);
+    fossil_fstream_close(&cpp_stream);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *

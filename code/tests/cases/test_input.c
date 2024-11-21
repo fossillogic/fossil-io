@@ -17,7 +17,7 @@
 
 #ifdef _WIN32
 // For Windows, use tmpfile and fwrite to simulate input
-FILE *create_mock_input(const char *input) {
+FILE *c_create_mock_input(const char *input) {
     FILE *mock_input = tmpfile();
     fwrite(input, sizeof(char), strlen(input), mock_input);
     rewind(mock_input);
@@ -25,7 +25,7 @@ FILE *create_mock_input(const char *input) {
 }
 #else
 // For Unix-like systems, use fmemopen
-FILE *create_mock_input(const char *input) {
+FILE *c_create_mock_input(const char *input) {
     return fmemopen((void *)input, strlen(input), "r");
 }
 #endif
@@ -60,7 +60,7 @@ FOSSIL_TEARDOWN(c_input_suite) {
 
 FOSSIL_TEST_CASE(c_test_io_gets) {
     const char *input = "Hello, World!\n";
-    FILE *mock_input = create_mock_input(input);
+    FILE *mock_input = c_create_mock_input(input);
     char buf[50];
 
     // Pass the mock input stream directly to the function
@@ -74,7 +74,7 @@ FOSSIL_TEST_CASE(c_test_io_gets) {
 
 FOSSIL_TEST_CASE(c_test_io_gets_buffer_too_small) {
     const char *input = "Hello, World!\n";
-    FILE *mock_input = create_mock_input(input);
+    FILE *mock_input = c_create_mock_input(input);
     char buf[5]; // Buffer smaller than the input
 
     // Pass the mock input stream directly to the function
@@ -88,7 +88,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_buffer_too_small) {
 
 FOSSIL_TEST_CASE(c_test_io_gets_with_dialog) {
     const char *input = "Hello, Dialog!\n";
-    FILE *mock_input = create_mock_input(input);
+    FILE *mock_input = c_create_mock_input(input);
     char buf[50];
     const char *dialog = "Please enter input: ";
 
