@@ -14,6 +14,7 @@
 #ifndef FOSSIL_IO_FRAMEWORK_H
 #define FOSSIL_IO_FRAMEWORK_H
 
+// Include the necessary headers
 #include "output.h"
 #include "input.h"
 #include "error.h"
