@@ -104,7 +104,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_with_dialog_long_input) {
     fclose(mock_input);
 }
 
-FOSSIL_TEST_REGISTER(cpp_input_suite);
+FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_empty_input);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_null_buffer);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_null_stream);
