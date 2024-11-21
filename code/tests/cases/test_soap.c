@@ -11,18 +11,39 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/unittest/framework.h>
-#include <fossil/mockup/framework.h>
-#include <fossil/unittest/assume.h>
+#include <fossil/test/framework.h>
 
 #include "fossil/io/framework.h"
 
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// * Fossil Logic Test Utilites
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// Setup steps for things like test fixtures and
+// mock objects are set here.
+// * * * * * * * * * * * * * * * * * * * * * * * *
+
+// Define the test suite and add test cases
+FOSSIL_TEST_SUITE(c_soap_suite);
+
+// Setup function for the test suite
+FOSSIL_SETUP(c_soap_suite) {
+    // Setup code here
+}
+
+// Teardown function for the test suite
+FOSSIL_TEARDOWN(c_soap_suite) {
+    // Teardown code here
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test
+// * Fossil Logic Test Cases
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// The test cases below are provided as samples, inspired
+// by the Meson build system's approach of using test cases
+// as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(test_fossil_soap_sanitize) {
+FOSSIL_TEST_CASE(c_test_soap_sanitize) {
     char input[] = "This is a test with curse1 and racist_phrase1.";
     char expected[] = "This is a test with *** and ***.";
 
@@ -31,13 +52,13 @@ FOSSIL_TEST(test_fossil_soap_sanitize) {
     ASSUME_ITS_EQUAL_CSTR(expected, input);
 }
 
-FOSSIL_TEST(test_fossil_soap_is_offensive) {
+FOSSIL_TEST_CASE(c_test_soap_is_offensive) {
     ASSUME_ITS_TRUE(fossil_soap_is_offensive("curse1"));
     ASSUME_ITS_TRUE(fossil_soap_is_offensive("racist_phrase2"));
     ASSUME_ITS_FALSE(fossil_soap_is_offensive("non_offensive_word"));
 }
 
-FOSSIL_TEST(test_fossil_soap_count_offensive) {
+FOSSIL_TEST_CASE(c_test_soap_count_offensive) {
     char input[] = "This is a test with curse1 and racist_phrase1";
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_offensive(input));
 }
@@ -47,7 +68,9 @@ FOSSIL_TEST(test_fossil_soap_count_offensive) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_soap_tests) {
-    ADD_TEST(test_fossil_soap_sanitize);
-    ADD_TEST(test_fossil_soap_is_offensive);
-    ADD_TEST(test_fossil_soap_count_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_offensive);
+
+    FOSSIL_TEST_REGISTER(c_soap_suite);
 }
