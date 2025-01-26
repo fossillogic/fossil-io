@@ -157,11 +157,11 @@ void fossil_soap_fuzzer(const char *input) {
                  input, 
                  (rand() % 26) + 'A',
                  "!!");
-        printf("Fuzzed Input %lld: %s\n", i + 1, fuzzed_input);
+        printf("Fuzzed Input %lld: %s\n", (unsigned long)(i + 1), fuzzed_input);
         char sanitized_output[512];
         strncpy(sanitized_output, fuzzed_input, sizeof(sanitized_output));
         fossil_soap_sanitize(sanitized_output);
-        printf("Sanitized Output %lld: %s\n", i + 1, sanitized_output);
+        printf("Sanitized Output %lld: %s\n", (unsigned long)(i + 1), sanitized_output);
     }
 }
 
