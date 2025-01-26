@@ -64,23 +64,91 @@ FOSSIL_TEST_CASE(c_test_soap_count_offensive) {
 }
 
 FOSSIL_TEST_CASE(c_test_soap_is_rotbrain) {
-    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("meme_speak1"));
-    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("meme_speak2"));
-    ASSUME_ITS_FALSE(fossil_soap_is_rotbrain("normal_word"));
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("lol"));
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("brb"));
+    ASSUME_ITS_FALSE(fossil_soap_is_rotbrain("hello"));
 }
 
 FOSSIL_TEST_CASE(c_test_soap_count_rotbrain) {
-    char input[] = "This is a test with meme_speak1 and meme_speak2";
+    char input[] = "This is a test with lol and brb";
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
 }
 
-FOSSIL_TEST_CASE(c_test_soap_correct_grammar) {
-    char input[] = "this   is  a  sentence   with  extra   spaces.";
-    char expected[] = "This is a sentence with extra spaces.";
+FOSSIL_TEST_CASE(c_test_soap_sanitize_multiple_offensive) {
+    char input[] = "curse1 curse2 racist_phrase1 racist_phrase2";
+    char expected[] = "*** *** *** ***";
 
-    fossil_soap_correct_grammar(input);
+    fossil_soap_sanitize(input);
 
     ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
+FOSSIL_TEST_CASE(c_test_soap_sanitize_no_offensive) {
+    char input[] = "This is a clean sentence.";
+    char expected[] = "This is a clean sentence.";
+
+    fossil_soap_sanitize(input);
+
+    ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
+FOSSIL_TEST_CASE(c_test_soap_is_offensive_case_insensitive) {
+    ASSUME_ITS_TRUE(fossil_soap_is_offensive("CuRsE1"));
+    ASSUME_ITS_TRUE(fossil_soap_is_offensive("RaCiSt_PhrAsE2"));
+    ASSUME_ITS_FALSE(fossil_soap_is_offensive("Non_Offensive_Word"));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_count_offensive_mixed_case) {
+    char input[] = "This is a test with CuRsE1 and RaCiSt_PhrAsE1";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_offensive(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_is_rotbrain_case_insensitive) {
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("LoL"));
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("BrB"));
+    ASSUME_ITS_FALSE(fossil_soap_is_rotbrain("Hello"));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_count_rotbrain_mixed_case) {
+    char input[] = "This is a test with LoL and BrB";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_sanitize_synonyms) {
+    char input[] = "This is a test with rizz and sus.";
+    char expected[] = "This is a test with *** and ***.";
+
+    fossil_soap_sanitize(input);
+
+    ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
+FOSSIL_TEST_CASE(c_test_soap_sanitize_with_punctuation) {
+    char input[] = "This is a test with curse1, and racist_phrase1!";
+    char expected[] = "This is a test with ***, and ***!";
+
+    fossil_soap_sanitize(input);
+
+    ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
+FOSSIL_TEST_CASE(c_test_soap_count_offensive_with_punctuation) {
+    char input[] = "This is a test with curse1, and racist_phrase1!";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_offensive(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_sanitize_rotbrain_with_punctuation) {
+    char input[] = "This is a test with lol, and brb!";
+    char expected[] = "This is a test with ***, and ***!";
+
+    fossil_soap_sanitize(input);
+
+    ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
+FOSSIL_TEST_CASE(c_test_soap_count_rotbrain_with_punctuation) {
+    char input[] = "This is a test with lol, and brb!";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -93,7 +161,17 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_offensive);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_rotbrain);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_rotbrain);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_multiple_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_no_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_offensive_case_insensitive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_offensive_mixed_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_rotbrain_case_insensitive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_rotbrain_mixed_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_synonyms);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_with_punctuation);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_offensive_with_punctuation);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_rotbrain_with_punctuation);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_rotbrain_with_punctuation);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
