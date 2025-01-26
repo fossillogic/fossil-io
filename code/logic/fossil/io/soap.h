@@ -32,12 +32,6 @@ void fossil_soap_tokenize_and_process(char *input);
 void fossil_soap_fuzzer(const char *input);
 
 /**
- * Fuzzer Helper: Generate test cases for sanitization.
- * Generates fuzzed input by appending random letters and symbols, then sanitizing the string.
- */
-void fossil_soap_fuzzer(const char *input);
-
-/**
  * Utility: Trim extra spaces and ensure proper sentence capitalization.
  * Ensures that the input string has only single spaces between words and proper sentence capitalization.
  */
