@@ -157,29 +157,11 @@ void fossil_soap_fuzzer(const char *input) {
                  input, 
                  (rand() % 26) + 'A',
                  "!!");
-        printf("Fuzzed Input %zu: %s\n", i + 1, fuzzed_input);
-        char sanitized_output[512];
-        strncpy(sanitized_output, fuzzed_input, sizeof(sanitized_output));
-        fossil_soap_sanitize_nlp(sanitized_output);
-        printf("Sanitized Output %zu: %s\n", i + 1, sanitized_output);
-    }
-}
-
-// Fuzzer Helper: Generate test cases for sanitization
-void fossil_soap_fuzzer(const char *input) {
-    const size_t fuzz_count = 10;  // Number of fuzzed test cases to generate
-    printf("\n=== Fuzzer Test Cases ===\n");
-    for (size_t i = 0; i < fuzz_count; ++i) {
-        char fuzzed_input[512];
-        snprintf(fuzzed_input, sizeof(fuzzed_input), "%s %c%s", 
-                 input, 
-                 (rand() % 26) + 'A',  // Random uppercase letter
-                 "!!");
-        printf("Fuzzed Input %zu: %s\n", i + 1, fuzzed_input);
+        printf("Fuzzed Input %lld: %s\n", i + 1, fuzzed_input);
         char sanitized_output[512];
         strncpy(sanitized_output, fuzzed_input, sizeof(sanitized_output));
         fossil_soap_sanitize(sanitized_output);
-        printf("Sanitized Output %zu: %s\n", i + 1, sanitized_output);
+        printf("Sanitized Output %lld: %s\n", i + 1, sanitized_output);
     }
 }
 
