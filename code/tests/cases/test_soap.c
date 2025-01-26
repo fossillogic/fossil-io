@@ -63,6 +63,26 @@ FOSSIL_TEST_CASE(c_test_soap_count_offensive) {
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_offensive(input));
 }
 
+FOSSIL_TEST_CASE(c_test_soap_is_rotbrain) {
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("meme_speak1"));
+    ASSUME_ITS_TRUE(fossil_soap_is_rotbrain("meme_speak2"));
+    ASSUME_ITS_FALSE(fossil_soap_is_rotbrain("normal_word"));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_count_rotbrain) {
+    char input[] = "This is a test with meme_speak1 and meme_speak2";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_correct_grammar) {
+    char input[] = "this   is  a  sentence   with  extra   spaces.";
+    char expected[] = "This is a sentence with extra spaces.";
+
+    fossil_soap_correct_grammar(input);
+
+    ASSUME_ITS_EQUAL_CSTR(expected, input);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -71,6 +91,9 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_offensive);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_is_rotbrain);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_count_rotbrain);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
