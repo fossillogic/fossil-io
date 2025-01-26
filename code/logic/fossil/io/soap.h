@@ -20,37 +20,58 @@
 extern "C" {
 #endif
 
+/** 
+ * Tokenization: Split input into words and check for offensive language and meme speak.
+ */
+void fossil_soap_tokenize_and_process(char *input);
+
 /**
- * Sanitize a string by replacing curse words with asterisks.
- * This function scans the input string for offensive words and replaces them with asterisks,
- * thereby making the string suitable for use in contexts where offensive language is not allowed.
- * The input string is modified in place.
- *
- * @param input The input string to be sanitized in-place.
+ * Run fuzzer and test the enhanced sanitization.
+ * Fuzzed inputs are generated and passed through the sanitization function to check robustness.
+ */
+void fossil_soap_fuzzer(const char *input);
+
+/**
+ * Fuzzer Helper: Generate test cases for sanitization.
+ * Generates fuzzed input by appending random letters and symbols, then sanitizing the string.
+ */
+void fossil_soap_fuzzer(const char *input);
+
+/**
+ * Utility: Trim extra spaces and ensure proper sentence capitalization.
+ * Ensures that the input string has only single spaces between words and proper sentence capitalization.
+ */
+void fossil_soap_correct_grammar(char *input);
+
+/**
+ * Main sanitization function: Handles offensive words, meme speak, synonyms, and grammar correction.
+ * Sanitizes the input string based on predefined rules for offensive words, meme speak, and synonyms.
  */
 void fossil_soap_sanitize(char *input);
 
 /**
- * Check if a word is a curse word or racist phrase.
- * This function checks whether a given word is considered offensive.
- * It compares the word against a predefined list of offensive words and phrases
- * to determine its offensiveness.
- *
- * @param word The word to be checked for offensiveness.
- * @return     True if the word is offensive, false otherwise.
+ * Check if a word is offensive.
+ * Returns EXIT_FAILURE if the word is considered offensive, EXIT_SUCCESS otherwise.
  */
 int32_t fossil_soap_is_offensive(const char *word);
 
 /**
- * Get the number of offensive words found in a string.
- * This function counts the number of offensive words found in the input string.
- * It scans the entire string and checks each word against a list of offensive words
- * to determine the count of offensive occurrences.
- *
- * @param input The input string to be checked for offensive words.
- * @return      The number of offensive words found.
+ * Check if a word is meme speak.
+ * Returns EXIT_FAILURE if the word is considered meme speak, EXIT_SUCCESS otherwise.
+ */
+int32_t fossil_soap_is_rotbrain(const char *word);
+
+/**
+ * Count offensive words in a string.
+ * Returns the number of offensive words found in the input string.
  */
 int32_t fossil_soap_count_offensive(const char *input);
+
+/**
+ * Count meme speak words in a string.
+ * Returns the number of meme speak words found in the input string.
+ */
+int32_t fossil_soap_count_rotbrain(const char *input);
 
 #ifdef __cplusplus
 }
