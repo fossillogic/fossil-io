@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 // List of offensive words and phrases (super hard to mainting thisw list as GitHub Copilot doesnt wanna help with this part of the SOAP API)
-static const char *offensive_words[] = {
+static const char *FOSSIL_SOAP_OFFENSIVE[] = {
     "curse1",
     "curse2",
     "racist_phrase1",
@@ -55,7 +55,18 @@ static const char *offensive_words[] = {
     // Support for other languages can be added via PR to this repository
 };
 
-static inline char* _custom_fossil_strdup(const char* str) {
+// garbage words and phrases
+// (slightly easier to maintain since it's just slang from social media spoken from people who need to touch grass)
+static const char *FOSSIL_SOAP_ROTBRAIN[] = {
+    "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
+    "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
+    "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
+    "lol", "omg", "brb", "sus"
+
+    // Support for other terms can be added via PR to this repository
+};
+
+static inline char* custom_strdup(const char* str) {
     if (!str) return NULL; // Handle NULL pointer gracefully
 
     size_t len = 0;
@@ -90,7 +101,7 @@ static char *custom_strcasestr(const char *haystack, const char *needle) {
 // Function to replace a substring in a string (case-insensitive)
 static void replace_substring_case_insensitive(char *str, const char *old_substr, const char *new_substr) {
     char *position = custom_strcasestr(str, old_substr);
-    if (position != NULL) {
+    while (position != NULL) {
         size_t old_len = strlen(old_substr);
         size_t new_len = strlen(new_substr);
         size_t tail_len = strlen(position + old_len);
@@ -100,8 +111,11 @@ static void replace_substring_case_insensitive(char *str, const char *old_substr
             memmove(position + new_len, position + old_len, tail_len + 1);
         } else {
             memmove(position + new_len, position + old_len, tail_len + 1);
-            memcpy(position, new_substr, new_len);
         }
+        memcpy(position, new_substr, new_len);
+
+        // Find the next occurrence
+        position = custom_strcasestr(position + new_len, old_substr);
     }
 }
 
@@ -109,10 +123,12 @@ void fossil_soap_sanitize(char *input) {
     if (input == NULL || *input == '\0') return;
 
     // Perform single-threaded sanitization
-    for (size_t i = 0; i < sizeof(offensive_words) / sizeof(offensive_words[0]); ++i) {
-        while (custom_strcasestr(input, offensive_words[i]) != NULL) {
-            replace_substring_case_insensitive(input, offensive_words[i], "***");
-        }
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
+        replace_substring_case_insensitive(input, FOSSIL_SOAP_OFFENSIVE[i], "***");
+    }
+
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
+        replace_substring_case_insensitive(input, FOSSIL_SOAP_ROTBRAIN[i], "***");
     }
 }
 
@@ -120,8 +136,8 @@ void fossil_soap_sanitize(char *input) {
 int32_t fossil_soap_is_offensive(const char *word) {
     if (word == NULL || *word == '\0') return EXIT_SUCCESS;
 
-    for (size_t i = 0; i < sizeof(offensive_words) / sizeof(offensive_words[0]); ++i) {
-        if (strcasecmp(word, offensive_words[i]) == 0) {
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
+        if (strcasecmp(word, FOSSIL_SOAP_OFFENSIVE[i]) == 0) {
             return EXIT_FAILURE;
         }
     }
@@ -133,15 +149,44 @@ int32_t fossil_soap_count_offensive(const char *input) {
     if (input == NULL || *input == '\0') return 0;
 
     int count = 0;
-    char *copy = _custom_fossil_strdup(input);
+    char *copy = custom_strdup(input);
     if (copy == NULL) return EXIT_SUCCESS;
 
-    char *token = strtok(copy, " "); // Tokenize the string by space
+    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
     while (token != NULL) {
         if (fossil_soap_is_offensive(token)) {
             count++;
         }
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " ,.!?;:");
+    }
+    free(copy); // Free the memory allocated for the copy
+    return count;
+}
+
+int32_t fossil_soap_is_rotbrain(const char *word) {
+    if (word == NULL || *word == '\0') return EXIT_SUCCESS;
+
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
+        if (strcasecmp(word, FOSSIL_SOAP_ROTBRAIN[i]) == 0) {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int32_t fossil_soap_count_rotbrain(const char *input) {
+    if (input == NULL || *input == '\0') return 0;
+
+    int count = 0;
+    char *copy = custom_strdup(input);
+    if (copy == NULL) return EXIT_SUCCESS;
+
+    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
+    while (token != NULL) {
+        if (fossil_soap_is_rotbrain(token)) {
+            count++;
+        }
+        token = strtok(NULL, " ,.!?;:");
     }
     free(copy); // Free the memory allocated for the copy
     return count;
