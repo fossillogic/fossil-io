@@ -57,22 +57,16 @@ static const char *FOSSIL_SOAP_OFFENSIVE[] = {
 
 // garbage words and phrases
 // (slightly easier to maintain since it's just slang from social media spoken from people who need to touch grass)
-const char *FOSSIL_SOAP_ROTBRAIN[] = {
+static const char *FOSSIL_SOAP_ROTBRAIN[] = {
     "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
     "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
-    "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire"
+    "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
+    "lol", "omg", "brb", "sus"
 
     // Support for other terms can be added via PR to this repository
 };
 
-// Fuzzy matching of synonyms (basic implementation)
-const char *FOSSIL_SOAP_SYNONYMS[] = {
-    "rizz", "charm", "flirt", "tease",
-    "sus", "suspicious", "shady"
-};
-
-
-static inline char* _custom_fossil_strdup(const char* str) {
+static inline char* custom_strdup(const char* str) {
     if (!str) return NULL; // Handle NULL pointer gracefully
 
     size_t len = 0;
@@ -89,132 +83,56 @@ static inline char* _custom_fossil_strdup(const char* str) {
     return dup;
 }
 
-// Utility: Case-insensitive substring search
+// Fallback implementation for platforms that don't support strcasestr
 static char *custom_strcasestr(const char *haystack, const char *needle) {
-    if (!haystack || !needle) return NULL;
-
-    size_t needle_len = strlen(needle);
-    if (needle_len == 0) return (char *)haystack;
-
-    for (; *haystack; ++haystack) {
-        if (strncasecmp(haystack, needle, needle_len) == 0) {
+    while (*haystack) {
+        size_t i = 0;
+        while (tolower((unsigned char)haystack[i]) == tolower((unsigned char)needle[i]) && needle[i] != '\0') {
+            i++;
+        }
+        if (needle[i] == '\0') {
             return (char *)haystack;
         }
+        haystack++;
     }
     return NULL;
 }
 
-// Utility: Replace a substring in a string (case-insensitive)
+// Function to replace a substring in a string (case-insensitive)
 static void replace_substring_case_insensitive(char *str, const char *old_substr, const char *new_substr) {
     char *position = custom_strcasestr(str, old_substr);
-    if (position != NULL) {
+    while (position != NULL) {
         size_t old_len = strlen(old_substr);
         size_t new_len = strlen(new_substr);
         size_t tail_len = strlen(position + old_len);
 
-        // Adjust memory for new length
+        // Check if the new length is greater than the old length
         if (new_len > old_len) {
             memmove(position + new_len, position + old_len, tail_len + 1);
         } else {
             memmove(position + new_len, position + old_len, tail_len + 1);
-            memcpy(position, new_substr, new_len);
         }
+        memcpy(position, new_substr, new_len);
+
+        // Find the next occurrence
+        position = custom_strcasestr(position + new_len, old_substr);
     }
 }
 
-// Tokenization: Split input into words
-void fossil_soap_tokenize_and_process(char *input) {
-    char *copy = _custom_fossil_strdup(input);
-    if (copy == NULL) return;
-
-    char *token = strtok(copy, " ");
-    while (token != NULL) {
-        if (fossil_soap_is_offensive(token) == EXIT_FAILURE) {
-            printf("Offensive word detected: %s\n", token);
-        }
-        if (fossil_soap_is_rotbrain(token) == EXIT_FAILURE) {
-            printf("Meme speak detected: %s\n", token);
-        }
-        token = strtok(NULL, " ");
-    }
-    free(copy);
-}
-
-// Synonym detection and replacement function (case-insensitive)
-void replace_synonym_with_placeholder(char *input, const char *old_word, const char *new_word) {
-    while (custom_strcasestr(input, old_word) != NULL) {
-        replace_substring_case_insensitive(input, old_word, new_word);
-    }
-}
-
-// Run fuzzer and test the enhanced sanitization
-void fossil_soap_fuzzer(const char *input) {
-    const size_t fuzz_count = 10;
-    printf("\n=== Fuzzer Test Cases ===\n");
-    for (size_t i = 0; i < fuzz_count; ++i) {
-        char fuzzed_input[512];
-        snprintf(fuzzed_input, sizeof(fuzzed_input), "%s %c%s", 
-                 input, 
-                 (rand() % 26) + 'A',
-                 "!!");
-        printf("Fuzzed Input %lld: %s\n", (long long int)(i + 1), fuzzed_input);
-        char sanitized_output[512];
-        strncpy(sanitized_output, fuzzed_input, sizeof(sanitized_output));
-        fossil_soap_sanitize(sanitized_output);
-        printf("Sanitized Output %lld: %s\n", (long long int)(i + 1), sanitized_output);
-    }
-}
-
-// Utility: Trim extra spaces and ensure proper sentence capitalization
-void fossil_soap_correct_grammar(char *input) {
-    if (input == NULL || *input == '\0') return;
-
-    char *dst = input;
-    int capitalize = 1;
-
-    for (char *src = input; *src; ++src) {
-        if (isspace(*src)) {
-            if (dst == input || isspace(*(dst - 1))) continue;  // Skip duplicate spaces
-            *dst++ = ' ';  // Single space
-        } else {
-            *dst++ = capitalize ? toupper(*src) : tolower(*src);
-            capitalize = ispunct(*src) || isspace(*src);
-        }
-    }
-    if (dst > input && isspace(*(dst - 1))) dst--;  // Remove trailing space
-    *dst = '\0';
-}
-
-// Main sanitization function
 void fossil_soap_sanitize(char *input) {
     if (input == NULL || *input == '\0') return;
 
-    // Handle synonyms and offensive words
+    // Perform single-threaded sanitization
     for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
-        while (custom_strcasestr(input, FOSSIL_SOAP_OFFENSIVE[i]) != NULL) {
-            replace_substring_case_insensitive(input, FOSSIL_SOAP_OFFENSIVE[i], "***");
-        }
+        replace_substring_case_insensitive(input, FOSSIL_SOAP_OFFENSIVE[i], "***");
     }
 
-    // Handle meme speak
     for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
-        while (custom_strcasestr(input, FOSSIL_SOAP_ROTBRAIN[i]) != NULL) {
-            replace_substring_case_insensitive(input, FOSSIL_SOAP_ROTBRAIN[i], "[ROT]");
-        }
+        replace_substring_case_insensitive(input, FOSSIL_SOAP_ROTBRAIN[i], "***");
     }
-
-    // Handle synonyms
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_SYNONYMS) / sizeof(FOSSIL_SOAP_SYNONYMS[0]); ++i) {
-        while (custom_strcasestr(input, FOSSIL_SOAP_SYNONYMS[i]) != NULL) {
-            replace_substring_case_insensitive(input, FOSSIL_SOAP_SYNONYMS[i], "[SYNONYM]");
-        }
-    }
-
-    // Optional: Correct grammar after sanitizing
-    fossil_soap_correct_grammar(input);
 }
 
-// Check if a word is offensive
+// Function to check if a word is an offensive word or phrase
 int32_t fossil_soap_is_offensive(const char *word) {
     if (word == NULL || *word == '\0') return EXIT_SUCCESS;
 
@@ -226,7 +144,25 @@ int32_t fossil_soap_is_offensive(const char *word) {
     return EXIT_SUCCESS;
 }
 
-// Check if a word is meme speak
+// Function to get the number of offensive words found in a string
+int32_t fossil_soap_count_offensive(const char *input) {
+    if (input == NULL || *input == '\0') return 0;
+
+    int count = 0;
+    char *copy = custom_strdup(input);
+    if (copy == NULL) return EXIT_SUCCESS;
+
+    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
+    while (token != NULL) {
+        if (fossil_soap_is_offensive(token)) {
+            count++;
+        }
+        token = strtok(NULL, " ,.!?;:");
+    }
+    free(copy); // Free the memory allocated for the copy
+    return count;
+}
+
 int32_t fossil_soap_is_rotbrain(const char *word) {
     if (word == NULL || *word == '\0') return EXIT_SUCCESS;
 
@@ -238,40 +174,20 @@ int32_t fossil_soap_is_rotbrain(const char *word) {
     return EXIT_SUCCESS;
 }
 
-// Count offensive words in a string
-int32_t fossil_soap_count_offensive(const char *input) {
-    if (input == NULL || *input == '\0') return 0;
-
-    int count = 0;
-    char *copy = _custom_fossil_strdup(input);
-    if (copy == NULL) return EXIT_SUCCESS;
-
-    char *token = strtok(copy, " ");
-    while (token != NULL) {
-        if (fossil_soap_is_offensive(token) == EXIT_FAILURE) {
-            count++;
-        }
-        token = strtok(NULL, " ");
-    }
-    free(copy);
-    return count;
-}
-
-// Count meme speak words in a string
 int32_t fossil_soap_count_rotbrain(const char *input) {
     if (input == NULL || *input == '\0') return 0;
 
     int count = 0;
-    char *copy = _custom_fossil_strdup(input);
+    char *copy = custom_strdup(input);
     if (copy == NULL) return EXIT_SUCCESS;
 
-    char *token = strtok(copy, " ");
+    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
     while (token != NULL) {
-        if (fossil_soap_is_rotbrain(token) == EXIT_FAILURE) {
+        if (fossil_soap_is_rotbrain(token)) {
             count++;
         }
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " ,.!?;:");
     }
-    free(copy);
+    free(copy); // Free the memory allocated for the copy
     return count;
 }
