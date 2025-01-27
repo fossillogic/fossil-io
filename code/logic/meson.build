@@ -1,5 +1,6 @@
 dir = include_directories('.')
 
+
 fossil_io_lib = library('fossil-io',
     files('input.c', 'output.c', 'error.c', 'soap.c', 'stream.c'),
     install: true,

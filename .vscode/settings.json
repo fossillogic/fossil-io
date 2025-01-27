@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "pool.h": "c",
-        "sync.h": "c",
-        "soap.h": "c",
-        "error.h": "c"
-    }
-}
