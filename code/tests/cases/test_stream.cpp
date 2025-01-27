@@ -117,6 +117,69 @@ FOSSIL_TEST_CASE(cpp_test_stream_get_type) {
     ASSUME_ITS_EQUAL_I32(2, fossil_fstream_get_type(filename));  // Regular file
 }
 
+FOSSIL_TEST_CASE(cpp_test_stream_is_readable) {
+    const char *filename = "testfile_readable.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
+
+    // Check if the file is readable
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_readable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_is_writable) {
+    const char *filename = "testfile_writable.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
+
+    // Check if the file is writable
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_is_executable) {
+    const char *filename = "testfile_executable.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
+
+    // Check if the file is executable
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_is_executable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_set_permissions) {
+    const char *filename = "testfile_permissions.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
+
+    // Set file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_permissions(filename, 0644));
+
+    // Check if the file is readable and writable
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_readable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_get_permissions) {
+    const char *filename = "testfile_get_permissions.txt";
+    int32_t mode;
+
+    // // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_close(&cpp_stream);
+
+    // Set file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_permissions(filename, 0644));
+
+    // Get file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
+}
+
 FOSSIL_TEST_CASE(cpp_test_stream_class_write_and_read_file) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
@@ -189,6 +252,69 @@ FOSSIL_TEST_CASE(cpp_test_stream_class_get_type) {
     ASSUME_ITS_EQUAL_I32(2, fossil::io::Stream::get_type(filename));  // Regular file
 }
 
+FOSSIL_TEST_CASE(cpp_test_stream_class_is_readable) {
+    const char *filename = "testfile_readable_class.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Check if the file is readable
+    ASSUME_ITS_EQUAL_I32(1, fossil::io::Stream::is_readable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_class_is_writable) {
+    const char *filename = "testfile_writable_class.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Check if the file is writable
+    ASSUME_ITS_EQUAL_I32(1, fossil::io::Stream::is_writable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_class_is_executable) {
+    const char *filename = "testfile_executable_class.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Check if the file is executable
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::is_executable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_class_set_permissions) {
+    const char *filename = "testfile_permissions_class.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Set file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::set_permissions(filename, 0644));
+
+    // Check if the file is readable and writable
+    ASSUME_ITS_EQUAL_I32(1, fossil::io::Stream::is_readable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil::io::Stream::is_writable(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_class_get_permissions) {
+    const char *filename = "testfile_get_permissions_class.txt";
+    int32_t mode;
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Set file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::set_permissions(filename, 0644));
+
+    // Get file permissions
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::get_permissions(filename, &mode));
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -200,11 +326,22 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_seek_and_tell);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_type);
 
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_readable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_writable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_executable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_set_permissions);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_permissions);
+
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_open_and_close_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_multiple_files);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_seek_and_tell);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_get_type);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_is_readable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_is_writable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_is_executable);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_set_permissions);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_get_permissions);
 
     FOSSIL_TEST_REGISTER(cpp_stream_suite);
 }
