@@ -529,7 +529,7 @@ int32_t fossil_fstream_read_all(fossil_fstream_t *stream, void **buffer, size_t 
     }
 
     size_t bytes_read = fread(*buffer, 1, file_size, stream->file);
-    if (bytes_read != file_size) {
+    if ((size_t)bytes_read != (size_t)file_size) {
         fprintf(stderr, "Error: File not found\n");
         free(*buffer);
         return FOSSIL_ERROR_FILE_NOT_FOUND;
