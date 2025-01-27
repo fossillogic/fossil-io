@@ -1,6 +1,6 @@
 # **Fossil IO Library by Fossil Logic**
 
-Fossil IO is a comprehensive and portable library designed to handle input, output, and error management across various platforms. It provides a robust suite of functions for secure data handling, file stream management, and error reporting. Implemented in C, Fossil IO aims to facilitate high-performance and reliable I/O operations while ensuring consistent behavior across different operating systems. 
+Fossil IO is an extensive and versatile library meticulously crafted to manage input, output, and error handling across a multitude of platforms. This library offers a comprehensive array of functions dedicated to secure data handling, efficient file stream management, and detailed error reporting. Developed in the C programming language, Fossil IO is engineered to support high-performance and reliable I/O operations, ensuring uniform and predictable behavior across various operating systems, including Windows, macOS, and Linux. By leveraging Fossil IO, developers can achieve consistent and secure I/O operations, making it an indispensable tool for cross-platform software development.
 
 ## Key Features
 
@@ -12,21 +12,24 @@ Fossil IO is a comprehensive and portable library designed to handle input, outp
 
 ## Prerequisites
 
-Before using Fossil IO, ensure you have the following installed:
+To get started with Fossil Io, ensure you have the following installed:
 
-- **C Compiler**: A C compiler compatible with your platform.
-- **Build System**: Meson or CMake for building the library.
+- **Meson Build System**: If you don’t have Meson installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **CMake Build System**: If you don’t have CMake installed, follow the installation instructions on the official [CMake website](https://cmake.org/getting-started/).
 
-## Adding Dependency
+### Adding Fossil Test Dependency
 
-1. **Install Build Tools**: Ensure that Meson or CMake is installed on your system. You can install Meson using pip:
+#### Adding Fossil Test Dependency With Meson
 
+1. **Install Meson Build System**:
+   Install Meson version `1.3` or newer:
    ```sh
-   python -m pip install meson           # to install Meson
-   python -m pip install --upgrade meson # to upgrade Meson
+   python -m pip install meson           # To install Meson
+   python -m pip install --upgrade meson # To upgrade Meson
    ```
 
-2. **Adding Wrap File**: If using Meson, create a `.wrap` file in the `subprojects` directory, such as `fossil-io.wrap`:
+2. **Create a `.wrap` File**:
+   Add the `fossil-io.wrap` file in your `subprojects` directory and include the following content:
 
    ```ini
    # ======================
@@ -34,17 +37,51 @@ Before using Fossil IO, ensure you have the following installed:
    # ======================
    [wrap-git]
    url = https://github.com/fossillogic/fossil-io.git
-   revision = v0.1.1
+   revision = v0.1.3
 
    [provide]
    fossil-io = fossil_io_dep
    ```
 
-3. **Integrate the New Dependency**: Add the following line to your `meson.build` file to integrate the dependency:
-
+3. **Integrate the Dependency**:
+   In your `meson.build` file, integrate Fossil Io by adding the following line:
    ```ini
    dep = dependency('fossil-io')
    ```
+
+---
+
+#### Adding Fossil Test Dependency With CMake
+
+To use Fossil Io with CMake, follow these steps:
+
+1. **Install CMake**:
+   Install CMake version `3.13.4` or newer:
+
+   ```sh
+   python -m pip install cmake           # To install CMake
+   python -m pip install --upgrade cmake # To upgrade CMake
+   ```
+
+2. **Find and Integrate Fossil Test**:
+   After installing CMake, you can integrate Fossil Io as a dependency. Add the following lines to your `CMakeLists.txt` file:
+
+   ```cmake
+   # Find Fossil Io package
+   find_package(FossilIo REQUIRED)
+
+   # Link the Fossil Io to your project
+   target_link_libraries(your_target FossilIo)
+   ```
+
+3. **Configure Your CMake Project**:
+   Make sure to configure your CMake project to include the necessary paths and dependencies for Fossil Io. Typically, you’ll want to make sure the `FossilIo` library is correctly linked in your build configuration.
+
+   This will ensure that Fossil Io is included and properly built with your project.
+
+---
+
+**Note**: For the best experience, always use the latest release of Fossil Test. Visit the [Fossil Io Releases](https://github.com/fossillogic/fossil-io/releases) page for the latest versions.
 
 ## Configure Options
 
