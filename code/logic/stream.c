@@ -17,21 +17,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
-#include <windows.h>
-#include <io.h>
+    #include <windows.h>
 #else
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
+    #include <unistd.h>
+    #include <fcntl.h>
 #endif
-
-// Define portable permission flags
-#define FOSSIL_FILE_READ   0x01  // Read permission
-#define FOSSIL_FILE_WRITE  0x02  // Write permission
-#define FOSSIL_FILE_EXEC   0x04  // Execute permission
 
 typedef enum {
     FOSSIL_BUFFER_SMALL  = 100,
@@ -348,4 +341,122 @@ int fossil_fstream_get_type(const char *filename) {
 
 int32_t fossil_fstream_is_open(const fossil_fstream_t *stream) {
     return stream != NULL && stream->file != NULL;
+}
+
+/**
+ * Check if a file is readable.
+ *
+ * This function checks if a file has read permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if readable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_readable(const char *filename) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    return (attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    return (access(filename, R_OK) == 0) ? 1 : 0;
+#endif
+}
+
+/**
+ * Check if a file is writable.
+ *
+ * This function checks if a file has write permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if writable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_writable(const char *filename) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+        return 0;
+    }
+    return !(attrs & FILE_ATTRIBUTE_READONLY);
+#else
+    return (access(filename, W_OK) == 0) ? 1 : 0;
+#endif
+}
+
+/**
+ * Check if a file is executable.
+ *
+ * This function checks if a file has execute permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if executable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_executable(const char *filename) {
+#ifdef _WIN32
+    // On Windows, executables typically have extensions like .exe, .bat, .cmd
+    const char *ext = strrchr(filename, '.');
+    return (ext && (_stricmp(ext, ".exe") == 0 || _stricmp(ext, ".bat") == 0 || _stricmp(ext, ".cmd") == 0)) ? 1 : 0;
+#else
+    return (access(filename, X_OK) == 0) ? 1 : 0;
+#endif
+}
+
+/**
+ * Set file permissions.
+ *
+ * This function sets the permissions for a file.
+ *
+ * @param filename The name of the file to set permissions for.
+ * @param mode     The permissions to set (POSIX: chmod-style).
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        return -1; // File not found or other error
+    }
+
+    if (mode & _S_IWRITE) {
+        attrs &= ~FILE_ATTRIBUTE_READONLY; // Remove readonly
+    } else {
+        attrs |= FILE_ATTRIBUTE_READONLY; // Add readonly
+    }
+
+    return (SetFileAttributesA(filename, attrs) != 0) ? 0 : -1;
+#else
+    return chmod(filename, mode);
+#endif
+}
+
+/**
+ * Get file permissions.
+ *
+ * This function retrieves the permissions of a file.
+ *
+ * @param filename The name of the file to retrieve permissions for.
+ * @param mode     Pointer to store the retrieved permissions (POSIX style).
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode) {
+    if (!mode) {
+        return -1; // Null pointer error
+    }
+
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        return -1; // File not found or other error
+    }
+
+    *mode = _S_IREAD;
+    if (!(attrs & FILE_ATTRIBUTE_READONLY)) {
+        *mode |= _S_IWRITE;
+    }
+    return 0;
+#else
+    struct stat st;
+    if (stat(filename, &st) != 0) {
+        return -1; // File not found or error
+    }
+    *mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO); // User, Group, Other permissions
+    return 0;
+#endif
 }

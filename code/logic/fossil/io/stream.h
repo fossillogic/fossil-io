@@ -205,6 +205,58 @@ int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename
  */
 int fossil_fstream_get_type(const char *filename);
 
+/**
+ * Check if a file is readable.
+ *
+ * This function checks if a file has read permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if readable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_readable(const char *filename);
+
+/**
+ * Check if a file is writable.
+ *
+ * This function checks if a file has write permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if writable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_writable(const char *filename);
+
+/**
+ * Check if a file is executable.
+ *
+ * This function checks if a file has execute permissions.
+ *
+ * @param filename The name of the file to check.
+ * @return         1 if executable, 0 otherwise.
+ */
+int32_t fossil_fstream_is_executable(const char *filename);
+
+/**
+ * Set file permissions.
+ *
+ * This function sets the permissions for a file.
+ *
+ * @param filename The name of the file to set permissions for.
+ * @param mode     The permissions to set (POSIX: chmod-style).
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
+
+/**
+ * Get file permissions.
+ *
+ * This function retrieves the permissions of a file.
+ *
+ * @param filename The name of the file to retrieve permissions for.
+ * @param mode     Pointer to store the retrieved permissions (POSIX style).
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode);
+
 #ifdef __cplusplus
 }
 
@@ -428,6 +480,68 @@ namespace fossil {
              */
             static int get_type(const char *filename) {
                 return fossil_fstream_get_type(filename);
+            }
+
+            /**
+             * Check if a file is readable.
+             *
+             * This function checks if a file has read permissions.
+             *
+             * @param filename The name of the file to check.
+             * @return         1 if readable, 0 otherwise.
+             */
+            static int32_t is_readable(const char *filename) {
+                return fossil_fstream_is_readable(filename);
+            }
+
+            /**
+             * Check if a file is writable.
+             *
+             * This function checks if a file has write permissions.
+             *
+             * @param filename The name of the file to check.
+             * @return         1 if writable, 0 otherwise.
+             */
+            static int32_t is_writable(const char *filename) {
+                return fossil_fstream_is_writable(filename);
+            }
+
+            /**
+             * Check if a file is executable.
+             *
+             * This function checks if a file has execute permissions.
+             *
+             * @param filename The name of the file to check.
+             * @return         1 if executable, 0 otherwise.
+             */
+            static int32_t is_executable(const char *filename) {
+                return fossil_fstream_is_executable(filename);
+            }
+
+            /**
+             * Set file permissions.
+             *
+             * This function sets the permissions for a file.
+             *
+             * @param filename The name of the file to set permissions for.
+             * @param mode     The permissions to set (POSIX: chmod-style).
+             * @return         0 on success, non-zero on failure.
+             */
+            static int32_t set_permissions(const char *filename, int32_t mode) {
+                return fossil_fstream_set_permissions(filename, mode);
+            }
+
+            /**
+             * Get file permissions.
+             *
+             * This function retrieves the permissions of a file.
+             *
+             * @param filename The name of the file to retrieve permissions for.
+             * @param mode     Pointer to store the retrieved permissions (POSIX style).
+             * @return         0 on success, non-zero on failure.
+             */
+            static int32_t get_permissions(const char *filename, int32_t *mode) {
+                return fossil_fstream_get_permissions(filename, mode);
             }
 
         };
