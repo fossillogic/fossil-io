@@ -14,6 +14,7 @@
 #include "fossil/io/stream.h"
 #include "fossil/io/error.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -22,6 +23,8 @@
 #include <io.h>
 #else
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #include <unistd.h>
 #endif
 
