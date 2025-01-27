@@ -144,7 +144,7 @@ namespace fossil {
             static void putchar_color(char c, const char *color) {
                 fossil_io_putchar_color(c, color);
             }
-        }
+        };
     }
 }
 
