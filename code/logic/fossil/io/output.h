@@ -14,6 +14,8 @@
 #ifndef FOSSIL_IO_OUTPUT_H
 #define FOSSIL_IO_OUTPUT_H
 
+#include <stdarg.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
