@@ -22,6 +22,7 @@
 #include <windows.h>
 #include <io.h>
 #else
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
