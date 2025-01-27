@@ -13,14 +13,22 @@
  */
 #include "fossil/io/stream.h"
 #include "fossil/io/error.h"
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
+
+// Define portable permission flags
+#define FOSSIL_FILE_READ   0x01  // Read permission
+#define FOSSIL_FILE_WRITE  0x02  // Write permission
+#define FOSSIL_FILE_EXEC   0x04  // Execute permission
 
 typedef enum {
     FOSSIL_BUFFER_SMALL  = 100,
@@ -543,6 +551,7 @@ int32_t fossil_fstream_write_all(fossil_fstream_t *stream, const void *buffer, s
     return FOSSIL_ERROR_OK;
 }
 
+// Check file permission (cross-platform)
 int32_t fossil_fstream_check_permission(const char *filename, const char *mode) {
     if (filename == NULL || mode == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
@@ -561,7 +570,8 @@ int32_t fossil_fstream_check_permission(const char *filename, const char *mode) 
 #endif
 }
 
-int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode) {
+// Set file permissions (cross-platform)
+int fossil_fstream_set_permissions(const char *filename, int permissions) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
         return -1;
@@ -570,23 +580,48 @@ int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode) {
 #ifdef _WIN32
     DWORD attr = GetFileAttributesA(filename);
     if (attr == INVALID_FILE_ATTRIBUTES) {
-        return -1; // File doesn't exist or error
+        return -1;  // Failed to get attributes
     }
 
-    // On Windows, we only manage the read-only attribute via SetFileAttributes
-    if (mode == (S_IRUSR | S_IWUSR)) {
-        attr &= ~FILE_ATTRIBUTE_READONLY;  // Allow writing (remove read-only)
+    // Windows only supports read-only attribute
+    if (permissions & FOSSIL_FILE_WRITE) {
+        attr &= ~FILE_ATTRIBUTE_READONLY;  // Allow writing
     } else {
         attr |= FILE_ATTRIBUTE_READONLY;   // Set read-only
     }
 
+    // Apply changes
     return (SetFileAttributesA(filename, attr) != 0) ? 0 : -1;
 #else
+    // POSIX: Use chmod to set permissions
+    mode_t mode = 0;
+
+    // Owner permissions
+    if (permissions & FOSSIL_FILE_READ)  mode |= S_IRUSR;
+    if (permissions & FOSSIL_FILE_WRITE) mode |= S_IWUSR;
+    if (permissions & FOSSIL_FILE_EXEC)  mode |= S_IXUSR;
+
+    // Group permissions (optional, can be added based on requirements)
+    if (permissions & FOSSIL_FILE_READ)  mode |= S_IRGRP;
+    if (permissions & FOSSIL_FILE_WRITE) mode |= S_IWGRP;
+    if (permissions & FOSSIL_FILE_EXEC)  mode |= S_IXGRP;
+
+    // Others permissions (optional, can be added based on requirements)
+    if (permissions & FOSSIL_FILE_READ)  mode |= S_IROTH;
+    if (permissions & FOSSIL_FILE_WRITE) mode |= S_IWOTH;
+    if (permissions & FOSSIL_FILE_EXEC)  mode |= S_IXOTH;
+
+    // Add sticky bit for directories (POSIX only)
+    if (permissions & 0x100) {  // Assuming 0x100 flag represents sticky bit
+        mode |= S_ISVTX;
+    }
+
     return (chmod(filename, mode) == 0) ? 0 : -1;
 #endif
 }
 
-int32_t fossil_fstream_get_permissions(const char *filename) {
+// Get file permissions (cross-platform)
+int fossil_fstream_get_permissions(const char *filename) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
         return -1;
@@ -595,18 +630,35 @@ int32_t fossil_fstream_get_permissions(const char *filename) {
 #ifdef _WIN32
     DWORD attr = GetFileAttributesA(filename);
     if (attr == INVALID_FILE_ATTRIBUTES) {
-        return -1; // File doesn't exist or error
+        return -1;  // Failed to get attributes
     }
 
-    // Windows doesn't provide fine-grained permissions like POSIX, so use FILE_ATTRIBUTE_READONLY as a proxy.
-    // If read-only attribute is set, treat it as non-writable.
-    return (attr & FILE_ATTRIBUTE_READONLY) ? (S_IRUSR) : (S_IRUSR | S_IWUSR);
+    // Map Windows attributes to our portable permission flags
+    int permissions = 0;
+    if (attr & FILE_ATTRIBUTE_READONLY) {
+        permissions |= FOSSIL_FILE_READ;
+    } else {
+        permissions |= FOSSIL_FILE_WRITE;
+    }
+    return permissions;
 #else
     struct stat file_stat;
-    if (stat(filename, &file_stat) == 0) {
-        return file_stat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+    if (stat(filename, &file_stat) != 0) {
+        return -1;  // Failed to get permissions
     }
-    return -1;
+
+    // Map POSIX permissions to our portable permission flags
+    int permissions = 0;
+    if (file_stat.st_mode & S_IRUSR) permissions |= FOSSIL_FILE_READ;
+    if (file_stat.st_mode & S_IWUSR) permissions |= FOSSIL_FILE_WRITE;
+    if (file_stat.st_mode & S_IXUSR) permissions |= FOSSIL_FILE_EXEC;
+
+    // Check for sticky bit in POSIX systems
+    if (file_stat.st_mode & S_ISVTX) {
+        permissions |= 0x100;  // Sticky bit flag
+    }
+
+    return permissions;
 #endif
 }
 
@@ -617,10 +669,21 @@ int32_t fossil_fstream_restrict(const char *filename) {
     }
 
 #ifdef _WIN32
-    // Restrict to owner-only permissions on Windows
-    return fossil_fstream_set_permissions(filename, S_IRUSR | S_IWUSR);
+    // On Windows, restrict to owner-only permissions (Read/Write).
+    // Windows doesn't natively support sticky bits, so we focus on file attributes.
+    return fossil_fstream_set_permissions(filename, FOSSIL_FILE_READ | FOSSIL_FILE_WRITE);
 #else
-    return (chmod(filename, S_IRUSR | S_IWUSR) == 0) ? 0 : -1;
+    // POSIX: Restrict to owner-only permissions, allowing read and write only to the owner
+    mode_t mode = S_IRUSR | S_IWUSR;
+
+    // Ensure sticky bit is supported on POSIX systems if needed.
+    // Sticky bit is a special permission which can be used on directories to restrict file deletions
+    // to the file's owner. It's typically used with directories like /tmp.
+    // On non-directory files, it doesn't have any effect, but it's important for portability.
+    mode |= S_ISVTX;  // Apply sticky bit if desired.
+
+    // Apply the restricted permissions
+    return (chmod(filename, mode) == 0) ? 0 : -1;
 #endif
 }
 
@@ -653,4 +716,3 @@ int32_t fossil_fstream_compare_permissions(const char *file1, const char *file2)
 
     return (perm1 == perm2) ? 1 : 0;  // Returns 1 if permissions are equal, 0 otherwise
 }
-
