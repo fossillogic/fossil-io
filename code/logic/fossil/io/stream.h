@@ -185,6 +185,163 @@ int32_t fossil_fstream_delete(const char *filename);
  */
 int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename);
 
+/**
+ * Read file with buffering.
+ *
+ * This function reads a file with buffering.
+ *
+ * @param filename The name of the file to read.
+ * @param buffer   Pointer to the buffer to store the read data.
+ * @param size     Size of the buffer to read.
+ * @return         0 on success, non-zero on failure.
+ */
+int fossil_fstream_read_buffered(const char *filename, void *buffer, size_t size);
+
+/**
+ * Write file with buffering.
+ *
+ * This function writes a file with buffering.
+ *
+ * @param filename The name of the file to write.
+ * @param data     Pointer to the data to write.
+ * @param size     Size of the data to write.
+ * @return         0 on success, non-zero on failure.
+ */
+int fossil_fstream_write_buffered(const char *filename, const void *data, size_t size);
+
+/**
+ * Append file with buffering.
+ *
+ * This function appends a file with buffering.
+ *
+ * @param filename The name of the file to append.
+ * @param data     Pointer to the data to append.
+ * @param size     Size of the data to append.
+ * @return         0 on success, non-zero on failure.
+ */
+int fossil_fstream_lock(const char *filename);
+
+/**
+ * Lock a file.
+ *
+ * This function locks a file.
+ *
+ * @param filename The name of the file to lock.
+ * @return         0 on success, non-zero on failure.
+ */
+int fossil_fstream_unlock(const char *filename);
+
+/**
+ * Get the type of a file stream.
+ *
+ * This function retrieves the type of a file stream.
+ *
+ * @param filename The name of the file to get the type of.
+ * @return         The type of the file stream.
+ */
+int fossil_fstream_get_type(const char *filename);
+
+/**
+ * Check if a file stream is open.
+ *
+ * This function checks whether a given fossil_fstream_t structure represents
+ * an open file stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to check.
+ * @return       1 if the stream is open, 0 if it is not.
+ */
+int32_t fossil_fstream_is_open(const fossil_fstream_t *stream);
+
+/**
+ * Read the entire contents of a file into a dynamically allocated buffer.
+ *
+ * This function reads the entire contents of a file associated with an open stream
+ * and returns the data in a dynamically allocated buffer. The caller is responsible
+ * for freeing the buffer.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure from which to read.
+ * @param buffer Pointer to the pointer where the data buffer will be stored.
+ * @param size   Pointer to store the size of the read data.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_read_all(fossil_fstream_t *stream, void **buffer, size_t *size);
+
+/**
+ * Write a buffer to a file, overwriting any existing contents.
+ *
+ * This function writes the entire buffer contents to a file associated with an
+ * open stream, overwriting any existing data in the file.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to which to write.
+ * @param buffer Pointer to the buffer containing the data to write.
+ * @param size   Size of the buffer to write.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_write_all(fossil_fstream_t *stream, const void *buffer, size_t size);
+
+/**
+ * Check file permissions.
+ *
+ * This function checks the read, write, or execute permissions of a specified file.
+ *
+ * @param filename The name of the file to check.
+ * @param mode     The permission to check: "r" for read, "w" for write, "x" for execute.
+ * @return         1 if the permission is granted, 0 otherwise.
+ */
+int32_t fossil_fstream_check_permission(const char *filename, const char *mode);
+
+/**
+ * Set file permissions.
+ *
+ * This function sets the permissions of a specified file.
+ *
+ * @param filename The name of the file.
+ * @param mode     The permission mode to set (e.g., 0644 for rw-r--r--).
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
+
+/**
+ * Get file permissions.
+ *
+ * This function retrieves the current permissions of a specified file.
+ *
+ * @param filename The name of the file.
+ * @return         The permissions of the file as an integer (e.g., 0644), or -1 on failure.
+ */
+int32_t fossil_fstream_get_permissions(const char *filename);
+
+/**
+ * Restrict file permissions.
+ *
+ * This function restricts the permissions of a specified file to the owner only.
+ *
+ * @param filename The name of the file.
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_restrict(const char *filename);
+
+/**
+ * Check file ownership.
+ *
+ * This function checks if the current user owns the specified file.
+ *
+ * @param filename The name of the file.
+ * @return         1 if the user owns the file, 0 otherwise.
+ */
+int32_t fossil_fstream_check_ownership(const char *filename);
+
+/**
+ * Compare the permissions of two files.
+ *
+ * This function compares the permissions of two files and returns the difference.
+ *
+ * @param file1 The name of the first file.
+ * @param file2 The name of the second file.
+ * @return      The difference in permissions between the two files.
+ */
+int32_t fossil_fstream_compare_permissions(const char *file1, const char *file2);
+
 #ifdef __cplusplus
 }
 #endif
