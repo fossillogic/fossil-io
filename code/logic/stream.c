@@ -13,8 +13,18 @@
  */
 #include "fossil/io/stream.h"
 #include "fossil/io/error.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <fcntl.h>
+#endif
 
 typedef enum {
     FOSSIL_BUFFER_SMALL  = 100,
@@ -291,4 +301,120 @@ int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename
     }
 
     return FOSSIL_ERROR_OK;
+}
+
+// Detect file type (Regular file, Directory, Symbolic link)
+int fossil_fstream_get_type(const char *filename) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return -1;
+    }
+
+#ifdef _WIN32
+    DWORD attributes = GetFileAttributesA(filename);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        return -1;
+    }
+
+    if (attributes & FILE_ATTRIBUTE_DIRECTORY) {
+        return 1;  // Directory
+    }
+
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+        return 3;  // Symbolic Link (or Junction)
+    }
+
+    return 2;  // Regular File
+#else
+    struct stat file_stat;
+    if (stat(filename, &file_stat) != 0) {
+        return -1;
+    }
+
+    if (S_ISDIR(file_stat.st_mode)) return 1;  // Directory
+    if (S_ISREG(file_stat.st_mode)) return 2;  // Regular file
+    if (S_ISLNK(file_stat.st_mode)) return 3;  // Symbolic link
+
+    return 0;  // Unknown
+#endif
+}
+
+int32_t fossil_fstream_is_open(const fossil_fstream_t *stream) {
+    return stream != NULL && stream->file != NULL;
+}
+
+int32_t fossil_fstream_is_readable(const char *filename) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    return (attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    return (access(filename, R_OK) == 0) ? 1 : 0;
+#endif
+}
+
+int32_t fossil_fstream_is_writable(const char *filename) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+        return 0;
+    }
+    return !(attrs & FILE_ATTRIBUTE_READONLY);
+#else
+    return (access(filename, W_OK) == 0) ? 1 : 0;
+#endif
+}
+
+int32_t fossil_fstream_is_executable(const char *filename) {
+#ifdef _WIN32
+    // On Windows, executables typically have extensions like .exe, .bat, .cmd
+    const char *ext = strrchr(filename, '.');
+    return (ext && (_stricmp(ext, ".exe") == 0 || _stricmp(ext, ".bat") == 0 || _stricmp(ext, ".cmd") == 0)) ? 1 : 0;
+#else
+    return (access(filename, X_OK) == 0) ? 1 : 0;
+#endif
+}
+
+int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode) {
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        return -1; // File not found or other error
+    }
+
+    if (mode & _S_IWRITE) {
+        attrs &= ~FILE_ATTRIBUTE_READONLY; // Remove readonly
+    } else {
+        attrs |= FILE_ATTRIBUTE_READONLY; // Add readonly
+    }
+
+    return (SetFileAttributesA(filename, attrs) != 0) ? 0 : -1;
+#else
+    return chmod(filename, mode);
+#endif
+}
+
+int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode) {
+    if (!mode) {
+        return -1; // Null pointer error
+    }
+
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(filename);
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        return -1; // File not found or other error
+    }
+
+    *mode = _S_IREAD;
+    if (!(attrs & FILE_ATTRIBUTE_READONLY)) {
+        *mode |= _S_IWRITE;
+    }
+    return 0;
+#else
+    struct stat st;
+    if (stat(filename, &st) != 0) {
+        return -1; // File not found or error
+    }
+    *mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO); // User, Group, Other permissions
+    return 0;
+#endif
 }
