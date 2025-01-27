@@ -19,14 +19,22 @@ extern "C" {
 #endif
 
 // Define color codes for output
-#define FOSSIL_IO_COLOR_RESET    "\033[0m"
-#define FOSSIL_IO_COLOR_RED      "\033[31m"
-#define FOSSIL_IO_COLOR_GREEN    "\033[32m"
-#define FOSSIL_IO_COLOR_YELLOW   "\033[33m"
-#define FOSSIL_IO_COLOR_BLUE     "\033[34m"
-#define FOSSIL_IO_COLOR_MAGENTA  "\033[35m"
-#define FOSSIL_IO_COLOR_CYAN     "\033[36m"
-#define FOSSIL_IO_COLOR_WHITE    "\033[37m"
+#define FOSSIL_IO_COLOR_RESET       "\033[0m"
+#define FOSSIL_IO_COLOR_RED         "\033[31m"
+#define FOSSIL_IO_COLOR_GREEN       "\033[32m"
+#define FOSSIL_IO_COLOR_YELLOW      "\033[33m"
+#define FOSSIL_IO_COLOR_BLUE        "\033[34m"
+#define FOSSIL_IO_COLOR_MAGENTA     "\033[35m"
+#define FOSSIL_IO_COLOR_CYAN        "\033[36m"
+#define FOSSIL_IO_COLOR_WHITE       "\033[37m"
+
+// Define text attributes
+#define FOSSIL_IO_ATTR_BOLD         "\033[1m"
+#define FOSSIL_IO_ATTR_UNDERLINE    "\033[4m"
+#define FOSSIL_IO_ATTR_REVERSED     "\033[7m"
+#define FOSSIL_IO_ATTR_BLINK        "\033[5m"
+#define FOSSIL_IO_ATTR_HIDDEN       "\033[8m"
+#define FOSSIL_IO_ATTR_NORMAL       "\033[22m" // For reverting to normal text
 
 /**
  * Prints a string to the output.
