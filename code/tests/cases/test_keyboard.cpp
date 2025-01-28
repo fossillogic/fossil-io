@@ -73,6 +73,42 @@ FOSSIL_TEST_CASE(cpp_test_keyboard_poll_events) {
     fossil_io_keyboard_unregister_binding(event);
 }
 
+FOSSIL_TEST_CASE(cpp_test_keyboard_class_register_unregister_binding) {
+    fossil::io::keyboard::init();
+    fossil_io_keyboard_event_t event = { 'a', 0, 0, 0 };
+    fossil_io_keyboard_callback_t callback = (fossil_io_keyboard_callback_t)1; // Assuming a valid callback function
+
+    fossil::io::keyboard::register_binding(event, callback);
+    ASSUME_NOT_CNULL(callback); // Assumption on pointer
+
+    fossil::io::keyboard::unregister_binding(event);
+    ASSUME_NOT_CNULL(callback); // Assumption on pointer
+    fossil::io::keyboard::shutdown();
+}
+
+FOSSIL_TEST_CASE(cpp_test_keyboard_class_clear_bindings) {
+    fossil::io::keyboard::init();
+    fossil_io_keyboard_event_t event = { 'a', 0, 0, 0 };
+    fossil_io_keyboard_callback_t callback = (fossil_io_keyboard_callback_t)1; // Assuming a valid callback function
+
+    fossil::io::keyboard::register_binding(event, callback);
+    fossil::io::keyboard::clear_bindings();
+    ASSUME_NOT_CNULL(callback); // Assumption on pointer
+    fossil::io::keyboard::shutdown();
+}
+
+FOSSIL_TEST_CASE(cpp_test_keyboard_class_poll_events) {
+    fossil::io::keyboard::init();
+    fossil_io_keyboard_event_t event = { 'a', 0, 0, 0 };
+    fossil_io_keyboard_callback_t callback = (fossil_io_keyboard_callback_t)1; // Assuming a valid callback function
+
+    fossil::io::keyboard::register_binding(event, callback);
+    fossil::io::keyboard::poll_events();
+    ASSUME_NOT_CNULL(callback); // Assumption on pointer
+    fossil::io::keyboard::unregister_binding(event);
+    fossil::io::keyboard::shutdown();
+}
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -82,6 +118,10 @@ FOSSIL_TEST_GROUP(cpp_keyboard_tests) {
     FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_register_unregister_binding);
     FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_clear_bindings);
     FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_poll_events);
+
+    FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_class_register_unregister_binding);
+    FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_class_clear_bindings);
+    FOSSIL_TEST_ADD(cpp_keyboard_suite, cpp_test_keyboard_class_poll_events);
 
     FOSSIL_TEST_REGISTER(cpp_keyboard_suite);
 }
