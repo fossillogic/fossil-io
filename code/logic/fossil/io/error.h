@@ -184,6 +184,8 @@ const char *fossil_io_what(fossil_status_t error_code);
 #ifdef __cplusplus
 }
 
+#include <exception>
+
 /**
  * This namespace provides a set of functions for handling input and output operations.
  */
