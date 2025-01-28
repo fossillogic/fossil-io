@@ -14,6 +14,7 @@ set(TEST_CODE
     output.c
     soap.c
     stream.c
+    keyboard.c
 )
 
 # Create the library target
