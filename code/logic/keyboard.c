@@ -129,6 +129,10 @@ void fossil_io_keyboard_shutdown(void) {
 #endif
 }
 
+void fossil_io_keyboard_clear_bindings(void) {
+    keyboard_manager.count = 0;
+}
+
 void fossil_io_keyboard_register_binding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback) {
     if (keyboard_manager.count < MAX_KEYBINDS) {
         keyboard_manager.bindings[keyboard_manager.count].event = event;
@@ -137,6 +141,22 @@ void fossil_io_keyboard_register_binding(fossil_io_keyboard_event_t event, fossi
     } else {
         fprintf(stderr, "Max keybindings reached.\n");
     }
+}
+
+void fossil_io_keyboard_unregister_binding(fossil_io_keyboard_event_t event) {
+    for (size_t i = 0; i < keyboard_manager.count; ++i) {
+        if (keyboard_manager.bindings[i].event.key == event.key &&
+            keyboard_manager.bindings[i].event.shift == event.shift &&
+            keyboard_manager.bindings[i].event.ctrl == event.ctrl &&
+            keyboard_manager.bindings[i].event.alt == event.alt) {
+            for (size_t j = i; j < keyboard_manager.count - 1; ++j) {
+                keyboard_manager.bindings[j] = keyboard_manager.bindings[j + 1];
+            }
+            keyboard_manager.count--;
+            return;
+        }
+    }
+    fprintf(stderr, "No matching keybinding to unregister.\n");
 }
 
 void fossil_io_keyboard_poll_events(void) {

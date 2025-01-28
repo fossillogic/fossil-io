@@ -45,12 +45,24 @@ void fossil_io_keyboard_init(void);
 void fossil_io_keyboard_shutdown(void);
 
 /**
+ * Clear all keybindings from the library.
+ */
+void fossil_io_keyboard_clear_bindings(void);
+
+/**
  * Register a keybinding with the library.
  *
  * @param event     The keyboard event to bind to.
  * @param callback  The callback function to call when the event occurs.
  */
 void fossil_io_keyboard_register_binding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback);
+
+/**
+ * Unregister a keybinding with the library.
+ *
+ * @param event     The keyboard event to unbind.
+ */
+void fossil_io_keyboard_unregister_binding(fossil_io_keyboard_event_t event);
 
 /**
  * Poll for keyboard events and trigger any registered callbacks.
@@ -73,13 +85,13 @@ namespace fossil {
         /**
          * Class for interacting with the keyboard.
          */
-        class Keyboard {
+        class keyboard {
         public:
             /**
              * Initialize the keyboard library.
              * Sets up any platform-specific configurations.
              */
-            static void initialize() {
+            static void init() {
                 fossil_io_keyboard_init();
             }
 
@@ -92,20 +104,36 @@ namespace fossil {
             }
 
             /**
+             * Clear all keybindings from the library.
+             */
+            static void clear_bindings() {
+                fossil_io_keyboard_clear_bindings();
+            }
+
+            /**
              * Register a keybinding with the library.
              *
              * @param event     The keyboard event to bind to.
              * @param callback  The callback function to call when the event occurs.
              */
-            static void registerBinding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback) {
+            static void register_binding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback) {
                 fossil_io_keyboard_register_binding(event, callback);
+            }
+
+            /**
+             * Unregister a keybinding with the library.
+             *
+             * @param event     The keyboard event to unbind.
+             */
+            static void unregister_binding(fossil_io_keyboard_event_t event) {
+                fossil_io_keyboard_unregister_binding(event);
             }
 
             /**
              * Poll for keyboard events and trigger any registered callbacks.
              * This function should be called in the main loop of the application.
              */
-            static void pollEvents() {
+            static void poll_events() {
                 fossil_io_keyboard_poll_events();
             }
         };
