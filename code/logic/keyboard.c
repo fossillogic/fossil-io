@@ -23,6 +23,9 @@
     #include <termios.h>
     #include <unistd.h>
     #include <fcntl.h>
+    #include <sys/select.h>  // For fd_set, FD_ZERO, FD_SET, select
+    #include <sys/time.h>    // For struct timeval
+    #include <sys/types.h>   // For system types
 #endif
 
 #define MAX_KEYBINDS 256
