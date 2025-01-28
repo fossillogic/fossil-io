@@ -94,12 +94,12 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
             while (arg) {
                 printf("  --%s (%s): %s\n", 
                        arg->name, 
-                       arg->type == FOSSIL_io_PARSER_BOOL ? "bool" :
-                       arg->type == FOSSIL_io_PARSER_STRING ? "string" :
-                       arg->type == FOSSIL_io_PARSER_INT ? "int" :
+                       arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
+                       arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
+                       arg->type == FOSSIL_IO_PARSER_INT ? "int" :
                        "combo", 
                        arg->value ? arg->value : "No default value");
-                if (arg->type == FOSSIL_io_PARSER_COMBO) {
+                if (arg->type == FOSSIL_IO_PARSER_COMBO) {
                     printf("    Options: ");
                     for (int i = 0; i < arg->combo_count; i++) {
                         printf("%s%s", arg->combo_options[i], i == arg->combo_count - 1 ? "" : ", ");
@@ -130,13 +130,13 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
                 printf(" --%s ", arg->name);
-                if (arg->type == FOSSIL_io_PARSER_STRING) {
+                if (arg->type == FOSSIL_IO_PARSER_STRING) {
                     printf("<string>");
-                } else if (arg->type == FOSSIL_io_PARSER_INT) {
+                } else if (arg->type == FOSSIL_IO_PARSER_INT) {
                     printf("<int>");
-                } else if (arg->type == FOSSIL_io_PARSER_BOOL) {
+                } else if (arg->type == FOSSIL_IO_PARSER_BOOL) {
                     printf("<true/false>");
-                } else if (arg->type == FOSSIL_io_PARSER_COMBO) {
+                } else if (arg->type == FOSSIL_IO_PARSER_COMBO) {
                     printf("<%s>", arg->combo_options[0]); // Show first combo option
                 }
                 arg = arg->next;
@@ -239,7 +239,7 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
         while (argument) {
             if (strcmp(argument->name, arg_value) == 0) {
                 switch (argument->type) {
-                    case FOSSIL_io_PARSER_BOOL:
+                    case FOSSIL_IO_PARSER_BOOL:
                         argument->value = malloc(sizeof(int));
                         if (strcmp(arg_value, "enable") == 0) {
                             *(int *)argument->value = 1; // Enable
@@ -251,14 +251,14 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
                             argument->value = NULL;
                         }
                         break;
-                    case FOSSIL_io_PARSER_STRING:
+                    case FOSSIL_IO_PARSER_STRING:
                         argument->value = _custom_strdup(arg_value); // Custom _custom_strdup
                         break;
-                    case FOSSIL_io_PARSER_INT:
+                    case FOSSIL_IO_PARSER_INT:
                         argument->value = malloc(sizeof(int));
                         *(int *)argument->value = atoi(arg_value);
                         break;
-                    case FOSSIL_io_PARSER_COMBO:
+                    case FOSSIL_IO_PARSER_COMBO:
                         for (int j = 0; j < argument->combo_count; j++) {
                             if (strcmp(arg_value, argument->combo_options[j]) == 0) {
                                 argument->value = _custom_strdup(arg_value);
@@ -279,7 +279,7 @@ void fossil_io_parser_free(fossil_io_parser_palette_t *palette) {
     while (command) {
         fossil_io_parser_argument_t *argument = command->arguments;
         while (argument) {
-            if (argument->type == FOSSIL_io_PARSER_COMBO) {
+            if (argument->type == FOSSIL_IO_PARSER_COMBO) {
                 free(argument->combo_options);
             }
             free(argument->name);

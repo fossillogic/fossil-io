@@ -67,10 +67,10 @@ FOSSIL_TEST_CASE(c_add_command) {
 FOSSIL_TEST_CASE(c_add_argument) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
-    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "test_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Argument should be added");
     FOSSIL_TEST_ASSUME(strcmp(argument->name, "test_arg") == 0, "Argument name should be 'test_arg'");
-    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_io_PARSER_STRING, "Argument type should be STRING");
+    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_IO_PARSER_STRING, "Argument type should be STRING");
     FOSSIL_TEST_ASSUME(argument->value == NULL, "Argument value should be NULL");
     FOSSIL_TEST_ASSUME(command->arguments == argument, "Command arguments should include the new argument");
     fossil_io_parser_free(palette);
@@ -79,7 +79,7 @@ FOSSIL_TEST_CASE(c_add_argument) {
 FOSSIL_TEST_CASE(c_parse_command) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
-    fossil_io_parser_add_argument(command, "test_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
 
     char *argv[] = {"program", "test_command", "test_arg", "test_value"};
     fossil_io_parser_parse(palette, 4, argv);

@@ -22,10 +22,10 @@ extern "C" {
 
 // Types of command argument
 typedef enum {
-    FOSSIL_io_PARSER_BOOL,   // Boolean (enable/disable)
-    FOSSIL_io_PARSER_STRING, // String argument
-    FOSSIL_io_PARSER_INT,    // Integer argument
-    FOSSIL_io_PARSER_COMBO   // Combo of predefined values
+    FOSSIL_IO_PARSER_BOOL,   // Boolean (enable/disable)
+    FOSSIL_IO_PARSER_STRING, // String argument
+    FOSSIL_IO_PARSER_INT,    // Integer argument
+    FOSSIL_IO_PARSER_COMBO   // Combo of predefined values
 } fossil_io_parser_arg_type_t;
 
 // Structure to represent each argument in the command

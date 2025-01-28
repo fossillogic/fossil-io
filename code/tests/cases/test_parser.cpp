@@ -69,10 +69,10 @@ FOSSIL_TEST_CASE(cpp_add_command) {
 FOSSIL_TEST_CASE(cpp_add_argument) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
-    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "test_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Argument should be added");
     FOSSIL_TEST_ASSUME(strcmp(argument->name, "test_arg") == 0, "Argument name should be 'test_arg'");
-    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_io_PARSER_STRING, "Argument type should be STRING");
+    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_IO_PARSER_STRING, "Argument type should be STRING");
     FOSSIL_TEST_ASSUME(argument->value == NULL, "Argument value should be NULL");
     FOSSIL_TEST_ASSUME(command->arguments == argument, "Command arguments should include the new argument");
     fossil_io_parser_free(palette);
@@ -81,7 +81,7 @@ FOSSIL_TEST_CASE(cpp_add_argument) {
 FOSSIL_TEST_CASE(cpp_parse_command) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
-    fossil_io_parser_add_argument(command, "test_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
 
     std::vector<std::string> argv = {"program", "test_command", "test_arg", "test_value"};
     std::vector<const char*> argv_cstr;
@@ -129,10 +129,10 @@ FOSSIL_TEST_CASE(cpp_wrapper_add_argument) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
-    fossil_io_parser_argument_t *argument = parser.add_argument(command, "wrapper_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    fossil_io_parser_argument_t *argument = parser.add_argument(command, "wrapper_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Argument should be added");
     FOSSIL_TEST_ASSUME(strcmp(argument->name, "wrapper_arg") == 0, "Argument name should be 'wrapper_arg'");
-    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_io_PARSER_STRING, "Argument type should be STRING");
+    FOSSIL_TEST_ASSUME(argument->type == FOSSIL_IO_PARSER_STRING, "Argument type should be STRING");
     FOSSIL_TEST_ASSUME(argument->value == NULL, "Argument value should be NULL");
     FOSSIL_TEST_ASSUME(command->arguments == argument, "Command arguments should include the new argument");
     parser.free(palette);
@@ -142,7 +142,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_parse_command) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
-    parser.add_argument(command, "wrapper_arg", FOSSIL_io_PARSER_STRING, NULL, 0);
+    parser.add_argument(command, "wrapper_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
 
     std::vector<std::string> argv = {"program", "wrapper_command", "wrapper_arg", "wrapper_value"};
     std::vector<const char*> argv_cstr;
