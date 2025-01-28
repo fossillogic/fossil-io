@@ -21,6 +21,7 @@
 #include "error.h"
 #include "stream.h"
 #include "soap.h"
+#include "parser.h"
 
 enum {
     FOSSIL_IO_SUCCESS = 0,

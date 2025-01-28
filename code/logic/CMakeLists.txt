@@ -8,6 +8,7 @@ file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/fossil/*.h)
 
 # List the source files
 set(TEST_CODE
+    parser.c
     error.c
     input.c
     output.c
@@ -18,6 +19,9 @@ set(TEST_CODE
 
 # Create the library target
 add_library(fossil-io STATIC ${TEST_CODE} ${HEADER_FILES})
+
+# Link the math library
+target_link_libraries(fossil-io PUBLIC m)
 
 # Set the library to be installed
 install(TARGETS fossil-io

@@ -1,9 +1,10 @@
 dir = include_directories('.')
-
+cc = meson.get_compiler('c')
 
 fossil_io_lib = library('fossil-io',
-    files('input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'keyboard.c'),
+    files('parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'keyboard.c'),
     install: true,
+    dependencies: cc.find_library('m', required : false),
     include_directories: dir)
 
 fossil_io_dep = declare_dependency(
