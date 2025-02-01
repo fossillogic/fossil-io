@@ -54,17 +54,6 @@ int fossil_io_serialize_expand(fossil_io_serialize_buffer_t *buf, size_t extra) 
     return 0;
 }
 
-int fossil_io_serialize_expand(fossil_io_serialize_buffer_t *buf, size_t extra) {
-    if (!buf) return -1;
-    size_t new_capacity = buf->capacity * 2 + extra;
-    uint8_t *new_buffer = (uint8_t *)realloc(buf->buffer, new_capacity);
-    if (!new_buffer) return -1;
-    
-    buf->buffer = new_buffer;
-    buf->capacity = new_capacity;
-    return 0;
-}
-
 int fossil_io_serialize_int8(fossil_io_serialize_buffer_t *buf, int8_t value) {
     if (buf->size + sizeof(int8_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int8_t)) != 0) return -1;
