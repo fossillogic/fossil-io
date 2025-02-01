@@ -82,7 +82,7 @@ FOSSIL_TEST_CASE(c_test_network_accept) {
     fossil_io_network_init();
     fossil_io_socket_t server_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "127.0.0.1", 8080);
+    fossil_io_network_bind(server_sock, "0.0.0.0", 8080);
     fossil_io_network_listen(server_sock, 5);
 
     // Simulate a client connection in a separate thread or process
@@ -106,7 +106,7 @@ FOSSIL_TEST_CASE(c_test_network_send_receive) {
     fossil_io_network_init();
     fossil_io_socket_t server_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "127.0.0.1", 8080);
+    fossil_io_network_bind(server_sock, "0.0.0.0", 8080);
     fossil_io_network_listen(server_sock, 5);
 
     // Simulate a client connection in a separate thread or process
@@ -155,8 +155,8 @@ FOSSIL_TEST_GROUP(c_network_tests) {
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_socket);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_listen);
-    // FOSSIL_TEST_ADD(c_network_suite, c_test_network_accept);
-    // FOSSIL_TEST_ADD(c_network_suite, c_test_network_send_receive);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_network_accept);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_network_send_receive);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_close);
 
     FOSSIL_TEST_REGISTER(c_network_suite);
