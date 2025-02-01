@@ -17,14 +17,50 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <winsock2.h>  // htonl, ntohl for endian handling
 #define fseeko _fseeki64  // Use Windows-specific fseek for large files
 
 #else
 #include <unistd.h>
-#include <arpa/inet.h>  // htonl, ntohl for endian handling
 
 #endif
+
+// Custom endian handling functions
+uint16_t fossil_io_htons(uint16_t hostshort) {
+    uint16_t result = (hostshort << 8) | (hostshort >> 8);
+    return result;
+}
+
+uint16_t fossil_io_ntohs(uint16_t netshort) {
+    return fossil_io_htons(netshort);
+}
+
+uint32_t fossil_io_htonl(uint32_t hostlong) {
+    uint32_t result = ((hostlong & 0xFF000000) >> 24) |
+                      ((hostlong & 0x00FF0000) >> 8) |
+                      ((hostlong & 0x0000FF00) << 8) |
+                      ((hostlong & 0x000000FF) << 24);
+    return result;
+}
+
+uint32_t fossil_io_ntohl(uint32_t netlong) {
+    return fossil_io_htonl(netlong);
+}
+
+uint64_t fossil_io_htonll(uint64_t hostlonglong) {
+    uint64_t result = ((hostlonglong & 0xFF00000000000000ULL) >> 56) |
+                      ((hostlonglong & 0x00FF000000000000ULL) >> 40) |
+                      ((hostlonglong & 0x0000FF0000000000ULL) >> 24) |
+                      ((hostlonglong & 0x000000FF00000000ULL) >> 8) |
+                      ((hostlonglong & 0x00000000FF000000ULL) << 8) |
+                      ((hostlonglong & 0x0000000000FF0000ULL) << 24) |
+                      ((hostlonglong & 0x000000000000FF00ULL) << 40) |
+                      ((hostlonglong & 0x00000000000000FFULL) << 56);
+    return result;
+}
+
+uint64_t fossil_io_ntohll(uint64_t netlonglong) {
+    return fossil_io_htonll(netlonglong);
+}
 
 // Initialization and memory management
 int fossil_io_serialize_create(fossil_io_serialize_buffer_t *buf, size_t capacity) {
@@ -67,7 +103,7 @@ int fossil_io_serialize_int16(fossil_io_serialize_buffer_t *buf, int16_t value) 
     if (buf->size + sizeof(int16_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int16_t)) != 0) return -1;
     }
-    int16_t net_value = htons(value);
+    int16_t net_value = fossil_io_htons(value);
     memcpy(buf->buffer + buf->size, &net_value, sizeof(int16_t));
     buf->size += sizeof(int16_t);
     return 0;
@@ -77,7 +113,7 @@ int fossil_io_serialize_int32(fossil_io_serialize_buffer_t *buf, int32_t value) 
     if (buf->size + sizeof(int32_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int32_t)) != 0) return -1;
     }
-    int32_t net_value = htonl(value);
+    int32_t net_value = fossil_io_htonl(value);
     memcpy(buf->buffer + buf->size, &net_value, sizeof(int32_t));
     buf->size += sizeof(int32_t);
     return 0;
@@ -87,11 +123,7 @@ int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value) 
     if (buf->size + sizeof(int64_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int64_t)) != 0) return -1;
     }
-#ifdef _WIN32
-    int64_t net_value = htonll(value);
-#else
-    int64_t net_value = htobe64(value);
-#endif
+    int64_t net_value = fossil_io_htonll(value);
     memcpy(buf->buffer + buf->size, &net_value, sizeof(int64_t));
     buf->size += sizeof(int64_t);
     return 0;
@@ -143,7 +175,7 @@ int fossil_io_deserialize_int16(fossil_io_serialize_buffer_t *buf, size_t *offse
     if (*offset + sizeof(int16_t) > buf->size) return -1;
     int16_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int16_t));
-    *value = ntohs(net_value);
+    *value = fossil_io_ntohs(net_value);
     *offset += sizeof(int16_t);
     return 0;
 }
@@ -152,7 +184,7 @@ int fossil_io_deserialize_int32(fossil_io_serialize_buffer_t *buf, size_t *offse
     if (*offset + sizeof(int32_t) > buf->size) return -1;
     int32_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int32_t));
-    *value = ntohl(net_value);
+    *value = fossil_io_ntohl(net_value);
     *offset += sizeof(int32_t);
     return 0;
 }
@@ -161,11 +193,7 @@ int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offse
     if (*offset + sizeof(int64_t) > buf->size) return -1;
     int64_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int64_t));
-#ifdef _WIN32
-    *value = ntohll(net_value);
-#else
-    *value = be64toh(net_value);
-#endif
+    *value = fossil_io_ntohll(net_value);
     *offset += sizeof(int64_t);
     return 0;
 }
