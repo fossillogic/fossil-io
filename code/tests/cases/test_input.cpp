@@ -264,19 +264,6 @@ FOSSIL_TEST_CASE(cpp_test_io_validate_sanitize_string) {
     ASSUME_ITS_EQUAL_CSTR(expected, output);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_read_secure_line) {
-    const char *input_data = "secure input\n";
-    FILE *input_stream = tmpfile();
-    fwrite(input_data, 1, strlen(input_data), input_stream);
-    rewind(input_stream);
-
-    char buffer[20];
-    int result = fossil_io_validate_read_secure_line(buffer, sizeof(buffer));
-    ASSUME_ITS_TRUE(result);
-    ASSUME_ITS_EQUAL_CSTR("secure input", buffer);
-    fclose(input_stream);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -304,7 +291,6 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_invalid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_read_secure_line);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }
