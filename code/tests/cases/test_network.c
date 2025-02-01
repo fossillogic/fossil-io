@@ -44,47 +44,47 @@ FOSSIL_TEARDOWN(c_network_suite) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_CASE(c_test_network_init) {
-    int result = fossil_io_network_init();
+    int result = fossil_io_network_create();
     ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_cleanup();
+    fossil_io_network_destroy();
 }
 
 FOSSIL_TEST_CASE(c_test_network_create_socket) {
-    fossil_io_network_init();
+    fossil_io_network_create();
     fossil_io_socket_t sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_close(sock);
-    fossil_io_network_cleanup();
+    fossil_io_network_destroy();
 }
 
 FOSSIL_TEST_CASE(c_test_network_bind) {
-    fossil_io_network_init();
+    fossil_io_network_create();
     fossil_io_socket_t sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     int result = fossil_io_network_bind(sock, "127.0.0.1", 8080);
     ASSUME_ITS_EQUAL_I32(0, result);
     fossil_io_network_close(sock);
-    fossil_io_network_cleanup();
+    fossil_io_network_destroy();
 }
 
 FOSSIL_TEST_CASE(c_test_network_listen) {
-    fossil_io_network_init();
+    fossil_io_network_create();
     fossil_io_socket_t sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_bind(sock, "127.0.0.1", 8080);
     int result = fossil_io_network_listen(sock, 5);
     ASSUME_ITS_EQUAL_I32(0, result);
     fossil_io_network_close(sock);
-    fossil_io_network_cleanup();
+    fossil_io_network_destroy();
 }
 
 FOSSIL_TEST_CASE(c_test_network_close) {
-    fossil_io_network_init();
+    fossil_io_network_create();
     fossil_io_socket_t sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_close(sock);
     // No direct way to test close, but we assume no errors if it reaches here
-    fossil_io_network_cleanup();
+    fossil_io_network_destroy();
 }
 
 
