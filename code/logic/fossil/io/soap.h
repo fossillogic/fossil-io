@@ -54,6 +54,12 @@ int32_t fossil_soap_count_offensive(const char *input);
  */
 int32_t fossil_soap_count_rotbrain(const char *input);
 
+/**
+ * Check if a string is context-aware.
+ * Returns EXIT_FAILURE if the string is context-aware, EXIT_SUCCESS otherwise.
+ */
+int32_t fossil_soap_context_aware(const char *input);
+
 #ifdef __cplusplus
 }
 
@@ -113,6 +119,14 @@ namespace fossil {
              */
             static int32_t count_rotbrain(const char *input) {
                 return fossil_soap_count_rotbrain(input);
+            }
+
+            /**
+             * Check if a string is context-aware.
+             * Returns EXIT_FAILURE if the string is context-aware, EXIT_SUCCESS otherwise.
+             */
+            static int32_t context_aware(const char *input) {
+                return fossil_soap_context_aware(input);
             }
         };
     }

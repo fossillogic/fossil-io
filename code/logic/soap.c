@@ -174,3 +174,15 @@ int32_t fossil_soap_count_offensive(const char *input) {
 int32_t fossil_soap_count_rotbrain(const char *input) {
     return count_matches(input, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
 }
+
+int32_t fossil_soap_context_aware(const char *input) {
+    int offensive_count = fossil_soap_count_offensive(input);
+    int rotbrain_count = fossil_soap_count_rotbrain(input);
+
+    if (offensive_count > 0) {
+        return 1; // Offensive content detected
+    } else if (rotbrain_count > 0) {
+        return 2; // Rotbrain content detected
+    }
+    return 0; // No offensive or rotbrain content detected
+}
