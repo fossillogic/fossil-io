@@ -15,6 +15,7 @@ set(TEST_CODE
     soap.c
     stream.c
     keyboard.c
+    network.c
 )
 
 # Create the library target
@@ -22,6 +23,11 @@ add_library(fossil-io STATIC ${TEST_CODE} ${HEADER_FILES})
 
 # Link the math library
 target_link_libraries(fossil-io PUBLIC m)
+
+# Link to Winsock library only on Windows
+if(WIN32)
+    target_link_libraries(fossil-io PUBLIC ws2_32)
+endif()
 
 # Set the library to be installed
 install(TARGETS fossil-io
