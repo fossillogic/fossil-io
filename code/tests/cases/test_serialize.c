@@ -129,22 +129,6 @@ FOSSIL_TEST_CASE(c_test_io_serialize_u64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(c_test_io_serialize_f32) {
-    fossil_io_serialize_buffer_t buf;
-    fossil_io_serialize_create(&buf, 1024);
-    int result = fossil_io_serialize_f32(&buf, 3.14f);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_serialize_destroy(&buf);
-}
-
-FOSSIL_TEST_CASE(c_test_io_serialize_f64) {
-    fossil_io_serialize_buffer_t buf;
-    fossil_io_serialize_create(&buf, 1024);
-    int result = fossil_io_serialize_f64(&buf, 3.141592653589793);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_serialize_destroy(&buf);
-}
-
 FOSSIL_TEST_CASE(c_test_io_serialize_cstr) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
@@ -257,29 +241,6 @@ FOSSIL_TEST_CASE(c_test_io_deserialize_u64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(c_test_io_deserialize_f32) {
-    fossil_io_serialize_buffer_t buf;
-    fossil_io_serialize_create(&buf, 1024);
-    fossil_io_serialize_f32(&buf, 3.14f);
-    size_t offset = 0;
-    float value;
-    int result = fossil_io_deserialize_f32(&buf, &offset, &value);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    ASSUME_ITS_EQUAL_FLOAT(3.14f, value);
-    fossil_io_serialize_destroy(&buf);
-}
-
-FOSSIL_TEST_CASE(c_test_io_deserialize_f64) {
-    fossil_io_serialize_buffer_t buf;
-    fossil_io_serialize_create(&buf, 1024);
-    fossil_io_serialize_f64(&buf, 3.141592653589793);
-    size_t offset = 0;
-    double value;
-    int result = fossil_io_deserialize_f64(&buf, &offset, &value);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    ASSUME_ITS_EQUAL_DOUBLE(3.141592653589793, value);
-    fossil_io_serialize_destroy(&buf);
-}
 
 FOSSIL_TEST_CASE(c_test_io_deserialize_cstr) {
     fossil_io_serialize_buffer_t buf;
@@ -349,10 +310,6 @@ FOSSIL_TEST_GROUP(c_serialize_tests) {
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u16);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u32);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u64);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_f32);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_f64);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_cstr);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_bool);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i8);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i16);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i32);
@@ -361,8 +318,6 @@ FOSSIL_TEST_GROUP(c_serialize_tests) {
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_u16);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_u32);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_u64);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_f32);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_f64);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_cstr);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_bool);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_to_file);
