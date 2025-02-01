@@ -14,6 +14,7 @@
 #include "fossil/io/serialize.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #include <windows.h>
