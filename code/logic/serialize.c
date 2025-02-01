@@ -214,8 +214,8 @@ int fossil_io_deserialize_double(fossil_io_serialize_buffer_t *buf, size_t *offs
 }
 
 int fossil_io_deserialize_string(fossil_io_serialize_buffer_t *buf, size_t *offset, char *out, size_t max_len) {
-    size_t len = strnlen((char *)(buf->buffer + *offset), max_len);
-    if (*offset + len + 1 > buf->size) return -1;
+    size_t len = strlen((char *)(buf->buffer + *offset));
+    if (len >= max_len || *offset + len + 1 > buf->size) return -1;
     memcpy(out, buf->buffer + *offset, len + 1);
     *offset += len + 1;
     return 0;
@@ -245,8 +245,8 @@ int fossil_io_deserialize_from_file(fossil_io_serialize_buffer_t *buf, const cha
     if (!file) return -1;
 
     // Seek to the end of the file to get its size
-    fseeko(file, 0, SEEK_END);
-    size_t file_size = ftello(file);
+    fseek(file, 0, SEEK_END);
+    size_t file_size = ftell(file);
     rewind(file);
 
     if (fossil_io_serialize_create(buf, file_size) != 0) {
