@@ -78,64 +78,6 @@ FOSSIL_TEST_CASE(cpp_test_network_listen) {
     fossil_io_network_cleanup();
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_accept) {
-    fossil_io_network_init();
-    fossil_io_socket_t server_sock = fossil_io_network_create_socket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "127.0.0.1", 8080);
-    fossil_io_network_listen(server_sock, 5);
-
-    // Simulate a client connection in a separate thread or process
-    fossil_io_socket_t client_sock = fossil_io_network_create_socket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
-    int connect_result = fossil_io_network_connect(client_sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, connect_result);
-
-    char client_ip[INET_ADDRSTRLEN];
-    uint16_t client_port;
-    fossil_io_socket_t accepted_sock = fossil_io_network_accept(server_sock, client_ip, &client_port);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, accepted_sock);
-
-    fossil_io_network_close(client_sock);
-    fossil_io_network_close(accepted_sock);
-    fossil_io_network_close(server_sock);
-    fossil_io_network_cleanup();
-}
-
-FOSSIL_TEST_CASE(cpp_test_network_send_receive) {
-    fossil_io_network_init();
-    fossil_io_socket_t server_sock = fossil_io_network_create_socket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "127.0.0.1", 8080);
-    fossil_io_network_listen(server_sock, 5);
-
-    // Simulate a client connection in a separate thread or process
-    fossil_io_socket_t client_sock = fossil_io_network_create_socket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
-    int connect_result = fossil_io_network_connect(client_sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, connect_result);
-
-    char client_ip[INET_ADDRSTRLEN];
-    uint16_t client_port;
-    fossil_io_socket_t accepted_sock = fossil_io_network_accept(server_sock, client_ip, &client_port);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, accepted_sock);
-
-    const char *message = "Hello, Fossil!";
-    int bytes_sent = fossil_io_network_send(client_sock, message, strlen(message));
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
-
-    char buffer[256];
-    int bytes_received = fossil_io_network_receive(accepted_sock, buffer, sizeof(buffer));
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_received);
-    buffer[bytes_received] = '\0';
-    ASSUME_ITS_EQUAL_CSTR(message, buffer);
-
-    fossil_io_network_close(client_sock);
-    fossil_io_network_close(accepted_sock);
-    fossil_io_network_close(server_sock);
-    fossil_io_network_cleanup();
-}
-
 FOSSIL_TEST_CASE(cpp_test_network_close) {
     fossil_io_network_init();
     fossil_io_socket_t sock = fossil_io_network_create_socket();
@@ -180,64 +122,6 @@ FOSSIL_TEST_CASE(cpp_test_network_class_listen) {
     fossil::io::Network::cleanup();
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_class_accept) {
-    fossil::io::Network::init();
-    fossil_io_socket_t server_sock = fossil::io::Network::createSocket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil::io::Network::bind(server_sock, "127.0.0.1", 8080);
-    fossil::io::Network::listen(server_sock, 5);
-
-    // Simulate a client connection in a separate thread or process
-    fossil_io_socket_t client_sock = fossil::io::Network::createSocket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
-    int connect_result = fossil::io::Network::connect(client_sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, connect_result);
-
-    char client_ip[INET_ADDRSTRLEN];
-    uint16_t client_port;
-    fossil_io_socket_t accepted_sock = fossil::io::Network::accept(server_sock, client_ip, &client_port);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, accepted_sock);
-
-    fossil::io::Network::close(client_sock);
-    fossil::io::Network::close(accepted_sock);
-    fossil::io::Network::close(server_sock);
-    fossil::io::Network::cleanup();
-}
-
-FOSSIL_TEST_CASE(cpp_test_network_class_send_receive) {
-    fossil::io::Network::init();
-    fossil_io_socket_t server_sock = fossil::io::Network::createSocket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil::io::Network::bind(server_sock, "127.0.0.1", 8080);
-    fossil::io::Network::listen(server_sock, 5);
-
-    // Simulate a client connection in a separate thread or process
-    fossil_io_socket_t client_sock = fossil::io::Network::createSocket();
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
-    int connect_result = fossil::io::Network::connect(client_sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, connect_result);
-
-    char client_ip[INET_ADDRSTRLEN];
-    uint16_t client_port;
-    fossil_io_socket_t accepted_sock = fossil::io::Network::accept(server_sock, client_ip, &client_port);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, accepted_sock);
-
-    const char *message = "Hello, Fossil!";
-    int bytes_sent = fossil::io::Network::send(client_sock, message, strlen(message));
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
-
-    char buffer[256];
-    int bytes_received = fossil::io::Network::receive(accepted_sock, buffer, sizeof(buffer));
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_received);
-    buffer[bytes_received] = '\0';
-    ASSUME_ITS_EQUAL_CSTR(message, buffer);
-
-    fossil::io::Network::close(client_sock);
-    fossil::io::Network::close(accepted_sock);
-    fossil::io::Network::close(server_sock);
-    fossil::io::Network::cleanup();
-}
-
 FOSSIL_TEST_CASE(cpp_test_network_class_close) {
     fossil::io::Network::init();
     fossil_io_socket_t sock = fossil::io::Network::createSocket();
@@ -252,21 +136,21 @@ FOSSIL_TEST_CASE(cpp_test_network_class_close) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_network_tests) {
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_init);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_socket);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_accept);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_send_receive);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_init);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_socket);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_send_receive);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
 
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_accept);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_send_receive);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_send_receive);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
