@@ -150,6 +150,94 @@ FOSSIL_TEST_CASE(c_test_io_gets_utf8) {
     fclose(input_stream);
 }
 
+FOSSIL_TEST_CASE(c_test_io_validate_is_int_valid) {
+    const char *input = "12345";
+    int output;
+    int result = fossil_io_validate_is_int(input, &output);
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_I32(12345, output);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_int_invalid) {
+    const char *input = "123abc";
+    int output;
+    int result = fossil_io_validate_is_int(input, &output);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_float_valid) {
+    const char *input = "123.45";
+    float output;
+    int result = fossil_io_validate_is_float(input, &output);
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_F32(123.45, output);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_float_invalid) {
+    const char *input = "123.abc";
+    float output;
+    int result = fossil_io_validate_is_float(input, &output);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_alnum_valid) {
+    const char *input = "abc123";
+    int result = fossil_io_validate_is_alnum(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_alnum_invalid) {
+    const char *input = "abc 123";
+    int result = fossil_io_validate_is_alnum(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_email_valid) {
+    const char *input = "test@example.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_email_invalid) {
+    const char *input = "test@com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_length_valid) {
+    const char *input = "short";
+    int result = fossil_io_validate_is_length(input, 10);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_is_length_invalid) {
+    const char *input = "this is a very long string";
+    int result = fossil_io_validate_is_length(input, 10);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_sanitize_string) {
+    const char *input = "This is a test with curse1, and racist_phrase1!";
+    char expected[] = "This is a test with ***, and ***!";
+    char output[256];
+    int result = fossil_io_validate_sanitize_string(input, output, sizeof(output));
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_CSTR(expected, output);
+}
+
+FOSSIL_TEST_CASE(c_test_io_validate_read_secure_line) {
+    const char *input_data = "secure input\n";
+    FILE *input_stream = tmpfile();
+    fwrite(input_data, 1, strlen(input_data), input_stream);
+    rewind(input_stream);
+
+    char buffer[20];
+    int result = fossil_io_validate_read_secure_line(buffer, sizeof(buffer));
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_CSTR("secure input", buffer);
+    fclose(input_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -163,6 +251,18 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_from_stream_long_input);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_from_stream_ex);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_utf8);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_int_valid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_int_invalid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_float_valid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_float_invalid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_alnum_valid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_alnum_invalid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_valid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_invalid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_valid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_invalid);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_read_secure_line);
 
     FOSSIL_TEST_REGISTER(c_input_suite);
 }
