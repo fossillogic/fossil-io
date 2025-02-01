@@ -15,6 +15,7 @@
 #define FOSSIL_IO_FRAMEWORK_H
 
 // Include the necessary headers
+#include "serialize.h"
 #include "keyboard.h"
 #include "output.h"
 #include "input.h"
