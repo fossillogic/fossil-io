@@ -443,6 +443,46 @@ namespace fossil {
             }
 
             /**
+             * Serializes an unsigned 8-bit integer into the buffer.
+             *
+             * @param value The unsigned 8-bit integer value to serialize
+             * @return 0 on success, non-zero on failure
+             */
+            int serialize_u8(uint8_t value) {
+                return fossil_io_serialize_u8(&buffer, value);
+            }
+
+            /**
+             * Serializes an unsigned 16-bit integer into the buffer.
+             *
+             * @param value The unsigned 16-bit integer value to serialize
+             * @return 0 on success, non-zero on failure
+             */
+            int serialize_u16(uint16_t value) {
+                return fossil_io_serialize_u16(&buffer, value);
+            }
+
+            /**
+             * Serializes an unsigned 32-bit integer into the buffer.
+             *
+             * @param value The unsigned 32-bit integer value to serialize
+             * @return 0 on success, non-zero on failure
+             */
+            int serialize_u32(uint32_t value) {
+                return fossil_io_serialize_u32(&buffer, value);
+            }
+
+            /**
+             * Serializes an unsigned 64-bit integer into the buffer.
+             *
+             * @param value The unsigned 64-bit integer value to serialize
+             * @return 0 on success, non-zero on failure
+             */
+            int serialize_u64(uint64_t value) {
+                return fossil_io_serialize_u64(&buffer, value);
+            }
+
+            /**
              * Serializes a float value into the buffer.
              *
              * @param value The float value to serialize
@@ -524,6 +564,50 @@ namespace fossil {
              */
             int deserialize_i64(size_t *offset, int64_t *value) {
                 return fossil_io_deserialize_i64(&buffer, offset, value);
+            }
+
+            /**
+             * Deserializes an unsigned 8-bit integer from the buffer.
+             *
+             * @param offset Pointer to the offset within the buffer to start deserialization
+             * @param value Pointer to the unsigned 8-bit integer to store the deserialized value
+             * @return 0 on success, non-zero on failure
+             */
+            int deserialize_u8(size_t *offset, uint8_t *value) {
+                return fossil_io_deserialize_u8(&buffer, offset, value);
+            }
+
+            /**
+             * Deserializes an unsigned 16-bit integer from the buffer.
+             *
+             * @param offset Pointer to the offset within the buffer to start deserialization
+             * @param value Pointer to the unsigned 16-bit integer to store the deserialized value
+             * @return 0 on success, non-zero on failure
+             */
+            int deserialize_u16(size_t *offset, uint16_t *value) {
+                return fossil_io_deserialize_u16(&buffer, offset, value);
+            }
+
+            /**
+             * Deserializes an unsigned 32-bit integer from the buffer.
+             *
+             * @param offset Pointer to the offset within the buffer to start deserialization
+             * @param value Pointer to the unsigned 32-bit integer to store the deserialized value
+             * @return 0 on success, non-zero on failure
+             */
+            int deserialize_u32(size_t *offset, uint32_t *value) {
+                return fossil_io_deserialize_u32(&buffer, offset, value);
+            }
+
+            /**
+             * Deserializes an unsigned 64-bit integer from the buffer.
+             *
+             * @param offset Pointer to the offset within the buffer to start deserialization
+             * @param value Pointer to the unsigned 64-bit integer to store the deserialized value
+             * @return 0 on success, non-zero on failure
+             */
+            int deserialize_u64(size_t *offset, uint64_t *value) {
+                return fossil_io_deserialize_u64(&buffer, offset, value);
             }
 
             /**
