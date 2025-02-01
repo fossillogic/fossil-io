@@ -194,7 +194,6 @@ FOSSIL_TEST_CASE(cpp_test_soap_sanitize_with_punctuation) {
     ASSUME_ITS_EQUAL_CSTR(expected, input);
 }
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *

@@ -17,12 +17,13 @@ To get started with Fossil Io, ensure you have the following installed:
 - **Meson Build System**: If you don’t have Meson installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
 - **CMake Build System**: If you don’t have CMake installed, follow the installation instructions on the official [CMake website](https://cmake.org/getting-started/).
 
-### Adding Fossil Test Dependency
+### Adding Fossil Io Dependency
 
-#### Adding Fossil Test Dependency With Meson
+#### Adding Fossil Io Dependency With Meson
 
 1. **Install Meson Build System**:
    Install Meson version `1.3` or newer:
+
    ```sh
    python -m pip install meson           # To install Meson
    python -m pip install --upgrade meson # To upgrade Meson
@@ -37,7 +38,7 @@ To get started with Fossil Io, ensure you have the following installed:
    # ======================
    [wrap-git]
    url = https://github.com/fossillogic/fossil-io.git
-   revision = v0.1.4
+   revision = v0.1.5
 
    [provide]
    fossil-io = fossil_io_dep
@@ -45,13 +46,14 @@ To get started with Fossil Io, ensure you have the following installed:
 
 3. **Integrate the Dependency**:
    In your `meson.build` file, integrate Fossil Io by adding the following line:
+
    ```ini
    dep = dependency('fossil-io')
    ```
 
 ---
 
-#### Adding Fossil Test Dependency With CMake
+#### Adding Fossil Io Dependency With CMake
 
 To use Fossil Io with CMake, follow these steps:
 
@@ -63,7 +65,7 @@ To use Fossil Io with CMake, follow these steps:
    python -m pip install --upgrade cmake # To upgrade CMake
    ```
 
-2. **Find and Integrate Fossil Test**:
+2. **Find and Integrate Fossil Io**:
    After installing CMake, you can integrate Fossil Io as a dependency. Add the following lines to your `CMakeLists.txt` file:
 
    ```cmake
@@ -81,7 +83,7 @@ To use Fossil Io with CMake, follow these steps:
 
 ---
 
-**Note**: For the best experience, always use the latest release of Fossil Test. Visit the [Fossil Io Releases](https://github.com/fossillogic/fossil-io/releases) page for the latest versions.
+**Note**: For the best experience, always use the latest release of Fossil Io. Visit the [Fossil Io Releases](https://github.com/fossillogic/fossil-io/releases) page for the latest versions.
 
 ## Configure Options
 

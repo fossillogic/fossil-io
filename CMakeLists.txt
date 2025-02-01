@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.13.4)
 
 # Project metadata
-project(FossilIo VERSION 0.1.4 LANGUAGES C CXX)
+project(FossilIo VERSION 0.1.5 LANGUAGES C CXX)
 
 # Set the C and C++ standards
 set(CMAKE_C_STANDARD 11)

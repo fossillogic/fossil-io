@@ -61,7 +61,7 @@ static const char *FOSSIL_SOAP_ROTBRAIN[] = {
     "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
     "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
     "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
-    "lol", "omg", "brb", "sus"
+    "lol", "omg", "brb"
 
     // Support for other terms can be added via PR to this repository
 };
@@ -132,62 +132,45 @@ void fossil_soap_sanitize(char *input) {
     }
 }
 
-// Function to check if a word is an offensive word or phrase
-int32_t fossil_soap_is_offensive(const char *word) {
-    if (word == NULL || *word == '\0') return EXIT_SUCCESS;
+static int32_t is_in_list(const char *word, const char **list, size_t list_size) {
+    if (!word || *word == '\0') return EXIT_SUCCESS;
 
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
-        if (strcasecmp(word, FOSSIL_SOAP_OFFENSIVE[i]) == 0) {
-            return EXIT_FAILURE;
-        }
+    for (size_t i = 0; i < list_size; ++i) {
+        if (strcasecmp(word, list[i]) == 0) return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }
 
-// Function to get the number of offensive words found in a string
-int32_t fossil_soap_count_offensive(const char *input) {
-    if (input == NULL || *input == '\0') return 0;
-
-    int count = 0;
-    char *copy = custom_strdup(input);
-    if (copy == NULL) return EXIT_SUCCESS;
-
-    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
-    while (token != NULL) {
-        if (fossil_soap_is_offensive(token)) {
-            count++;
-        }
-        token = strtok(NULL, " ,.!?;:");
-    }
-    free(copy); // Free the memory allocated for the copy
-    return count;
+int32_t fossil_soap_is_offensive(const char *word) {
+    return is_in_list(word, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
 }
 
 int32_t fossil_soap_is_rotbrain(const char *word) {
-    if (word == NULL || *word == '\0') return EXIT_SUCCESS;
-
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
-        if (strcasecmp(word, FOSSIL_SOAP_ROTBRAIN[i]) == 0) {
-            return EXIT_FAILURE;
-        }
-    }
-    return EXIT_SUCCESS;
+    return is_in_list(word, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
 }
 
-int32_t fossil_soap_count_rotbrain(const char *input) {
-    if (input == NULL || *input == '\0') return 0;
+static int32_t count_matches(const char *input, const char **list, size_t list_size) {
+    if (!input || *input == '\0') return 0;
 
     int count = 0;
     char *copy = custom_strdup(input);
-    if (copy == NULL) return EXIT_SUCCESS;
+    if (!copy) return EXIT_SUCCESS;
 
-    char *token = strtok(copy, " ,.!?;:"); // Tokenize the string by space and punctuation
-    while (token != NULL) {
-        if (fossil_soap_is_rotbrain(token)) {
+    char *token = strtok(copy, " ,.!?;:");
+    while (token) {
+        if (is_in_list(token, list, list_size) == EXIT_FAILURE) {
             count++;
         }
         token = strtok(NULL, " ,.!?;:");
     }
-    free(copy); // Free the memory allocated for the copy
+    free(copy);
     return count;
+}
+
+int32_t fossil_soap_count_offensive(const char *input) {
+    return count_matches(input, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
+}
+
+int32_t fossil_soap_count_rotbrain(const char *input) {
+    return count_matches(input, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
 }
