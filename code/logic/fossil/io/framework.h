@@ -16,6 +16,7 @@
 
 // Include the necessary headers
 #include "keyboard.h"
+#include "network.h"
 #include "output.h"
 #include "input.h"
 #include "error.h"
