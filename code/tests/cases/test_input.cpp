@@ -197,6 +197,73 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_utf8_class) {
     fclose(input_stream);
 }
 
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_int_valid) {
+    const char *input = "12345";
+    int output;
+    int result = fossil_io_validate_is_int(input, &output);
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_I32(12345, output);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_int_invalid) {
+    const char *input = "123abc";
+    int output;
+    int result = fossil_io_validate_is_int(input, &output);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_float_invalid) {
+    const char *input = "123.abc";
+    float output;
+    int result = fossil_io_validate_is_float(input, &output);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_alnum_valid) {
+    const char *input = "abc123";
+    int result = fossil_io_validate_is_alnum(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_alnum_invalid) {
+    const char *input = "abc 123";
+    int result = fossil_io_validate_is_alnum(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_email_valid) {
+    const char *input = "test@example.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_email_invalid) {
+    const char *input = "test@com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_length_valid) {
+    const char *input = "short";
+    int result = fossil_io_validate_is_length(input, 10);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_is_length_invalid) {
+    const char *input = "this is a very long string";
+    int result = fossil_io_validate_is_length(input, 10);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_validate_sanitize_string) {
+    const char *input = "This is a test with curse1, and racist_phrase1!";
+    char expected[] = "This is a test with ***, and ***!";
+    char output[256];
+    int result = fossil_io_validate_sanitize_string(input, output, sizeof(output));
+    ASSUME_ITS_TRUE(result);
+    ASSUME_ITS_EQUAL_CSTR(expected, output);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -214,6 +281,16 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_ex_class);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_input_buffer_class);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_utf8_class);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_int_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_int_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_float_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_alnum_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_alnum_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }

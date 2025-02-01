@@ -50,13 +50,6 @@ FOSSIL_TEST_CASE(c_test_io_serialize_create) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(c_test_io_serialize_destroy) {
-    fossil_io_serialize_buffer_t buf;
-    fossil_io_serialize_create(&buf, 1024);
-    fossil_io_serialize_destroy(&buf);
-    // No explicit assertion needed, just ensure no crash
-}
-
 FOSSIL_TEST_CASE(c_test_io_serialize_expand) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
@@ -300,7 +293,6 @@ FOSSIL_TEST_CASE(c_test_io_deserialize_from_file) {
 
 FOSSIL_TEST_GROUP(c_serialize_tests) {
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_create);
-    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_destroy);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_expand);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_i8);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_i16);

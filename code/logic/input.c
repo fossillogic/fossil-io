@@ -15,8 +15,19 @@
 #include "fossil/io/soap.h"
 #include "fossil/io/output.h"
 
-#include <stdlib.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <limits.h>
+
+#ifdef __WIN32
+#include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 // Function to trim leading and trailing spaces from a string
 void fossil_io_trim(char *str) {
@@ -154,4 +165,112 @@ char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream) {
     fossil_io_trim(buf);
 
     return buf;
+}
+
+int fossil_io_validate_is_int(const char *input, int *output) {
+    if (input == NULL || output == NULL) {
+        return 0;
+    }
+
+    char *endptr;
+    long value = strtol(input, &endptr, 10);
+
+    if (*endptr != '\0' || value < INT_MIN || value > INT_MAX) {
+        return 0;
+    }
+
+    *output = (int)value;
+    return 1;
+}
+
+int fossil_io_validate_is_float(const char *input, float *output) {
+    if (input == NULL || output == NULL) {
+        return 0;
+    }
+
+    char *endptr;
+    float value = strtof(input, &endptr);
+
+    if (*endptr != '\0') {
+        return 0;
+    }
+
+    *output = value;
+    return 1;
+}
+
+int fossil_io_validate_is_alnum(const char *input) {
+    if (input == NULL) {
+        return 0;
+    }
+
+    while (*input != '\0') {
+        if (!isalnum(*input)) {
+            return 0;
+        }
+        input++;
+    }
+
+    return 1;
+}
+
+int fossil_io_validate_is_email(const char *input) {
+    if (input == NULL) {
+        return 0;
+    }
+
+    // Check for the presence of an '@' character
+    const char *at = strchr(input, '@');
+    if (at == NULL) {
+        return 0;
+    }
+
+    // Check for the presence of a '.' character after the '@' character
+    const char *dot = strchr(at, '.');
+    if (dot == NULL) {
+        return 0;
+    }
+
+    return 1;
+}
+
+int fossil_io_validate_is_length(const char *input, size_t max_length) {
+    if (input == NULL) {
+        return 0;
+    }
+
+    return strlen(input) <= max_length;
+}
+
+int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size) {
+    if (input == NULL || output == NULL || output_size == 0) {
+        return 0;
+    }
+
+    // Copy the input string to the output buffer
+    strncpy(output, input, output_size);
+
+    // Sanitize the output buffer
+    fossil_soap_sanitize(output);
+
+    return 1;
+}
+
+int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size) {
+    if (buffer == NULL || buffer_size == 0) {
+        return 0;
+    }
+
+    // Read a line of input from the user
+    if (fgets(buffer, buffer_size, stdin) == NULL) {
+        return 0;
+    }
+
+    // Remove the newline character from the input
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+
+    return 1;
 }
