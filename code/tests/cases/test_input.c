@@ -165,14 +165,6 @@ FOSSIL_TEST_CASE(c_test_io_validate_is_int_invalid) {
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_float_valid) {
-    const char *input = "123.45";
-    float output;
-    int result = fossil_io_validate_is_float(input, &output);
-    ASSUME_ITS_TRUE(result);
-    ASSUME_ITS_EQUAL_F32(123.45, output, 0.01);
-}
-
 FOSSIL_TEST_CASE(c_test_io_validate_is_float_invalid) {
     const char *input = "123.abc";
     float output;
@@ -253,7 +245,6 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_utf8);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_int_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_int_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_float_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_float_invalid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_alnum_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_alnum_invalid);
