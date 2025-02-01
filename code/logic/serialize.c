@@ -17,6 +17,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <winsock2.h>  // htonl, ntohl for endian handling
 #define fseeko _fseeki64  // Use Windows-specific fseek for large files
 
 #else
@@ -86,7 +87,11 @@ int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value) 
     if (buf->size + sizeof(int64_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int64_t)) != 0) return -1;
     }
+#ifdef _WIN32
     int64_t net_value = htonll(value);
+#else
+    int64_t net_value = htobe64(value);
+#endif
     memcpy(buf->buffer + buf->size, &net_value, sizeof(int64_t));
     buf->size += sizeof(int64_t);
     return 0;
@@ -156,7 +161,11 @@ int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offse
     if (*offset + sizeof(int64_t) > buf->size) return -1;
     int64_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int64_t));
+#ifdef _WIN32
     *value = ntohll(net_value);
+#else
+    *value = be64toh(net_value);
+#endif
     *offset += sizeof(int64_t);
     return 0;
 }
@@ -208,7 +217,7 @@ int fossil_io_deserialize_from_file(fossil_io_serialize_buffer_t *buf, const cha
 
     // Seek to the end of the file to get its size
     fseeko(file, 0, SEEK_END);
-    size_t file_size = ftell(file);
+    size_t file_size = ftello(file);
     rewind(file);
 
     if (fossil_io_serialize_create(buf, file_size) != 0) {
