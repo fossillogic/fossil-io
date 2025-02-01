@@ -15,8 +15,18 @@
 #include "fossil/io/soap.h"
 #include "fossil/io/output.h"
 
-#include <stdlib.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
+#ifdef __WIN32
+#include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 // Function to trim leading and trailing spaces from a string
 void fossil_io_trim(char *str) {
