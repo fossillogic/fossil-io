@@ -80,14 +80,21 @@ FOSSIL_TEST_CASE(c_test_network_listen) {
 
 FOSSIL_TEST_CASE(c_test_network_accept) {
     fossil_io_network_init();
+    
     fossil_io_socket_t server_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "0.0.0.0", 8080);
-    fossil_io_network_listen(server_sock, 5);
+    
+    // Enable SO_REUSEADDR to avoid "Address already in use" error on macOS
+    int optval = 1;
+    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_network_bind(server_sock, "127.0.0.1", 0));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_network_listen(server_sock, 5));
 
     // Simulate a client connection in a separate thread or process
     fossil_io_socket_t client_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
+
     int connect_result = fossil_io_network_connect(client_sock, "127.0.0.1", 8080);
     ASSUME_ITS_EQUAL_I32(0, connect_result);
 
@@ -104,14 +111,21 @@ FOSSIL_TEST_CASE(c_test_network_accept) {
 
 FOSSIL_TEST_CASE(c_test_network_send_receive) {
     fossil_io_network_init();
+
     fossil_io_socket_t server_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, server_sock);
-    fossil_io_network_bind(server_sock, "0.0.0.0", 8080);
-    fossil_io_network_listen(server_sock, 5);
+    
+    // Enable SO_REUSEADDR to prevent bind failures on macOS
+    int optval = 1;
+    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_network_bind(server_sock, "127.0.0.1", 0));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_network_listen(server_sock, 5));
 
     // Simulate a client connection in a separate thread or process
     fossil_io_socket_t client_sock = fossil_io_network_create_socket();
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, client_sock);
+    
     int connect_result = fossil_io_network_connect(client_sock, "127.0.0.1", 8080);
     ASSUME_ITS_EQUAL_I32(0, connect_result);
 
