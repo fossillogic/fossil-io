@@ -40,6 +40,8 @@ fossil_io_socket_t fossil_io_network_create_socket(void) {
     if (sock == FOSSIL_IO_INVALID_SOCKET) {
 #ifdef _WIN32
         fprintf(stderr, "Socket creation failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Socket creation failed with error: %s\n", strerror(errno));
 #else
         perror("Socket creation failed");
 #endif
@@ -56,6 +58,8 @@ int fossil_io_network_bind(fossil_io_socket_t sock, const char *ip, uint16_t por
     if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
 #ifdef _WIN32
         fprintf(stderr, "Bind failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Bind failed with error: %s\n", strerror(errno));
 #else
         perror("Bind failed");
 #endif
@@ -68,6 +72,8 @@ int fossil_io_network_listen(fossil_io_socket_t sock, int backlog) {
     if (listen(sock, backlog) == -1) {
 #ifdef _WIN32
         fprintf(stderr, "Listen failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Listen failed with error: %s\n", strerror(errno));
 #else
         perror("Listen failed");
 #endif
@@ -84,6 +90,8 @@ fossil_io_socket_t fossil_io_network_accept(fossil_io_socket_t sock, char *clien
     if (client_sock == FOSSIL_IO_INVALID_SOCKET) {
 #ifdef _WIN32
         fprintf(stderr, "Accept failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Accept failed with error: %s\n", strerror(errno));
 #else
         perror("Accept failed");
 #endif
@@ -106,6 +114,8 @@ int fossil_io_network_connect(fossil_io_socket_t sock, const char *ip, uint16_t 
     if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
 #ifdef _WIN32
         fprintf(stderr, "Connect failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Connect failed with error: %s\n", strerror(errno));
 #else
         perror("Connect failed");
 #endif
@@ -119,6 +129,8 @@ int fossil_io_network_send(fossil_io_socket_t sock, const void *data, size_t len
     if (bytes_sent == -1) {
 #ifdef _WIN32
         fprintf(stderr, "Send failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Send failed with error: %s\n", strerror(errno));
 #else
         perror("Send failed");
 #endif
@@ -131,6 +143,8 @@ int fossil_io_network_receive(fossil_io_socket_t sock, void *buffer, size_t len)
     if (bytes_received == -1) {
 #ifdef _WIN32
         fprintf(stderr, "Receive failed with error: %d\n", WSAGetLastError());
+#elif defined(__APPLE__)
+        fprintf(stderr, "Receive failed with error: %s\n", strerror(errno));
 #else
         perror("Receive failed");
 #endif
@@ -142,6 +156,10 @@ void fossil_io_network_close(fossil_io_socket_t sock) {
 #ifdef _WIN32
     if (closesocket(sock) == SOCKET_ERROR) {
         fprintf(stderr, "Close socket failed with error: %d\n", WSAGetLastError());
+    }
+#elif defined(__APPLE__)
+    if (close(sock) == -1) {
+        fprintf(stderr, "Close socket failed with error: %s\n", strerror(errno));
     }
 #else
     if (close(sock) == -1) {
