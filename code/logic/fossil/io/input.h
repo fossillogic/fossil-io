@@ -83,6 +83,68 @@ int fossil_io_validate_input_buffer(const char *buf, size_t size);
  */
 char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream);
 
+/**
+ * @brief Validates if the input string is a valid integer.
+ * 
+ * @param input The input string to validate.
+ * @param output Pointer to an integer where the parsed value will be stored if valid.
+ * @return true if the input is a valid integer, false otherwise.
+ */
+int fossil_io_validate_is_int(const char *input, int *output);
+
+/**
+ * @brief Validates if the input string is a valid float.
+ * 
+ * @param input The input string to validate.
+ * @param output Pointer to a float where the parsed value will be stored if valid.
+ * @return true if the input is a valid float, false otherwise.
+ */
+int fossil_io_validate_is_float(const char *input, float *output);
+
+/**
+ * @brief Validates if the input string contains only alphanumeric characters.
+ * 
+ * @param input The input string to validate.
+ * @return true if the input is alphanumeric, false otherwise.
+ */
+int fossil_io_validate_is_alnum(const char *input);
+
+/**
+ * @brief Validates if the input string is a valid email address.
+ * 
+ * @param input The input string to validate.
+ * @return true if the input is a valid email address, false otherwise.
+ */
+int fossil_io_validate_is_email(const char *input);
+
+/**
+ * @brief Validates if the input string does not exceed the specified maximum length.
+ * 
+ * @param input The input string to validate.
+ * @param max_length The maximum allowed length of the input string.
+ * @return true if the input length is within the specified limit, false otherwise.
+ */
+int fossil_io_validate_is_length(const char *input, size_t max_length);
+
+/**
+ * @brief Sanitizes the input string and stores the sanitized result in the output buffer.
+ * 
+ * @param input The input string to sanitize.
+ * @param output The buffer where the sanitized string will be stored.
+ * @param output_size The size of the output buffer.
+ * @return A fossil_io_validate_error_t indicating the result of the sanitization process.
+ */
+int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size);
+
+/**
+ * @brief Reads a secure line of input into the provided buffer.
+ * 
+ * @param buffer The buffer where the input will be stored.
+ * @param buffer_size The size of the buffer.
+ * @return A fossil_io_validate_error_t indicating the result of the input reading process.
+ */
+int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size);
+
 #ifdef __cplusplus
 }
 
@@ -147,6 +209,115 @@ namespace fossil {
              */
             static char *gets_utf8(char *buf, size_t size, FILE *input_stream) {
                 return fossil_io_gets_utf8(buf, size, input_stream);
+            }
+
+            /**
+             * Reads formatted input from the standard input stream.
+             *
+             * @param format        The format string specifying how the input should be interpreted.
+             * @param ...           Additional arguments for storing the input values.
+             * @return              On success, the number of input items successfully matched and assigned is returned.
+             *                      On failure, EOF is returned.
+             */
+            static int scanf(const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                int result = fossil_io_scanf(format, args);
+                va_end(args);
+                return result;
+            }
+
+            /**
+             * Reads formatted input from the specified input stream.
+             *
+             * @param input_stream  Pointer to the input stream to read from.
+             * @param format        The format string specifying how the input should be interpreted.
+             * @param ...           Additional arguments for storing the input values.
+             * @return              On success, the number of input items successfully matched and assigned is returned.
+             *                      On failure, EOF is returned.
+             */
+            static int fscanf(FILE *input_stream, const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                int result = fossil_io_fscanf(input_stream, format, args);
+                va_end(args);
+                return result;
+            }
+
+            /**
+             * @brief Validates if the input string is a valid integer.
+             * 
+             * @param input The input string to validate.
+             * @param output Pointer to an integer where the parsed value will be stored if valid.
+             * @return true if the input is a valid integer, false otherwise.
+             */
+            static int validate_is_int(const char *input, int *output) {
+                return fossil_io_validate_is_int(input, output);
+            }
+
+            /**
+             * @brief Validates if the input string is a valid float.
+             * 
+             * @param input The input string to validate.
+             * @param output Pointer to a float where the parsed value will be stored if valid.
+             * @return true if the input is a valid float, false otherwise.
+             */
+            static int validate_is_float(const char *input, float *output) {
+                return fossil_io_validate_is_float(input, output);
+            }
+
+            /**
+             * @brief Validates if the input string contains only alphanumeric characters.
+             * 
+             * @param input The input string to validate.
+             * @return true if the input is alphanumeric, false otherwise.
+             */
+            static int validate_is_alnum(const char *input) {
+                return fossil_io_validate_is_alnum(input);
+            }
+
+            /**
+             * @brief Validates if the input string is a valid email address.
+             * 
+             * @param input The input string to validate.
+             * @return true if the input is a valid email address, false otherwise.
+             */
+            static int validate_is_email(const char *input) {
+                return fossil_io_validate_is_email(input);
+            }
+
+            /**
+             * @brief Validates if the input string does not exceed the specified maximum length.
+             * 
+             * @param input The input string to validate.
+             * @param max_length The maximum allowed length of the input string.
+             * @return true if the input length is within the specified limit, false otherwise.
+             */
+            static int validate_is_length(const char *input, size_t max_length) {
+                return fossil_io_validate_is_length(input, max_length);
+            }
+
+            /**
+             * @brief Sanitizes the input string and stores the sanitized result in the output buffer.
+             * 
+             * @param input The input string to sanitize.
+             * @param output The buffer where the sanitized string will be stored.
+             * @param output_size The size of the output buffer.
+             * @return A fossil_io_validate_error_t indicating the result of the sanitization process.
+             */
+            static int validate_sanitize_string(const char *input, char *output, size_t output_size) {
+                return fossil_io_validate_sanitize_string(input, output, output_size);
+            }
+
+            /**
+             * @brief Reads a secure line of input into the provided buffer.
+             * 
+             * @param buffer The buffer where the input will be stored.
+             * @param buffer_size The size of the buffer.
+             * @return A fossil_io_validate_error_t indicating the result of the input reading process.
+             */
+            static int validate_read_secure_line(char *buffer, size_t buffer_size) {
+                return fossil_io_validate_read_secure_line(buffer, buffer_size);
             }
 
         };
