@@ -17,6 +17,7 @@
 // Include the necessary headers
 #include "serialize.h"
 #include "keyboard.h"
+#include "network.h"
 #include "output.h"
 #include "input.h"
 #include "error.h"
