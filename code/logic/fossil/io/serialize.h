@@ -675,6 +675,10 @@ namespace fossil {
                 return fossil_io_deserialize_from_file(&buffer, filename);
             }
 
+        private:
+            fossil_io_serialize_buffer_t buffer;
+        };
+
     }
 
 }
