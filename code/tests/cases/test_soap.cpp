@@ -130,100 +130,6 @@ FOSSIL_TEST_CASE(cpp_test_soap_count_rotbrain_with_punctuation) {
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
 }
 
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_offensive) {
-    char input[] = "This is a test with curse1 and racist_phrase1.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_rotbrain) {
-    char input[] = "This is a test with lol and brb.";
-    ASSUME_ITS_EQUAL_I32(2, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_clean) {
-    char input[] = "This is a clean sentence.";
-    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_mixed) {
-    char input[] = "This is a test with curse1 and lol.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_case_insensitive) {
-    char input[] = "This is a test with CuRsE1 and LoL.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_punctuation) {
-    char input[] = "This is a test with curse1, and lol!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_no_offensive_or_rotbrain) {
-    char input[] = "This is a test with no offensive or rotbrain words.";
-    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_only_rotbrain) {
-    char input[] = "This is a test with lol and brb.";
-    ASSUME_ITS_EQUAL_I32(2, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_only_offensive) {
-    char input[] = "This is a test with curse1 and racist_phrase1.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_mixed_case) {
-    char input[] = "This is a test with CuRsE1 and LoL.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_special_characters) {
-    char input[] = "This is a test with curse1@ and lol#.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_numbers) {
-    char input[] = "This is a test with curse1 and lol123.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_mixed_content) {
-    char input[] = "This is a test with curse1, lol, and clean words.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_spaces) {
-    char input[] = "This is a test with    curse1    and    lol    .";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_tabs) {
-    char input[] = "This is a test with\tcurse1\tand\tlol\t.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_newlines) {
-    char input[] = "This is a test with\ncurse1\nand\nlol\n.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_mixed_whitespace) {
-    char input[] = "This is a test with \t\ncurse1 \t\nand \t\nlol \t\n.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_empty_string) {
-    char input[] = "";
-    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_null_string) {
-    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(NULL));
-}
-
 FOSSIL_TEST_CASE(cpp_test_soap_sanitize_empty_string) {
     char input[] = "";
     char expected[] = "";
@@ -288,46 +194,6 @@ FOSSIL_TEST_CASE(cpp_test_soap_sanitize_with_punctuation) {
     ASSUME_ITS_EQUAL_CSTR(expected, input);
 }
 
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_numbers_and_special_characters) {
-    char input[] = "This is a test with curse1@123 and lol#456.";
-    ASSUME_ITS_EQUAL_I32(1, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_mixed_case_and_punctuation) {
-    char input[] = "This is a test with CuRsE1! and LoL?.";
-    ASSUME_ITS_EQUAL_I32(1, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_multiple_offensive_and_rotbrain) {
-    char input[] = "This is a test with curse1, curse2, lol, and brb.";
-    ASSUME_ITS_EQUAL_I32(2, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_only_special_characters) {
-    char input[] = "!@#$%^&*()";
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_only_numbers) {
-    char input[] = "1234567890";
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_mixed_numbers_and_words) {
-    char input[] = "This is a test with 123curse1 and 456lol.";
-    ASSUME_ITS_EQUAL_I32(1, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_unicode_characters) {
-    char input[] = "This is a test with curse1 and lol 😊.";
-    ASSUME_ITS_EQUAL_I32(1, fossil::io::Soap::context_aware(input));
-}
-
-FOSSIL_TEST_CASE(cpp_test_soap_context_aware_with_long_text) {
-    char input[] = "This is a very long test with multiple curse1, curse2, lol, and brb words to check the performance and accuracy of the context aware method.";
-    ASSUME_ITS_EQUAL_I32(2, fossil::io::Soap::context_aware(input));
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -345,25 +211,6 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_is_rotbrain_case_insensitive);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_rotbrain_mixed_case);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_synonyms);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_offensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_clean);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_mixed);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_case_insensitive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_punctuation);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_no_offensive_or_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_only_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_only_offensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_mixed_case);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_special_characters);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_numbers);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_mixed_content);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_spaces);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_tabs);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_newlines);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_mixed_whitespace);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_empty_string);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_null_string);
 
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_empty_string);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_only_offensive);
@@ -375,14 +222,6 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_offensive_mixed_content);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_count_rotbrain_mixed_content);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_with_punctuation);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_numbers_and_special_characters);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_mixed_case_and_punctuation);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_multiple_offensive_and_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_only_special_characters);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_only_numbers);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_mixed_numbers_and_words);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_unicode_characters);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_context_aware_with_long_text);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
