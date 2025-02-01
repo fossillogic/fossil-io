@@ -151,6 +151,100 @@ FOSSIL_TEST_CASE(c_test_soap_count_rotbrain_with_punctuation) {
     ASSUME_ITS_EQUAL_I32(2, fossil_soap_count_rotbrain(input));
 }
 
+FOSSIL_TEST_CASE(c_test_soap_context_aware_offensive) {
+    char input[] = "This is a test with curse1 and racist_phrase1.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_rotbrain) {
+    char input[] = "This is a test with lol and brb.";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_clean) {
+    char input[] = "This is a clean sentence.";
+    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_mixed) {
+    char input[] = "This is a test with curse1 and lol.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_case_insensitive) {
+    char input[] = "This is a test with CuRsE1 and LoL.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_punctuation) {
+    char input[] = "This is a test with curse1, and lol!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_no_offensive_or_rotbrain) {
+    char input[] = "This is a test with no offensive or rotbrain words.";
+    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_only_rotbrain) {
+    char input[] = "This is a test with lol and brb.";
+    ASSUME_ITS_EQUAL_I32(2, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_only_offensive) {
+    char input[] = "This is a test with curse1 and racist_phrase1.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_mixed_case) {
+    char input[] = "This is a test with CuRsE1 and LoL.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_special_characters) {
+    char input[] = "This is a test with curse1@ and lol#.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_numbers) {
+    char input[] = "This is a test with curse1 and lol123.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_mixed_content) {
+    char input[] = "This is a test with curse1, lol, and clean words.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_spaces) {
+    char input[] = "This is a test with    curse1    and    lol    .";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_tabs) {
+    char input[] = "This is a test with\tcurse1\tand\tlol\t.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_newlines) {
+    char input[] = "This is a test with\ncurse1\nand\nlol\n.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_mixed_whitespace) {
+    char input[] = "This is a test with \t\ncurse1 \t\nand \t\nlol \t\n.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_empty_string) {
+    char input[] = "";
+    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(input));
+}
+
+FOSSIL_TEST_CASE(c_test_soap_context_aware_with_null_string) {
+    ASSUME_ITS_EQUAL_I32(0, fossil_soap_context_aware(NULL));
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
