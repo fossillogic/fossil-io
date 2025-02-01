@@ -18,7 +18,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define fseeko _fseeki64  // Use Windows-specific fseek for large files
 
 #else
 #include <unistd.h>
