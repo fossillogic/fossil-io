@@ -21,7 +21,7 @@
     static WSADATA wsa;
 #endif
 
-int fossil_io_network_init(void) {
+int fossil_io_network_create(void) {
 #ifdef _WIN32
     return WSAStartup(MAKEWORD(2, 2), &wsa);
 #else
@@ -29,7 +29,7 @@ int fossil_io_network_init(void) {
 #endif
 }
 
-void fossil_io_network_cleanup(void) {
+void fossil_io_network_destroy(void) {
 #ifdef _WIN32
     WSACleanup();
 #endif

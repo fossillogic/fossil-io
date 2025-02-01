@@ -40,12 +40,12 @@ extern "C" {
  * Initialize the network stack (needed for Windows).
  * Returns 0 on success, non-zero on failure.
  */
-int fossil_io_network_init(void);
+int fossil_io_network_create(void);
 
 /**
  * Clean up network stack (needed for Windows).
  */
-void fossil_io_network_cleanup(void);
+void fossil_io_network_destroy(void);
 
 /**
  * Create a new TCP socket.
@@ -114,21 +114,21 @@ namespace fossil {
              * Returns 0 on success, non-zero on failure.
              */
             static int init(void) {
-                return fossil_io_network_init();
+                return fossil_io_network_create();
             }
 
             /**
              * Clean up network stack (needed for Windows).
              */
             static void cleanup(void) {
-                fossil_io_network_cleanup();
+                fossil_io_network_destroy();
             }
 
             /**
              * Create a new TCP socket.
              * Returns a valid socket on success or FOSSIL_IO_INVALID_SOCKET on failure.
              */
-            static fossil_io_socket_t createSocket(void) {
+            static fossil_io_socket_t create_socket(void) {
                 return fossil_io_network_create_socket();
             }
 
