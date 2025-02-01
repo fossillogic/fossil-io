@@ -104,6 +104,50 @@ int fossil_io_serialize_i32(fossil_io_serialize_buffer_t *buf, int32_t value);
 int fossil_io_serialize_i64(fossil_io_serialize_buffer_t *buf, int64_t value);
 
 /**
+ * @brief Serialize an unsigned 8-bit integer
+ *
+ * This function serializes an unsigned 8-bit integer into the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param value The unsigned 8-bit integer value to serialize
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_serialize_u8(fossil_io_serialize_buffer_t *buf, uint8_t value);
+
+/**
+ * @brief Serialize an unsigned 16-bit integer
+ *
+ * This function serializes an unsigned 16-bit integer into the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param value The unsigned 16-bit integer value to serialize
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_serialize_u16(fossil_io_serialize_buffer_t *buf, uint16_t value);
+
+/**
+ * @brief Serialize an unsigned 32-bit integer
+ *
+ * This function serializes an unsigned 32-bit integer into the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param value The unsigned 32-bit integer value to serialize
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_serialize_u32(fossil_io_serialize_buffer_t *buf, uint32_t value);
+
+/**
+ * @brief Serialize an unsigned 64-bit integer
+ *
+ * This function serializes an unsigned 64-bit integer into the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param value The unsigned 64-bit integer value to serialize
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_serialize_u64(fossil_io_serialize_buffer_t *buf, uint64_t value);
+
+/**
  * @brief Serialize a float
  *
  * This function serializes a float value into the buffer.
@@ -194,6 +238,54 @@ int fossil_io_deserialize_i32(fossil_io_serialize_buffer_t *buf, size_t *offset,
  * @return 0 on success, non-zero on failure
  */
 int fossil_io_deserialize_i64(fossil_io_serialize_buffer_t *buf, size_t *offset, int64_t *value);
+
+/**
+ * @brief Deserialize an unsigned 8-bit integer
+ *
+ * This function deserializes an unsigned 8-bit integer from the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param offset Pointer to the offset within the buffer to start deserialization
+ * @param value Pointer to the unsigned 8-bit integer to store the deserialized value
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_deserialize_u8(fossil_io_serialize_buffer_t *buf, size_t *offset, uint8_t *value);
+
+/**
+ * @brief Deserialize an unsigned 16-bit integer
+ *
+ * This function deserializes an unsigned 16-bit integer from the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param offset Pointer to the offset within the buffer to start deserialization
+ * @param value Pointer to the unsigned 16-bit integer to store the deserialized value
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_deserialize_u16(fossil_io_serialize_buffer_t *buf, size_t *offset, uint16_t *value);
+
+/**
+ * @brief Deserialize an unsigned 32-bit integer
+ *
+ * This function deserializes an unsigned 32-bit integer from the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param offset Pointer to the offset within the buffer to start deserialization
+ * @param value Pointer to the unsigned 32-bit integer to store the deserialized value
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_deserialize_u32(fossil_io_serialize_buffer_t *buf, size_t *offset, uint32_t *value);
+
+/**
+ * @brief Deserialize an unsigned 64-bit integer
+ *
+ * This function deserializes an unsigned 64-bit integer from the buffer.
+ *
+ * @param buf Pointer to the serialization buffer
+ * @param offset Pointer to the offset within the buffer to start deserialization
+ * @param value Pointer to the unsigned 64-bit integer to store the deserialized value
+ * @return 0 on success, non-zero on failure
+ */
+int fossil_io_deserialize_u64(fossil_io_serialize_buffer_t *buf, size_t *offset, uint64_t *value);
 
 /**
  * @brief Deserialize a float

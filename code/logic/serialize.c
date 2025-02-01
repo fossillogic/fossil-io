@@ -129,6 +129,44 @@ int fossil_io_serialize_i64(fossil_io_serialize_buffer_t *buf, int64_t value) {
     return 0;
 }
 
+int fossil_io_serialize_u8(fossil_io_serialize_buffer_t *buf, uint8_t value) {
+    if (buf->size + sizeof(uint8_t) > buf->capacity) {
+        if (fossil_io_serialize_expand(buf, sizeof(uint8_t)) != 0) return -1;
+    }
+    buf->buffer[buf->size++] = value;
+    return 0;
+}
+
+int fossil_io_serialize_u16(fossil_io_serialize_buffer_t *buf, uint16_t value) {
+    if (buf->size + sizeof(uint16_t) > buf->capacity) {
+        if (fossil_io_serialize_expand(buf, sizeof(uint16_t)) != 0) return -1;
+    }
+    uint16_t net_value = fossil_io_htons(value);
+    memcpy(buf->buffer + buf->size, &net_value, sizeof(uint16_t));
+    buf->size += sizeof(uint16_t);
+    return 0;
+}
+
+int fossil_io_serialize_u32(fossil_io_serialize_buffer_t *buf, uint32_t value) {
+    if (buf->size + sizeof(uint32_t) > buf->capacity) {
+        if (fossil_io_serialize_expand(buf, sizeof(uint32_t)) != 0) return -1;
+    }
+    uint32_t net_value = fossil_io_htonl(value);
+    memcpy(buf->buffer + buf->size, &net_value, sizeof(uint32_t));
+    buf->size += sizeof(uint32_t);
+    return 0;
+}
+
+int fossil_io_serialize_u64(fossil_io_serialize_buffer_t *buf, uint64_t value) {
+    if (buf->size + sizeof(uint64_t) > buf->capacity) {
+        if (fossil_io_serialize_expand(buf, sizeof(uint64_t)) != 0) return -1;
+    }
+    uint64_t net_value = fossil_io_htonll(value);
+    memcpy(buf->buffer + buf->size, &net_value, sizeof(uint64_t));
+    buf->size += sizeof(uint64_t);
+    return 0;
+}
+
 int fossil_io_serialize_f32(fossil_io_serialize_buffer_t *buf, float value) {
     if (buf->size + sizeof(float) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(float)) != 0) return -1;
@@ -195,6 +233,39 @@ int fossil_io_deserialize_i64(fossil_io_serialize_buffer_t *buf, size_t *offset,
     memcpy(&net_value, buf->buffer + *offset, sizeof(int64_t));
     *value = fossil_io_ntohll(net_value);
     *offset += sizeof(int64_t);
+    return 0;
+}
+
+int fossil_io_deserialize_u8(fossil_io_serialize_buffer_t *buf, size_t *offset, uint8_t *value) {
+    if (*offset + sizeof(uint8_t) > buf->size) return -1;
+    *value = buf->buffer[(*offset)++];
+    return 0;
+}
+
+int fossil_io_deserialize_u16(fossil_io_serialize_buffer_t *buf, size_t *offset, uint16_t *value) {
+    if (*offset + sizeof(uint16_t) > buf->size) return -1;
+    uint16_t net_value;
+    memcpy(&net_value, buf->buffer + *offset, sizeof(uint16_t));
+    *value = fossil_io_ntohs(net_value);
+    *offset += sizeof(uint16_t);
+    return 0;
+}
+
+int fossil_io_deserialize_u32(fossil_io_serialize_buffer_t *buf, size_t *offset, uint32_t *value) {
+    if (*offset + sizeof(uint32_t) > buf->size) return -1;
+    uint32_t net_value;
+    memcpy(&net_value, buf->buffer + *offset, sizeof(uint32_t));
+    *value = fossil_io_ntohl(net_value);
+    *offset += sizeof(uint32_t);
+    return 0;
+}
+
+int fossil_io_deserialize_u64(fossil_io_serialize_buffer_t *buf, size_t *offset, uint64_t *value) {
+    if (*offset + sizeof(uint64_t) > buf->size) return -1;
+    uint64_t net_value;
+    memcpy(&net_value, buf->buffer + *offset, sizeof(uint64_t));
+    *value = fossil_io_ntohll(net_value);
+    *offset += sizeof(uint64_t);
     return 0;
 }
 
