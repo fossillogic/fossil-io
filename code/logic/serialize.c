@@ -91,7 +91,7 @@ int fossil_io_serialize_expand(fossil_io_serialize_buffer_t *buf, size_t extra) 
     return 0;
 }
 
-int fossil_io_serialize_int8(fossil_io_serialize_buffer_t *buf, int8_t value) {
+int fossil_io_serialize_i8(fossil_io_serialize_buffer_t *buf, int8_t value) {
     if (buf->size + sizeof(int8_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int8_t)) != 0) return -1;
     }
@@ -99,7 +99,7 @@ int fossil_io_serialize_int8(fossil_io_serialize_buffer_t *buf, int8_t value) {
     return 0;
 }
 
-int fossil_io_serialize_int16(fossil_io_serialize_buffer_t *buf, int16_t value) {
+int fossil_io_serialize_i16(fossil_io_serialize_buffer_t *buf, int16_t value) {
     if (buf->size + sizeof(int16_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int16_t)) != 0) return -1;
     }
@@ -109,7 +109,7 @@ int fossil_io_serialize_int16(fossil_io_serialize_buffer_t *buf, int16_t value) 
     return 0;
 }
 
-int fossil_io_serialize_int32(fossil_io_serialize_buffer_t *buf, int32_t value) {
+int fossil_io_serialize_i32(fossil_io_serialize_buffer_t *buf, int32_t value) {
     if (buf->size + sizeof(int32_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int32_t)) != 0) return -1;
     }
@@ -119,7 +119,7 @@ int fossil_io_serialize_int32(fossil_io_serialize_buffer_t *buf, int32_t value) 
     return 0;
 }
 
-int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value) {
+int fossil_io_serialize_i64(fossil_io_serialize_buffer_t *buf, int64_t value) {
     if (buf->size + sizeof(int64_t) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(int64_t)) != 0) return -1;
     }
@@ -129,7 +129,7 @@ int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value) 
     return 0;
 }
 
-int fossil_io_serialize_float(fossil_io_serialize_buffer_t *buf, float value) {
+int fossil_io_serialize_f32(fossil_io_serialize_buffer_t *buf, float value) {
     if (buf->size + sizeof(float) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(float)) != 0) return -1;
     }
@@ -138,7 +138,7 @@ int fossil_io_serialize_float(fossil_io_serialize_buffer_t *buf, float value) {
     return 0;
 }
 
-int fossil_io_serialize_double(fossil_io_serialize_buffer_t *buf, double value) {
+int fossil_io_serialize_f64(fossil_io_serialize_buffer_t *buf, double value) {
     if (buf->size + sizeof(double) > buf->capacity) {
         if (fossil_io_serialize_expand(buf, sizeof(double)) != 0) return -1;
     }
@@ -147,7 +147,7 @@ int fossil_io_serialize_double(fossil_io_serialize_buffer_t *buf, double value) 
     return 0;
 }
 
-int fossil_io_serialize_string(fossil_io_serialize_buffer_t *buf, const char *str) {
+int fossil_io_serialize_cstr(fossil_io_serialize_buffer_t *buf, const char *str) {
     size_t len = strlen(str) + 1;  // Include null-terminator
     if (buf->size + len > buf->capacity) {
         if (fossil_io_serialize_expand(buf, len) != 0) return -1;
@@ -165,13 +165,13 @@ int fossil_io_serialize_bool(fossil_io_serialize_buffer_t *buf, int value) {
     return 0;
 }
 
-int fossil_io_deserialize_int8(fossil_io_serialize_buffer_t *buf, size_t *offset, int8_t *value) {
+int fossil_io_deserialize_i8(fossil_io_serialize_buffer_t *buf, size_t *offset, int8_t *value) {
     if (*offset + sizeof(int8_t) > buf->size) return -1;
     *value = buf->buffer[(*offset)++];
     return 0;
 }
 
-int fossil_io_deserialize_int16(fossil_io_serialize_buffer_t *buf, size_t *offset, int16_t *value) {
+int fossil_io_deserialize_i16(fossil_io_serialize_buffer_t *buf, size_t *offset, int16_t *value) {
     if (*offset + sizeof(int16_t) > buf->size) return -1;
     int16_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int16_t));
@@ -180,7 +180,7 @@ int fossil_io_deserialize_int16(fossil_io_serialize_buffer_t *buf, size_t *offse
     return 0;
 }
 
-int fossil_io_deserialize_int32(fossil_io_serialize_buffer_t *buf, size_t *offset, int32_t *value) {
+int fossil_io_deserialize_i32(fossil_io_serialize_buffer_t *buf, size_t *offset, int32_t *value) {
     if (*offset + sizeof(int32_t) > buf->size) return -1;
     int32_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int32_t));
@@ -189,7 +189,7 @@ int fossil_io_deserialize_int32(fossil_io_serialize_buffer_t *buf, size_t *offse
     return 0;
 }
 
-int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offset, int64_t *value) {
+int fossil_io_deserialize_i64(fossil_io_serialize_buffer_t *buf, size_t *offset, int64_t *value) {
     if (*offset + sizeof(int64_t) > buf->size) return -1;
     int64_t net_value;
     memcpy(&net_value, buf->buffer + *offset, sizeof(int64_t));
@@ -198,21 +198,21 @@ int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offse
     return 0;
 }
 
-int fossil_io_deserialize_float(fossil_io_serialize_buffer_t *buf, size_t *offset, float *value) {
+int fossil_io_deserialize_f32(fossil_io_serialize_buffer_t *buf, size_t *offset, float *value) {
     if (*offset + sizeof(float) > buf->size) return -1;
     memcpy(value, buf->buffer + *offset, sizeof(float));
     *offset += sizeof(float);
     return 0;
 }
 
-int fossil_io_deserialize_double(fossil_io_serialize_buffer_t *buf, size_t *offset, double *value) {
+int fossil_io_deserialize_f64(fossil_io_serialize_buffer_t *buf, size_t *offset, double *value) {
     if (*offset + sizeof(double) > buf->size) return -1;
     memcpy(value, buf->buffer + *offset, sizeof(double));
     *offset += sizeof(double);
     return 0;
 }
 
-int fossil_io_deserialize_string(fossil_io_serialize_buffer_t *buf, size_t *offset, char *out, size_t max_len) {
+int fossil_io_deserialize_cstr(fossil_io_serialize_buffer_t *buf, size_t *offset, char *out, size_t max_len) {
     size_t len = strlen((char *)(buf->buffer + *offset));
     if (len >= max_len || *offset + len + 1 > buf->size) return -1;
     memcpy(out, buf->buffer + *offset, len + 1);

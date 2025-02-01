@@ -68,7 +68,7 @@ int fossil_io_serialize_expand(fossil_io_serialize_buffer_t *buf, size_t extra);
  * @param value The 8-bit integer value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_int8(fossil_io_serialize_buffer_t *buf, int8_t value);
+int fossil_io_serialize_i8(fossil_io_serialize_buffer_t *buf, int8_t value);
 
 /**
  * @brief Serialize a 16-bit integer
@@ -79,7 +79,7 @@ int fossil_io_serialize_int8(fossil_io_serialize_buffer_t *buf, int8_t value);
  * @param value The 16-bit integer value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_int16(fossil_io_serialize_buffer_t *buf, int16_t value);
+int fossil_io_serialize_i16(fossil_io_serialize_buffer_t *buf, int16_t value);
 
 /**
  * @brief Serialize a 32-bit integer
@@ -90,7 +90,7 @@ int fossil_io_serialize_int16(fossil_io_serialize_buffer_t *buf, int16_t value);
  * @param value The 32-bit integer value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_int32(fossil_io_serialize_buffer_t *buf, int32_t value);
+int fossil_io_serialize_i32(fossil_io_serialize_buffer_t *buf, int32_t value);
 
 /**
  * @brief Serialize a 64-bit integer
@@ -101,7 +101,7 @@ int fossil_io_serialize_int32(fossil_io_serialize_buffer_t *buf, int32_t value);
  * @param value The 64-bit integer value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value);
+int fossil_io_serialize_i64(fossil_io_serialize_buffer_t *buf, int64_t value);
 
 /**
  * @brief Serialize a float
@@ -112,7 +112,7 @@ int fossil_io_serialize_int64(fossil_io_serialize_buffer_t *buf, int64_t value);
  * @param value The float value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_float(fossil_io_serialize_buffer_t *buf, float value);
+int fossil_io_serialize_f32(fossil_io_serialize_buffer_t *buf, float value);
 
 /**
  * @brief Serialize a double
@@ -123,7 +123,7 @@ int fossil_io_serialize_float(fossil_io_serialize_buffer_t *buf, float value);
  * @param value The double value to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_double(fossil_io_serialize_buffer_t *buf, double value);
+int fossil_io_serialize_f64(fossil_io_serialize_buffer_t *buf, double value);
 
 /**
  * @brief Serialize a string
@@ -134,7 +134,7 @@ int fossil_io_serialize_double(fossil_io_serialize_buffer_t *buf, double value);
  * @param str The null-terminated string to serialize
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_serialize_string(fossil_io_serialize_buffer_t *buf, const char *str);
+int fossil_io_serialize_cstr(fossil_io_serialize_buffer_t *buf, const char *str);
 
 /**
  * @brief Serialize a boolean value
@@ -157,7 +157,7 @@ int fossil_io_serialize_bool(fossil_io_serialize_buffer_t *buf, int value);
  * @param value Pointer to the 8-bit integer to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_int8(fossil_io_serialize_buffer_t *buf, size_t *offset, int8_t *value);
+int fossil_io_deserialize_i8(fossil_io_serialize_buffer_t *buf, size_t *offset, int8_t *value);
 
 /**
  * @brief Deserialize a 16-bit integer
@@ -169,7 +169,7 @@ int fossil_io_deserialize_int8(fossil_io_serialize_buffer_t *buf, size_t *offset
  * @param value Pointer to the 16-bit integer to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_int16(fossil_io_serialize_buffer_t *buf, size_t *offset, int16_t *value);
+int fossil_io_deserialize_i16(fossil_io_serialize_buffer_t *buf, size_t *offset, int16_t *value);
 
 /**
  * @brief Deserialize a 32-bit integer
@@ -181,7 +181,7 @@ int fossil_io_deserialize_int16(fossil_io_serialize_buffer_t *buf, size_t *offse
  * @param value Pointer to the 32-bit integer to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_int32(fossil_io_serialize_buffer_t *buf, size_t *offset, int32_t *value);
+int fossil_io_deserialize_i32(fossil_io_serialize_buffer_t *buf, size_t *offset, int32_t *value);
 
 /**
  * @brief Deserialize a 64-bit integer
@@ -193,7 +193,7 @@ int fossil_io_deserialize_int32(fossil_io_serialize_buffer_t *buf, size_t *offse
  * @param value Pointer to the 64-bit integer to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offset, int64_t *value);
+int fossil_io_deserialize_i64(fossil_io_serialize_buffer_t *buf, size_t *offset, int64_t *value);
 
 /**
  * @brief Deserialize a float
@@ -205,7 +205,7 @@ int fossil_io_deserialize_int64(fossil_io_serialize_buffer_t *buf, size_t *offse
  * @param value Pointer to the float to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_float(fossil_io_serialize_buffer_t *buf, size_t *offset, float *value);
+int fossil_io_deserialize_f32(fossil_io_serialize_buffer_t *buf, size_t *offset, float *value);
 
 /**
  * @brief Deserialize a double
@@ -217,7 +217,7 @@ int fossil_io_deserialize_float(fossil_io_serialize_buffer_t *buf, size_t *offse
  * @param value Pointer to the double to store the deserialized value
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_double(fossil_io_serialize_buffer_t *buf, size_t *offset, double *value);
+int fossil_io_deserialize_f64(fossil_io_serialize_buffer_t *buf, size_t *offset, double *value);
 
 /**
  * @brief Deserialize a string
@@ -230,7 +230,7 @@ int fossil_io_deserialize_double(fossil_io_serialize_buffer_t *buf, size_t *offs
  * @param max_len The maximum length of the output buffer
  * @return 0 on success, non-zero on failure
  */
-int fossil_io_deserialize_string(fossil_io_serialize_buffer_t *buf, size_t *offset, char *out, size_t max_len);
+int fossil_io_deserialize_cstr(fossil_io_serialize_buffer_t *buf, size_t *offset, char *out, size_t max_len);
 
 /**
  * @brief Deserialize a boolean value
@@ -316,8 +316,8 @@ namespace fossil {
              * @param value The 8-bit integer value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_int8(int8_t value) {
-                return fossil_io_serialize_int8(&buffer, value);
+            int serialize_i8(int8_t value) {
+                return fossil_io_serialize_i8(&buffer, value);
             }
 
             /**
@@ -326,8 +326,8 @@ namespace fossil {
              * @param value The 16-bit integer value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_int16(int16_t value) {
-                return fossil_io_serialize_int16(&buffer, value);
+            int serialize_i16(int16_t value) {
+                return fossil_io_serialize_i16(&buffer, value);
             }
 
             /**
@@ -336,8 +336,8 @@ namespace fossil {
              * @param value The 32-bit integer value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_int32(int32_t value) {
-                return fossil_io_serialize_int32(&buffer, value);
+            int serialize_i32(int32_t value) {
+                return fossil_io_serialize_i32(&buffer, value);
             }
 
             /**
@@ -346,8 +346,8 @@ namespace fossil {
              * @param value The 64-bit integer value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_int64(int64_t value) {
-                return fossil_io_serialize_int64(&buffer, value);
+            int serialize_i64(int64_t value) {
+                return fossil_io_serialize_i64(&buffer, value);
             }
 
             /**
@@ -356,8 +356,8 @@ namespace fossil {
              * @param value The float value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_float(float value) {
-                return fossil_io_serialize_float(&buffer, value);
+            int serialize_f32(float value) {
+                return fossil_io_serialize_f32(&buffer, value);
             }
 
             /**
@@ -366,8 +366,8 @@ namespace fossil {
              * @param value The double value to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_double(double value) {
-                return fossil_io_serialize_double(&buffer, value);
+            int serialize_f64(double value) {
+                return fossil_io_serialize_f64(&buffer, value);
             }
 
             /**
@@ -376,8 +376,8 @@ namespace fossil {
              * @param str The null-terminated string to serialize
              * @return 0 on success, non-zero on failure
              */
-            int serialize_string(const char *str) {
-                return fossil_io_serialize_string(&buffer, str);
+            int serialize_cstr(const char *str) {
+                return fossil_io_serialize_cstr(&buffer, str);
             }
 
             /**
@@ -397,8 +397,8 @@ namespace fossil {
              * @param value Pointer to the 8-bit integer to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_int8(size_t *offset, int8_t *value) {
-                return fossil_io_deserialize_int8(&buffer, offset, value);
+            int deserialize_i8(size_t *offset, int8_t *value) {
+                return fossil_io_deserialize_i8(&buffer, offset, value);
             }
 
             /**
@@ -408,8 +408,8 @@ namespace fossil {
              * @param value Pointer to the 16-bit integer to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_int16(size_t *offset, int16_t *value) {
-                return fossil_io_deserialize_int16(&buffer, offset, value);
+            int deserialize_i16(size_t *offset, int16_t *value) {
+                return fossil_io_deserialize_i16(&buffer, offset, value);
             }
 
             /**
@@ -419,8 +419,8 @@ namespace fossil {
              * @param value Pointer to the 32-bit integer to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_int32(size_t *offset, int32_t *value) {
-                return fossil_io_deserialize_int32(&buffer, offset, value);
+            int deserialize_i32(size_t *offset, int32_t *value) {
+                return fossil_io_deserialize_i32(&buffer, offset, value);
             }
 
             /**
@@ -430,8 +430,8 @@ namespace fossil {
              * @param value Pointer to the 64-bit integer to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_int64(size_t *offset, int64_t *value) {
-                return fossil_io_deserialize_int64(&buffer, offset, value);
+            int deserialize_i64(size_t *offset, int64_t *value) {
+                return fossil_io_deserialize_i64(&buffer, offset, value);
             }
 
             /**
@@ -441,8 +441,8 @@ namespace fossil {
              * @param value Pointer to the float to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_float(size_t *offset, float *value) {
-                return fossil_io_deserialize_float(&buffer, offset, value);
+            int deserialize_f32(size_t *offset, float *value) {
+                return fossil_io_deserialize_f32(&buffer, offset, value);
             }
 
             /**
@@ -452,8 +452,8 @@ namespace fossil {
              * @param value Pointer to the double to store the deserialized value
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_double(size_t *offset, double *value) {
-                return fossil_io_deserialize_double(&buffer, offset, value);
+            int deserialize_f64(size_t *offset, double *value) {
+                return fossil_io_deserialize_f64(&buffer, offset, value);
             }
 
             /**
@@ -464,8 +464,8 @@ namespace fossil {
              * @param max_len The maximum length of the output buffer
              * @return 0 on success, non-zero on failure
              */
-            int deserialize_string(size_t *offset, char *out, size_t max_len) {
-                return fossil_io_deserialize_string(&buffer, offset, out, max_len);
+            int deserialize_cstr(size_t *offset, char *out, size_t max_len) {
+                return fossil_io_deserialize_cstr(&buffer, offset, out, max_len);
             }
 
             /**
