@@ -61,7 +61,7 @@ static const char *FOSSIL_SOAP_ROTBRAIN[] = {
     "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
     "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
     "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
-    "lol", "omg", "brb", "sus"
+    "lol", "omg", "brb"
 
     // Support for other terms can be added via PR to this repository
 };
