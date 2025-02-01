@@ -153,7 +153,7 @@ FOSSIL_TEST_CASE(c_test_network_close) {
 FOSSIL_TEST_GROUP(c_network_tests) {
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_init);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_socket);
-    // FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind);
     // FOSSIL_TEST_ADD(c_network_suite, c_test_network_listen);
     // FOSSIL_TEST_ADD(c_network_suite, c_test_network_accept);
     // FOSSIL_TEST_ADD(c_network_suite, c_test_network_send_receive);
