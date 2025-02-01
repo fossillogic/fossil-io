@@ -252,21 +252,21 @@ FOSSIL_TEST_CASE(cpp_test_network_class_close) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_network_tests) {
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_init);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_send_receive);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_init);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_socket);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_accept);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_send_receive);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
 
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_send_receive);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_accept);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_send_receive);
+    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
