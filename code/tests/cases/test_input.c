@@ -170,7 +170,7 @@ FOSSIL_TEST_CASE(c_test_io_validate_is_float_valid) {
     float output;
     int result = fossil_io_validate_is_float(input, &output);
     ASSUME_ITS_TRUE(result);
-    ASSUME_ITS_EQUAL_F32(123.45, output);
+    ASSUME_ITS_EQUAL_F32(123.45, output, 0.01);
 }
 
 FOSSIL_TEST_CASE(c_test_io_validate_is_float_invalid) {
