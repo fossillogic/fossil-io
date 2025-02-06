@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#define FOSSIL_STDIN  stdin
+#define FOSSIL_STDOUT stdout
+#define FOSSIL_STDERR stderr
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -142,6 +146,101 @@ int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename);
  * @return                     0 on success, non-zero on failure.
  */
 int32_t fossil_fstream_copy(const char *source_filename, const char *destination_filename);
+
+/**
+ * Move a file stream.
+ *
+ * This function moves a file stream.
+ *
+ * @param source_filename      The name of the source file.
+ * @param destination_filename The name of the destination file.
+ * @return                     0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_move(const char *source_filename, const char *destination_filename);
+
+/**
+ * Remove a file stream.
+ *
+ * This function removes a file stream.
+ *
+ * @param filename The name of the file to remove.
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_remove(const char *filename);
+
+/**
+ * Rename a file or directory.
+ *
+ * This function renames a file or directory.
+ *
+ * @param old_filename The current name of the file or directory.
+ * @param new_filename The new name to assign to the file or directory.
+ * @return             0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename);
+
+/**
+ * Flush the contents of an open stream.
+ *
+ * This function flushes the contents of an open stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to flush.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_flush(fossil_fstream_t *stream);
+
+/**
+ * Create a temporary file stream.
+ *
+ * This function creates a temporary file stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to store the temporary stream.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_tempfile(fossil_fstream_t *stream);
+
+/**
+ * Create a temporary file name.
+ *
+ * This function creates a temporary file name.
+ *
+ * @param buffer Pointer to the buffer to store the temporary file name.
+ * @param size   Size of the buffer.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_tempname(char *buffer, size_t size);
+
+/**
+ * Seek to the beginning of an open stream.
+ *
+ * This function moves the file pointer associated with the stream to the beginning.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to seek.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos);
+
+/**
+ * Get the current position of the file pointer in an open stream.
+ *
+ * This function retrieves the current position of the file pointer in an open stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+ * @param pos    Pointer to store the current position of the file pointer.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos);
+
+/**
+ * Rotate a file stream.
+ *
+ * This function rotates a file stream.
+ * 
+ * @param filename The name of the file to rotate.
+ * @param n        The number of rotations to perform.
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_rotate(const char *filename, int32_t n);
 
 /**
  * Create a backup of a file with a specified backup suffix.
@@ -406,6 +505,119 @@ namespace fossil {
              */
             static int32_t copy(const char *source_filename, const char *destination_filename) {
                 return fossil_fstream_copy(source_filename, destination_filename);
+            }
+
+            /**
+             * Move a file stream.
+             *
+             * This function moves a file stream.
+             *
+             * @param source_filename      The name of the source file.
+             * @param destination_filename The name of the destination file.
+             * @return                     0 on success, non-zero on failure.
+             */
+            static int32_t move(const char *source_filename, const char *destination_filename) {
+                return fossil_fstream_move(source_filename, destination_filename);
+            }
+
+            /**
+             * Remove a file stream.
+             *
+             * This function removes a file stream.
+             *
+             * @param filename The name of the file to remove.
+             * @return         0 on success, non-zero on failure.
+             */
+            static int32_t remove(const char *filename) {
+                return fossil_fstream_remove(filename);
+            }
+
+            /**
+             * Rename a file or directory.
+             *
+             * This function renames a file or directory.
+             *
+             * @param old_filename The current name of the file or directory.
+             * @param new_filename The new name to assign to the file or directory.
+             * @return             0 on success, non-zero on failure.
+             */
+            static int32_t rename(const char *old_filename, const char *new_filename) {
+                return fossil_fstream_rename(old_filename, new_filename);
+            }
+
+            /**
+             * Flush the contents of an open stream.
+             *
+             * This function flushes the contents of an open stream.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to flush.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t flush(fossil_fstream_t *stream) {
+                return fossil_fstream_flush(stream);
+            }
+
+            /**
+             * Create a temporary file stream.
+             *
+             * This function creates a temporary file stream.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to store the temporary stream.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t tempfile(fossil_fstream_t *stream) {
+                return fossil_fstream_tempfile(stream);
+            }
+
+            /**
+             * Create a temporary file name.
+             *
+             * This function creates a temporary file name.
+             *
+             * @param buffer Pointer to the buffer to store the temporary file name.
+             * @param size   Size of the buffer.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t tempname(char *buffer, size_t size) {
+                return fossil_fstream_tempname(buffer, size);
+            }
+
+            /**
+             * Seek to the beginning of an open stream.
+             *
+             * This function moves the file pointer associated with the stream to the beginning.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to seek.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t setpos(fossil_fstream_t *stream, int32_t pos) {
+                return fossil_fstream_setpos(stream, pos);
+            }
+
+            /**
+             * Get the current position of the file pointer in an open stream.
+             *
+             * This function retrieves the current position of the file pointer in an open stream.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+             * @param pos    Pointer to store the current position of the file pointer.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t getpos(fossil_fstream_t *stream, int32_t *pos) {
+                return fossil_fstream_getpos(stream, pos);
+            }
+
+            /**
+             * Rotate a file stream.
+             *
+             * This function rotates a file stream.
+             * 
+             * @param filename The name of the file to rotate.
+             * @param n        The number of rotations to perform.
+             * @return         0 on success, non-zero on failure.
+             */
+            static int32_t rotate(const char *filename, int32_t n) {
+                return fossil_fstream_rotate(filename, n);
             }
 
             /**
