@@ -34,6 +34,19 @@ typedef struct {
 } fossil_fstream_t;
 
 /**
+ * Reopen a stream with a new file.
+ *
+ * This function reopens a stream with a new file.
+ *
+ * @param stream   Pointer to the fossil_fstream_t structure to reopen.
+ * @param filename The name of the file to reopen.
+ * @param mode     The mode in which to reopen the file.
+ * @param file     Pointer to the FILE structure to reopen.
+ * @return         0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file);
+
+/**
  * Open a stream for file operations.
  *
  * This function opens a file stream, allowing read or write operations on the specified file.
@@ -373,6 +386,21 @@ namespace fossil {
          */
         class Stream {
         public:
+            /**
+             * Reopen a stream with a new file.
+             *
+             * This function reopens a stream with a new file.
+             *
+             * @param stream   Pointer to the fossil_fstream_t structure to reopen.
+             * @param filename The name of the file to reopen.
+             * @param mode     The mode in which to reopen the file.
+             * @param file     Pointer to the FILE structure to reopen.
+             * @return         0 on success, non-zero on failure.
+             */
+            static int32_t freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
+                return fossil_fstream_freopen(stream, filename, mode, file);
+            }
+            
             /**
              * Open a stream for file operations.
              *
