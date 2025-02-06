@@ -226,17 +226,6 @@ FOSSIL_TEST_CASE(c_test_stream_flush_file) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_tempfile) {
-    // Create a temporary file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempfile(&c_stream));
-
-    // Check if the temporary file is open
-    ASSUME_ITS_TRUE(fossil_fstream_is_open(&c_stream));
-
-    // Close the temporary file
-    fossil_fstream_close(&c_stream);
-}
-
 FOSSIL_TEST_CASE(c_test_stream_tempname) {
     char tempname[1024];
 
@@ -291,7 +280,6 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_move_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempfile);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempname);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
 

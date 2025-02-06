@@ -276,17 +276,6 @@ int32_t fossil_fstream_get_size(fossil_fstream_t *stream);
 int32_t fossil_fstream_delete(const char *filename);
 
 /**
- * Rename a file or directory.
- *
- * This function renames a file or directory.
- *
- * @param old_filename The current name of the file or directory.
- * @param new_filename The new name to assign to the file or directory.
- * @return             0 on success, non-zero on failure.
- */
-int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename);
-
-/**
  * Get the type of a file stream.
  *
  * This function retrieves the type of a file stream.

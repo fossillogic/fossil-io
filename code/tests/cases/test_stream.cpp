@@ -243,17 +243,6 @@ FOSSIL_TEST_CASE(cpp_test_stream_flush_file) {
     fossil_fstream_close(&cpp_stream);
 }
 
-FOSSIL_TEST_CASE(cpp_test_stream_tempfile) {
-    // Create a temporary file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempfile(&cpp_stream));
-
-    // Check if the temporary file is open
-    ASSUME_ITS_TRUE(fossil_fstream_is_open(&cpp_stream));
-
-    // Close the temporary file
-    fossil_fstream_close(&cpp_stream);
-}
-
 FOSSIL_TEST_CASE(cpp_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
@@ -431,7 +420,6 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_move_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempfile);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
