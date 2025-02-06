@@ -371,13 +371,14 @@ int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode);
 
 #ifdef __cplusplus
 }
+#include <string>
 
 /**
- * C++ wrapper for the file stream functions.
+ * C++ API namespace for Fossil Logic source code.
  */
 namespace fossil {
     /**
-     * IO namespace for file stream functions.
+     * IO namespace for io related code.
      */
     namespace io {
 
