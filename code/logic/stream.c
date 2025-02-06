@@ -309,12 +309,12 @@ int32_t fossil_fstream_tempfile(fossil_fstream_t *stream) {
     }
 #else
     char temp_filename[] = "/tmp/fossil_temp_XXXXXX";
-    int fd = mkstemp(temp_filename);
-    if (fd == -1) {
-        fprintf(stderr, "Error: Failed to create temporary file name\n");
+    FILE *temp_file = tmpfile();
+    if (temp_file == NULL) {
+        fprintf(stderr, "Error: Failed to create temporary file\n");
         return FOSSIL_ERROR_IO;
     }
-    close(fd);
+    snprintf(temp_filename, sizeof(temp_filename), "/proc/self/fd/%d", fileno(temp_file));
 #endif
 
     int32_t result = fossil_fstream_open(stream, temp_filename, "w+");
@@ -342,12 +342,12 @@ int32_t fossil_fstream_tempname(char *buffer, size_t size) {
     }
 #else
     char temp_filename[] = "/tmp/fossil_temp_XXXXXX";
-    int fd = mkstemp(temp_filename);
-    if (fd == -1) {
-        fprintf(stderr, "Error: Failed to create temporary file name\n");
+    FILE *temp_file = tmpfile();
+    if (temp_file == NULL) {
+        fprintf(stderr, "Error: Failed to create temporary file\n");
         return FOSSIL_ERROR_IO;
     }
-    close(fd);
+    snprintf(temp_filename, sizeof(temp_filename), "/proc/self/fd/%d", fileno(temp_file));
 #endif
 
     if (strlen(temp_filename) >= size) {
