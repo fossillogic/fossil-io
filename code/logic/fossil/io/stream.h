@@ -203,27 +203,6 @@ int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename
 int32_t fossil_fstream_flush(fossil_fstream_t *stream);
 
 /**
- * Create a temporary file stream.
- *
- * This function creates a temporary file stream.
- *
- * @param stream Pointer to the fossil_fstream_t structure to store the temporary stream.
- * @return       0 on success, non-zero on failure.
- */
-int32_t fossil_fstream_tempfile(fossil_fstream_t *stream);
-
-/**
- * Create a temporary file name.
- *
- * This function creates a temporary file name.
- *
- * @param buffer Pointer to the buffer to store the temporary file name.
- * @param size   Size of the buffer.
- * @return       0 on success, non-zero on failure.
- */
-int32_t fossil_fstream_tempname(char *buffer, size_t size);
-
-/**
  * Seek to the beginning of an open stream.
  *
  * This function moves the file pointer associated with the stream to the beginning.
@@ -584,31 +563,6 @@ namespace fossil {
              */
             static int32_t flush(fossil_fstream_t *stream) {
                 return fossil_fstream_flush(stream);
-            }
-
-            /**
-             * Create a temporary file stream.
-             *
-             * This function creates a temporary file stream.
-             *
-             * @param stream Pointer to the fossil_fstream_t structure to store the temporary stream.
-             * @return       0 on success, non-zero on failure.
-             */
-            static int32_t tempfile(fossil_fstream_t *stream) {
-                return fossil_fstream_tempfile(stream);
-            }
-
-            /**
-             * Create a temporary file name.
-             *
-             * This function creates a temporary file name.
-             *
-             * @param buffer Pointer to the buffer to store the temporary file name.
-             * @param size   Size of the buffer.
-             * @return       0 on success, non-zero on failure.
-             */
-            static int32_t tempname(char *buffer, size_t size) {
-                return fossil_fstream_tempname(buffer, size);
             }
 
             /**
