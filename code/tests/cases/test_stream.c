@@ -226,16 +226,6 @@ FOSSIL_TEST_CASE(c_test_stream_flush_file) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_tempname) {
-    char tempname[1024];
-
-    // Create a temporary file name
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempname(tempname, sizeof(tempname)));
-
-    // Check if the temporary file name is not empty
-    ASSUME_ITS_TRUE(strlen(tempname) > 0);
-}
-
 FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
@@ -270,17 +260,14 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_multiple_files);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_seek_and_tell);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_type);
-
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_readable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_writable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_executable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
-
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_move_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempname);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);

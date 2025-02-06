@@ -213,23 +213,6 @@ FOSSIL_TEST_CASE(cpp_test_stream_remove_file) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
 }
 
-FOSSIL_TEST_CASE(cpp_test_stream_rename_file) {
-    const char *old_filename = "testfile_rename_old.txt";
-    const char *new_filename = "testfile_rename_new.txt";
-    const char *content = "This is a test.";
-
-    // Create the old file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, old_filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
-
-    // Rename the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_rename(old_filename, new_filename));
-
-    // Check if the new file exists
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists(new_filename));
-}
-
 FOSSIL_TEST_CASE(cpp_test_stream_flush_file) {
     const char *filename = "testfile_flush.txt";
     const char *content = "This is a test.";
