@@ -344,6 +344,8 @@ namespace fossil {
          */
         class Stream {
         public:
+            // Existing functions...
+
             /**
              * Reopen a stream with a new file.
              *
@@ -359,6 +361,10 @@ namespace fossil {
                 return fossil_fstream_freopen(stream, filename, mode, file);
             }
 
+            static int32_t freopen(fossil_fstream_t *stream, const std::string &filename, const std::string &mode, FILE *file) {
+                return fossil_fstream_freopen(stream, filename.c_str(), mode.c_str(), file);
+            }
+
             /**
              * Open a stream for file operations.
              *
@@ -371,6 +377,10 @@ namespace fossil {
              */
             static int32_t open(fossil_fstream_t *stream, const char *filename, const char *mode) {
                 return fossil_fstream_open(stream, filename, mode);
+            }
+
+            static int32_t open(fossil_fstream_t *stream, const std::string &filename, const std::string &mode) {
+                return fossil_fstream_open(stream, filename.c_str(), mode.c_str());
             }
 
             /**
@@ -480,6 +490,10 @@ namespace fossil {
                 return fossil_fstream_save(stream, new_filename);
             }
 
+            static int32_t save(fossil_fstream_t *stream, const std::string &new_filename) {
+                return fossil_fstream_save(stream, new_filename.c_str());
+            }
+
             /**
              * Copy a file from the source to the destination.
              *
@@ -491,6 +505,10 @@ namespace fossil {
              */
             static int32_t copy(const char *source_filename, const char *destination_filename) {
                 return fossil_fstream_copy(source_filename, destination_filename);
+            }
+
+            static int32_t copy(const std::string &source_filename, const std::string &destination_filename) {
+                return fossil_fstream_copy(source_filename.c_str(), destination_filename.c_str());
             }
 
             /**
@@ -505,6 +523,10 @@ namespace fossil {
                 return fossil_fstream_remove(filename);
             }
 
+            static int32_t remove(const std::string &filename) {
+                return fossil_fstream_remove(filename.c_str());
+            }
+
             /**
              * Rename a file or directory.
              *
@@ -516,6 +538,10 @@ namespace fossil {
              */
             static int32_t rename(const char *old_filename, const char *new_filename) {
                 return fossil_fstream_rename(old_filename, new_filename);
+            }
+
+            static int32_t rename(const std::string &old_filename, const std::string &new_filename) {
+                return fossil_fstream_rename(old_filename.c_str(), new_filename.c_str());
             }
 
             /**
@@ -568,6 +594,10 @@ namespace fossil {
                 return fossil_fstream_rotate(filename, n);
             }
 
+            static int32_t rotate(const std::string &filename, int32_t n) {
+                return fossil_fstream_rotate(filename.c_str(), n);
+            }
+
             /**
              * Create a backup of a file with a specified backup suffix.
              *
@@ -581,6 +611,10 @@ namespace fossil {
                 return fossil_fstream_backup(filename, backup_suffix);
             }
 
+            static int32_t backup(const std::string &filename, const std::string &backup_suffix) {
+                return fossil_fstream_backup(filename.c_str(), backup_suffix.c_str());
+            }
+
             /**
              * Check if a file exists.
              *
@@ -591,6 +625,10 @@ namespace fossil {
              */
             static int32_t file_exists(const char *filename) {
                 return fossil_fstream_file_exists(filename);
+            }
+
+            static int32_t file_exists(const std::string &filename) {
+                return fossil_fstream_file_exists(filename.c_str());
             }
 
             /**
@@ -617,6 +655,10 @@ namespace fossil {
                 return fossil_fstream_delete(filename);
             }
 
+            static int32_t delete_file(const std::string &filename) {
+                return fossil_fstream_delete(filename.c_str());
+            }
+
             /**
              * Get the type of a file stream.
              *
@@ -627,6 +669,10 @@ namespace fossil {
              */
             static int get_type(const char *filename) {
                 return fossil_fstream_get_type(filename);
+            }
+
+            static int get_type(const std::string &filename) {
+                return fossil_fstream_get_type(filename.c_str());
             }
 
             /**
@@ -641,6 +687,10 @@ namespace fossil {
                 return fossil_fstream_is_readable(filename);
             }
 
+            static int32_t is_readable(const std::string &filename) {
+                return fossil_fstream_is_readable(filename.c_str());
+            }
+
             /**
              * Check if a file is writable.
              *
@@ -653,6 +703,10 @@ namespace fossil {
                 return fossil_fstream_is_writable(filename);
             }
 
+            static int32_t is_writable(const std::string &filename) {
+                return fossil_fstream_is_writable(filename.c_str());
+            }
+
             /**
              * Check if a file is executable.
              *
@@ -663,6 +717,10 @@ namespace fossil {
              */
             static int32_t is_executable(const char *filename) {
                 return fossil_fstream_is_executable(filename);
+            }
+
+            static int32_t is_executable(const std::string &filename) {
+                return fossil_fstream_is_executable(filename.c_str());
             }
 
             /**
@@ -678,6 +736,10 @@ namespace fossil {
                 return fossil_fstream_set_permissions(filename, mode);
             }
 
+            static int32_t set_permissions(const std::string &filename, int32_t mode) {
+                return fossil_fstream_set_permissions(filename.c_str(), mode);
+            }
+
             /**
              * Get file permissions.
              *
@@ -691,9 +753,9 @@ namespace fossil {
                 return fossil_fstream_get_permissions(filename, mode);
             }
 
-        };
-
-    } // namespace io
+            static int32_t get_permissions(const std::string &filename, int32_t *mode) {
+                return fossil_fstream_get_permissions(filename.c_str(), mode);
+            }
 
 } // namespace fossil
 
