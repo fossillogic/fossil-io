@@ -161,17 +161,6 @@ int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename);
 int32_t fossil_fstream_copy(const char *source_filename, const char *destination_filename);
 
 /**
- * Move a file stream.
- *
- * This function moves a file stream.
- *
- * @param source_filename      The name of the source file.
- * @param destination_filename The name of the destination file.
- * @return                     0 on success, non-zero on failure.
- */
-int32_t fossil_fstream_move(const char *source_filename, const char *destination_filename);
-
-/**
  * Remove a file stream.
  *
  * This function removes a file stream.
@@ -502,19 +491,6 @@ namespace fossil {
              */
             static int32_t copy(const char *source_filename, const char *destination_filename) {
                 return fossil_fstream_copy(source_filename, destination_filename);
-            }
-
-            /**
-             * Move a file stream.
-             *
-             * This function moves a file stream.
-             *
-             * @param source_filename      The name of the source file.
-             * @param destination_filename The name of the destination file.
-             * @return                     0 on success, non-zero on failure.
-             */
-            static int32_t move(const char *source_filename, const char *destination_filename) {
-                return fossil_fstream_move(source_filename, destination_filename);
             }
 
             /**

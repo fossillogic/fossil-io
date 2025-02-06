@@ -239,20 +239,6 @@ int32_t fossil_fstream_copy(const char *source_filename, const char *destination
     return FOSSIL_ERROR_OK;
 }
 
-int32_t fossil_fstream_move(const char *source_filename, const char *destination_filename) {
-    if (source_filename == NULL || destination_filename == NULL) {
-        fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
-    }
-
-    if (rename(source_filename, destination_filename) != 0) {
-        fprintf(stderr, "Error: Failed to move file %s\n", source_filename);
-        return FOSSIL_ERROR_IO;
-    }
-
-    return FOSSIL_ERROR_OK;
-}
-
 int32_t fossil_fstream_remove(const char *filename) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
