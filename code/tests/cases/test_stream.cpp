@@ -180,6 +180,132 @@ FOSSIL_TEST_CASE(cpp_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
 }
 
+FOSSIL_TEST_CASE(cpp_test_stream_move_file) {
+    const char *source_filename = "testfile_move_source.txt";
+    const char *destination_filename = "testfile_move_destination.txt";
+    const char *content = "This is a test.";
+
+    // Create the source file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, source_filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Move the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_move(source_filename, destination_filename));
+
+    // Check if the destination file exists
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists(destination_filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_remove_file) {
+    const char *filename = "testfile_remove.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Remove the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+
+    // Check if the file does not exist
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_rename_file) {
+    const char *old_filename = "testfile_rename_old.txt";
+    const char *new_filename = "testfile_rename_new.txt";
+    const char *content = "This is a test.";
+
+    // Create the old file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, old_filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Rename the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_rename(old_filename, new_filename));
+
+    // Check if the new file exists
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists(new_filename));
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_flush_file) {
+    const char *filename = "testfile_flush.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+
+    // Flush the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_flush(&cpp_stream));
+    fossil_fstream_close(&cpp_stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_tempfile) {
+    // Create a temporary file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempfile(&cpp_stream));
+
+    // Check if the temporary file is open
+    ASSUME_ITS_TRUE(fossil_fstream_is_open(&cpp_stream));
+
+    // Close the temporary file
+    fossil_fstream_close(&cpp_stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_tempname) {
+    char tempname[1024];
+
+    // Create a temporary file name
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempname(tempname, sizeof(tempname)));
+
+    // Check if the temporary file name is not empty
+    ASSUME_ITS_TRUE(strlen(tempname) > 0);
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_setpos_and_getpos) {
+    const char *filename = "testfile_setpos_getpos.txt";
+    const char *content = "This is a test.";
+    int32_t pos;
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Open the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
+
+    // Set the file position
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_setpos(&cpp_stream, 5));
+
+    // Get the file position
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_getpos(&cpp_stream, &pos));
+    ASSUME_ITS_EQUAL_I32(5, pos);
+
+    // Close the file
+    fossil_fstream_close(&cpp_stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_rotate_file) {
+    const char *filename = "testfile_rotate.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Rotate the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_rotate(filename, 3));
+
+    // Check if the rotated files exist
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.1"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.2"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.3"));
+}
+
 FOSSIL_TEST_CASE(cpp_test_stream_class_write_and_read_file) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
@@ -331,6 +457,15 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_executable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_permissions);
+
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_move_file);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_rename_file);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempfile);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempname);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_rotate_file);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_open_and_close_file);
