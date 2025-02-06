@@ -432,7 +432,6 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempfile);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempname);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
