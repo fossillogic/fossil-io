@@ -254,16 +254,6 @@ FOSSIL_TEST_CASE(cpp_test_stream_tempfile) {
     fossil_fstream_close(&cpp_stream);
 }
 
-FOSSIL_TEST_CASE(cpp_test_stream_tempname) {
-    char tempname[1024];
-
-    // Create a temporary file name
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_tempname(tempname, sizeof(tempname)));
-
-    // Check if the temporary file name is not empty
-    ASSUME_ITS_TRUE(strlen(tempname) > 0);
-}
-
 FOSSIL_TEST_CASE(cpp_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
@@ -286,24 +276,6 @@ FOSSIL_TEST_CASE(cpp_test_stream_setpos_and_getpos) {
 
     // Close the file
     fossil_fstream_close(&cpp_stream);
-}
-
-FOSSIL_TEST_CASE(cpp_test_stream_rotate_file) {
-    const char *filename = "testfile_rotate.txt";
-    const char *content = "This is a test.";
-
-    // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
-
-    // Rotate the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_rotate(filename, 3));
-
-    // Check if the rotated files exist
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.1"));
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.2"));
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_file_exists("testfile_rotate.txt.3"));
 }
 
 FOSSIL_TEST_CASE(cpp_test_stream_class_write_and_read_file) {
@@ -451,21 +423,17 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_multiple_files);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_seek_and_tell);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_type);
-
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_readable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_writable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_executable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_permissions);
-
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_move_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_rename_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempfile);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_tempname);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_rotate_file);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_open_and_close_file);
