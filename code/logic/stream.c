@@ -221,6 +221,180 @@ int32_t fossil_fstream_copy(const char *source_filename, const char *destination
     return FOSSIL_ERROR_OK;
 }
 
+int32_t fossil_fstream_move(const char *source_filename, const char *destination_filename) {
+    if (source_filename == NULL || destination_filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (rename(source_filename, destination_filename) != 0) {
+        fprintf(stderr, "Error: Failed to move file %s\n", source_filename);
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_remove(const char *filename) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (remove(filename) == 0) {
+        return FOSSIL_ERROR_OK;  // File removed successfully
+    }
+
+    fprintf(stderr, "Error: IO error when removing file %s\n", filename);
+    return FOSSIL_ERROR_IO;
+}
+
+int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {
+    if (old_filename == NULL || new_filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (rename(old_filename, new_filename) != 0) {
+        fprintf(stderr, "Error: Failed to rename file %s\n", old_filename);
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_flush(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (fflush(stream->file) != 0) {
+        fprintf(stderr, "Error: Failed to flush file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_tempfile(fossil_fstream_t *stream) {
+    if (stream == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+#ifdef _WIN32
+    char temp_filename[MAX_PATH];
+    if (GetTempFileNameA(".", "tmp", 0, temp_filename) == 0) {
+        fprintf(stderr, "Error: Failed to create temporary file name\n");
+        return FOSSIL_ERROR_IO;
+    }
+#else
+    char temp_filename[] = "/tmp/fossil_temp_XXXXXX";
+    int fd = mkstemp(temp_filename);
+    if (fd == -1) {
+        fprintf(stderr, "Error: Failed to create temporary file name\n");
+        return FOSSIL_ERROR_IO;
+    }
+    close(fd);
+#endif
+
+    int32_t result = fossil_fstream_open(stream, temp_filename, "w+");
+    if (result != FOSSIL_ERROR_OK) {
+        fprintf(stderr, "Error: Failed to open temporary file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_tempname(char *buffer, size_t size) {
+    if (buffer == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+#ifdef _WIN32
+    char temp_filename[MAX_PATH];
+    if (GetTempFileNameA(".", "tmp", 0, temp_filename) == 0) {
+        fprintf(stderr, "Error: Failed to create temporary file name\n");
+        return FOSSIL_ERROR_IO;
+    }
+#else
+    char temp_filename[] = "/tmp/fossil_temp_XXXXXX";
+    int fd = mkstemp(temp_filename);
+    if (fd == -1) {
+        fprintf(stderr, "Error: Failed to create temporary file name\n");
+        return FOSSIL_ERROR_IO;
+    }
+    close(fd);
+#endif
+
+    if (strlen(temp_filename) >= size) {
+        fprintf(stderr, "Error: Limit reached\n");
+        return FOSSIL_ERROR_LIMIT_REACHED;
+    }
+
+    strncpy(buffer, temp_filename, size);
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (fseek(stream->file, pos, SEEK_SET) != 0) {
+        fprintf(stderr, "Error: Failed to set file position\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos) {
+    if (stream == NULL || stream->file == NULL || pos == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    *pos = ftell(stream->file);
+    if (*pos == -1L && ferror(stream->file)) {
+        fprintf(stderr, "Error: IO error from getting file position\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_rotate(const char *filename, int32_t n) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    char temp_filename[FOSSIL_BUFFER_MEDIUM];
+    char old_filename[FOSSIL_BUFFER_MEDIUM];
+    char new_filename[FOSSIL_BUFFER_MEDIUM];
+
+    for (int32_t i = n; i > 0; i--) {
+        if (i == 1) {
+            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s", filename);
+        } else {
+            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i - 1);
+        }
+
+        snprintf(new_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i);
+        if (fossil_fstream_rename(old_filename, new_filename) != FOSSIL_ERROR_OK) {
+            fprintf(stderr, "Error: Failed to rotate file %s\n", filename);
+            return FOSSIL_ERROR_IO;
+        }
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
 // Create a backup of a file with a specified backup suffix
 int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix) {
     if (filename == NULL || backup_suffix == NULL) {
