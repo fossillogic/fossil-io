@@ -400,7 +400,7 @@ namespace fossil {
             static int32_t freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
                 return fossil_fstream_freopen(stream, filename, mode, file);
             }
-            
+
             /**
              * Open a stream for file operations.
              *
@@ -695,19 +695,6 @@ namespace fossil {
              */
             static int32_t delete_file(const char *filename) {
                 return fossil_fstream_delete(filename);
-            }
-
-            /**
-             * Rename a file or directory.
-             *
-             * This function renames a file or directory.
-             *
-             * @param old_filename The current name of the file or directory.
-             * @param new_filename The new name to assign to the file or directory.
-             * @return             0 on success, non-zero on failure.
-             */
-            static int32_t rename(const char *old_filename, const char *new_filename) {
-                return fossil_fstream_rename(old_filename, new_filename);
             }
 
             /**
