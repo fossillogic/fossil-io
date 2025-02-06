@@ -394,7 +394,6 @@ int32_t fossil_fstream_rotate(const char *filename, int32_t n) {
         return FOSSIL_ERROR_NULL_POINTER;
     }
 
-    char temp_filename[FOSSIL_BUFFER_MEDIUM];
     char old_filename[FOSSIL_BUFFER_MEDIUM];
     char new_filename[FOSSIL_BUFFER_MEDIUM];
 
