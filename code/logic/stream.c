@@ -67,6 +67,24 @@ void fossil_fstream_close(fossil_fstream_t *stream) {
     }
 }
 
+int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
+    if (stream == NULL || filename == NULL || mode == NULL || file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    FILE *new_file = freopen(filename, mode, file);
+    if (new_file == NULL) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    }
+
+    stream->file = new_file;
+    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM);
+
+    return FOSSIL_ERROR_OK;
+}
+
 // Read data from an open stream
 size_t fossil_fstream_read(fossil_fstream_t *stream, void *buffer, size_t size, size_t count) {
     if (stream == NULL || buffer == NULL || stream->file == NULL) {
@@ -305,6 +323,8 @@ int32_t fossil_fstream_tempfile(fossil_fstream_t *stream) {
         return FOSSIL_ERROR_IO;
     }
 
+    strncpy(stream->filename, temp_filename, FOSSIL_BUFFER_MEDIUM);
+
     return FOSSIL_ERROR_OK;
 }
 
@@ -460,21 +480,6 @@ int32_t fossil_fstream_delete(const char *filename) {
 
     fprintf(stderr, "Error: IO error when deleting file %s\n", filename);
     return FOSSIL_ERROR_IO;
-}
-
-// Rename a file or directory
-int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {
-    if (old_filename == NULL || new_filename == NULL) {
-        fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
-    }
-
-    if (rename(old_filename, new_filename) != 0) {
-        fprintf(stderr, "Error: Failed to rename file %s\n", old_filename);
-        return FOSSIL_ERROR_IO;
-    }
-
-    return FOSSIL_ERROR_OK;
 }
 
 // Detect file type (Regular file, Directory, Symbolic link)
