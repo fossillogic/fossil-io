@@ -21,6 +21,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define HASH_TABLE_SIZE 1024
+
+typedef struct fossil_io_soap_hash_node_t {
+    char *word;
+    struct fossil_io_soap_hash_node_t *next;
+} fossil_io_soap_hash_node_t;
+
+static fossil_io_soap_hash_node_t *offensive_words[HASH_TABLE_SIZE] = {0};
+static fossil_io_soap_hash_node_t *rotbrain_words[HASH_TABLE_SIZE] = {0};
+
 // List of offensive words and phrases (super hard to mainting thisw list as GitHub Copilot doesnt wanna help with this part of the SOAP API)
 static const char *FOSSIL_SOAP_OFFENSIVE[] = {
     "curse1",
@@ -58,6 +68,9 @@ static const char *FOSSIL_SOAP_OFFENSIVE[] = {
 // garbage words and phrases
 // (slightly easier to maintain since it's just slang from social media spoken from people who need to touch grass)
 static const char *FOSSIL_SOAP_ROTBRAIN[] = {
+    "meme1",
+    "meme2",
+
     "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
     "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
     "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
@@ -66,7 +79,16 @@ static const char *FOSSIL_SOAP_ROTBRAIN[] = {
     // Support for other terms can be added via PR to this repository
 };
 
-static inline char* custom_strdup(const char* str) {
+// Simple hash function
+static uint32_t hash_string(const char *str) {
+    uint32_t hash = 5381;
+    while (*str) {
+        hash = ((hash << 5) + hash) + (unsigned char)(*str++);
+    }
+    return hash % HASH_TABLE_SIZE;
+}
+
+static char* custom_strdup(const char* str) {
     if (!str) return NULL; // Handle NULL pointer gracefully
 
     size_t len = 0;
@@ -83,94 +105,246 @@ static inline char* custom_strdup(const char* str) {
     return dup;
 }
 
-// Fallback implementation for platforms that don't support strcasestr
-static char *custom_strcasestr(const char *haystack, const char *needle) {
-    while (*haystack) {
-        size_t i = 0;
-        while (tolower((unsigned char)haystack[i]) == tolower((unsigned char)needle[i]) && needle[i] != '\0') {
-            i++;
+// Insert a word into the hash set
+static void insert_word(fossil_io_soap_hash_node_t **table, const char *word) {
+    uint32_t hash = hash_string(word);
+    fossil_io_soap_hash_node_t *node = (fossil_io_soap_hash_node_t *)malloc(sizeof(fossil_io_soap_hash_node_t));
+    node->word = custom_strdup(word);
+    node->next = table[hash];
+    table[hash] = node;
+}
+
+// Check if a word exists in the hash set
+static int word_exists(fossil_io_soap_hash_node_t **table, const char *word) {
+    uint32_t hash = hash_string(word);
+    for (fossil_io_soap_hash_node_t *node = table[hash]; node; node = node->next) {
+        if (strcasecmp(node->word, word) == 0) {
+            return 1; // Found
         }
-        if (needle[i] == '\0') {
-            return (char *)haystack;
+    }
+    return 0; // Not found
+}
+
+// Replace is_in_list with this:
+static int32_t is_in_list(const char *word, fossil_io_soap_hash_node_t **table) {
+    return word_exists(table, word) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static int32_t detect_contextual_tone(const char *input) {
+    int offensive_count = fossil_io_soap_count_offensive(input);
+    int rotbrain_count = fossil_io_soap_count_rotbrain(input);
+
+    if (offensive_count > 0 && rotbrain_count > 0) {
+        return 3; // Mixed tone
+    } else if (offensive_count > 0) {
+        return 2; // Offensive tone
+    } else if (rotbrain_count > 0) {
+        return 1; // Rotbrain tone
+    }
+    return 0; // Neutral
+}
+
+// Boyer-Moore-Horspool case-insensitive substring search
+static char *bmh_strcasestr(const char *haystack, const char *needle) {
+    if (!haystack || !needle || *needle == '\0') return NULL;
+
+    size_t h_len = strlen(haystack);
+    size_t n_len = strlen(needle);
+
+    if (n_len > h_len) return NULL;
+
+    // Precompute the bad character shift table
+    int shift[256];
+    for (int i = 0; i < 256; i++) shift[i] = n_len;
+
+    for (size_t i = 0; i < n_len - 1; i++) {
+        shift[(unsigned char)tolower(needle[i])] = n_len - 1 - i;
+        shift[(unsigned char)toupper(needle[i])] = n_len - 1 - i;
+    }
+
+    // Search using BMH
+    size_t i = 0;
+    while (i <= h_len - n_len) {
+        size_t j = n_len - 1;
+        while (j > 0 && tolower(haystack[i + j]) == tolower(needle[j])) {
+            j--;
         }
-        haystack++;
+        if (j == 0 && tolower(haystack[i]) == tolower(needle[0])) {
+            return (char *)(haystack + i);
+        }
+        i += shift[(unsigned char)haystack[i + n_len - 1]];
     }
     return NULL;
 }
 
 // Function to replace a substring in a string (case-insensitive)
-static void replace_substring_case_insensitive(char *str, const char *old_substr, const char *new_substr) {
-    char *position = custom_strcasestr(str, old_substr);
-    while (position != NULL) {
-        size_t old_len = strlen(old_substr);
-        size_t new_len = strlen(new_substr);
-        size_t tail_len = strlen(position + old_len);
+static char *replace_substring_case_insensitive(const char *input, const char *old_substr, const char *new_substr) {
+    if (!input || !old_substr || !new_substr) return NULL;
 
-        // Check if the new length is greater than the old length
-        if (new_len > old_len) {
-            memmove(position + new_len, position + old_len, tail_len + 1);
-        } else {
-            memmove(position + new_len, position + old_len, tail_len + 1);
+    size_t input_len = strlen(input);
+    size_t old_len = strlen(old_substr);
+    size_t new_len = strlen(new_substr);
+
+    // Count occurrences of old_substr in input
+    size_t count = 0;
+    const char *temp = input;
+    while ((temp = bmh_strcasestr(temp, old_substr)) != NULL) {
+        count++;
+        temp += old_len;
+    }
+
+    if (count == 0) return custom_strdup(input);  // No matches, return a copy
+
+    // Allocate new buffer with enough space
+    size_t new_size = input_len + (new_len - old_len) * count + 1;
+    char *output = (char *)malloc(new_size);
+    if (!output) return NULL;
+
+    char *out_ptr = output;
+    temp = input;
+    while (*temp) {
+        char *match = bmh_strcasestr(temp, old_substr);
+        if (!match) {
+            strcpy(out_ptr, temp);
+            break;
         }
-        memcpy(position, new_substr, new_len);
 
-        // Find the next occurrence
-        position = custom_strcasestr(position + new_len, old_substr);
+        // Copy text before match
+        size_t prefix_len = match - temp;
+        strncpy(out_ptr, temp, prefix_len);
+        out_ptr += prefix_len;
+
+        // Copy replacement text
+        strcpy(out_ptr, new_substr);
+        out_ptr += new_len;
+
+        temp = match + old_len;
+    }
+    
+    *out_ptr = '\0';
+    return output;
+}
+
+// =============================================================================
+// Function implementations
+// =============================================================================
+
+// Preload word lists into the hash table at initialization
+void fossil_io_soap_create(void) {
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); i++) {
+        if (!FOSSIL_SOAP_OFFENSIVE[i]) continue; // Skip NULL entries
+        insert_word(offensive_words, FOSSIL_SOAP_OFFENSIVE[i]);
+    }
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); i++) {
+        if (!FOSSIL_SOAP_ROTBRAIN[i]) continue; // Skip NULL entries
+        insert_word(rotbrain_words, FOSSIL_SOAP_ROTBRAIN[i]);
     }
 }
 
-void fossil_soap_sanitize(char *input) {
-    if (input == NULL || *input == '\0') return;
-
-    // Perform single-threaded sanitization
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
-        replace_substring_case_insensitive(input, FOSSIL_SOAP_OFFENSIVE[i], "***");
-    }
-
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
-        replace_substring_case_insensitive(input, FOSSIL_SOAP_ROTBRAIN[i], "***");
-    }
+// Faster checks
+int32_t fossil_io_soap_is_offensive(const char *word) {
+    if (!word) return EXIT_SUCCESS; // Handle NULL input gracefully
+    return is_in_list(word, offensive_words);
 }
 
-static int32_t is_in_list(const char *word, const char **list, size_t list_size) {
-    if (!word || *word == '\0') return EXIT_SUCCESS;
-
-    for (size_t i = 0; i < list_size; ++i) {
-        if (strcasecmp(word, list[i]) == 0) return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+int32_t fossil_io_soap_is_rotbrain(const char *word) {
+    if (!word) return EXIT_SUCCESS; // Handle NULL input gracefully
+    return is_in_list(word, rotbrain_words);
 }
 
-int32_t fossil_soap_is_offensive(const char *word) {
-    return is_in_list(word, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
-}
-
-int32_t fossil_soap_is_rotbrain(const char *word) {
-    return is_in_list(word, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
-}
-
-static int32_t count_matches(const char *input, const char **list, size_t list_size) {
+int32_t fossil_io_soap_count_offensive(const char *input) {
     if (!input || *input == '\0') return 0;
 
     int count = 0;
-    char *copy = custom_strdup(input);
-    if (!copy) return EXIT_SUCCESS;
+    char *temp = custom_strdup(input);
+    if (!temp) return 0;
 
-    char *token = strtok(copy, " ,.!?;:");
+    char *token = strtok(temp, " ,.!?;:()[]{}<>\"\'\\/-_+=*&^%$#@!~`|");
     while (token) {
-        if (is_in_list(token, list, list_size) == EXIT_FAILURE) {
+        if (fossil_io_soap_is_offensive(token) == EXIT_FAILURE) {
+            count++;
+        }
+        token = strtok(NULL, " ,.!?;:()[]{}<>\"\'\\/-_+=*&^%$#@!~`|");
+    }
+
+    free(temp);
+    return count;
+}
+
+int32_t fossil_io_soap_count_rotbrain(const char *input) {
+    if (!input || *input == '\0') return 0;
+
+    int count = 0;
+    char *temp = custom_strdup(input);
+    if (!temp) return 0;
+
+    char *token = strtok(temp, " ,.!?;:()[]{}<>\"\'\\/-_+=*&^%$#@!~`|");
+    while (token) {
+        if (fossil_io_soap_is_rotbrain(token) == EXIT_FAILURE) {
+            count++;
+        }
+        token = strtok(NULL, " ,.!?;:()[]{}<>\"\'\\/-_+=*&^%$#@!~`|");
+    }
+
+    free(temp);
+    return count;
+}
+
+int32_t fossil_io_soap_count_positive(const char *input) {
+    if (!input || *input == '\0') return 0;
+
+    int count = 0;
+    char *temp = custom_strdup(input);
+    if (!temp) return 0;
+
+    char *token = strtok(temp, " ,.!?;:");
+    while (token) {
+        if (fossil_io_soap_is_offensive(token) == EXIT_SUCCESS && fossil_io_soap_is_rotbrain(token) == EXIT_SUCCESS) {
             count++;
         }
         token = strtok(NULL, " ,.!?;:");
     }
-    free(copy);
+
+    free(temp);
     return count;
 }
 
-int32_t fossil_soap_count_offensive(const char *input) {
-    return count_matches(input, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
-}
+char *fossil_io_soap_sanitize(const char *input) {
+    if (!input || *input == '\0') return NULL;
 
-int32_t fossil_soap_count_rotbrain(const char *input) {
-    return count_matches(input, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
+    char *sanitized = custom_strdup(input);
+    if (!sanitized) return NULL;
+
+    // Replace offensive words
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
+        char *temp = replace_substring_case_insensitive(sanitized, FOSSIL_SOAP_OFFENSIVE[i], "***");
+        free(sanitized);
+        sanitized = temp;
+    }
+
+    // Replace rotbrain words
+    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
+        char *temp = replace_substring_case_insensitive(sanitized, FOSSIL_SOAP_ROTBRAIN[i], "[ROT]");
+        free(sanitized);
+        sanitized = temp;
+    }
+
+    // Detect contextual tone
+    int tone = detect_contextual_tone(input);
+    switch (tone) {
+        case 1:
+            printf("Rotbrain tone detected.\n");
+            break;
+        case 2:
+            printf("Offensive tone detected.\n");
+            break;
+        case 3:
+            printf("Mixed tone detected.\n");
+            break;
+        default:
+            printf("Neutral tone detected.\n");
+            break;
+    }
+
+    return sanitized;
 }
