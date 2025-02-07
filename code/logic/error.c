@@ -30,9 +30,6 @@ void fossil_io_error(const char *format, ...) {
     char buffer[FOSSIL_IO_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
 
-    // Sanitize the buffer
-    fossil_io_soap_sanitize(buffer);
-
     // Print the sanitized error message
     fprintf(stderr, "ERROR: %s\n", buffer);
 
