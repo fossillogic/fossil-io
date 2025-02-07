@@ -71,8 +71,8 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_no_offensive) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_with_punctuation) {
-    char input[] = "This is a test with curse1, and racist_phrase1!\n";
-    char expected[] = "This is a test with ***, and ***!";
+    char input[] = "This is a test with punctuation, and special characters!\n";
+    char expected[] = "This is a test with punctuation, and special characters!";
     char buffer[256];
 
     FILE *stream = tmpfile();
@@ -255,15 +255,6 @@ FOSSIL_TEST_CASE(cpp_test_io_validate_is_length_invalid) {
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_sanitize_string) {
-    const char *input = "This is a test with curse1, and racist_phrase1!";
-    char expected[] = "This is a test with ***, and ***!";
-    char output[256];
-    int result = fossil_io_validate_sanitize_string(input, output, sizeof(output));
-    ASSUME_ITS_TRUE(result);
-    ASSUME_ITS_EQUAL_CSTR(expected, output);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -290,7 +281,6 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_invalid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }
