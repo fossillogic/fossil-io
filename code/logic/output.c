@@ -12,7 +12,6 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/output.h"
-#include "fossil/io/soap.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -136,7 +135,6 @@ void fossil_io_puts(const char *str) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
-        fossil_soap_sanitize(sanitized_str);
         
         // Print the sanitized string with attributes
         fossil_io_print_with_attributes(sanitized_str);
@@ -163,9 +161,6 @@ void fossil_io_printf(const char *format, ...) {
     // Create a buffer to hold the formatted string
     char buffer[FOSSIL_IO_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
-
-    // Sanitize the buffer
-    fossil_soap_sanitize(buffer);
 
     // Print the sanitized output with attributes
     fossil_io_print_with_attributes(buffer);
