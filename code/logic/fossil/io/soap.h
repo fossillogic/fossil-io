@@ -33,10 +33,9 @@ char *fossil_io_soap_sanitize(const char *text);
  * @brief Suggest proper alternatives for rot-brain words or grammar fixes.
  *
  * @param text The input text.
- * @param format_type Custom format for output (e.g., "*" or "#").
  * @return A dynamically allocated string with suggestions (must be freed by the caller).
  */
-char *fossil_io_soap_suggest(const char *text, char format_type);
+char *fossil_io_soap_suggest(const char *text);
 
 /**
  * @brief Add a custom word or phrase to the filter.
@@ -96,8 +95,8 @@ namespace fossil {
              * @param format_type Custom format for output (e.g., "*" or "#").
              * @return A dynamically allocated string with suggestions (must be freed by the caller).
              */
-            static std::string suggest(const std::string &text, char format_type = '*') {
-                return fossil_io_soap_suggest(text.c_str(), format_type);
+            static std::string suggest(const std::string &text) {
+                return fossil_io_soap_suggest(text.c_str());
             }
 
             /**
@@ -145,8 +144,8 @@ namespace fossil {
              * @param format_type Custom format for output (e.g., "*" or "#").
              * @return A dynamically allocated string with suggestions (must be freed by the caller).
              */
-            static char* suggest(const char* text, char format_type = '*') {
-                return fossil_io_soap_suggest(text, format_type);
+            static char* suggest(const char* text) {
+                return fossil_io_soap_suggest(text);
             }
 
             /**

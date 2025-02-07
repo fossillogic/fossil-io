@@ -94,7 +94,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_sanitize_long_input) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest) {
     const char *input = "This is a rot-brain sentence.";
     const char *expected = "This is a stupid sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -102,7 +102,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_suggest) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_no_offensive) {
     const char *input = "This is a clean sentence.";
     const char *expected = "This is a clean sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -177,7 +177,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_sanitize_with_tabs) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_leetspeak) {
     const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
     const char *expected = "This is a leetspeak sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -185,7 +185,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_suggest_leetspeak) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_mixed_case) {
     const char *input = "This Is A Rot-Brain Sentence.";
     const char *expected = "This Is A stupid Sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
 
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
@@ -194,7 +194,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_suggest_mixed_case) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_with_special_chars) {
     const char *input = "This is a test with special chars #$%^&*!";
     const char *expected = "This is a test with special chars #$%^&*!";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -202,7 +202,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_suggest_with_special_chars) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_with_newlines) {
     const char *input = "This is a test\nwith newlines.";
     const char *expected = "This is a test\nwith newlines.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -210,7 +210,7 @@ FOSSIL_TEST_CASE(c_test_io_soap_suggest_with_newlines) {
 FOSSIL_TEST_CASE(c_test_io_soap_suggest_with_tabs) {
     const char *input = "This is a test\twith tabs.";
     const char *expected = "This is a test\twith tabs.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }

@@ -298,11 +298,7 @@ char *fossil_io_soap_sanitize(const char *text) {
     return output;
 }
 
-/**
- * @brief Suggest proper alternatives for rot-brain words or grammar fixes.
- * @param format_type Custom format for output (e.g., "*" or "#").
- */
-char *fossil_io_soap_suggest(const char *text, char format_type) {
+char *fossil_io_soap_suggest(const char *text) {
     if (!text) return NULL;
 
     size_t len = strlen(text);

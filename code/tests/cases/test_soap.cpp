@@ -94,7 +94,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest) {
     const char *input = "This is a rot-brain sentence.";
     const char *expected = "This is a stupid sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -102,7 +102,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive) {
     const char *input = "This is a clean sentence.";
     const char *expected = "This is a clean sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -177,7 +177,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak) {
     const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
     const char *expected = "This is a leetspeak sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -185,7 +185,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case) {
     const char *input = "This Is A Rot-Brain Sentence.";
     const char *expected = "This Is A stupid Sentence.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
 
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
@@ -194,7 +194,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars) {
     const char *input = "This is a test with special chars #$%^&*!";
     const char *expected = "This is a test with special chars #$%^&*!";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -202,7 +202,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines) {
     const char *input = "This is a test\nwith newlines.";
     const char *expected = "This is a test\nwith newlines.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -210,7 +210,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs) {
     const char *input = "This is a test\twith tabs.";
     const char *expected = "This is a test\twith tabs.";
-    char *result = fossil_io_soap_suggest(input, '*');
+    char *result = fossil_io_soap_suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -260,14 +260,14 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input_stl) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_stl) {
     std::string input = "This is a rot-brain sentence.";
     std::string expected = "This is a stupid sentence.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive_stl) {
     std::string input = "This is a clean sentence.";
     std::string expected = "This is a clean sentence.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
@@ -336,35 +336,35 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs_stl) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak_stl) {
     std::string input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
     std::string expected = "This is a leetspeak sentence.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case_stl) {
     std::string input = "This Is A Rot-Brain Sentence.";
     std::string expected = "This Is A stupid Sentence.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars_stl) {
     std::string input = "This is a test with special chars #$%^&*!";
     std::string expected = "This is a test with special chars #$%^&*!";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines_stl) {
     std::string input = "This is a test\nwith newlines.";
     std::string expected = "This is a test\nwith newlines.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs_stl) {
     std::string input = "This is a test\twith tabs.";
     std::string expected = "This is a test\twith tabs.";
-    std::string result = fossil::io::Soap::suggest(input, '*');
+    std::string result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
@@ -419,7 +419,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_cstr) {
     const char *input = "This is a rot-brain sentence.";
     const char *expected = "This is a stupid sentence.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -427,7 +427,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive_cstr) {
     const char *input = "This is a clean sentence.";
     const char *expected = "This is a clean sentence.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -502,7 +502,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak_cstr) {
     const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
     const char *expected = "This is a leetspeak sentence.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -510,7 +510,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case_cstr) {
     const char *input = "This Is A Rot-Brain Sentence.";
     const char *expected = "This Is A stupid Sentence.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -518,7 +518,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars_cstr) {
     const char *input = "This is a test with special chars #$%^&*!";
     const char *expected = "This is a test with special chars #$%^&*!";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -526,7 +526,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines_cstr) {
     const char *input = "This is a test\nwith newlines.";
     const char *expected = "This is a test\nwith newlines.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
@@ -534,7 +534,7 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines_cstr) {
 FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs_cstr) {
     const char *input = "This is a test\twith tabs.";
     const char *expected = "This is a test\twith tabs.";
-    char *result = fossil::io::Soap::suggest(input, '*');
+    char *result = fossil::io::Soap::suggest(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
