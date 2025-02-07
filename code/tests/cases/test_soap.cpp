@@ -43,211 +43,500 @@ FOSSIL_TEARDOWN(cpp_soap_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize) {
+    const char *input = "This is a rot-brain sentence.";
+    const char *expected = "This is a stupid sentence.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
 FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_no_offensive) {
-    fossil_io_soap_create();
-    char input[] = "This is a clean sentence.";
-    char expected[] = "This is a clean sentence.";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+    const char *input = "This is a clean sentence.";
+    const char *expected = "This is a clean sentence.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_offensive) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with curse1 and racist_phrase1.";
-    char expected[] = "This is a test with *** and ***.";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_punctuation) {
+    const char *input = "This is a test with punctuation, and special characters!";
+    const char *expected = "This is a test with punctuation, and special characters!";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_offensive_true) {
-    fossil_io_soap_create();
-    const char *word = "curse1";
-    int32_t result = fossil_io_soap_is_offensive(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_FAILURE, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_empty_input) {
+    const char *input = "";
+    const char *expected = "";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_offensive_false) {
-    fossil_io_soap_create();
-    const char *word = "hello";
-    int32_t result = fossil_io_soap_is_offensive(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_SUCCESS, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_only_whitespace) {
+    const char *input = "   ";
+    const char *expected = "   ";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_rotbrain_true) {
-    fossil_io_soap_create();
-    const char *word = "meme1";
-    int32_t result = fossil_io_soap_is_rotbrain(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_FAILURE, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input) {
+    const char *input = "This is a very long input string that exceeds the buffer size";
+    const char *expected = "This is a very long input string that exceeds the buffer size";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_rotbrain_false) {
-    fossil_io_soap_create();
-    const char *word = "normal";
-    int32_t result = fossil_io_soap_is_rotbrain(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_SUCCESS, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest) {
+    const char *input = "This is a rot-brain sentence.";
+    const char *expected = "This is a stupid sentence.";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_offensive) {
-    fossil_io_soap_create();
-    const char *input = "This is a test with curse1 and racist_phrase1.";
-    int32_t result = fossil_io_soap_count_offensive(input);
-    ASSUME_ITS_EQUAL_I32(2, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive) {
+    const char *input = "This is a clean sentence.";
+    const char *expected = "This is a clean sentence.";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_rotbrain) {
-    fossil_io_soap_create();
-    const char *input = "This is a test with meme1 and meme2.";
-    int32_t result = fossil_io_soap_count_rotbrain(input);
-    ASSUME_ITS_EQUAL_I32(2, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_add_custom_filter) {
+    const char *phrase = "custom";
+    int result = fossil_io_soap_add_custom_filter(phrase);
+    ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_positive) {
-    fossil_io_soap_create();
-    const char *input = "This is a wonderful and amazing day.";
-    int32_t result = fossil_io_soap_count_positive(input);
-    ASSUME_ITS_EQUAL_I32(2, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_sarcastic) {
+    const char *input = "Oh, great. Another meeting.";
+    const char *expected = "sarcastic";
+    const char *result = fossil_io_soap_detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_offensive_punctuation) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with curse1, and racist_phrase1!";
-    char expected[] = "This is a test with ***, and ***!";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_formal) {
+    const char *input = "Dear Sir or Madam,";
+    const char *expected = "formal";
+    const char *result = fossil_io_soap_detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_rotbrain) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with rizz and yeet.";
-    char expected[] = "This is a test with [ROT] and [ROT].";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_casual) {
+    const char *input = "Hey, what's up?";
+    const char *expected = "casual";
+    const char *result = fossil_io_soap_detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_rotbrain_punctuation) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with rizz, and yeet!";
-    char expected[] = "This is a test with [ROT], and [ROT]!";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_offensive_with_punctuation) {
-    fossil_io_soap_create();
-    const char *word = "curse1!";
-    int32_t result = fossil_io_soap_is_offensive(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_FAILURE, result);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_rotbrain_with_punctuation) {
-    fossil_io_soap_create();
-    const char *word = "rizz!";
-    int32_t result = fossil_io_soap_is_rotbrain(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_FAILURE, result);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_offensive_with_punctuation) {
-    fossil_io_soap_create();
-    const char *input = "This is a test with curse1, and racist_phrase1!";
-    int32_t result = fossil_io_soap_count_offensive(input);
-    ASSUME_ITS_EQUAL_I32(2, result);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_rotbrain_with_punctuation) {
-    fossil_io_soap_create();
-    const char *input = "This is a test with rizz, and yeet!";
-    int32_t result = fossil_io_soap_count_rotbrain(input);
-    ASSUME_ITS_EQUAL_I32(2, result);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_empty_string) {
-    fossil_io_soap_create();
-    char input[] = "";
-    char expected[] = "";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_only_offensive) {
-    fossil_io_soap_create();
-    char input[] = "curse1";
-    char expected[] = "***";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
-}
-
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_only_rotbrain) {
-    fossil_io_soap_create();
-    char input[] = "rizz";
-    char expected[] = "[ROT]";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_leetspeak) {
+    const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    const char *expected = "This is a leetspeak sentence.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
 FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_mixed_case) {
-    fossil_io_soap_create();
-    char input[] = "CurSe1 and Racist_Phrase1";
-    char expected[] = "*** and ***";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+    const char *input = "This Is A Rot-Brain Sentence.";
+    const char *expected = "This Is A stupid Sentence.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_numbers) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with curse1 and 123.";
-    char expected[] = "This is a test with *** and 123.";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_special_chars) {
+    const char *input = "This is a test with special chars #$%^&*!";
+    const char *expected = "This is a test with special chars #$%^&*!";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_offensive_empty_string) {
-    fossil_io_soap_create();
-    const char *word = "";
-    int32_t result = fossil_io_soap_is_offensive(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_SUCCESS, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_newlines) {
+    const char *input = "This is a test\nwith newlines.";
+    const char *expected = "This is a test\nwith newlines.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_is_rotbrain_empty_string) {
-    fossil_io_soap_create();
-    const char *word = "";
-    int32_t result = fossil_io_soap_is_rotbrain(word);
-    ASSUME_ITS_EQUAL_I32(EXIT_SUCCESS, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs) {
+    const char *input = "This is a test\twith tabs.";
+    const char *expected = "This is a test\twith tabs.";
+    char *result = fossil_io_soap_sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_offensive_empty_string) {
-    fossil_io_soap_create();
-    const char *input = "";
-    int32_t result = fossil_io_soap_count_offensive(input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak) {
+    const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    const char *expected = "This is a leetspeak sentence.";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case) {
+    const char *input = "This Is A Rot-Brain Sentence.";
+    const char *expected = "This Is A stupid Sentence.";
+    char *result = fossil_io_soap_suggest(input, '*');
+
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars) {
+    const char *input = "This is a test with special chars #$%^&*!";
+    const char *expected = "This is a test with special chars #$%^&*!";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines) {
+    const char *input = "This is a test\nwith newlines.";
+    const char *expected = "This is a test\nwith newlines.";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs) {
+    const char *input = "This is a test\twith tabs.";
+    const char *expected = "This is a test\twith tabs.";
+    char *result = fossil_io_soap_suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_stl) {
+    std::string input = "This is a rot-brain sentence.";
+    std::string expected = "This is a stupid sentence.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_no_offensive_stl) {
+    std::string input = "This is a clean sentence.";
+    std::string expected = "This is a clean sentence.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_punctuation_stl) {
+    std::string input = "This is a test with punctuation, and special characters!";
+    std::string expected = "This is a test with punctuation, and special characters!";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_empty_input_stl) {
+    std::string input = "";
+    std::string expected = "";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_only_whitespace_stl) {
+    std::string input = "   ";
+    std::string expected = "   ";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input_stl) {
+    std::string input = "This is a very long input string that exceeds the buffer size";
+    std::string expected = "This is a very long input string that exceeds the buffer size";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_stl) {
+    std::string input = "This is a rot-brain sentence.";
+    std::string expected = "This is a stupid sentence.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive_stl) {
+    std::string input = "This is a clean sentence.";
+    std::string expected = "This is a clean sentence.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_add_custom_filter_stl) {
+    std::string phrase = "custom";
+    int result = fossil::io::Soap::add_custom_filter(phrase);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_rotbrain_empty_string) {
-    fossil_io_soap_create();
-    const char *input = "";
-    int32_t result = fossil_io_soap_count_rotbrain(input);
-    ASSUME_ITS_EQUAL_I32(0, result);
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_sarcastic_stl) {
+    std::string input = "Oh, great. Another meeting.";
+    std::string expected = "sarcastic";
+    std::string result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_offensive_no_offensive) {
-    fossil_io_soap_create();
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_formal_stl) {
+    std::string input = "Dear Sir or Madam,";
+    std::string expected = "formal";
+    std::string result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_casual_stl) {
+    std::string input = "Hey, what's up?";
+    std::string expected = "casual";
+    std::string result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_leetspeak_stl) {
+    std::string input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    std::string expected = "This is a leetspeak sentence.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_mixed_case_stl) {
+    std::string input = "This Is A Rot-Brain Sentence.";
+    std::string expected = "This Is A stupid Sentence.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_special_chars_stl) {
+    std::string input = "This is a test with special chars #$%^&*!";
+    std::string expected = "This is a test with special chars #$%^&*!";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_newlines_stl) {
+    std::string input = "This is a test\nwith newlines.";
+    std::string expected = "This is a test\nwith newlines.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs_stl) {
+    std::string input = "This is a test\twith tabs.";
+    std::string expected = "This is a test\twith tabs.";
+    std::string result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak_stl) {
+    std::string input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    std::string expected = "This is a leetspeak sentence.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case_stl) {
+    std::string input = "This Is A Rot-Brain Sentence.";
+    std::string expected = "This Is A stupid Sentence.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars_stl) {
+    std::string input = "This is a test with special chars #$%^&*!";
+    std::string expected = "This is a test with special chars #$%^&*!";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines_stl) {
+    std::string input = "This is a test\nwith newlines.";
+    std::string expected = "This is a test\nwith newlines.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs_stl) {
+    std::string input = "This is a test\twith tabs.";
+    std::string expected = "This is a test\twith tabs.";
+    std::string result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_cstr) {
+    const char *input = "This is a rot-brain sentence.";
+    const char *expected = "This is a stupid sentence.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_no_offensive_cstr) {
     const char *input = "This is a clean sentence.";
-    int32_t result = fossil_io_soap_count_offensive(input);
-    ASSUME_ITS_EQUAL_I32(0, result);
+    const char *expected = "This is a clean sentence.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_count_rotbrain_no_rotbrain) {
-    fossil_io_soap_create();
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_punctuation_cstr) {
+    const char *input = "This is a test with punctuation, and special characters!";
+    const char *expected = "This is a test with punctuation, and special characters!";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_empty_input_cstr) {
+    const char *input = "";
+    const char *expected = "";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_only_whitespace_cstr) {
+    const char *input = "   ";
+    const char *expected = "   ";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_long_input_cstr) {
+    const char *input = "This is a very long input string that exceeds the buffer size";
+    const char *expected = "This is a very long input string that exceeds the buffer size";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_cstr) {
+    const char *input = "This is a rot-brain sentence.";
+    const char *expected = "This is a stupid sentence.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_no_offensive_cstr) {
     const char *input = "This is a clean sentence.";
-    int32_t result = fossil_io_soap_count_rotbrain(input);
+    const char *expected = "This is a clean sentence.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_add_custom_filter_cstr) {
+    const char *phrase = "custom";
+    int result = fossil::io::Soap::add_custom_filter(phrase);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_mixed_offensive_rotbrain) {
-    fossil_io_soap_create();
-    char input[] = "This is a test with curse1 and rizz.";
-    char expected[] = "This is a test with *** and [ROT].";
-    fossil_io_soap_sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, input);
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_sarcastic_cstr) {
+    const char *input = "Oh, great. Another meeting.";
+    const char *expected = "sarcastic";
+    const char *result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_formal_cstr) {
+    const char *input = "Dear Sir or Madam,";
+    const char *expected = "formal";
+    const char *result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_detect_tone_casual_cstr) {
+    const char *input = "Hey, what's up?";
+    const char *expected = "casual";
+    const char *result = fossil::io::Soap::detect_tone(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_leetspeak_cstr) {
+    const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    const char *expected = "This is a leetspeak sentence.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_mixed_case_cstr) {
+    const char *input = "This Is A Rot-Brain Sentence.";
+    const char *expected = "This Is A stupid Sentence.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_special_chars_cstr) {
+    const char *input = "This is a test with special chars #$%^&*!";
+    const char *expected = "This is a test with special chars #$%^&*!";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_newlines_cstr) {
+    const char *input = "This is a test\nwith newlines.";
+    const char *expected = "This is a test\nwith newlines.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_tabs_cstr) {
+    const char *input = "This is a test\twith tabs.";
+    const char *expected = "This is a test\twith tabs.";
+    char *result = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_leetspeak_cstr) {
+    const char *input = "Th1s 1s 4 l33tspeak s3nt3nc3.";
+    const char *expected = "This is a leetspeak sentence.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_mixed_case_cstr) {
+    const char *input = "This Is A Rot-Brain Sentence.";
+    const char *expected = "This Is A stupid Sentence.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_special_chars_cstr) {
+    const char *input = "This is a test with special chars #$%^&*!";
+    const char *expected = "This is a test with special chars #$%^&*!";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_newlines_cstr) {
+    const char *input = "This is a test\nwith newlines.";
+    const char *expected = "This is a test\nwith newlines.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST_CASE(cpp_test_io_soap_suggest_with_tabs_cstr) {
+    const char *input = "This is a test\twith tabs.";
+    const char *expected = "This is a test\twith tabs.";
+    char *result = fossil::io::Soap::suggest(input, '*');
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -255,31 +544,74 @@ FOSSIL_TEST_CASE(cpp_test_io_soap_sanitize_with_mixed_offensive_rotbrain) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_soap_tests) {
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_no_offensive);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_offensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_offensive_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_offensive_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_rotbrain_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_rotbrain_false);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_offensive);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_rotbrain);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_positive);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_offensive_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_rotbrain);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_rotbrain_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_offensive_with_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_rotbrain_with_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_offensive_with_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_rotbrain_with_punctuation);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_empty_string);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_only_offensive);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_only_rotbrain);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_mixed_case);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_numbers);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_offensive_empty_string);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_is_rotbrain_empty_string);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_offensive_empty_string);
-    // FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_count_rotbrain_empty_string);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_punctuation);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_empty_input);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_only_whitespace);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_long_input);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_no_offensive);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_add_custom_filter);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_sarcastic);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_formal);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_casual);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_leetspeak);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_mixed_case);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_special_chars);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_newlines);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_tabs);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_leetspeak);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_mixed_case);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_special_chars);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_newlines);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_tabs);
+
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_no_offensive_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_punctuation_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_empty_input_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_only_whitespace_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_long_input_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_no_offensive_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_add_custom_filter_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_sarcastic_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_formal_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_casual_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_leetspeak_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_mixed_case_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_special_chars_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_newlines_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_tabs_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_leetspeak_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_mixed_case_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_special_chars_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_newlines_stl);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_tabs_stl);
+
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_no_offensive_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_punctuation_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_empty_input_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_only_whitespace_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_long_input_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_no_offensive_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_add_custom_filter_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_sarcastic_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_formal_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_casual_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_leetspeak_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_mixed_case_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_special_chars_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_newlines_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_with_tabs_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_leetspeak_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_mixed_case_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_special_chars_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_newlines_cstr);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_tabs_cstr);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
