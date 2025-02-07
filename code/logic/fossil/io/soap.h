@@ -81,10 +81,9 @@ namespace fossil {
              * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
              *
              * @param text The input text to sanitize.
-             * @param censor_char Character to use for censoring (default: '*').
              * @return A dynamically allocated sanitized string (must be freed by the caller).
              */
-            static std::string sanitize(const std::string &text, char censor_char = '*') {
+            static std::string sanitize(const std::string &text) {
                 return fossil_io_soap_sanitize(text.c_str());
             }
 
@@ -130,10 +129,9 @@ namespace fossil {
              * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
              *
              * @param text The input text to sanitize.
-             * @param censor_char Character to use for censoring (default: '*').
              * @return A dynamically allocated sanitized string (must be freed by the caller).
              */
-            static char* sanitize(const char* text, char censor_char = '*') {
+            static char* sanitize(const char* text) {
                 return fossil_io_soap_sanitize(text);
             }
 
