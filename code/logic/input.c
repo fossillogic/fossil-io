@@ -12,7 +12,6 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/input.h"
-#include "fossil/io/soap.h"
 #include "fossil/io/output.h"
 
 #include <ctype.h>
@@ -54,7 +53,7 @@ void fossil_io_trim(char *str) {
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
 char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
     if (buf == NULL || size == 0 || input_stream == NULL) {
-        fprintf(stderr, "Error: Invalid buffer or stream\n");
+        fprintf(stderr, "Error: Invalid buffer or stream.\n");
         return NULL;
     }
 
@@ -63,7 +62,7 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
         if (feof(input_stream)) {
             return NULL; // End of file reached
         }
-        fprintf(stderr, "Error: Failed to read from input stream\n");
+        fprintf(stderr, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -73,9 +72,6 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
         buf[len - 1] = '\0'; // Remove the newline character
     }
 
-    // Sanitize the input buffer
-    fossil_soap_sanitize(buf);
-
     // Trim any leading or trailing whitespace
     fossil_io_trim(buf);
 
@@ -84,7 +80,7 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
 
 char *fossil_io_gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, int *error_code) {
     if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL) {
-        fprintf(stderr, "Error: Invalid buffer, stream, or error code\n");
+        fprintf(stderr, "Error: Invalid buffer, stream, or error code.\n");
         return NULL;
     }
 
@@ -95,7 +91,7 @@ char *fossil_io_gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, 
             return NULL; // End of file reached
         }
         *error_code = ferror(input_stream);
-        fprintf(stderr, "Error: Failed to read from input stream\n");
+        fprintf(stderr, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -104,9 +100,6 @@ char *fossil_io_gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, 
     if (len > 0 && buf[len - 1] == '\n') {
         buf[len - 1] = '\0'; // Remove the newline character
     }
-
-    // Sanitize the input buffer
-    fossil_soap_sanitize(buf);
 
     // Trim any leading or trailing whitespace
     fossil_io_trim(buf);
@@ -132,7 +125,7 @@ int fossil_io_fscanf(FILE *input_stream, const char *format, ...) {
 
 int fossil_io_validate_input_buffer(const char *buf, size_t size) {
     if (buf == NULL || size == 0) {
-        fprintf(stderr, "Error: Invalid buffer or size\n");
+        fprintf(stderr, "Error: Invalid buffer or size.\n");
         return 0;
     }
     return 1;
@@ -148,7 +141,7 @@ char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream) {
         if (feof(input_stream)) {
             return NULL; // End of file reached
         }
-        fprintf(stderr, "Error: Failed to read from input stream\n");
+        fprintf(stderr, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -157,9 +150,6 @@ char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream) {
     if (len > 0 && buf[len - 1] == '\n') {
         buf[len - 1] = '\0'; // Remove the newline character
     }
-
-    // Sanitize the input buffer
-    fossil_soap_sanitize(buf);
 
     // Trim any leading or trailing whitespace
     fossil_io_trim(buf);
@@ -249,9 +239,6 @@ int fossil_io_validate_sanitize_string(const char *input, char *output, size_t o
 
     // Copy the input string to the output buffer
     strncpy(output, input, output_size);
-
-    // Sanitize the output buffer
-    fossil_soap_sanitize(output);
 
     return 1;
 }

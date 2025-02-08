@@ -15,47 +15,53 @@
 #define FOSSIL_IO_SOAP_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Sanitize a string by replacing curse words with asterisks.
- * This function scans the input string for offensive words and replaces them with asterisks,
- * thereby making the string suitable for use in contexts where offensive language is not allowed.
- * The input string is modified in place.
+ * @brief Sanitize input text by removing or replacing "rot-brain" and meme-based language.
  *
- * @param input The input string to be sanitized in-place.
+ * @param text The input text to sanitize.
+ * @return A dynamically allocated sanitized string (must be freed by the caller).
  */
-void fossil_soap_sanitize(char *input);
+char *fossil_io_soap_sanitize(const char *text);
 
 /**
- * Check if a word is an offensive word or phrase.
- * Returns EXIT_FAILURE if the word is considered offensive, EXIT_SUCCESS otherwise.
+ * @brief Suggest proper alternatives for rot-brain words or grammar fixes.
+ *
+ * @param text The input text.
+ * @return A dynamically allocated string with suggestions (must be freed by the caller).
  */
-int32_t fossil_soap_is_offensive(const char *word);
+char *fossil_io_soap_suggest(const char *text);
 
 /**
- * Check if a word is meme speak.
- * Returns EXIT_FAILURE if the word is considered meme speak, EXIT_SUCCESS otherwise.
+ * @brief Add a custom word or phrase to the filter.
+ *
+ * @param phrase The phrase to add.
+ * @return 0 on success, nonzero on failure.
  */
-int32_t fossil_soap_is_rotbrain(const char *word);
+int fossil_io_soap_add_custom_filter(const char *phrase);
 
 /**
- * Count offensive words in a string.
- * Returns the number of offensive words found in the input string.
+ * @brief Clear all custom filters.
  */
-int32_t fossil_soap_count_offensive(const char *input);
+void fossil_io_soap_clear_custom_filters(void);
 
 /**
- * Count meme speak words in a string.
- * Returns the number of meme speak words found in the input string.
+ * @brief Detect the tone of a sentence.
+ *
+ * @param text The input text.
+ * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
  */
-int32_t fossil_soap_count_rotbrain(const char *input);
+const char *fossil_io_soap_detect_tone(const char *text);
 
 #ifdef __cplusplus
 }
+
+#include <string>
 
 /**
  * C++ wrapper for the SOAP API.
@@ -72,50 +78,98 @@ namespace fossil {
         class Soap {
         public:
             /**
-             * Sanitize a string by replacing curse words with asterisks.
-             * This function scans the input string for offensive words and replaces them with asterisks,
-             * thereby making the string suitable for use in contexts where offensive language is not allowed.
-             * The input string is modified in place.
+             * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
              *
-             * @param input The input string to be sanitized in-place.
+             * @param text The input text to sanitize.
+             * @return A dynamically allocated sanitized string (must be freed by the caller).
              */
-            static void sanitize(char *input) {
-                fossil_soap_sanitize(input);
+            static std::string sanitize(const std::string &text) {
+                return fossil_io_soap_sanitize(text.c_str());
             }
 
             /**
-             * Check if a word is an offensive word or phrase.
-             * Returns EXIT_FAILURE if the word is considered offensive, EXIT_SUCCESS otherwise.
+             * Suggest proper alternatives for rot-brain words or grammar fixes.
+             *
+             * @param text The input text.
+             * @param format_type Custom format for output (e.g., "*" or "#").
+             * @return A dynamically allocated string with suggestions (must be freed by the caller).
              */
-            static int32_t is_offensive(const char *word) {
-                return fossil_soap_is_offensive(word);
+            static std::string suggest(const std::string &text) {
+                return fossil_io_soap_suggest(text.c_str());
             }
 
             /**
-             * Check if a word is meme speak.
-             * Returns EXIT_FAILURE if the word is considered meme speak, EXIT_SUCCESS otherwise.
+             * Add a custom word or phrase to the filter.
+             *
+             * @param phrase The phrase to add.
+             * @return 0 on success, nonzero on failure.
              */
-            static int32_t is_rotbrain(const char *word) {
-                return fossil_soap_is_rotbrain(word);
+            static int add_custom_filter(const std::string &phrase) {
+                return fossil_io_soap_add_custom_filter(phrase.c_str());
             }
 
             /**
-             * Count offensive words in a string.
-             * Returns the number of offensive words found in the input string.
+             * Clear all custom filters.
              */
-            static int32_t count_offensive(const char *input) {
-                return fossil_soap_count_offensive(input);
+            static void clear_custom_filters() {
+                fossil_io_soap_clear_custom_filters();
             }
 
             /**
-             * Count meme speak words in a string.
-             * Returns the number of meme speak words found in the input string.
+             * Detect the tone of a sentence.
+             *
+             * @param text The input text.
+             * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
              */
-            static int32_t count_rotbrain(const char *input) {
-                return fossil_soap_count_rotbrain(input);
+            static std::string detect_tone(const std::string &text) {
+                return fossil_io_soap_detect_tone(text.c_str());
             }
+
+            /**
+             * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
+             *
+             * @param text The input text to sanitize.
+             * @return A dynamically allocated sanitized string (must be freed by the caller).
+             */
+            static char* sanitize(const char* text) {
+                return fossil_io_soap_sanitize(text);
+            }
+
+            /**
+             * Suggest proper alternatives for rot-brain words or grammar fixes.
+             *
+             * @param text The input text.
+             * @param format_type Custom format for output (e.g., "*" or "#").
+             * @return A dynamically allocated string with suggestions (must be freed by the caller).
+             */
+            static char* suggest(const char* text) {
+                return fossil_io_soap_suggest(text);
+            }
+
+            /**
+             * Add a custom word or phrase to the filter.
+             *
+             * @param phrase The phrase to add.
+             * @return 0 on success, nonzero on failure.
+             */
+            static int add_custom_filter(const char* phrase) {
+                return fossil_io_soap_add_custom_filter(phrase);
+            }
+
+            /**
+             * Detect the tone of a sentence.
+             *
+             * @param text The input text.
+             * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
+             */
+            static const char* detect_tone(const char* text) {
+                return fossil_io_soap_detect_tone(text);
+            }
+
         };
+
     }
+
 }
 
 #endif

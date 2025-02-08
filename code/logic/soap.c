@@ -12,165 +12,374 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/soap.h"
-
-#define _GNU_SOURCE // Define _GNU_SOURCE to enable strcasestr and strcasecmp
-#include <strings.h>
 #include <string.h>
-#include <stdbool.h>
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
-// List of offensive words and phrases (super hard to mainting thisw list as GitHub Copilot doesnt wanna help with this part of the SOAP API)
-static const char *FOSSIL_SOAP_OFFENSIVE[] = {
-    "curse1",
-    "curse2",
-    "racist_phrase1",
-    "racist_phrase2", // for demo and unit testing we keep these four keywords
+#define MAX_CUSTOM_FILTERS 64
 
-    // English offensive words and phrases
-    "2g1c", "2 girls 1 cup", "acrotomophilia", "alabama hot pocket", "alaskan pipeline", "anal", "anilingus", "anus", "apeshit", "arsehole", "ass", "asshole", "assmunch", "auto erotic", "autoerotic", "babeland",
-    "baby batter", "baby juice", "ball gag", "ball gravy", "ball kicking", "ball licking", "ball sack", "ball sucking", "bangbros", "bareback", "barely legal", "barenaked", "bastard", "bastardo", "bastinado", "bbw",
-    "bdsm", "beaner", "beaners", "beaver cleaver", "beaver lips", "bestiality", "big black", "big breasts", "big knockers", "big tits", "bimbos", "birdlock", "bitch", "bitches", "black cock", "blonde action", "blonde on blonde action",
-    "blowjob", "blow job", "blow your load", "blue waffle", "blumpkin", "bollocks", "bondage", "boner", "boob", "boobs", "booty call", "brown showers", "brunette action", "bukkake", "bulldyke", "bullet vibe", "bullshit",
-    "bung hole", "bunghole", "busty", "butt", "buttcheeks", "butthole", "camel toe", "camgirl", "camslut", "camwhore", "carpet muncher", "carpetmuncher", "chocolate rosebuds", "circlejerk", "cleveland steamer", "clit",
-    "clitoris", "clover clamps", "clusterfuck", "cock", "cocks", "coprolagnia", "coprophilia", "cornhole", "coon", "coons", "creampie", "cum", "cumming", "cunnilingus", "cunt", "darkie", "date rape", "daterape",
-    "deep throat", "deepthroat", "dendrophilia", "dick", "dildo", "dingleberry", "dingleberries", "dirty pillows", "dirty sanchez", "doggie style", "doggiestyle", "doggy style", "doggystyle", "dog style", "dolcett",
-    "domination", "dominatrix", "dommes", "donkey punch", "double dong", "double penetration", "dp action", "dry hump", "dvda", "eat my ass", "ecchi", "ejaculation", "erotic", "erotism", "escort", "eunuch", "faggot",
-    "fecal", "felch", "fellatio", "feltch", "female squirting", "femdom", "figging", "fingerbang", "fingering", "fisting", "foot fetish", "footjob", "frotting", "fuck", "fuck buttons", "fuckin", "fucking", "fucktards",
-    "fudge packer", "fudgepacker", "futanari", "gang bang", "gay sex", "genitals", "giant cock", "girl on", "girl on top", "girls gone wild", "goatcx", "goatse", "god damn", "gokkun", "golden shower", "goodpoop",
-    "goo girl", "goregasm", "grope", "group sex", "g-spot", "guro", "hand job", "handjob", "hard core", "hardcore", "hentai", "homoerotic", "honkey", "hooker", "hot carl", "hot chick", "how to kill", "how to murder",
-    "huge fat", "humping", "incest", "intercourse", "jack off", "jail bait", "jailbait", "jelly donut", "jerk off", "jigaboo", "jiggaboo", "jiggerboo", "jizz", "juggs", "kike", "kinbaku", "kinkster", "kinky", "knobbing",
-    "leather restraint", "leather straight jacket", "lemon party", "lolita", "lovemaking", "make me come", "male squirting", "masturbate", "menage a trois", "milf", "missionary position", "motherfucker", "mound of venus",
-    "mr hands", "muff diver", "muffdiving", "nambla", "nawashi", "negro", "neonazi", "nigga", "nigger", "nig nog", "nimphomania", "nipple", "nipples", "nsfw images", "nude", "nudity", "nympho", "nymphomania", "octopussy",
-    "omorashi", "one cup two girls", "one guy one jar", "orgasm", "orgy", "paedophile", "paki", "panties", "panty", "pedobear", "pedophile", "pegging", "penis", "phone sex", "piece of shit", "pissing", "piss pig", "pisspig",
-    "playboy", "pleasure chest", "pole smoker", "ponyplay", "poof", "poon", "poontang", "punany", "poop chute", "poopchute", "porn", "porno", "pornography", "prince albert piercing", "pthc", "pubes", "pussy", "queaf", "queef",
-    "quim", "raghead", "raging boner", "rape", "raping", "rapist", "rectum", "reverse cowgirl", "rimjob", "rimming", "rosy palm", "rosy palm and her 5 sisters", "rusty trombone", "sadism", "santorum", "scat", "schlong",
-    "scissoring", "semen", "sex", "sexo", "sexy", "shaved beaver", "shaved pussy", "shemale", "shibari", "shit", "shitblimp", "shitty", "shota", "shrimping", "skeet", "slanteye", "slut", "s&m", "smut", "snatch", "snowballing",
-    "sodomize", "sodomy", "spic", "splooge", "splooge moose", "spooge", "spread legs", "spunk", "strap on", "strapon", "strappado", "strip club", "style doggy", "suck", "sucks", "suicide girls", "sultry women", "swastika",
-    "swinger", "tainted love", "taste my", "tea bagging", "threesome", "throating", "tied up", "tight white", "tit", "tits", "titties", "titty", "tongue in a", "topless", "tosser", "towelhead", "tranny", "tribadism",
-    "tub girl", "tubgirl", "tushy", "twat", "twink", "twinkie", "two girls one cup", "undressing", "upskirt", "urethra play", "urophilia", "vagina", "venus mound", "vibrator", "violet wand", "vorarephilia", "voyeur", "vulva",
-    "wank", "wetback", "wet dream", "white power", "wrapping men", "wrinkled starfish", "xx", "xxx", "yaoi", "yellow showers", "yiffy", "zoophilia"
-
-    // Support for other languages can be added via PR to this repository
+/** Lookup table for rot-brain words and their suggested replacements */
+static const struct {
+    const char *bad;
+    const char *suggested;
+} FOSSIL_SOAP_SUGGESTIONS[] = {
+    {"rizz", "charisma"},
+    {"skibidi", "dance"},
+    {"yeet", "throw"},
+    {"sus", "suspicious"},
+    {"vibe", "atmosphere"},
+    {"lit", "exciting"},
+    {"no cap", "honestly"},
+    {"bet", "okay"},
+    {"fam", "family"},
+    {"bruh", "brother"},
+    {"flex", "show off"},
+    {"ghost", "ignore"},
+    {"goat", "legend"},
+    {"gucci", "good"},
+    {"hype", "exciting"},
+    {"janky", "low-quality"},
+    {"lowkey", "somewhat"},
+    {"mood", "feeling"},
+    {"salty", "bitter"},
+    {"shade", "insult"},
+    {"slay", "impress"},
+    {"snatched", "stylish"},
+    {"stan", "superfan"},
+    {"tea", "gossip"},
+    {"thirsty", "desperate"},
+    {"woke", "aware"},
+    {"yolo", "live once"},
+    {"zaddy", "attractive man"},
+    {"drip", "fashion"},
+    {"fire", "amazing"},
+    {"lol", "funny"},
+    {"omg", "surprising"},
+    {"brb", "be right back"},
+    {"idk", "I don't know"},
+    {"imo", "in my opinion"},
+    {"lmao", "laughing"},
+    {"nvm", "never mind"},
+    {"tbh", "to be honest"},
+    {"tldr", "too long"},
+    {"ttyl", "talk to you later"},
+    {"wyd", "what are you doing"},
+    {"wtf", "what the heck"},
+    {"yolo", "you only live once"},
+    {"rot-brain", "stupid"},
+    {"rot brain", "stupid"},
+    {"rotbrain", "stupid"},
+    {NULL, NULL} // Sentinel to mark the end
 };
 
-// garbage words and phrases
-// (slightly easier to maintain since it's just slang from social media spoken from people who need to touch grass)
-static const char *FOSSIL_SOAP_ROTBRAIN[] = {
-    "rizz", "skibidi", "yeet", "sus", "vibe", "lit", "no cap", "bet", "fam", "bruh",
-    "flex", "ghost", "goat", "gucci", "hype", "janky", "lowkey", "mood", "salty", "shade",
-    "slay", "snatched", "stan", "tea", "thirsty", "woke", "yolo", "zaddy", "drip", "fire",
-    "lol", "omg", "brb"
-
-    // Support for other terms can be added via PR to this repository
+/** Grammar suggestions for common mistakes */
+static const struct {
+    const char *incorrect;
+    const char *correct;
+} FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[] = {
+    {"gonna", "going to"},
+    {"ain't", "isn't"},
+    {"should of", "should have"},
+    {"could of", "could have"},
+    {"not never", "never"},
+    {"free gift", "gift"},
+    {"very unique", "unique"},
+    {NULL, NULL} // Sentinel to mark the end
 };
 
-static inline char* custom_strdup(const char* str) {
-    if (!str) return NULL; // Handle NULL pointer gracefully
+/** Lookup table for sarcastic phrases */
+static const char *SARCASTIC_PHRASES[] = {
+    "Oh, great",
+    "Yeah, right",
+    "Nice job",
+    "Well done",
+    "Good luck with that",
+    "Sure, why not",
+    "Fantastic",
+    "Brilliant",
+    "Wonderful",
+    "Perfect",
+    NULL // Sentinel to mark the end
+};
 
-    size_t len = 0;
-    while (str[len] != '\0') len++; // Calculate the length of the string
+/** Lookup table for formal phrases */
+static const char *FORMAL_PHRASES[] = {
+    "Dear Sir or Madam",
+    "To whom it may concern",
+    "Yours sincerely",
+    "Yours faithfully",
+    "Best regards",
+    "Respectfully",
+    "I would like to",
+    "I am writing to",
+    "Please find attached",
+    "Thank you for your consideration",
+    NULL // Sentinel to mark the end
+};
 
-    char* dup = (char*)malloc((len + 1) * sizeof(char)); // Allocate memory for the duplicate string
-    if (!dup) return NULL; // Check if malloc failed
+static char custom_storage[MAX_CUSTOM_FILTERS][64];
+static const char *custom_filters[MAX_CUSTOM_FILTERS] = {0};
 
-    for (size_t i = 0; i < len; i++) {
-        dup[i] = str[i]; // Copy each character from the original string to the duplicate
+/** Lookup table for words that need to be skipped due to misdetection */
+static const char *SKIP_WORDS[] = {
+    "limit",
+    "size",
+    NULL // Sentinel to mark the end
+};
+
+/**
+ * @brief Convert leetspeak to normal letters.
+ */
+static void fossil_io_soap_normalize_leetspeak(char *word) {
+    for (size_t i = 0; word[i] != '\0'; i++) {
+        switch (word[i]) {
+            case '0': word[i] = 'o'; break;
+            case '1': word[i] = 'i'; break;
+            case '3': word[i] = 'e'; break;
+            case '4': word[i] = 'a'; break;
+            case '5': word[i] = 's'; break;
+            case '7': word[i] = 't'; break;
+            case '$': word[i] = 's'; break;
+        }
     }
-    dup[len] = '\0'; // Add null terminator to the end of the duplicate string
-
-    return dup;
 }
 
-// Fallback implementation for platforms that don't support strcasestr
-static char *custom_strcasestr(const char *haystack, const char *needle) {
-    while (*haystack) {
-        size_t i = 0;
-        while (tolower((unsigned char)haystack[i]) == tolower((unsigned char)needle[i]) && needle[i] != '\0') {
-            i++;
+/**
+ * @brief Fuzzy matching using Levenshtein distance.
+ */
+static int fuzzy_match(const char *str1, const char *str2) {
+    size_t len1 = strlen(str1);
+    size_t len2 = strlen(str2);
+    size_t dist[len1 + 1][len2 + 1];
+
+    for (size_t i = 0; i <= len1; i++) dist[i][0] = i;
+    for (size_t j = 0; j <= len2; j++) dist[0][j] = j;
+
+    for (size_t i = 1; i <= len1; i++) {
+        for (size_t j = 1; j <= len2; j++) {
+            int cost = (str1[i - 1] == str2[j - 1]) ? 0 : 1;
+            dist[i][j] = fmin(fmin(dist[i - 1][j] + 1, dist[i][j - 1] + 1), dist[i - 1][j - 1] + cost);
         }
-        if (needle[i] == '\0') {
-            return (char *)haystack;
+    }
+    return dist[len1][len2];
+}
+
+/**
+ * @brief Check if a word should be skipped.
+ */
+static int should_skip_word(const char *word) {
+    for (size_t i = 0; SKIP_WORDS[i] != NULL; i++) {
+        if (strcmp(word, SKIP_WORDS[i]) == 0) {
+            return 1;
         }
-        haystack++;
+    }
+    return 0;
+}
+
+/**
+ * @brief Case-insensitive string comparison.
+ */
+static int custom_strcasecmp(const char *s1, const char *s2) {
+    while (*s1 && *s2) {
+        if (tolower((unsigned char)*s1) != tolower((unsigned char)*s2)) {
+            return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+        }
+        s1++;
+        s2++;
+    }
+    return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
+}
+
+/**
+ * @brief Case-insensitive substring search.
+ */
+static const char *custom_strcasestr(const char *haystack, const char *needle) {
+    if (!*needle) return haystack;
+
+    for (; *haystack; haystack++) {
+        if (tolower((unsigned char)*haystack) == tolower((unsigned char)*needle)) {
+            const char *h = haystack, *n = needle;
+            while (*h && *n && tolower((unsigned char)*h) == tolower((unsigned char)*n)) {
+                h++;
+                n++;
+            }
+            if (!*n) return haystack;
+        }
     }
     return NULL;
 }
 
-// Function to replace a substring in a string (case-insensitive)
-static void replace_substring_case_insensitive(char *str, const char *old_substr, const char *new_substr) {
-    char *position = custom_strcasestr(str, old_substr);
-    while (position != NULL) {
-        size_t old_len = strlen(old_substr);
-        size_t new_len = strlen(new_substr);
-        size_t tail_len = strlen(position + old_len);
+/**
+ * @brief Look up a suggested alternative for a given word, checking both custom filters and predefined suggestions.
+ */
+static const char *fossil_io_soap_get_suggestion(const char *word) {
+    if (should_skip_word(word)) {
+        return NULL;
+    }
 
-        // Check if the new length is greater than the old length
-        if (new_len > old_len) {
-            memmove(position + new_len, position + old_len, tail_len + 1);
+    // Check in custom filters first
+    for (size_t i = 0; i < MAX_CUSTOM_FILTERS && custom_filters[i] != NULL; i++) {
+        if (custom_strcasecmp(word, custom_filters[i]) == 0) {
+            return custom_filters[i];  // Use the custom filter word itself as suggestion
+        }
+        if (fuzzy_match(word, custom_filters[i]) <= 2) {
+            return custom_filters[i];  // Return fuzzy match result
+        }
+    }
+
+    // Check in predefined suggestions
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad != NULL; i++) {
+        if (custom_strcasecmp(word, FOSSIL_SOAP_SUGGESTIONS[i].bad) == 0) {
+            return FOSSIL_SOAP_SUGGESTIONS[i].suggested;
+        }
+    }
+
+    // Check in grammar suggestions
+    for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect != NULL; i++) {
+        if (custom_strcasecmp(word, FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect) == 0) {
+            return FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].correct;
+        }
+    }
+
+    return NULL;
+}
+
+/**
+ * @brief Sanitize input text by removing or replacing "rot-brain" and meme-based language.
+ * @param censor_char Character to use for censored words (e.g., "*" or "#").
+ */
+char *fossil_io_soap_sanitize(const char *text) {
+    if (!text) return NULL;
+
+    size_t len = strlen(text);
+    char *output = (char *)malloc(len * 2 + 1); // Allocate more space to handle replacements
+    if (!output) return NULL;
+
+    size_t out_idx = 0;
+    char word[64];
+    size_t word_idx = 0;
+
+    for (size_t i = 0; text[i] != '\0'; i++) {
+        if (isalnum((unsigned char)text[i]) || text[i] == '\'' || text[i] == '-') {
+            word[word_idx++] = text[i];
+            if (word_idx >= sizeof(word) - 1) word_idx = sizeof(word) - 2;
         } else {
-            memmove(position + new_len, position + old_len, tail_len + 1);
+            word[word_idx] = '\0';
+            fossil_io_soap_normalize_leetspeak(word);
+            const char *suggested = fossil_io_soap_get_suggestion(word);
+            if (word_idx > 0 && suggested && !should_skip_word(word)) {
+                for (size_t j = 0; j < strlen(suggested); j++) {
+                    output[out_idx++] = suggested[j];
+                }
+            } else {
+                for (size_t j = 0; j < word_idx; j++) {
+                    output[out_idx++] = word[j];
+                }
+            }
+            output[out_idx++] = text[i];
+            word_idx = 0;
         }
-        memcpy(position, new_substr, new_len);
-
-        // Find the next occurrence
-        position = custom_strcasestr(position + new_len, old_substr);
     }
-}
-
-void fossil_soap_sanitize(char *input) {
-    if (input == NULL || *input == '\0') return;
-
-    // Perform single-threaded sanitization
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(FOSSIL_SOAP_OFFENSIVE[0]); ++i) {
-        replace_substring_case_insensitive(input, FOSSIL_SOAP_OFFENSIVE[i], "***");
-    }
-
-    for (size_t i = 0; i < sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(FOSSIL_SOAP_ROTBRAIN[0]); ++i) {
-        replace_substring_case_insensitive(input, FOSSIL_SOAP_ROTBRAIN[i], "***");
-    }
-}
-
-static int32_t is_in_list(const char *word, const char **list, size_t list_size) {
-    if (!word || *word == '\0') return EXIT_SUCCESS;
-
-    for (size_t i = 0; i < list_size; ++i) {
-        if (strcasecmp(word, list[i]) == 0) return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
-int32_t fossil_soap_is_offensive(const char *word) {
-    return is_in_list(word, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
-}
-
-int32_t fossil_soap_is_rotbrain(const char *word) {
-    return is_in_list(word, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
-}
-
-static int32_t count_matches(const char *input, const char **list, size_t list_size) {
-    if (!input || *input == '\0') return 0;
-
-    int count = 0;
-    char *copy = custom_strdup(input);
-    if (!copy) return EXIT_SUCCESS;
-
-    char *token = strtok(copy, " ,.!?;:");
-    while (token) {
-        if (is_in_list(token, list, list_size) == EXIT_FAILURE) {
-            count++;
+    word[word_idx] = '\0';
+    fossil_io_soap_normalize_leetspeak(word);
+    const char *suggested = fossil_io_soap_get_suggestion(word);
+    if (word_idx > 0 && suggested && !should_skip_word(word)) {
+        for (size_t j = 0; j < strlen(suggested); j++) {
+            output[out_idx++] = suggested[j];
         }
-        token = strtok(NULL, " ,.!?;:");
+    } else {
+        for (size_t j = 0; j < word_idx; j++) {
+            output[out_idx++] = word[j];
+        }
     }
-    free(copy);
-    return count;
+    output[out_idx] = '\0';
+    return output;
 }
 
-int32_t fossil_soap_count_offensive(const char *input) {
-    return count_matches(input, FOSSIL_SOAP_OFFENSIVE, sizeof(FOSSIL_SOAP_OFFENSIVE) / sizeof(*FOSSIL_SOAP_OFFENSIVE));
+char *fossil_io_soap_suggest(const char *text) {
+    if (!text) return NULL;
+
+    size_t len = strlen(text);
+    char *output = (char *)malloc(len * 2 + 64); // Allocate more space to handle replacements
+    if (!output) return NULL;
+
+    size_t out_idx = 0;
+    char word[64];
+    size_t word_idx = 0;
+
+    for (size_t i = 0; text[i] != '\0'; i++) {
+        if (isalnum((unsigned char)text[i]) || text[i] == '\'' || text[i] == '-') {
+            word[word_idx++] = text[i];
+            if (word_idx >= sizeof(word) - 1) word_idx = sizeof(word) - 2;
+        } else {
+            word[word_idx] = '\0';
+            fossil_io_soap_normalize_leetspeak(word);
+            const char *suggested = fossil_io_soap_get_suggestion(word);
+            if (word_idx > 0 && suggested && !should_skip_word(word)) {
+                strncpy(&output[out_idx], suggested, len * 2 + 64 - out_idx);
+                out_idx += strlen(suggested);
+            } else {
+                strncpy(&output[out_idx], word, len * 2 + 64 - out_idx);
+                out_idx += word_idx;
+            }
+            output[out_idx++] = text[i];
+            word_idx = 0;
+        }
+    }
+    word[word_idx] = '\0';
+    fossil_io_soap_normalize_leetspeak(word);
+    const char *suggested = fossil_io_soap_get_suggestion(word);
+    if (word_idx > 0 && suggested && !should_skip_word(word)) {
+        strncpy(&output[out_idx], suggested, len * 2 + 64 - out_idx);
+        out_idx += strlen(suggested);
+    } else {
+        strncpy(&output[out_idx], word, len * 2 + 64 - out_idx);
+        out_idx += word_idx;
+    }
+    output[out_idx] = '\0';
+    return output;
 }
 
-int32_t fossil_soap_count_rotbrain(const char *input) {
-    return count_matches(input, FOSSIL_SOAP_ROTBRAIN, sizeof(FOSSIL_SOAP_ROTBRAIN) / sizeof(*FOSSIL_SOAP_ROTBRAIN));
+/**
+ * @brief Add a custom word or phrase to the filter.
+ */
+int fossil_io_soap_add_custom_filter(const char *phrase) {
+    for (size_t i = 0; i < MAX_CUSTOM_FILTERS; i++) {
+        if (custom_filters[i] == NULL) {
+            size_t j = 0;
+            while (phrase[j] != '\0' && j < sizeof(custom_storage[i]) - 1) {
+                custom_storage[i][j] = tolower((unsigned char)phrase[j]);
+                j++;
+            }
+            custom_storage[i][j] = '\0';
+            custom_filters[i] = custom_storage[i];
+            return 0;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Clear all custom filters.
+ */
+void fossil_io_soap_clear_custom_filters(void) {
+    memset(custom_filters, 0, sizeof(custom_filters));
+}
+
+const char *fossil_io_soap_detect_tone(const char *text) {
+    for (size_t i = 0; SARCASTIC_PHRASES[i] != NULL; i++) {
+        if (custom_strcasestr(text, SARCASTIC_PHRASES[i])) {
+            return "sarcastic";
+        }
+    }
+
+    for (size_t i = 0; FORMAL_PHRASES[i] != NULL; i++) {
+        if (custom_strcasestr(text, FORMAL_PHRASES[i])) {
+            return "formal";
+        }
+    }
+
+    return "casual";
 }
