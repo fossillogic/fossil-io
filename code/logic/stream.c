@@ -67,6 +67,24 @@ void fossil_fstream_close(fossil_fstream_t *stream) {
     }
 }
 
+int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
+    if (stream == NULL || filename == NULL || mode == NULL || file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    FILE *new_file = freopen(filename, mode, file);
+    if (new_file == NULL) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    }
+
+    stream->file = new_file;
+    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM);
+
+    return FOSSIL_ERROR_OK;
+}
+
 // Read data from an open stream
 size_t fossil_fstream_read(fossil_fstream_t *stream, void *buffer, size_t size, size_t count) {
     if (stream == NULL || buffer == NULL || stream->file == NULL) {
@@ -221,6 +239,103 @@ int32_t fossil_fstream_copy(const char *source_filename, const char *destination
     return FOSSIL_ERROR_OK;
 }
 
+int32_t fossil_fstream_remove(const char *filename) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (remove(filename) == 0) {
+        return FOSSIL_ERROR_OK;  // File removed successfully
+    }
+
+    fprintf(stderr, "Error: IO error when removing file %s\n", filename);
+    return FOSSIL_ERROR_IO;
+}
+
+int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {
+    if (old_filename == NULL || new_filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (rename(old_filename, new_filename) != 0) {
+        fprintf(stderr, "Error: Failed to rename file %s\n", old_filename);
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_flush(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (fflush(stream->file) != 0) {
+        fprintf(stderr, "Error: Failed to flush file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (fseek(stream->file, pos, SEEK_SET) != 0) {
+        fprintf(stderr, "Error: Failed to set file position\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos) {
+    if (stream == NULL || stream->file == NULL || pos == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    *pos = ftell(stream->file);
+    if (*pos == -1L && ferror(stream->file)) {
+        fprintf(stderr, "Error: IO error from getting file position\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_rotate(const char *filename, int32_t n) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    char old_filename[FOSSIL_BUFFER_MEDIUM];
+    char new_filename[FOSSIL_BUFFER_MEDIUM];
+
+    for (int32_t i = n; i > 0; i--) {
+        if (i == 1) {
+            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s", filename);
+        } else {
+            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i - 1);
+        }
+
+        snprintf(new_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i);
+        if (fossil_fstream_rename(old_filename, new_filename) != FOSSIL_ERROR_OK) {
+            fprintf(stderr, "Error: Failed to rotate file %s\n", filename);
+            return FOSSIL_ERROR_IO;
+        }
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
 // Create a backup of a file with a specified backup suffix
 int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix) {
     if (filename == NULL || backup_suffix == NULL) {
@@ -286,21 +401,6 @@ int32_t fossil_fstream_delete(const char *filename) {
 
     fprintf(stderr, "Error: IO error when deleting file %s\n", filename);
     return FOSSIL_ERROR_IO;
-}
-
-// Rename a file or directory
-int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {
-    if (old_filename == NULL || new_filename == NULL) {
-        fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
-    }
-
-    if (rename(old_filename, new_filename) != 0) {
-        fprintf(stderr, "Error: Failed to rename file %s\n", old_filename);
-        return FOSSIL_ERROR_IO;
-    }
-
-    return FOSSIL_ERROR_OK;
 }
 
 // Detect file type (Regular file, Directory, Symbolic link)

@@ -180,6 +180,59 @@ FOSSIL_TEST_CASE(c_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
 }
 
+FOSSIL_TEST_CASE(c_test_stream_remove_file) {
+    const char *filename = "testfile_remove.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+    fossil_fstream_close(&c_stream);
+
+    // Remove the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+
+    // Check if the file does not exist
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+}
+
+FOSSIL_TEST_CASE(c_test_stream_flush_file) {
+    const char *filename = "testfile_flush.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+
+    // Flush the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_flush(&c_stream));
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
+    const char *filename = "testfile_setpos_getpos.txt";
+    const char *content = "This is a test.";
+    int32_t pos;
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+    fossil_fstream_close(&c_stream);
+
+    // Open the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "r"));
+
+    // Set the file position
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_setpos(&c_stream, 5));
+
+    // Get the file position
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_getpos(&c_stream, &pos));
+    ASSUME_ITS_EQUAL_I32(5, pos);
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -190,12 +243,14 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_multiple_files);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_seek_and_tell);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_type);
-
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_readable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_writable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_executable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);
 }
