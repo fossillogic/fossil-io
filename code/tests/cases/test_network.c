@@ -116,22 +116,6 @@ FOSSIL_TEST_CASE(c_test_network_sendto_udp) {
     fossil_io_network_destroy();
 }
 
-FOSSIL_TEST_CASE(c_test_network_recvfrom_udp) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_bind(sock, "127.0.0.1", 8081);
-
-    char buffer[256];
-    char sender_ip[INET_ADDRSTRLEN];
-    uint16_t sender_port;
-    int bytes_received = fossil_io_network_recvfrom(sock, buffer, sizeof(buffer), sender_ip, &sender_port);
-    ASSUME_ITS_MORE_THAN_I32(0, bytes_received);
-
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -145,7 +129,6 @@ FOSSIL_TEST_GROUP(c_network_tests) {
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_udp_socket);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind_udp);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_sendto_udp);
-    // FOSSIL_TEST_ADD(c_network_suite, c_test_network_recvfrom_udp);
 
     FOSSIL_TEST_REGISTER(c_network_suite);
 }
