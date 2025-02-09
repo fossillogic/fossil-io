@@ -143,7 +143,7 @@ FOSSIL_TEST_GROUP(c_network_tests) {
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_listen);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_close);
     FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_udp_socket);
-    // FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind_udp);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind_udp);
     // FOSSIL_TEST_ADD(c_network_suite, c_test_network_sendto_udp);
     // FOSSIL_TEST_ADD(c_network_suite, c_test_network_recvfrom_udp);
 
