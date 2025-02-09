@@ -186,3 +186,16 @@ void fossil_io_network_close(fossil_io_socket_t sock) {
     }
 #endif
 }
+
+int fossil_io_network_bridge(fossil_io_socket_t sock1, fossil_io_socket_t sock2) {
+    char buffer[1024];
+    int bytes_received;
+
+    while ((bytes_received = fossil_io_network_receive(sock1, buffer, sizeof(buffer))) > 0) {
+        if (fossil_io_network_send(sock2, buffer, bytes_received) == -1) {
+            return -1;
+        }
+    }
+
+    return bytes_received;
+}
