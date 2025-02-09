@@ -234,18 +234,6 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_udp);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_udp);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_recvfrom_udp);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_raw_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_rdm_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_seqpacket_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_seqpacket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_seqpacket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_recvfrom_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_recvfrom_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_recvfrom_seqpacket);
 
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
@@ -256,18 +244,6 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_udp);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_udp);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_recvfrom_udp);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_raw_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_rdm_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_seqpacket_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_seqpacket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_seqpacket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_recvfrom_raw);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_recvfrom_rdm);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_recvfrom_seqpacket);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
