@@ -232,7 +232,7 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_udp_socket);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_udp);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_udp);
     // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_recvfrom_udp);
 
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
@@ -242,7 +242,7 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_udp_socket);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_udp);
-    // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_udp);
     // FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_recvfrom_udp);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
