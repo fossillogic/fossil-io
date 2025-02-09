@@ -32,6 +32,12 @@
     #define FOSSIL_IO_INVALID_SOCKET (-1)
 #endif
 
+#define FOSSIL_IO_SOCKET_TYPE_TCP SOCK_STREAM
+#define FOSSIL_IO_SOCKET_TYPE_UDP SOCK_DGRAM
+#define FOSSIL_IO_SOCKET_TYPE_RAW SOCK_RAW
+#define FOSSIL_IO_SOCKET_TYPE_RDM SOCK_RDM
+#define FOSSIL_IO_SOCKET_TYPE_SEQPACKET SOCK_SEQPACKET
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,7 +57,7 @@ void fossil_io_network_destroy(void);
  * Create a new TCP socket.
  * Returns a valid socket on success or FOSSIL_IO_INVALID_SOCKET on failure.
  */
-fossil_io_socket_t fossil_io_network_create_socket(void);
+fossil_io_socket_t fossil_io_network_create_socket(int type);
 
 /**
  * Bind a socket to a specific port (IPv4/IPv6).
@@ -94,8 +100,21 @@ int fossil_io_network_receive(fossil_io_socket_t sock, void *buffer, size_t len)
  */
 void fossil_io_network_close(fossil_io_socket_t sock);
 
+/**
+ * Send data to a specific IP address and port.
+ * Returns the number of bytes sent, or -1 on failure.
+ */
+int fossil_io_network_sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port);
+
+/**
+ * Receive data from a specific IP address and port.
+ * Returns the number of bytes received, or -1 on failure.
+ */
+int fossil_io_network_recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port);
+
 #ifdef __cplusplus
 }
+
 /**
  * C++ wrapper for the output functions.
  */
@@ -128,8 +147,8 @@ namespace fossil {
              * Create a new TCP socket.
              * Returns a valid socket on success or FOSSIL_IO_INVALID_SOCKET on failure.
              */
-            static fossil_io_socket_t create_socket(void) {
-                return fossil_io_network_create_socket();
+            static fossil_io_socket_t create_socket(int type) {
+                return fossil_io_network_create_socket(type);
             }
 
             /**
@@ -185,6 +204,22 @@ namespace fossil {
              */
             static void close(fossil_io_socket_t sock) {
                 fossil_io_network_close(sock);
+            }
+
+            /**
+             * Send data to a specific IP address and port.
+             * Returns the number of bytes sent, or -1 on failure.
+             */
+            static int sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port) {
+                return fossil_io_network_sendto(sock, data, len, ip, port);
+            }
+
+            /**
+             * Receive data from a specific IP address and port.
+             * Returns the number of bytes received, or -1 on failure.
+             */
+            static int recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port) {
+                return fossil_io_network_recvfrom(sock, buffer, len, ip, port);
             }
 
         };
