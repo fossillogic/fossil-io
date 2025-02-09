@@ -26,6 +26,7 @@
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
+    #include <netdb.h>
     #include <unistd.h>
     #define closesocket close
     typedef int fossil_io_socket_t;
@@ -34,12 +35,6 @@
 
 #define FOSSIL_IO_SOCKET_TYPE_TCP SOCK_STREAM
 #define FOSSIL_IO_SOCKET_TYPE_UDP SOCK_DGRAM
-#define FOSSIL_IO_SOCKET_TYPE_RAW SOCK_RAW
-#define FOSSIL_IO_SOCKET_TYPE_RDM SOCK_RDM
-#define FOSSIL_IO_SOCKET_TYPE_SEQPACKET SOCK_SEQPACKET
-#define FOSSIL_IO_SOCKET_TYPE_PACKET SOCK_PACKET
-#define FOSSIL_IO_SOCKET_TYPE_DCCP SOCK_DCCP
-#define FOSSIL_IO_SOCKET_TYPE_SCTP SOCK_SCTP
 
 #ifdef __cplusplus
 extern "C" {
