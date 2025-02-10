@@ -35,8 +35,8 @@ void fossil_io_network_destroy(void) {
 #endif
 }
 
-fossil_io_socket_t fossil_io_network_create_socket(void) {
-    fossil_io_socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
+fossil_io_socket_t fossil_io_network_create_socket(int type) {
+    fossil_io_socket_t sock = socket(AF_INET, type, 0);
     if (sock == FOSSIL_IO_INVALID_SOCKET) {
 #ifdef _WIN32
         fprintf(stderr, "Socket creation failed with error: %d\n", WSAGetLastError());
@@ -138,6 +138,43 @@ int fossil_io_network_receive(fossil_io_socket_t sock, void *buffer, size_t len)
     return bytes_received;
 }
 
+int fossil_io_network_sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port) {
+    struct sockaddr_in dest_addr;
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_port = htons(port);
+    dest_addr.sin_addr.s_addr = inet_addr(ip);
+
+    int bytes_sent = sendto(sock, data, (int)len, 0, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
+    if (bytes_sent == -1) {
+#ifdef _WIN32
+        fprintf(stderr, "Sendto failed with error: %d\n", WSAGetLastError());
+#else
+        perror("Sendto failed");
+#endif
+    }
+    return bytes_sent;
+}
+
+int fossil_io_network_recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port) {
+    struct sockaddr_in src_addr;
+    socklen_t addr_len = sizeof(src_addr);
+
+    int bytes_received = recvfrom(sock, buffer, (int)len, 0, (struct sockaddr*)&src_addr, &addr_len);
+    if (bytes_received == -1) {
+#ifdef _WIN32
+        fprintf(stderr, "Recvfrom failed with error: %d\n", WSAGetLastError());
+#else
+        perror("Recvfrom failed");
+#endif
+    } else if (ip) {
+        strcpy(ip, inet_ntoa(src_addr.sin_addr));
+        if (port) {
+            *port = ntohs(src_addr.sin_port);
+        }
+    }
+    return bytes_received;
+}
+
 void fossil_io_network_close(fossil_io_socket_t sock) {
 #ifdef _WIN32
     if (closesocket(sock) == SOCKET_ERROR) {
@@ -148,4 +185,17 @@ void fossil_io_network_close(fossil_io_socket_t sock) {
         perror("Close socket failed");
     }
 #endif
+}
+
+int fossil_io_network_bridge(fossil_io_socket_t sock1, fossil_io_socket_t sock2) {
+    char buffer[1024];
+    int bytes_received;
+
+    while ((bytes_received = fossil_io_network_receive(sock1, buffer, sizeof(buffer))) > 0) {
+        if (fossil_io_network_send(sock2, buffer, bytes_received) == -1) {
+            return -1;
+        }
+    }
+
+    return bytes_received;
 }

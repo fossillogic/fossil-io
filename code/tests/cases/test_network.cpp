@@ -51,7 +51,7 @@ FOSSIL_TEST_CASE(cpp_test_network_init) {
 
 FOSSIL_TEST_CASE(cpp_test_network_create_socket) {
     fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_close(sock);
     fossil_io_network_destroy();
@@ -59,7 +59,7 @@ FOSSIL_TEST_CASE(cpp_test_network_create_socket) {
 
 FOSSIL_TEST_CASE(cpp_test_network_bind) {
     fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     int result = fossil_io_network_bind(sock, "127.0.0.1", 8080);
     ASSUME_ITS_EQUAL_I32(0, result);
@@ -69,7 +69,7 @@ FOSSIL_TEST_CASE(cpp_test_network_bind) {
 
 FOSSIL_TEST_CASE(cpp_test_network_listen) {
     fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_bind(sock, "127.0.0.1", 8080);
     int result = fossil_io_network_listen(sock, 5);
@@ -80,10 +80,39 @@ FOSSIL_TEST_CASE(cpp_test_network_listen) {
 
 FOSSIL_TEST_CASE(cpp_test_network_close) {
     fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil_io_network_close(sock);
     // No direct way to test close, but we assume no errors if it reaches here
+    fossil_io_network_destroy();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_create_udp_socket) {
+    fossil_io_network_create();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    fossil_io_network_close(sock);
+    fossil_io_network_destroy();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_bind_udp) {
+    fossil_io_network_create();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    int result = fossil_io_network_bind(sock, "127.0.0.1", 8081);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    fossil_io_network_close(sock);
+    fossil_io_network_destroy();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_sendto_udp) {
+    fossil_io_network_create();
+    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    const char *message = "Hello, UDP!";
+    int bytes_sent = fossil_io_network_sendto(sock, message, strlen(message), "127.0.0.1", 8081);
+    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
+    fossil_io_network_close(sock);
     fossil_io_network_destroy();
 }
 
@@ -95,7 +124,7 @@ FOSSIL_TEST_CASE(cpp_test_network_class_init) {
 
 FOSSIL_TEST_CASE(cpp_test_network_class_create_socket) {
     fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil::io::Network::close(sock);
     fossil::io::Network::cleanup();
@@ -103,7 +132,7 @@ FOSSIL_TEST_CASE(cpp_test_network_class_create_socket) {
 
 FOSSIL_TEST_CASE(cpp_test_network_class_bind) {
     fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     int result = fossil::io::Network::bind(sock, "127.0.0.1", 8080);
     ASSUME_ITS_EQUAL_I32(0, result);
@@ -113,7 +142,7 @@ FOSSIL_TEST_CASE(cpp_test_network_class_bind) {
 
 FOSSIL_TEST_CASE(cpp_test_network_class_listen) {
     fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil::io::Network::bind(sock, "127.0.0.1", 8080);
     int result = fossil::io::Network::listen(sock, 5);
@@ -124,10 +153,38 @@ FOSSIL_TEST_CASE(cpp_test_network_class_listen) {
 
 FOSSIL_TEST_CASE(cpp_test_network_class_close) {
     fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
     ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
     fossil::io::Network::close(sock);
-    // No direct way to test close, but we assume no errors if it reaches here
+    fossil::io::Network::cleanup();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_class_create_udp_socket) {
+    fossil::io::Network::init();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    fossil::io::Network::close(sock);
+    fossil::io::Network::cleanup();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_class_bind_udp) {
+    fossil::io::Network::init();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    int result = fossil::io::Network::bind(sock, "127.0.0.1", 8081);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    fossil::io::Network::close(sock);
+    fossil::io::Network::cleanup();
+}
+
+FOSSIL_TEST_CASE(cpp_test_network_class_sendto_udp) {
+    fossil::io::Network::init();
+    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
+    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
+    const char *message = "Hello, UDP!";
+    int bytes_sent = fossil::io::Network::sendto(sock, message, strlen(message), "127.0.0.1", 8081);
+    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
+    fossil::io::Network::close(sock);
     fossil::io::Network::cleanup();
 }
 
@@ -141,12 +198,18 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_udp_socket);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_udp);
 
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_udp_socket);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_udp);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
