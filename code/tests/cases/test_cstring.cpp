@@ -211,22 +211,56 @@ FOSSIL_TEST_CASE(cpp_test_cstring_pad_right) {
     fossil_io_cstring_free(result);
 }
 
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_create_and_free) {
+    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
+    ASSUME_NOT_CNULL(stream);
+    fossil_io_cstring_stream_free(stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_write_and_read) {
+    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
+    fossil_io_cstring_stream_write(stream, "Hello, World!");
+    ccstring result = fossil_io_cstring_stream_read(stream);
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
+    fossil_io_cstring_stream_free(stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_multiple_writes) {
+    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
+    fossil_io_cstring_stream_write(stream, "Hello, ");
+    fossil_io_cstring_stream_write(stream, "World!");
+    ccstring result = fossil_io_cstring_stream_read(stream);
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
+    fossil_io_cstring_stream_free(stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_empty_read) {
+    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
+    ccstring result = fossil_io_cstring_stream_read(stream);
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("", result);
+    fossil_io_cstring_stream_free(stream);
+}
+
 FOSSIL_TEST_CASE(cpp_test_cstring_class_create_and_free) {
     fossil::io::CString str("Hello, World!");
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str().c_str());
+    ASSUME_NOT_CNULL(str.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_copy) {
     fossil::io::CString str("Hello, World!");
-    fossil::io::CString copy = fossil::io::CString::copy(str.str());
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", copy.str().c_str());
+    fossil::io::CString copy = fossil::io::CString::copy("Hello, World!");
+    ASSUME_NOT_CNULL(copy.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", copy.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_concat) {
-    fossil::io::CString str1("Hello, ");
-    fossil::io::CString str2("World!");
-    fossil::io::CString result = fossil::io::CString::concat(str1.str(), str2.str());
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.str().c_str());
+    fossil::io::CString result = fossil::io::CString::concat("Hello, ", "World!");
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_length) {
@@ -236,18 +270,18 @@ FOSSIL_TEST_CASE(cpp_test_cstring_class_length) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_compare) {
-    fossil::io::CString str1("Hello");
-    fossil::io::CString str2("Hello");
-    fossil::io::CString str3("World");
-    ASSUME_ITS_EQUAL_I32(0, str1.compare(str2.str()));
-    ASSUME_ITS_TRUE(str1.compare(str3.str()) < 0);
-    ASSUME_ITS_TRUE(str3.compare(str1.str()) > 0);
+    fossil::io::CString s1("Hello");
+    fossil::io::CString s2("Hello");
+    fossil::io::CString s3("World");
+    ASSUME_ITS_EQUAL_I32(0, s1.compare("Hello"));
+    ASSUME_ITS_TRUE(s1.compare("World") < 0);
+    ASSUME_ITS_TRUE(s3.compare("Hello") > 0);
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_trim) {
     fossil::io::CString str("   Hello, World!   ");
     str.trim();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str().c_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_split) {
@@ -263,19 +297,22 @@ FOSSIL_TEST_CASE(cpp_test_cstring_class_split) {
 FOSSIL_TEST_CASE(cpp_test_cstring_class_replace) {
     fossil::io::CString str("Hello, World!");
     fossil::io::CString result = str.replace("World", "Fossil");
-    ASSUME_ITS_EQUAL_CSTR("Hello, Fossil!", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, Fossil!", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_to_upper) {
     fossil::io::CString str("Hello, World!");
     fossil::io::CString result = str.to_upper();
-    ASSUME_ITS_EQUAL_CSTR("HELLO, WORLD!", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("HELLO, WORLD!", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_to_lower) {
     fossil::io::CString str("Hello, World!");
     fossil::io::CString result = str.to_lower();
-    ASSUME_ITS_EQUAL_CSTR("hello, world!", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("hello, world!", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_starts_with) {
@@ -291,13 +328,15 @@ FOSSIL_TEST_CASE(cpp_test_cstring_class_ends_with) {
 FOSSIL_TEST_CASE(cpp_test_cstring_class_substring) {
     fossil::io::CString str("Hello, World!");
     fossil::io::CString result = str.substring(7, 5);
-    ASSUME_ITS_EQUAL_CSTR("World", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("World", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_reverse) {
     fossil::io::CString str("Hello, World!");
     fossil::io::CString result = str.reverse();
-    ASSUME_ITS_EQUAL_CSTR("!dlroW ,olleH", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("!dlroW ,olleH", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_contains) {
@@ -308,13 +347,15 @@ FOSSIL_TEST_CASE(cpp_test_cstring_class_contains) {
 FOSSIL_TEST_CASE(cpp_test_cstring_class_repeat) {
     fossil::io::CString str("Hello");
     fossil::io::CString result = str.repeat(3);
-    ASSUME_ITS_EQUAL_CSTR("HelloHelloHello", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("HelloHelloHello", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_strip) {
     fossil::io::CString str("!!!Hello, World!!!");
     fossil::io::CString result = str.strip('!');
-    ASSUME_ITS_EQUAL_CSTR("Hello, World", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_count) {
@@ -326,26 +367,43 @@ FOSSIL_TEST_CASE(cpp_test_cstring_class_count) {
 FOSSIL_TEST_CASE(cpp_test_cstring_class_pad_left) {
     fossil::io::CString str("Hello");
     fossil::io::CString result = str.pad_left(10, '*');
-    ASSUME_ITS_EQUAL_CSTR("*****Hello", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("*****Hello", result.str());
 }
 
 FOSSIL_TEST_CASE(cpp_test_cstring_class_pad_right) {
     fossil::io::CString str("Hello");
     fossil::io::CString result = str.pad_right(10, '*');
-    ASSUME_ITS_EQUAL_CSTR("Hello*****", result.str().c_str());
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello*****", result.str());
 }
 
-FOSSIL_TEST_CASE(cpp_test_cstring_stream_create_and_free) {
-    fossil::io::CStringStream stream(100);
-    ASSUME_NOT_CNULL(&stream);
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_class_create_and_free) {
+    fossil::io::CStringStream stream(1024);
+    ASSUME_NOT_CNULL(stream.read().c_str());
 }
 
-FOSSIL_TEST_CASE(cpp_test_cstring_stream_write_and_read) {
-    fossil::io::CStringStream stream(100);
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_class_write_and_read) {
+    fossil::io::CStringStream stream(1024);
     stream.write("Hello, World!");
     std::string result = stream.read();
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
 }
+
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_class_multiple_writes) {
+    fossil::io::CStringStream stream(1024);
+    stream.write("Hello, ");
+    stream.write("World!");
+    std::string result = stream.read();
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
+}
+
+FOSSIL_TEST_CASE(cpp_test_cstring_stream_class_empty_read) {
+    fossil::io::CStringStream stream(1024);
+    std::string result = stream.read();
+    ASSUME_ITS_EQUAL_CSTR("", result.c_str());
+}
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -373,6 +431,11 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_pad_left);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_pad_right);
 
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_create_and_free);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_multiple_writes);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_empty_read);
+
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_copy);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_concat);
@@ -393,8 +456,11 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_count);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_left);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_right);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_create_and_free);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
+
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_create_and_free);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_write_and_read);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_multiple_writes);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_empty_read);
 
     FOSSIL_TEST_REGISTER(cpp_string_suite);
 }
