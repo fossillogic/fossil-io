@@ -274,7 +274,7 @@ namespace fossil {
         
         class CString {
         private:
-            std::string _str;
+            cstring _str;
 
         public:
             /**
@@ -290,7 +290,7 @@ namespace fossil {
              * Destructor to free the memory allocated for the cstring.
              */
             ~CString() {
-                fossil_io_cstring_free(const_cast<char*>(_str.c_str()));
+                fossil_io_cstring_free(_str);
             }
 
             /**
@@ -330,7 +330,7 @@ namespace fossil {
              * @return The length of the cstring.
              */
             size_t length() const {
-                return fossil_io_cstring_length(_str.c_str());
+                return fossil_io_cstring_length(_str);
             }
 
             /**
@@ -340,14 +340,14 @@ namespace fossil {
              * @return An integer less than, equal to, or greater than zero if this cstring is found, respectively, to be less than, to match, or be greater than the other cstring.
              */
             int compare(const std::string &other) const {
-                return fossil_io_cstring_compare(_str.c_str(), other.c_str());
+                return fossil_io_cstring_compare(_str, other.c_str());
             }
 
             /**
              * Trims whitespace from the beginning and end of the cstring.
              */
             void trim() {
-                fossil_io_cstring_trim(const_cast<char*>(_str.c_str()));
+                fossil_io_cstring_trim(_str);
             }
 
             /**
@@ -358,7 +358,7 @@ namespace fossil {
              * @return An array of cstrings resulting from the split operation.
              */
             std::vector<std::string> split(char delimiter, size_t *count) const {
-                cstring *result = fossil_io_cstring_split(_str.c_str(), delimiter, count);
+                cstring *result = fossil_io_cstring_split(_str, delimiter, count);
                 std::vector<std::string> vec;
                 for (size_t i = 0; i < *count; i++) {
                     vec.push_back(result[i]);
@@ -374,7 +374,7 @@ namespace fossil {
              * @return A new CString with the replacements made.
              */
             CString replace(const std::string &old, const std::string &new_str) const {
-                return CString(fossil_io_cstring_replace(_str.c_str(), old.c_str(), new_str.c_str()));
+                return CString(fossil_io_cstring_replace(_str, old.c_str(), new_str.c_str()));
             }
 
             /**
@@ -383,7 +383,7 @@ namespace fossil {
              * @return The cstring with all characters converted to uppercase.
              */
             CString to_upper() const {
-                return CString(fossil_io_cstring_to_upper(const_cast<char*>(_str.c_str())));
+                return CString(fossil_io_cstring_to_upper(_str));
             }
 
             /**
@@ -392,7 +392,7 @@ namespace fossil {
              * @return The cstring with all characters converted to lowercase.
              */
             CString to_lower() const {
-                return CString(fossil_io_cstring_to_lower(const_cast<char*>(_str.c_str())));
+                return CString(fossil_io_cstring_to_lower(_str));
             }
 
             /**
@@ -402,7 +402,7 @@ namespace fossil {
              * @return True if the cstring starts with the prefix, false otherwise.
              */
             bool starts_with(const std::string &prefix) const {
-                return fossil_io_cstring_starts_with(_str.c_str(), prefix.c_str());
+                return fossil_io_cstring_starts_with(_str, prefix.c_str());
             }
 
             /**
@@ -412,7 +412,7 @@ namespace fossil {
              * @return True if the cstring ends with the suffix, false otherwise.
              */
             bool ends_with(const std::string &suffix) const {
-                return fossil_io_cstring_ends_with(_str.c_str(), suffix.c_str());
+                return fossil_io_cstring_ends_with(_str, suffix.c_str());
             }
 
             /**
@@ -423,7 +423,7 @@ namespace fossil {
              * @return A new CString that is the specified substring of the original cstring.
              */
             CString substring(size_t start, size_t length) const {
-                return CString(fossil_io_cstring_substring(_str.c_str(), start, length));
+                return CString(fossil_io_cstring_substring(_str, start, length));
             }
 
             /**
@@ -432,7 +432,7 @@ namespace fossil {
              * @return A new CString that is the reverse of the cstring.
              */
             CString reverse() const {
-                return CString(fossil_io_cstring_reverse(const_cast<char*>(_str.c_str())));
+                return CString(fossil_io_cstring_reverse(_str));
             }
 
             /**
@@ -442,7 +442,7 @@ namespace fossil {
              * @return True if the cstring contains the substring, false otherwise.
              */
             bool contains(const std::string &substr) const {
-                return fossil_io_cstring_contains(_str.c_str(), substr.c_str());
+                return fossil_io_cstring_contains(_str, substr.c_str());
             }
 
             /**
@@ -452,7 +452,7 @@ namespace fossil {
              * @return A new CString that is the original cstring repeated the specified number of times.
              */
             CString repeat(size_t count) const {
-                return CString(fossil_io_cstring_repeat(_str.c_str(), count));
+                return CString(fossil_io_cstring_repeat(_str, count));
             }
 
             /**
@@ -462,7 +462,7 @@ namespace fossil {
              * @return A new CString that is the original cstring with the specified character stripped from the beginning and end.
              */
             CString strip(char ch) const {
-                return CString(fossil_io_cstring_strip(_str.c_str(), ch));
+                return CString(fossil_io_cstring_strip(_str, ch));
             }
 
             /**
@@ -472,7 +472,7 @@ namespace fossil {
              * @return The number of occurrences of the substring within the cstring.
              */
             size_t count(const std::string &substr) const {
-                return fossil_io_cstring_count(_str.c_str(), substr.c_str());
+                return fossil_io_cstring_count(_str, substr.c_str());
             }
 
             /**
@@ -483,7 +483,7 @@ namespace fossil {
              * @return A new CString that is the original cstring padded on the left side.
              */
             CString pad_left(size_t total_length, char pad_char) const {
-                return CString(fossil_io_cstring_pad_left(_str.c_str(), total_length, pad_char));
+                return CString(fossil_io_cstring_pad_left(_str, total_length, pad_char));
             }
 
             /**
@@ -494,7 +494,7 @@ namespace fossil {
              * @return A new CString that is the original cstring padded on the right side.
              */
             CString pad_right(size_t total_length, char pad_char) const {
-                return CString(fossil_io_cstring_pad_right(_str.c_str(), total_length, pad_char));
+                return CString(fossil_io_cstring_pad_right(_str, total_length, pad_char));
             }
 
             /**
@@ -502,7 +502,7 @@ namespace fossil {
              * 
              * @return The underlying cstring.
              */
-            const std::string& str() const {
+            cstring str() const {
                 return _str;
             }
         };
