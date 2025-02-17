@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include "fossil/io/string.h"
+#include "fossil/io/cstring.h"
 
 // ============================================================================
 // C String Functions
