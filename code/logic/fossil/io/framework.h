@@ -21,6 +21,7 @@
 #include "output.h"
 #include "input.h"
 #include "error.h"
+#include "cstring.h"
 #include "stream.h"
 #include "soap.h"
 #include "parser.h"

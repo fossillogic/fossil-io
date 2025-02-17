@@ -17,6 +17,7 @@ set(TEST_CODE
     stream.c
     keyboard.c
     network.c
+    cstring.c
 )
 
 # Create the library target
