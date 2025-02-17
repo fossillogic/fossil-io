@@ -344,6 +344,7 @@ fossil_io_cstring_stream* fossil_io_cstring_stream_create(size_t initial_size) {
     if (stream) {
         stream->buffer = (char*)malloc(initial_size);
         if (stream->buffer) {
+            stream->buffer[0] = '\0';
             stream->length = 0;
             stream->capacity = initial_size;
         } else {
