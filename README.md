@@ -15,7 +15,6 @@ Fossil IO is an extensive and versatile library meticulously crafted to manage i
 To get started with Fossil Io, ensure you have the following installed:
 
 - **Meson Build System**: If you don’t have Meson installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
-- **CMake Build System**: If you don’t have CMake installed, follow the installation instructions on the official [CMake website](https://cmake.org/getting-started/).
 
 ### Adding Fossil Io Dependency
 
@@ -38,7 +37,7 @@ To get started with Fossil Io, ensure you have the following installed:
    # ======================
    [wrap-git]
    url = https://github.com/fossillogic/fossil-io.git
-   revision = v0.1.6
+   revision = v0.1.7
 
    [provide]
    fossil-io = fossil_io_dep
@@ -50,36 +49,6 @@ To get started with Fossil Io, ensure you have the following installed:
    ```ini
    dep = dependency('fossil-io')
    ```
-
----
-
-#### Adding Fossil Io Dependency With CMake
-
-To use Fossil Io with CMake, follow these steps:
-
-1. **Install CMake**:
-   Install CMake version `3.13.4` or newer:
-
-   ```sh
-   python -m pip install cmake           # To install CMake
-   python -m pip install --upgrade cmake # To upgrade CMake
-   ```
-
-2. **Find and Integrate Fossil Io**:
-   After installing CMake, you can integrate Fossil Io as a dependency. Add the following lines to your `CMakeLists.txt` file:
-
-   ```cmake
-   # Find Fossil Io package
-   find_package(FossilIo REQUIRED)
-
-   # Link the Fossil Io to your project
-   target_link_libraries(your_target FossilIo)
-   ```
-
-3. **Configure Your CMake Project**:
-   Make sure to configure your CMake project to include the necessary paths and dependencies for Fossil Io. Typically, you’ll want to make sure the `FossilIo` library is correctly linked in your build configuration.
-
-   This will ensure that Fossil Io is included and properly built with your project.
 
 ---
 
