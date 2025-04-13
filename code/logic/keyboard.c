@@ -240,7 +240,6 @@ void fossil_io_mouse_init(void) {
 }
 
 void fossil_io_mouse_shutdown(void) {
-    size_t released = mouse_manager.count;
     memset(&mouse_manager, 0, sizeof(mouse_manager));
     printf("[mouse] Shutdown: bindings released\n");
 }
@@ -306,7 +305,6 @@ void fossil_io_touch_init(void) {
 }
 
 void fossil_io_touch_shutdown(void) {
-    size_t released = touch_manager.count;
     memset(&touch_manager, 0, sizeof(touch_manager));
     printf("[touch] Shutdown: bindings released\n");
 }
