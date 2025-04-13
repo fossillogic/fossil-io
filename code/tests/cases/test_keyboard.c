@@ -23,16 +23,16 @@
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 // Define the test suite and add test cases
-FOSSIL_TEST_SUITE(c_keyboard_suite);
+FOSSIL_TEST_SUITE(c_device_suite);
 
-// Setup function for the test suite
-FOSSIL_SETUP(c_keyboard_suite) {
-    // Setup code here
+FOSSIL_SETUP(c_device_suite) {
+    fossil_io_mouse_init();
+    fossil_io_touch_init();
 }
 
-// Teardown function for the test suite
-FOSSIL_TEARDOWN(c_keyboard_suite) {
-    // Teardown code here
+FOSSIL_TEARDOWN(c_device_suite) {
+    fossil_io_mouse_shutdown();
+    fossil_io_touch_shutdown();
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -73,15 +73,62 @@ FOSSIL_TEST_CASE(c_test_keyboard_poll_events) {
     fossil_io_keyboard_unregister_binding(event);
 }
 
+FOSSIL_TEST_CASE(c_test_mouse_register_unregister_binding) {
+    fossil_io_mouse_event_t event = { .x = 10, .y = 20, .button = 0, .shift = 0, .ctrl = 0, .alt = 0 };
+    fossil_io_mouse_callback_t callback = (fossil_io_mouse_callback_t)1;
+
+    fossil_io_mouse_register_binding(event, callback);
+    ASSUME_NOT_CNULL(callback);
+
+    fossil_io_mouse_unregister_binding(event);
+    ASSUME_NOT_CNULL(callback);
+}
+
+FOSSIL_TEST_CASE(c_test_mouse_clear_bindings) {
+    fossil_io_mouse_event_t event = { .x = 10, .y = 20, .button = 0, .shift = 0, .ctrl = 0, .alt = 0 };
+    fossil_io_mouse_callback_t callback = (fossil_io_mouse_callback_t)1;
+
+    fossil_io_mouse_register_binding(event, callback);
+    fossil_io_mouse_clear_bindings();
+    ASSUME_NOT_CNULL(callback);
+}
+
+FOSSIL_TEST_CASE(c_test_touch_register_unregister_binding) {
+    fossil_io_touch_event_t event = { .x = 100, .y = 200, .touch_id = 1, .action = 0, .shift = 0, .ctrl = 0, .alt = 0 };
+    fossil_io_touch_callback_t callback = (fossil_io_touch_callback_t)1;
+
+    fossil_io_touch_register_binding(event, callback);
+    ASSUME_NOT_CNULL(callback);
+
+    fossil_io_touch_unregister_binding(event);
+    ASSUME_NOT_CNULL(callback);
+}
+
+FOSSIL_TEST_CASE(c_test_touch_clear_bindings) {
+    fossil_io_touch_event_t event = { .x = 100, .y = 200, .touch_id = 1, .action = 0, .shift = 0, .ctrl = 0, .alt = 0 };
+    fossil_io_touch_callback_t callback = (fossil_io_touch_callback_t)1;
+
+    fossil_io_touch_register_binding(event, callback);
+    fossil_io_touch_clear_bindings();
+    ASSUME_NOT_CNULL(callback);
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_keyboard_tests) {
-    FOSSIL_TEST_ADD(c_keyboard_suite, c_test_keyboard_register_unregister_binding);
-    FOSSIL_TEST_ADD(c_keyboard_suite, c_test_keyboard_clear_bindings);
-    FOSSIL_TEST_ADD(c_keyboard_suite, c_test_keyboard_poll_events);
+    FOSSIL_TEST_ADD(c_device_suite, c_test_keyboard_register_unregister_binding);
+    FOSSIL_TEST_ADD(c_device_suite, c_test_keyboard_clear_bindings);
+    FOSSIL_TEST_ADD(c_device_suite, c_test_keyboard_poll_events);
 
-    FOSSIL_TEST_REGISTER(c_keyboard_suite);
+    // Mouse tests
+    FOSSIL_TEST_ADD(c_device_suite, c_test_mouse_register_unregister_binding);
+    FOSSIL_TEST_ADD(c_device_suite, c_test_mouse_clear_bindings);
+
+    // Touch tests
+    FOSSIL_TEST_ADD(c_device_suite, c_test_touch_register_unregister_binding);
+    FOSSIL_TEST_ADD(c_device_suite, c_test_touch_clear_bindings);
+
+    FOSSIL_TEST_REGISTER(c_device_suite);
 }
