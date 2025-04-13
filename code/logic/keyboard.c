@@ -177,3 +177,127 @@ void fossil_io_keyboard_poll_events(void) {
         }
     }
 }
+
+// MOUSE
+static int fossil_io_mouse_event_match(const fossil_io_mouse_event_t* a, const fossil_io_mouse_event_t* b) {
+    return (a->button == b->button &&
+            (a->shift == b->shift || a->shift == -1 || b->shift == -1) &&
+            (a->ctrl == b->ctrl || a->ctrl == -1 || b->ctrl == -1) &&
+            (a->alt == b->alt || a->alt == -1 || b->alt == -1));
+}
+
+// Dummy OS-agnostic implementation for now
+static void fossil_io_mouse_get_event(fossil_io_mouse_event_t* event) {
+    static int toggle = 0;
+    event->x = 100 + (toggle++ % 10);
+    event->y = 200 + (toggle % 5);
+    event->button = toggle % 2;
+    event->shift = -1;
+    event->ctrl = -1;
+    event->alt = -1;
+}
+
+void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback) {
+    if (mouse_manager.count >= MAX_MOUSEBINDS) {
+        fprintf(stderr, "[mouse] Max bindings reached\n");
+        return;
+    }
+
+    mouse_manager.bindings[mouse_manager.count++] = (fossil_io_mouse_binding_t){ event, callback };
+}
+
+void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event) {
+    for (size_t i = 0; i < mouse_manager.count; ++i) {
+        if (fossil_io_mouse_event_match(&mouse_manager.bindings[i].event, &event)) {
+            memmove(&mouse_manager.bindings[i], &mouse_manager.bindings[i + 1],
+                    sizeof(fossil_io_mouse_binding_t) * (mouse_manager.count - i - 1));
+            --mouse_manager.count;
+            return;
+        }
+    }
+    fprintf(stderr, "[mouse] Binding not found\n");
+}
+
+void fossil_io_mouse_poll_events(void) {
+    fossil_io_mouse_event_t event = {0};
+    fossil_io_mouse_get_event(&event);
+
+    for (size_t i = 0; i < mouse_manager.count; ++i) {
+        if (fossil_io_mouse_event_match(&mouse_manager.bindings[i].event, &event)) {
+            if (mouse_manager.bindings[i].callback) {
+                mouse_manager.bindings[i].callback(event);
+            }
+        }
+    }
+}
+
+void fossil_io_mouse_init(void) {
+    printf("[mouse] Initialized\n");
+}
+
+void fossil_io_mouse_shutdown(void) {
+    printf("[mouse] Shutdown\n");
+}
+
+// TOUCH
+static int fossil_io_touch_event_match(const fossil_io_touch_event_t* a, const fossil_io_touch_event_t* b) {
+    return (a->touch_id == b->touch_id &&
+            a->action == b->action &&
+            (a->shift == b->shift || a->shift == -1 || b->shift == -1) &&
+            (a->ctrl == b->ctrl || a->ctrl == -1 || b->ctrl == -1) &&
+            (a->alt == b->alt || a->alt == -1 || b->alt == -1));
+}
+
+// Dummy implementation for simulation/testing
+static void fossil_io_touch_get_event(fossil_io_touch_event_t* event) {
+    static int state = 0;
+    event->x = 320 + (state % 3);
+    event->y = 240 + (state % 2);
+    event->touch_id = 1;
+    event->action = state++ % 3;  // 0=start, 1=move, 2=end
+    event->shift = -1;
+    event->ctrl = -1;
+    event->alt = -1;
+}
+
+void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback) {
+    if (touch_manager.count >= MAX_TOUCHBINDS) {
+        fprintf(stderr, "[touch] Max bindings reached\n");
+        return;
+    }
+
+    touch_manager.bindings[touch_manager.count++] = (fossil_io_touch_binding_t){ event, callback };
+}
+
+void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event) {
+    for (size_t i = 0; i < touch_manager.count; ++i) {
+        if (fossil_io_touch_event_match(&touch_manager.bindings[i].event, &event)) {
+            memmove(&touch_manager.bindings[i], &touch_manager.bindings[i + 1],
+                    sizeof(fossil_io_touch_binding_t) * (touch_manager.count - i - 1));
+            --touch_manager.count;
+            return;
+        }
+    }
+    fprintf(stderr, "[touch] Binding not found\n");
+}
+
+void fossil_io_touch_poll_events(void) {
+    fossil_io_touch_event_t event = {0};
+    fossil_io_touch_get_event(&event);
+
+    for (size_t i = 0; i < touch_manager.count; ++i) {
+        if (fossil_io_touch_event_match(&touch_manager.bindings[i].event, &event)) {
+            if (touch_manager.bindings[i].callback) {
+                touch_manager.bindings[i].callback(event);
+            }
+        }
+    }
+}
+
+void fossil_io_touch_init(void) {
+    printf("[touch] Initialized\n");
+}
+
+void fossil_io_touch_shutdown(void) {
+    printf("[touch] Shutdown\n");
+}
