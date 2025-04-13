@@ -30,6 +30,9 @@
 
 #define MAX_KEYBINDS 256
 
+static fossil_io_touch_manager_t touch_manager;
+static fossil_io_mouse_manager_t mouse_manager;
+
 typedef struct {
     fossil_io_keyboard_event_t event;
     fossil_io_keyboard_callback_t callback;
