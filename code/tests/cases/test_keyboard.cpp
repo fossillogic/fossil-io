@@ -75,7 +75,16 @@ FOSSIL_TEST_CASE(cpp_test_keyboard_poll_events) {
 
 FOSSIL_TEST_CASE(cpp_test_mouse_register_and_unregister) {
     fossil::io::Mouse mouse;
-    fossil_io_mouse_event_t event = { 1, 100, 200, 0 };
+
+    fossil_io_mouse_event_t event = {
+        .x = 100,
+        .y = 200,
+        .button = 1,
+        .shift = 1,
+        .ctrl = 0,
+        .alt = 1
+    };
+
     fossil_io_mouse_callback_t callback = (fossil_io_mouse_callback_t)0x2;
 
     mouse.register_binding(event, callback);
@@ -87,7 +96,16 @@ FOSSIL_TEST_CASE(cpp_test_mouse_register_and_unregister) {
 
 FOSSIL_TEST_CASE(cpp_test_mouse_clear_bindings) {
     fossil::io::Mouse mouse;
-    fossil_io_mouse_event_t event = { 2, 150, 250, 0 };
+
+    fossil_io_mouse_event_t event = {
+        .x = 150,
+        .y = 250,
+        .button = 2,
+        .shift = 0,
+        .ctrl = 1,
+        .alt = 0
+    };
+
     fossil_io_mouse_callback_t callback = (fossil_io_mouse_callback_t)0x2;
 
     mouse.register_binding(event, callback);
@@ -97,7 +115,16 @@ FOSSIL_TEST_CASE(cpp_test_mouse_clear_bindings) {
 
 FOSSIL_TEST_CASE(cpp_test_mouse_poll_events) {
     fossil::io::Mouse mouse;
-    fossil_io_mouse_event_t event = { 3, 120, 180, 0 };
+
+    fossil_io_mouse_event_t event = {
+        .x = 120,
+        .y = 180,
+        .button = 0,
+        .shift = 0,
+        .ctrl = 0,
+        .alt = 0
+    };
+
     fossil_io_mouse_callback_t callback = (fossil_io_mouse_callback_t)0x2;
 
     mouse.register_binding(event, callback);
@@ -111,7 +138,17 @@ FOSSIL_TEST_CASE(cpp_test_mouse_poll_events) {
 
 FOSSIL_TEST_CASE(cpp_test_touch_register_and_unregister) {
     fossil::io::Touch touch;
-    fossil_io_touch_event_t event = { 0, 400, 300, 0 };
+
+    fossil_io_touch_event_t event = {
+        .x = 400,
+        .y = 300,
+        .touch_id = 1,
+        .action = 0,
+        .shift = 0,
+        .ctrl = 1,
+        .alt = 0
+    };
+
     fossil_io_touch_callback_t callback = (fossil_io_touch_callback_t)0x3;
 
     touch.register_binding(event, callback);
@@ -123,7 +160,17 @@ FOSSIL_TEST_CASE(cpp_test_touch_register_and_unregister) {
 
 FOSSIL_TEST_CASE(cpp_test_touch_clear_bindings) {
     fossil::io::Touch touch;
-    fossil_io_touch_event_t event = { 1, 500, 600, 0 };
+
+    fossil_io_touch_event_t event = {
+        .x = 500,
+        .y = 600,
+        .touch_id = 2,
+        .action = 1,
+        .shift = 1,
+        .ctrl = 0,
+        .alt = 1
+    };
+
     fossil_io_touch_callback_t callback = (fossil_io_touch_callback_t)0x3;
 
     touch.register_binding(event, callback);
@@ -133,7 +180,17 @@ FOSSIL_TEST_CASE(cpp_test_touch_clear_bindings) {
 
 FOSSIL_TEST_CASE(cpp_test_touch_poll_events) {
     fossil::io::Touch touch;
-    fossil_io_touch_event_t event = { 2, 700, 800, 0 };
+
+    fossil_io_touch_event_t event = {
+        .x = 700,
+        .y = 800,
+        .touch_id = 3,
+        .action = 2,
+        .shift = 1,
+        .ctrl = 1,
+        .alt = 0
+    };
+
     fossil_io_touch_callback_t callback = (fossil_io_touch_callback_t)0x3;
 
     touch.register_binding(event, callback);
