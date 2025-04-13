@@ -21,6 +21,57 @@
 extern "C" {
 #endif
 
+typedef struct {
+    int x;      // X position of the mouse
+    int y;      // Y position of the mouse
+    int button; // Mouse button (0 = left, 1 = right, etc.)
+    int shift;  // 1 if Shift is pressed, 0 otherwise
+    int ctrl;   // 1 if Ctrl is pressed, 0 otherwise
+    int alt;    // 1 if Alt is pressed, 0 otherwise
+} fossil_io_mouse_event_t;
+
+typedef void (*fossil_io_mouse_callback_t)(fossil_io_mouse_event_t event);
+
+#define MAX_MOUSEBINDS 256
+
+typedef struct {
+    fossil_io_mouse_event_t event;
+    fossil_io_mouse_callback_t callback;
+} fossil_io_mouse_binding_t;
+
+typedef struct {
+    fossil_io_mouse_binding_t bindings[MAX_MOUSEBINDS];
+    size_t count;
+} fossil_io_mouse_manager_t;
+
+static fossil_io_mouse_manager_t mouse_manager = { .count = 0 };
+
+typedef struct {
+    int x;          // X position of the touch
+    int y;          // Y position of the touch
+    int touch_id;   // Unique identifier for the touch (for multi-touch)
+    int action;     // Action: 0 = start, 1 = move, 2 = end
+    int shift;      // 1 if Shift is pressed, 0 otherwise
+    int ctrl;       // 1 if Ctrl is pressed, 0 otherwise
+    int alt;        // 1 if Alt is pressed, 0 otherwise
+} fossil_io_touch_event_t;
+
+typedef void (*fossil_io_touch_callback_t)(fossil_io_touch_event_t event);
+
+#define MAX_TOUCHBINDS 256
+
+typedef struct {
+    fossil_io_touch_event_t event;
+    fossil_io_touch_callback_t callback;
+} fossil_io_touch_binding_t;
+
+typedef struct {
+    fossil_io_touch_binding_t bindings[MAX_TOUCHBINDS];
+    size_t count;
+} fossil_io_touch_manager_t;
+
+static fossil_io_touch_manager_t touch_manager = { .count = 0 };
+
 // Define a keyboard event structure
 typedef struct {
     int shift; // 1 if Shift is pressed, 0 otherwise
@@ -69,6 +120,20 @@ void fossil_io_keyboard_unregister_binding(fossil_io_keyboard_event_t event);
  * This function should be called in the main loop of the application.
  */
 void fossil_io_keyboard_poll_events(void);
+
+// Functions for mouse handling
+void fossil_io_mouse_init(void);                    // Initialize the mouse event library
+void fossil_io_mouse_shutdown(void);                // Shut down the mouse event library
+void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback); // Register a mouse binding
+void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event); // Unregister a mouse binding
+void fossil_io_mouse_poll_events(void);
+
+// Functions for touch handling
+void fossil_io_touch_init(void);                     // Initialize the touch event library
+void fossil_io_touch_shutdown(void);                 // Shut down the touch event library
+void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback); // Register a touch binding
+void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event); // Unregister a touch binding
+void fossil_io_touch_poll_events(void);
 
 #ifdef __cplusplus
 }
