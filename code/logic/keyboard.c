@@ -29,9 +29,28 @@
 #endif
 
 #define MAX_KEYBINDS 256
+#define MAX_TOUCHBINDS 256
+#define MAX_MOUSEBINDS 256
 
-static fossil_io_touch_manager_t touch_manager;
-static fossil_io_mouse_manager_t mouse_manager;
+typedef struct {
+    fossil_io_mouse_event_t event;
+    fossil_io_mouse_callback_t callback;
+} fossil_io_mouse_binding_t;
+
+typedef struct {
+    fossil_io_mouse_binding_t bindings[MAX_MOUSEBINDS];
+    size_t count;
+} fossil_io_mouse_manager_t;
+
+typedef struct {
+    fossil_io_touch_event_t event;
+    fossil_io_touch_callback_t callback;
+} fossil_io_touch_binding_t;
+
+typedef struct {
+    fossil_io_touch_binding_t bindings[MAX_TOUCHBINDS];
+    size_t count;
+} fossil_io_touch_manager_t;
 
 typedef struct {
     fossil_io_keyboard_event_t event;
@@ -44,6 +63,9 @@ typedef struct {
 } fossil_io_keyboard_manager_t;
 
 static fossil_io_keyboard_manager_t keyboard_manager = { .count = 0 };
+static fossil_io_touch_manager_t touch_manager;
+static fossil_io_mouse_manager_t mouse_manager;
+
 
 #if defined(_WIN32) || defined(_WIN64)
 
