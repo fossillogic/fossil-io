@@ -93,20 +93,54 @@ void fossil_io_keyboard_unregister_binding(fossil_io_keyboard_event_t event);
  */
 void fossil_io_keyboard_poll_events(void);
 
-// Functions for mouse handling
-void fossil_io_mouse_init(void);                    // Initialize the mouse event library
-void fossil_io_mouse_shutdown(void);                // Shut down the mouse event library
+/** @brief Initialize the mouse event library. */
+void fossil_io_mouse_init(void);
+
+/** @brief Shut down the mouse event library. */
+void fossil_io_mouse_shutdown(void);
+
+/** @brief Clear all mouse event bindings. */
 void fossil_io_mouse_clear_bindings(void);
-void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback); // Register a mouse binding
-void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event); // Unregister a mouse binding
+
+/**
+ * @brief Register a mouse event binding.
+ * @param event The mouse event to bind.
+ * @param callback The callback function to invoke when the event occurs.
+ */
+void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback);
+
+/**
+ * @brief Unregister a mouse event binding.
+ * @param event The mouse event to unbind.
+ */
+void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event);
+
+/** @brief Poll and dispatch pending mouse events. */
 void fossil_io_mouse_poll_events(void);
 
-// Functions for touch handling
-void fossil_io_touch_init(void);                     // Initialize the touch event library
-void fossil_io_touch_shutdown(void);                 // Shut down the touch event library
+/** @brief Initialize the touch event library. */
+void fossil_io_touch_init(void);
+
+/** @brief Shut down the touch event library. */
+void fossil_io_touch_shutdown(void);
+
+/** @brief Clear all touch event bindings. */
 void fossil_io_touch_clear_bindings(void);
-void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback); // Register a touch binding
-void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event); // Unregister a touch binding
+
+/**
+ * @brief Register a touch event binding.
+ * @param event The touch event to bind.
+ * @param callback The callback function to invoke when the event occurs.
+ */
+void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback);
+
+/**
+ * @brief Unregister a touch event binding.
+ * @param event The touch event to unbind.
+ */
+void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event);
+
+/** @brief Poll and dispatch pending touch events. */
 void fossil_io_touch_poll_events(void);
 
 #ifdef __cplusplus
@@ -121,59 +155,217 @@ namespace fossil {
      * Namespace for I/O operations.
      */
     namespace io {
+
         /**
-         * Class for interacting with the keyboard.
+         * @brief Class for managing keyboard input.
+         * 
+         * This class provides a high-level interface for handling keyboard input.
+         * It wraps the underlying C API and manages initialization and cleanup automatically.
          */
-        class keyboard {
+        class Keyboard {
         public:
             /**
-             * Initialize the keyboard library.
-             * Sets up any platform-specific configurations.
+             * @brief Constructor that initializes the keyboard system.
+             * 
+             * Call this to set up the keyboard event system.
+             * Automatically prepares the library for receiving and processing keyboard events.
              */
-            static void init() {
+            Keyboard() {
                 fossil_io_keyboard_init();
             }
 
             /**
-             * Shut down the keyboard library.
-             * Cleans up any platform-specific configurations.
+             * @brief Destructor that shuts down the keyboard system.
+             * 
+             * Automatically cleans up the keyboard event system on destruction.
+             * This prevents memory leaks and releases any platform-specific resources.
              */
-            static void shutdown() {
+            ~Keyboard() {
                 fossil_io_keyboard_shutdown();
             }
 
             /**
-             * Clear all keybindings from the library.
+             * @brief Clear all registered keyboard bindings.
+             * 
+             * Use this method to remove all current keyboard event bindings.
+             * This is useful if you want to reset the input state or rebind controls dynamically.
              */
-            static void clear_bindings() {
+            void clear_bindings() {
                 fossil_io_keyboard_clear_bindings();
             }
 
             /**
-             * Register a keybinding with the library.
-             *
-             * @param event     The keyboard event to bind to.
-             * @param callback  The callback function to call when the event occurs.
+             * @brief Register a keyboard event binding.
+             * 
+             * Binds a specific keyboard event to a callback function. When the event occurs,
+             * the corresponding callback will be executed.
+             * 
+             * @param event The keyboard event to listen for.
+             * @param callback The function to call when the event is triggered.
              */
-            static void register_binding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback) {
+            void register_binding(fossil_io_keyboard_event_t event, fossil_io_keyboard_callback_t callback) {
                 fossil_io_keyboard_register_binding(event, callback);
             }
 
             /**
-             * Unregister a keybinding with the library.
-             *
-             * @param event     The keyboard event to unbind.
+             * @brief Unregister a specific keyboard event binding.
+             * 
+             * Removes the callback associated with a particular keyboard event.
+             * 
+             * @param event The event for which the callback should be removed.
              */
-            static void unregister_binding(fossil_io_keyboard_event_t event) {
+            void unregister_binding(fossil_io_keyboard_event_t event) {
                 fossil_io_keyboard_unregister_binding(event);
             }
 
             /**
-             * Poll for keyboard events and trigger any registered callbacks.
-             * This function should be called in the main loop of the application.
+             * @brief Poll for keyboard events and dispatch callbacks.
+             * 
+             * Call this in your main loop to process pending keyboard events.
+             * It will trigger any registered callbacks for events that have occurred.
              */
-            static void poll_events() {
+            void poll_events() {
                 fossil_io_keyboard_poll_events();
+            }
+        };
+
+        /**
+         * @brief Class for managing mouse input.
+         * 
+         * This class provides a modern C++ interface for handling mouse interactions.
+         * It wraps the underlying mouse system and ensures proper initialization and cleanup.
+         */
+        class Mouse {
+        public:
+            /**
+             * @brief Constructor that initializes the mouse system.
+             * 
+             * Prepares the internal state for processing mouse input.
+             * Must be called before polling for events or registering bindings.
+             */
+            Mouse() {
+                fossil_io_mouse_init();
+            }
+
+            /**
+             * @brief Destructor that shuts down the mouse system.
+             * 
+             * Cleans up resources associated with mouse input.
+             * Should not be called manually if you're using stack allocation.
+             */
+            ~Mouse() {
+                fossil_io_mouse_shutdown();
+            }
+
+            /**
+             * @brief Clear all mouse bindings.
+             * 
+             * Removes all registered mouse event bindings.
+             * Use this to reset or reconfigure the input system during runtime.
+             */
+            void clear_bindings() {
+                fossil_io_mouse_clear_bindings();
+            }
+
+            /**
+             * @brief Register a mouse event binding.
+             * 
+             * Assigns a callback to a specific mouse event.
+             * 
+             * @param event The mouse event (e.g., click, movement).
+             * @param callback The function to invoke when the event occurs.
+             */
+            void register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback) {
+                fossil_io_mouse_register_binding(event, callback);
+            }
+
+            /**
+             * @brief Unregister a mouse event binding.
+             * 
+             * Detaches a callback from a previously bound mouse event.
+             * 
+             * @param event The event to unbind.
+             */
+            void unregister_binding(fossil_io_mouse_event_t event) {
+                fossil_io_mouse_unregister_binding(event);
+            }
+
+            /**
+             * @brief Poll for mouse events and invoke callbacks.
+             * 
+             * Should be called regularly (e.g., in your main loop) to process
+             * incoming mouse events and dispatch them to registered handlers.
+             */
+            void poll_events() {
+                fossil_io_mouse_poll_events();
+            }
+        };
+
+        /**
+         * @brief Class for managing touch input.
+         * 
+         * Provides an abstraction layer for working with touchscreen input.
+         * Ensures the input system is initialized and destroyed cleanly.
+         */
+        class Touch {
+        public:
+            /**
+             * @brief Constructor that initializes the touch system.
+             * 
+             * Sets up the library to begin listening for touch interactions.
+             */
+            Touch() {
+                fossil_io_touch_init();
+            }
+
+            /**
+             * @brief Destructor that shuts down the touch system.
+             * 
+             * Releases any resources used for handling touch input.
+             */
+            ~Touch() {
+                fossil_io_touch_shutdown();
+            }
+
+            /**
+             * @brief Clear all touch bindings.
+             * 
+             * Removes all existing event-to-callback mappings for touch input.
+             */
+            void clear_bindings() {
+                fossil_io_touch_clear_bindings();
+            }
+
+            /**
+             * @brief Register a touch event binding.
+             * 
+             * Associates a callback with a specific touch event.
+             * 
+             * @param event The type of touch event to respond to.
+             * @param callback The function to invoke when the event occurs.
+             */
+            void register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback) {
+                fossil_io_touch_register_binding(event, callback);
+            }
+
+            /**
+             * @brief Unregister a touch event binding.
+             * 
+             * Removes the callback associated with the given touch event.
+             * 
+             * @param event The event whose binding should be removed.
+             */
+            void unregister_binding(fossil_io_touch_event_t event) {
+                fossil_io_touch_unregister_binding(event);
+            }
+
+            /**
+             * @brief Poll for touch events and dispatch them to callbacks.
+             * 
+             * Should be called frequently to handle active touch events.
+             */
+            void poll_events() {
+                fossil_io_touch_poll_events();
             }
         };
     }
