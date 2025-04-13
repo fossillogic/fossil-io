@@ -234,6 +234,13 @@ void fossil_io_mouse_poll_events(void) {
     }
 }
 
+void fossil_io_mouse_clear_bindings(void) {
+    mouse_manager.count = 0;
+    for (size_t i = 0; i < MAX_MOUSEBINDS; ++i) {
+        mouse_manager.bindings[i].callback = NULL;
+    }
+}
+
 void fossil_io_mouse_init(void) {
     memset(&mouse_manager, 0, sizeof(mouse_manager));
     printf("[mouse] Initialized: bindings cleared\n");
@@ -296,6 +303,13 @@ void fossil_io_touch_poll_events(void) {
                 touch_manager.bindings[i].callback(event);
             }
         }
+    }
+}
+
+void fossil_io_touch_clear_bindings(void) {
+    touch_manager.count = 0;
+    for (size_t i = 0; i < MAX_TOUCHBINDS; ++i) {
+        touch_manager.bindings[i].callback = NULL;
     }
 }
 
