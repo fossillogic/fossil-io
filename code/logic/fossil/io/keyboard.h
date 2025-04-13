@@ -32,18 +32,6 @@ typedef struct {
 
 typedef void (*fossil_io_mouse_callback_t)(fossil_io_mouse_event_t event);
 
-#define MAX_MOUSEBINDS 256
-
-typedef struct {
-    fossil_io_mouse_event_t event;
-    fossil_io_mouse_callback_t callback;
-} fossil_io_mouse_binding_t;
-
-typedef struct {
-    fossil_io_mouse_binding_t bindings[MAX_MOUSEBINDS];
-    size_t count;
-} fossil_io_mouse_manager_t;
-
 typedef struct {
     int x;          // X position of the touch
     int y;          // Y position of the touch
@@ -55,18 +43,6 @@ typedef struct {
 } fossil_io_touch_event_t;
 
 typedef void (*fossil_io_touch_callback_t)(fossil_io_touch_event_t event);
-
-#define MAX_TOUCHBINDS 256
-
-typedef struct {
-    fossil_io_touch_event_t event;
-    fossil_io_touch_callback_t callback;
-} fossil_io_touch_binding_t;
-
-typedef struct {
-    fossil_io_touch_binding_t bindings[MAX_TOUCHBINDS];
-    size_t count;
-} fossil_io_touch_manager_t;
 
 // Define a keyboard event structure
 typedef struct {
