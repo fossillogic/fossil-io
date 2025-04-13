@@ -232,11 +232,14 @@ void fossil_io_mouse_poll_events(void) {
 }
 
 void fossil_io_mouse_init(void) {
-    printf("[mouse] Initialized\n");
+    memset(&mouse_manager, 0, sizeof(mouse_manager));
+    printf("[mouse] Initialized: %zu bindings cleared\n", mouse_manager.count);
 }
 
 void fossil_io_mouse_shutdown(void) {
-    printf("[mouse] Shutdown\n");
+    size_t released = mouse_manager.count;
+    memset(&mouse_manager, 0, sizeof(mouse_manager));
+    printf("[mouse] Shutdown: %zu bindings released\n", released);
 }
 
 // TOUCH
@@ -295,9 +298,12 @@ void fossil_io_touch_poll_events(void) {
 }
 
 void fossil_io_touch_init(void) {
-    printf("[touch] Initialized\n");
+    memset(&touch_manager, 0, sizeof(touch_manager));
+    printf("[touch] Initialized: %zu bindings cleared\n", touch_manager.count);
 }
 
 void fossil_io_touch_shutdown(void) {
-    printf("[touch] Shutdown\n");
+    size_t released = touch_manager.count;
+    memset(&touch_manager, 0, sizeof(touch_manager));
+    printf("[touch] Shutdown: %zu bindings released\n", released);
 }
