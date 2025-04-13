@@ -120,6 +120,7 @@ void fossil_io_keyboard_poll_events(void);
 // Functions for mouse handling
 void fossil_io_mouse_init(void);                    // Initialize the mouse event library
 void fossil_io_mouse_shutdown(void);                // Shut down the mouse event library
+void fossil_io_mouse_clear_bindings(void);
 void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback); // Register a mouse binding
 void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event); // Unregister a mouse binding
 void fossil_io_mouse_poll_events(void);
@@ -127,6 +128,7 @@ void fossil_io_mouse_poll_events(void);
 // Functions for touch handling
 void fossil_io_touch_init(void);                     // Initialize the touch event library
 void fossil_io_touch_shutdown(void);                 // Shut down the touch event library
+void fossil_io_touch_clear_bindings(void);
 void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback); // Register a touch binding
 void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event); // Unregister a touch binding
 void fossil_io_touch_poll_events(void);
