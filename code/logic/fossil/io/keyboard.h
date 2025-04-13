@@ -44,8 +44,6 @@ typedef struct {
     size_t count;
 } fossil_io_mouse_manager_t;
 
-static fossil_io_mouse_manager_t mouse_manager = { .count = 0 };
-
 typedef struct {
     int x;          // X position of the touch
     int y;          // Y position of the touch
@@ -69,8 +67,6 @@ typedef struct {
     fossil_io_touch_binding_t bindings[MAX_TOUCHBINDS];
     size_t count;
 } fossil_io_touch_manager_t;
-
-static fossil_io_touch_manager_t touch_manager = { .count = 0 };
 
 // Define a keyboard event structure
 typedef struct {
