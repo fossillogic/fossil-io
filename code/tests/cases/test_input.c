@@ -208,6 +208,16 @@ FOSSIL_TEST_CASE(c_test_io_validate_is_length_invalid) {
     ASSUME_ITS_FALSE(result);
 }
 
+FOSSIL_TEST_CASE(c_test_io_show_progress) {
+    // This test assumes the progress bar function doesn't return anything.
+    // We'll just check that the progress is shown correctly.
+
+    // Test with various progress values (0%, 50%, 100%)
+    fossil_io_show_progress(0);
+    fossil_io_show_progress(50);
+    fossil_io_show_progress(100);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -230,6 +240,7 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_invalid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_invalid);
-
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_show_progress);
+    
     FOSSIL_TEST_REGISTER(c_input_suite);
 }

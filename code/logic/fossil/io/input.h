@@ -137,13 +137,21 @@ int fossil_io_validate_is_length(const char *input, size_t max_length);
 int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size);
 
 /**
- * @brief Reads a secure line of input into the provided buffer.
+ * Displays a menu of choices and returns the selected choice.
  * 
- * @param buffer The buffer where the input will be stored.
- * @param buffer_size The size of the buffer.
- * @return A fossil_io_validate_error_t indicating the result of the input reading process.
+ * @param prompt The prompt message before displaying the menu.
+ * @param choices Array of strings representing the choices.
+ * @param num_choices The number of choices.
+ * @return The index of the selected choice.
  */
-int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size);
+int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices);
+
+/**
+ * Displays a simple progress bar.
+ * 
+ * @param progress The current progress (0-100).
+ */
+void fossil_io_show_progress(int progress);
 
 #ifdef __cplusplus
 }
@@ -310,16 +318,46 @@ namespace fossil {
             }
 
             /**
-             * @brief Reads a secure line of input into the provided buffer.
+             * @brief Displays a menu of choices and returns the selected choice.
              * 
-             * @param buffer The buffer where the input will be stored.
-             * @param buffer_size The size of the buffer.
-             * @return A fossil_io_validate_error_t indicating the result of the input reading process.
+             * @param prompt The prompt message before displaying the menu.
+             * @param choices Array of strings representing the choices.
+             * @param num_choices The number of choices.
+             * @return The index of the selected choice.
              */
-            static int validate_read_secure_line(char *buffer, size_t buffer_size) {
-                return fossil_io_validate_read_secure_line(buffer, buffer_size);
+            static int display_menu(const char *prompt, const char *choices[], int num_choices) {
+                return fossil_io_display_menu(prompt, choices, num_choices);
             }
 
+            /**
+             * @brief Displays a simple progress bar.
+             * 
+             * @param progress The current progress (0-100).
+             */
+            static void show_progress(int progress) {
+                fossil_io_show_progress(progress);
+            }
+
+            /**
+             * @brief Override the output stream operator to display Input object details.
+             * 
+             * @param os The output stream where data will be printed.
+             * @param input The Input object to display.
+             * @return The modified output stream.
+             */
+            friend std::ostream& operator<<(std::ostream& os, const Input& input) {
+                // Example of what to output: printing the state or some meaningful data
+                os << "Input Stream Details:\n";
+                os << " - Max Buffer Size: " << input.max_buffer_size << "\n";
+                os << " - Input Stream: " << (input.stream ? "Valid Stream" : "Invalid Stream") << "\n";
+                
+                // Return the output stream
+                return os;
+            }
+
+        private:
+            size_t max_buffer_size;  // Example private member
+            FILE* stream;            // Example stream (pointer to the input stream, like stdin)
         };
 
     }

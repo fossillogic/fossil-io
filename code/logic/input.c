@@ -23,6 +23,7 @@
 
 #ifdef __WIN32
 #include <windows.h>
+#include <conio.h>
 #else
 #include <termios.h>
 #include <unistd.h>
@@ -48,6 +49,43 @@ void fossil_io_trim(char *str) {
     while (len > 0 && (str[len - 1] == ' ' || str[len - 1] == '\t' || str[len - 1] == '\n' || str[len - 1] == '\r')) {
         str[--len] = '\0';
     }
+}
+
+int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices) {
+    if (prompt != NULL) {
+        printf("%s\n", prompt);
+    }
+
+    for (int i = 0; i < num_choices; i++) {
+        printf("%d. %s\n", i + 1, choices[i]);
+    }
+
+    int choice;
+    do {
+        printf("Please choose an option (1-%d): ", num_choices);
+        if (fossil_io_scanf("%d", &choice) != 1 || choice < 1 || choice > num_choices) {
+            printf("Invalid choice. Please try again.\n");
+        }
+    } while (choice < 1 || choice > num_choices);
+
+    return choice - 1; // Return the index of the chosen option
+}
+
+void fossil_io_show_progress(int progress) {
+    int width = 50; // Width of the progress bar
+    int pos = (progress * width) / 100;
+    printf("[");
+    for (int i = 0; i < width; i++) {
+        if (i < pos) {
+            printf("=");
+        } else if (i == pos) {
+            printf(">");
+        } else {
+            printf(" ");
+        }
+    }
+    printf("] %d%%\r", progress);
+    fflush(stdout);
 }
 
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
@@ -239,25 +277,6 @@ int fossil_io_validate_sanitize_string(const char *input, char *output, size_t o
 
     // Copy the input string to the output buffer
     strncpy(output, input, output_size);
-
-    return 1;
-}
-
-int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size) {
-    if (buffer == NULL || buffer_size == 0) {
-        return 0;
-    }
-
-    // Read a line of input from the user
-    if (fgets(buffer, buffer_size, stdin) == NULL) {
-        return 0;
-    }
-
-    // Remove the newline character from the input
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') {
-        buffer[len - 1] = '\0';
-    }
 
     return 1;
 }
