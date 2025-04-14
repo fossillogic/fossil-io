@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include "fossil/io/keyboard.h"
+#include "fossil/io/device.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +62,7 @@ typedef struct {
     size_t count;
 } fossil_io_keyboard_manager_t;
 
-static fossil_io_keyboard_manager_t keyboard_manager = { .count = 0 };
+static fossil_io_keyboard_manager_t keyboard_manager;
 static fossil_io_touch_manager_t touch_manager;
 static fossil_io_mouse_manager_t mouse_manager;
 
@@ -138,6 +138,8 @@ static fossil_io_keyboard_event_t fossil_io_keyboard_get_event(void) {
 #endif
 
 void fossil_io_keyboard_init(void) {
+    memset(&keyboard_manager, 0, sizeof(keyboard_manager));
+    printf("[mouse] Initialized: bindings cleared\n");
 #if defined(_WIN32) || defined(_WIN64)
     // Windows doesn't require explicit setup for raw mode.
 #else
@@ -147,6 +149,8 @@ void fossil_io_keyboard_init(void) {
 }
 
 void fossil_io_keyboard_shutdown(void) {
+    memset(&keyboard_manager, 0, sizeof(keyboard_manager));
+    printf("[mouse] Shutdown: bindings released\n");
 #if defined(_WIN32) || defined(_WIN64)
     // Windows doesn't require explicit cleanup for raw mode.
 #else
