@@ -160,6 +160,8 @@ void fossil_io_print_with_attributes(const char *format, ...) {
     va_end(args);
 }
 
+// OUTPUT FUNCTIONS
+
 // Function to print a sanitized string with attributes inside {}
 void fossil_io_puts(const char *str) {
     if (str != NULL) {
