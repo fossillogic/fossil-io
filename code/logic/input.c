@@ -23,6 +23,7 @@
 
 #ifdef __WIN32
 #include <windows.h>
+#include <conio.h>
 #else
 #include <termios.h>
 #include <unistd.h>
@@ -51,23 +52,17 @@ void fossil_io_trim(char *str) {
 }
 
 char fossil_io_getch(void) {
-#ifdef __WIN32
-    DWORD mode;
-    HANDLE hCon = GetStdHandle(STD_INPUT_HANDLE);
-    GetConsoleMode(hCon, &mode);
-    SetConsoleMode(hCon, mode & ~ENABLE_ECHO_INPUT);
-    char ch = _getch();
-    SetConsoleMode(hCon, mode);
-    return ch;
+#ifdef _WIN32
+    return _getch();  // Windows version
 #else
     struct termios oldt, newt;
     char ch;
-    tcgetattr(STDIN_FILENO, &oldt);
+    tcgetattr(STDIN_FILENO, &oldt);  // Save current terminal settings
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO); // Disable echo and canonical mode
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore terminal settings
+    newt.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply the new settings
+    ch = getchar();  // Read the character
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Restore the original settings
     return ch;
 #endif
 }
