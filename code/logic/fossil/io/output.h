@@ -101,7 +101,7 @@ extern "C" {
  * needs of more complex applications.
  */
 
-/** 
+/**
  * Prints a string to the output.
  * 
  * This function outputs the provided string `str` to the terminal or console. It is a simple utility function
@@ -234,6 +234,9 @@ namespace fossil {
         /**
          * Class for output operations.
          */
+        /**
+         * Class for output operations.
+         */
         class Output {
         public:
             /**
@@ -259,19 +262,6 @@ namespace fossil {
             }
 
             /**
-             * Prints a string to the output with a specified color.
-             *
-             * @param color The color code to be applied.
-             * @param str The string to be printed.
-             */
-            static void print_color(const char *color, const char *format, ...) {
-                va_list args;
-                va_start(args, format);
-                fossil_io_print_color(color, format, args);
-                va_end(args);
-            }
-
-            /**
              * Prints a character to the output.
              *
              * @param c The character to be printed.
@@ -281,13 +271,46 @@ namespace fossil {
             }
 
             /**
-             * Prints a character to the output with a specified color.
+             * Prints a string to the specified output stream.
+             *
+             * @param stream The output stream where the string should be printed.
+             * @param str The string to be printed.
+             */
+            static void fputs(fossil_fstream_t *stream, const char *str) {
+                fossil_io_fputs(stream, str);
+            }
+
+            /**
+             * Prints a formatted string to the specified output stream.
+             *
+             * @param stream The output stream where the formatted string should be printed.
+             * @param format The format string.
+             * @param ... The additional arguments to be formatted.
+             */
+            static void fprintf(fossil_fstream_t *stream, const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                fossil_io_fprintf(stream, format, args);
+                va_end(args);
+            }
+
+            /**
+             * Prints a character to the specified output stream.
+             *
+             * @param stream The output stream where the character should be printed.
+             * @param c The character to be printed.
+             */
+            static void fputchar(fossil_fstream_t *stream, char c) {
+                fossil_io_fputchar(stream, c);
+            }
+
+            /**
+             * Prints a character to the standard output.
              *
              * @param c The character to be printed.
-             * @param color The color code to be applied.
              */
-            static void putchar_color(char c, const char *color) {
-                fossil_io_putchar_color(c, color);
+            static void putc(char c) {
+                fossil_io_putc(c);
             }
         };
     }
