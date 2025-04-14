@@ -222,9 +222,3 @@ void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...) {
 
     va_end(args);
 }
-
-// Function to print a sanitized character to the specified stream
-void fossil_io_fputchar(fossil_fstream_t *stream, char c) {
-    // Print the character to the specified stream
-    fossil_io_fputchar_with_attributes(stream, c);
-}
