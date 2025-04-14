@@ -15,6 +15,7 @@
 #define FOSSIL_IO_OUTPUT_H
 
 #include <stdarg.h>
+#include "stream.h"
 
 // Define color codes for output
 #define FOSSIL_IO_COLOR_RESET       "\033[0m"
@@ -100,43 +101,125 @@ extern "C" {
  * needs of more complex applications.
  */
 
-/**
+/** 
  * Prints a string to the output.
+ * 
+ * This function outputs the provided string `str` to the terminal or console. It is a simple utility function
+ * that can be used for printing plain text to the screen. The string is printed as-is, with no formatting or
+ * color modifications applied.
  *
- * @param str The string to be printed.
+ * @param str The string to be printed. This should be a null-terminated string.
  */
 void fossil_io_puts(const char *str);
 
-/**
+/** 
  * Prints a formatted string to the output.
  *
- * @param format The format string.
- * @param ... The additional arguments to be formatted.
+ * This function allows for formatted output, similar to `printf`. It takes a format string that can include
+ * format specifiers (e.g., `%d`, `%s`, `%f`), and the additional arguments provided will be formatted accordingly.
+ * The function uses a variable argument list (`...`) to handle a wide variety of format specifiers and argument types.
+ * 
+ * The format string can also include custom formatting markers enclosed in curly braces `{}`, such as `{red}` for
+ * color or `{bold}` for text attributes, which will be processed and applied to the output.
+ *
+ * Example usage:
+ * ```c
+ * fossil_io_printf("Hello, %s! Your score is %d\n", "Alice", 95);
+ * ```
+ *
+ * @param format The format string, which contains the text to be printed, along with format specifiers.
+ * @param ... The additional arguments to be formatted. These arguments are inserted into the format string
+ *            in the order they appear, based on the format specifiers.
  */
 void fossil_io_printf(const char *format, ...);
 
 /**
- * Prints a string to the output with a specified color.
- *
- * @param color The color code to be applied.
- * @param str The string to be printed.
- */
-void fossil_io_print_color(const char *color, const char *format, ...);
-
-/**
  * Prints a character to the output.
+ * 
+ * This function is a basic utility to print a single character to the output. It is especially useful when you
+ * need to print individual characters rather than strings or formatted text.
  *
- * @param c The character to be printed.
+ * Example usage:
+ * ```c
+ * fossil_io_putchar('A');
+ * ```
+ *
+ * @param c The character to be printed. This should be a single character.
  */
 void fossil_io_putchar(char c);
 
 /**
- * Prints a character to the output with a specified color.
+ * Prints a string to the specified output stream.
+ * 
+ * This function is similar to `fossil_io_puts`, but instead of printing to the standard output, it allows you
+ * to specify an output stream (like a file or a custom output stream). This can be useful when writing to files
+ * or other output destinations.
  *
- * @param c The character to be printed.
- * @param color The color code to be applied.
+ * Example usage:
+ * ```c
+ * FILE *file = fopen("output.txt", "w");
+ * fossil_io_fputs(file, "Hello, File Output!\n");
+ * fclose(file);
+ * ```
+ *
+ * @param stream The output stream where the string should be printed. This should be a valid pointer to a `FILE` object.
+ * @param str The string to be printed. This should be a null-terminated string.
  */
-void fossil_io_putchar_color(char c, const char *color);
+void fossil_io_fputs(fossil_fstream_t *stream, const char *str);
+
+/**
+ * Prints a formatted string to the specified output stream.
+ * 
+ * This function is similar to `fossil_io_printf`, but instead of printing to the standard output, it allows you
+ * to specify an output stream. The format string can include format specifiers and custom formatting markers, just
+ * like `fossil_io_printf`. This can be useful when writing formatted text to files or other output destinations.
+ *
+ * Example usage:
+ * ```c
+ * FILE *file = fopen("output.txt", "w");
+ * fossil_io_fprintf(file, "Hello, %s! Your score is %d\n", "Alice", 95);
+ * fclose(file);
+ * ```
+ *
+ * @param stream The output stream where the formatted string should be printed. This should be a valid pointer to a `FILE` object.
+ * @param format The format string, which contains the text to be printed, along with format specifiers.
+ * @param ... The additional arguments to be formatted. These arguments are inserted into the format string
+ *            in the order they appear, based on the format specifiers.
+ */
+void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...);
+
+/**
+ * Prints a character to the specified output stream.
+ * 
+ * This function is similar to `fossil_io_putchar`, but it allows you to specify an output stream, such as a file.
+ * It can be useful for printing individual characters to custom output destinations like files.
+ *
+ * Example usage:
+ * ```c
+ * FILE *file = fopen("output.txt", "w");
+ * fossil_io_fputchar(file, 'A');
+ * fclose(file);
+ * ```
+ *
+ * @param stream The output stream where the character should be printed. This should be a valid pointer to a `FILE` object.
+ * @param c The character to be printed. This should be a single character.
+ */
+void fossil_io_fputchar(fossil_fstream_t *stream, char c);
+
+/**
+ * Prints a character to the standard output.
+ * 
+ * This function is a simple wrapper around `putchar` and prints a single character to the standard output (usually the terminal).
+ * It is often used when you need to print individual characters in the terminal without needing to specify a stream.
+ *
+ * Example usage:
+ * ```c
+ * fossil_io_putc('A');
+ * ```
+ *
+ * @param c The character to be printed. This should be a single character.
+ */
+void fossil_io_putc(char c);
 
 #ifdef __cplusplus
 }
