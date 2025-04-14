@@ -37,27 +37,43 @@ void fossil_io_apply_color(const char *color) {
     } else if (strcmp(color, "white") == 0) {
         printf(FOSSIL_IO_COLOR_WHITE);
     }
-    // Add more colors if needed
+    // Bright colors
+    else if (strcmp(color, "bright_red") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_RED);
+    } else if (strcmp(color, "bright_green") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_GREEN);
+    } else if (strcmp(color, "bright_yellow") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_YELLOW);
+    } else if (strcmp(color, "bright_blue") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_BLUE);
+    } else if (strcmp(color, "bright_magenta") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_MAGENTA);
+    } else if (strcmp(color, "bright_cyan") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_CYAN);
+    } else if (strcmp(color, "bright_white") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_WHITE);
+    }
 }
 
 // Function to apply text attributes (e.g., bold, underline)
 void fossil_io_apply_attribute(const char *attribute) {
     if (strcmp(attribute, "bold") == 0) {
-        printf("\033[1m");
+        printf(FOSSIL_IO_ATTR_BOLD);
     } else if (strcmp(attribute, "underline") == 0) {
-        printf("\033[4m");
-    } else if (strcmp(attribute, "reset") == 0) {
-        printf(FOSSIL_IO_COLOR_RESET);
-    } else if (strcmp(attribute, "normal") == 0) {
-        printf(FOSSIL_IO_ATTR_NORMAL);
+        printf(FOSSIL_IO_ATTR_UNDERLINE);
     } else if (strcmp(attribute, "reversed") == 0) {
         printf(FOSSIL_IO_ATTR_REVERSED);
     } else if (strcmp(attribute, "blink") == 0) {
         printf(FOSSIL_IO_ATTR_BLINK);
     } else if (strcmp(attribute, "hidden") == 0) {
         printf(FOSSIL_IO_ATTR_HIDDEN);
+    } else if (strcmp(attribute, "normal") == 0) {
+        printf(FOSSIL_IO_ATTR_NORMAL);
+    } else if (strcmp(attribute, "italic") == 0) {
+        printf(FOSSIL_IO_ATTR_ITALIC);
+    } else if (strcmp(attribute, "strikethrough") == 0) {
+        printf(FOSSIL_IO_ATTR_STRIKETHROUGH);
     }
-    // Add more attributes as needed
 }
 
 // Function to handle named positions (like top, bottom, left, right)
