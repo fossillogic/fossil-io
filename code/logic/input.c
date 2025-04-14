@@ -50,6 +50,115 @@ void fossil_io_trim(char *str) {
     }
 }
 
+char fossil_io_getch(void) {
+#ifdef __WIN32
+    DWORD mode;
+    HANDLE hCon = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hCon, &mode);
+    SetConsoleMode(hCon, mode & ~ENABLE_ECHO_INPUT);
+    char ch = _getch();
+    SetConsoleMode(hCon, mode);
+    return ch;
+#else
+    struct termios oldt, newt;
+    char ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO); // Disable echo and canonical mode
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore terminal settings
+    return ch;
+#endif
+}
+
+int fossil_io_read_password(char *buffer, size_t size) {
+    if (buffer == NULL || size == 0) {
+        return 0;
+    }
+
+    size_t index = 0;
+    char ch;
+    while (index < size - 1) {
+        ch = fossil_io_getch(); // Get a single character without echo
+        if (ch == '\n' || ch == '\r') {
+            break;
+        }
+        if (ch == 127 || ch == 8) { // Handle backspace
+            if (index > 0) {
+                index--;
+                printf("\b \b");
+            }
+        } else {
+            buffer[index++] = ch;
+            printf("*"); // Mask the input
+        }
+    }
+    buffer[index] = '\0';
+    printf("\n"); // Move to the next line
+    return 1;
+}
+
+int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices) {
+    if (prompt != NULL) {
+        printf("%s\n", prompt);
+    }
+
+    for (int i = 0; i < num_choices; i++) {
+        printf("%d. %s\n", i + 1, choices[i]);
+    }
+
+    int choice;
+    do {
+        printf("Please choose an option (1-%d): ", num_choices);
+        if (fossil_io_scanf("%d", &choice) != 1 || choice < 1 || choice > num_choices) {
+            printf("Invalid choice. Please try again.\n");
+        }
+    } while (choice < 1 || choice > num_choices);
+
+    return choice - 1; // Return the index of the chosen option
+}
+
+int fossil_io_read_multiline_input(char *buffer, size_t size) {
+    if (buffer == NULL || size == 0) {
+        return 0;
+    }
+
+    size_t index = 0;
+    char ch;
+    printf("Enter multiple lines of text (Press Enter twice to finish):\n");
+
+    while (index < size - 1) {
+        ch = fossil_io_getch(); // Get a single character
+        if (ch == '\n') {
+            if (index > 0 && buffer[index - 1] == '\n') {
+                break; // Two Enter presses to finish
+            }
+        }
+        buffer[index++] = ch;
+        printf("%c", ch);
+    }
+    buffer[index] = '\0'; // Null-terminate the string
+    return 1;
+}
+
+void fossil_io_show_progress(int progress) {
+    int width = 50; // Width of the progress bar
+    int pos = (progress * width) / 100;
+    printf("[");
+    for (int i = 0; i < width; i++) {
+        if (i < pos) {
+            printf("=");
+        } else if (i == pos) {
+            printf(">");
+        } else {
+            printf(" ");
+        }
+    }
+    printf("] %d%%\r", progress);
+    fflush(stdout);
+}
+
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
 char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
     if (buf == NULL || size == 0 || input_stream == NULL) {
