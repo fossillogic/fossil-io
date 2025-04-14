@@ -11,8 +11,8 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#ifndef FOSSIL_IO_KEYBOARD_H
-#define FOSSIL_IO_KEYBOARD_H
+#ifndef FOSSIL_IO_DEVICE_H
+#define FOSSIL_IO_DEVICE_H
 
 #include <stdint.h>
 #include <stddef.h>
