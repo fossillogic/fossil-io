@@ -12,11 +12,11 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/output.h"
-
-#include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
@@ -242,4 +242,40 @@ void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...) {
     fossil_io_fprint_with_attributes(stream, buffer);
 
     va_end(args);
+}
+
+// TUI PART
+
+void fossil_io_clear_screen(void) {
+    printf("\033[2J\033[H");
+}
+
+void fossil_io_move_cursor(int row, int col) {
+    printf("\033[%d;%dH", row, col);
+}
+
+void fossil_io_hide_cursor(void) {
+    printf("\033[?25l");
+}
+
+void fossil_io_show_cursor(void) {
+    printf("\033[?25h");
+}
+
+void fossil_io_draw_horizontal_line(int length, char ch) {
+    for (int i = 0; i < length; ++i) {
+        putchar(ch);
+    }
+    putchar('\n');
+}
+
+void fossil_io_draw_vertical_line(int length, char ch) {
+    for (int i = 0; i < length; ++i) {
+        putchar(ch);
+        putchar('\n');
+    }
+}
+
+void fossil_io_flush(void) {
+    fflush(stdout);
 }
