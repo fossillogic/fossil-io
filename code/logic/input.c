@@ -51,49 +51,6 @@ void fossil_io_trim(char *str) {
     }
 }
 
-char fossil_io_getch(void) {
-#ifdef _WIN32
-    return _getch();  // Windows version
-#else
-    struct termios oldt, newt;
-    char ch;
-    tcgetattr(STDIN_FILENO, &oldt);  // Save current terminal settings
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply the new settings
-    ch = getchar();  // Read the character
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Restore the original settings
-    return ch;
-#endif
-}
-
-int fossil_io_read_password(char *buffer, size_t size) {
-    if (buffer == NULL || size == 0) {
-        return 0;
-    }
-
-    size_t index = 0;
-    char ch;
-    while (index < size - 1) {
-        ch = fossil_io_getch(); // Get a single character without echo
-        if (ch == '\n' || ch == '\r') {
-            break;
-        }
-        if (ch == 127 || ch == 8) { // Handle backspace
-            if (index > 0) {
-                index--;
-                printf("\b \b");
-            }
-        } else {
-            buffer[index++] = ch;
-            printf("*"); // Mask the input
-        }
-    }
-    buffer[index] = '\0';
-    printf("\n"); // Move to the next line
-    return 1;
-}
-
 int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices) {
     if (prompt != NULL) {
         printf("%s\n", prompt);
@@ -112,29 +69,6 @@ int fossil_io_display_menu(const char *prompt, const char *choices[], int num_ch
     } while (choice < 1 || choice > num_choices);
 
     return choice - 1; // Return the index of the chosen option
-}
-
-int fossil_io_read_multiline_input(char *buffer, size_t size) {
-    if (buffer == NULL || size == 0) {
-        return 0;
-    }
-
-    size_t index = 0;
-    char ch;
-    printf("Enter multiple lines of text (Press Enter twice to finish):\n");
-
-    while (index < size - 1) {
-        ch = fossil_io_getch(); // Get a single character
-        if (ch == '\n') {
-            if (index > 0 && buffer[index - 1] == '\n') {
-                break; // Two Enter presses to finish
-            }
-        }
-        buffer[index++] = ch;
-        printf("%c", ch);
-    }
-    buffer[index] = '\0'; // Null-terminate the string
-    return 1;
 }
 
 void fossil_io_show_progress(int progress) {
@@ -343,25 +277,6 @@ int fossil_io_validate_sanitize_string(const char *input, char *output, size_t o
 
     // Copy the input string to the output buffer
     strncpy(output, input, output_size);
-
-    return 1;
-}
-
-int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size) {
-    if (buffer == NULL || buffer_size == 0) {
-        return 0;
-    }
-
-    // Read a line of input from the user
-    if (fgets(buffer, buffer_size, stdin) == NULL) {
-        return 0;
-    }
-
-    // Remove the newline character from the input
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') {
-        buffer[len - 1] = '\0';
-    }
 
     return 1;
 }

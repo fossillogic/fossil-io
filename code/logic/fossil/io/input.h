@@ -137,15 +137,6 @@ int fossil_io_validate_is_length(const char *input, size_t max_length);
 int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size);
 
 /**
- * @brief Reads a secure line of input into the provided buffer.
- * 
- * @param buffer The buffer where the input will be stored.
- * @param buffer_size The size of the buffer.
- * @return A fossil_io_validate_error_t indicating the result of the input reading process.
- */
-int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size);
-
-/**
  * Displays a menu of choices and returns the selected choice.
  * 
  * @param prompt The prompt message before displaying the menu.
@@ -154,31 +145,6 @@ int fossil_io_validate_read_secure_line(char *buffer, size_t buffer_size);
  * @return The index of the selected choice.
  */
 int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices);
-
-/**
- * Reads a password from the user with masked input (e.g., asterisks).
- * 
- * @param buffer The buffer to store the password.
- * @param size The maximum size of the buffer.
- * @return 1 if password was successfully read, 0 otherwise.
- */
-int fossil_io_read_password(char *buffer, size_t size);
-
-/**
- * Reads multiline input from the user, allowing the user to press Enter to add new lines.
- * 
- * @param buffer The buffer to store the input.
- * @param size The maximum size of the buffer.
- * @return 1 if the input was successfully received, 0 otherwise.
- */
-int fossil_io_read_multiline_input(char *buffer, size_t size);
-
-/**
- * Reads a single character from the user without echoing to the screen.
- * 
- * @return The character entered by the user.
- */
-char fossil_io_getch(void);
 
 /**
  * Displays a simple progress bar.
@@ -352,14 +318,24 @@ namespace fossil {
             }
 
             /**
-             * @brief Reads a secure line of input into the provided buffer.
+             * @brief Displays a menu of choices and returns the selected choice.
              * 
-             * @param buffer The buffer where the input will be stored.
-             * @param buffer_size The size of the buffer.
-             * @return A fossil_io_validate_error_t indicating the result of the input reading process.
+             * @param prompt The prompt message before displaying the menu.
+             * @param choices Array of strings representing the choices.
+             * @param num_choices The number of choices.
+             * @return The index of the selected choice.
              */
-            static int validate_read_secure_line(char *buffer, size_t buffer_size) {
-                return fossil_io_validate_read_secure_line(buffer, buffer_size);
+            static int display_menu(const char *prompt, const char *choices[], int num_choices) {
+                return fossil_io_display_menu(prompt, choices, num_choices);
+            }
+
+            /**
+             * @brief Displays a simple progress bar.
+             * 
+             * @param progress The current progress (0-100).
+             */
+            static void show_progress(int progress) {
+                fossil_io_show_progress(progress);
             }
 
             /**
