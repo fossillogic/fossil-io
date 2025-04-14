@@ -188,39 +188,6 @@ void fossil_io_fputs(fossil_fstream_t *stream, const char *str);
  */
 void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...);
 
-/**
- * Prints a character to the specified output stream.
- * 
- * This function is similar to `fossil_io_putchar`, but it allows you to specify an output stream, such as a file.
- * It can be useful for printing individual characters to custom output destinations like files.
- *
- * Example usage:
- * ```c
- * FILE *file = fopen("output.txt", "w");
- * fossil_io_fputchar(file, 'A');
- * fclose(file);
- * ```
- *
- * @param stream The output stream where the character should be printed. This should be a valid pointer to a `FILE` object.
- * @param c The character to be printed. This should be a single character.
- */
-void fossil_io_fputchar(fossil_fstream_t *stream, char c);
-
-/**
- * Prints a character to the standard output.
- * 
- * This function is a simple wrapper around `putchar` and prints a single character to the standard output (usually the terminal).
- * It is often used when you need to print individual characters in the terminal without needing to specify a stream.
- *
- * Example usage:
- * ```c
- * fossil_io_putc('A');
- * ```
- *
- * @param c The character to be printed. This should be a single character.
- */
-void fossil_io_putc(char c);
-
 #ifdef __cplusplus
 }
 /**
@@ -291,24 +258,6 @@ namespace fossil {
                 va_end(args);
             }
 
-            /**
-             * Prints a character to the specified output stream.
-             *
-             * @param stream The output stream where the character should be printed.
-             * @param c The character to be printed.
-             */
-            static void fputchar(fossil_fstream_t *stream, char c) {
-                fossil_io_fputchar(stream, c);
-            }
-
-            /**
-             * Prints a character to the standard output.
-             *
-             * @param c The character to be printed.
-             */
-            static void putc(char c) {
-                fossil_io_putc(c);
-            }
         };
     }
 }
