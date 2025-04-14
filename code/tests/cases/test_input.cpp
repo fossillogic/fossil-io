@@ -318,7 +318,7 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_utf8_invalid) {
 
     char buf[20];
     char *result = fossil::io::Input::gets_utf8(buf, sizeof(buf), input_stream);
-    ASSUME_CNULL(result);
+    ASSUME_ITS_CNULL(result);
     fclose(input_stream);
 }
 
