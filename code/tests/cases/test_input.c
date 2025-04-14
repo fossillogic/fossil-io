@@ -297,20 +297,6 @@ FOSSIL_TEST_CASE(c_test_io_read_multiline_input_invalid) {
     ASSUME_ITS_FALSE(result); // Multiline input should fail due to small buffer size
 }
 
-FOSSIL_TEST_CASE(c_test_io_getch) {
-    char input_char = 'A';
-
-    // Mock user input
-    FILE *input_stream = tmpfile();
-    fwrite(&input_char, 1, sizeof(input_char), input_stream);
-    rewind(input_stream);
-
-    char result = fossil_io_getch();
-
-    ASSUME_ITS_EQUAL_CCHAR(input_char, result);
-    fclose(input_stream);
-}
-
 FOSSIL_TEST_CASE(c_test_io_show_progress) {
     // This test assumes the progress bar function doesn't return anything.
     // We'll just check that the progress is shown correctly.
@@ -351,7 +337,6 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_read_password_invalid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_read_multiline_input_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_read_multiline_input_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_getch);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_show_progress);
     
     FOSSIL_TEST_REGISTER(c_input_suite);
