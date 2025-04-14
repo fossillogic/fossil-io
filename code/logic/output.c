@@ -60,7 +60,25 @@ void fossil_io_apply_attribute(const char *attribute) {
     // Add more attributes as needed
 }
 
-// Function to print text with attributes, colors, and format specifiers
+// Function to handle named positions (like top, bottom, left, right)
+void fossil_io_apply_position(const char *pos) {
+    if (strcmp(pos, "top") == 0) {
+        // Apply position logic for top
+        printf("\033[H"); // Move cursor to the top
+    } else if (strcmp(pos, "bottom") == 0) {
+        // Apply position logic for bottom
+        printf("\033[1000H"); // Move cursor to the bottom (just as an example)
+    } else if (strcmp(pos, "left") == 0) {
+        // Apply position logic for left
+        printf("\033[1000;0H"); // Move cursor to the left
+    } else if (strcmp(pos, "right") == 0) {
+        // Apply position logic for right
+        printf("\033[1000;1000H"); // Move cursor to the right
+    }
+    // Add more positions if needed
+}
+
+// Function to print text with attributes, colors, positions, and format specifiers
 void fossil_io_print_with_attributes(const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -74,7 +92,7 @@ void fossil_io_print_with_attributes(const char *format, ...) {
     const char *start = NULL;
     const char *end = NULL;
 
-    // Iterate over the buffer and process color/attribute inside `{}` and format specifiers
+    // Iterate over the buffer and process color/attribute/position inside `{}` and format specifiers
     while ((start = strchr(current_pos, '{')) != NULL) {
         // Print text before '{'
         printf("%.*s", (int)(start - current_pos), current_pos);
@@ -88,24 +106,31 @@ void fossil_io_print_with_attributes(const char *format, ...) {
             strncpy(attributes, start + 1, length);
             attributes[length] = '\0';
 
-            // Split by comma to separate color and attribute
+            // Split by comma to separate color, attribute, or position
             char *color = NULL;
             char *attribute = NULL;
+            char *pos = NULL;
             char *comma_pos = strchr(attributes, ',');
             if (comma_pos) {
-                *comma_pos = '\0';  // Null-terminate the color string
-                color = attributes; // Color part
+                *comma_pos = '\0';  // Null-terminate the first part
+                color = attributes; // Color or position part
                 attribute = comma_pos + 1; // Attribute part
             } else {
-                color = attributes; // Only one part (could be color or attribute)
+                color = attributes; // Only one part (could be color, attribute, or position)
             }
 
-            // Apply color and/or attribute
-            if (color) {
-                fossil_io_apply_color(color);
-            }
-            if (attribute) {
-                fossil_io_apply_attribute(attribute);
+            // Handle positions (like {pos:name})
+            if (strstr(color, "pos:") == color) {
+                pos = color + 4; // Skip the "pos:" prefix
+                fossil_io_apply_position(pos);
+            } else {
+                // Apply color and/or attribute
+                if (color) {
+                    fossil_io_apply_color(color);
+                }
+                if (attribute) {
+                    fossil_io_apply_attribute(attribute);
+                }
             }
 
             // Move past '}' and continue processing
