@@ -16,10 +16,6 @@
 
 #include <stdarg.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Define color codes for output
 #define FOSSIL_IO_COLOR_RESET       "\033[0m"
 #define FOSSIL_IO_COLOR_RED         "\033[31m"
@@ -50,6 +46,59 @@ extern "C" {
 // Additional attributes
 #define FOSSIL_IO_ATTR_ITALIC       "\033[3m"
 #define FOSSIL_IO_ATTR_STRIKETHROUGH "\033[9m"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** 
+ * This code provides a robust set of functions for formatting and manipulating terminal output, 
+ * allowing developers to apply color, text attributes (like bold, underline, etc.), and cursor positioning 
+ * to improve the visual appeal and functionality of text-based applications. The functionality is primarily 
+ * based on ANSI escape sequences, which are widely supported in most terminal environments (such as Linux terminals, 
+ * macOS Terminal, and Windows terminals that support ANSI escape codes).
+ *
+ * The core concept behind this system is a simple markup language that allows developers to specify formatting 
+ * instructions within the text output. These instructions are enclosed in curly braces `{}` within the format string 
+ * and are processed dynamically to change the appearance of the text. The markup supports various styles, such as:
+ * 
+ * 1. **Colors** - The code includes a set of predefined color codes for changing the foreground color of text. 
+ *    Supported colors include basic colors (e.g., red, green, blue) and bright colors (e.g., bright red, bright green, etc.).
+ *    The colors are implemented using ANSI escape sequences and can be easily extended to support more colors if needed.
+ *
+ * 2. **Attributes** - Text attributes can be applied to the text to change its appearance. These attributes include:
+ *    - **Bold** (for making text bold)
+ *    - **Underline** (for adding an underline to the text)
+ *    - **Reversed** (for inverting the colors of the text and background)
+ *    - **Blink** (for making text blink)
+ *    - **Hidden** (for hiding the text)
+ *    - **Normal** (for reverting text back to its normal form, removing any attributes)
+ *
+ * 3. **Positioning** - The code introduces a flexible way to manipulate the position of the text in the terminal using 
+ *    named positions such as `top`, `bottom`, `left`, and `right`. These positions allow for text to be dynamically 
+ *    placed at specific locations on the terminal screen, enhancing the user experience for applications requiring 
+ *    more control over text layout and movement. The positions are marked with `pos:` followed by the desired 
+ *    position name (e.g., `{pos:top}` or `{pos:left}`).
+ * 
+ * 4. **Flexibility and Extendability** - The markup language allows for the use of multiple color and attribute 
+ *    specifications in a single string. The color and attribute specifications can be combined, for instance, 
+ *    `{red,bold}` for red and bold text, or `{green,underline}` for green and underlined text. This allows for 
+ *    fine-grained control over the text output. The system is flexible enough to be extended with more attributes, 
+ *    colors, and positioning options as required.
+ *
+ * 5. **Implementation Details** - The function `fossil_io_print_with_attributes` processes the format string 
+ *    provided to it, looking for `{}` markers. When it encounters a `{}`, it checks if the enclosed string specifies 
+ *    a color, attribute, or position, and then calls the respective helper functions (`fossil_io_apply_color` and 
+ *    `fossil_io_apply_attribute`) to modify the terminal output accordingly. If a position marker is found (e.g., 
+ *    `{pos:top}`), it adjusts the cursor position in the terminal to the specified location. The code uses standard 
+ *    C string manipulation functions like `strchr`, `strncpy`, and `vsnprintf` to process the format string and apply 
+ *    the requested changes to the output.
+ * 
+ * In summary, this system provides a highly customizable and intuitive way to format terminal text with colors, 
+ * attributes, and positions, making it ideal for developers who want to build visually rich and interactive 
+ * command-line interfaces. The markup-based approach is simple to use and can be easily extended to meet the 
+ * needs of more complex applications.
+ */
 
 /**
  * Prints a string to the output.
