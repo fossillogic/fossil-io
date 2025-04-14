@@ -234,9 +234,6 @@ namespace fossil {
         /**
          * Class for output operations.
          */
-        /**
-         * Class for output operations.
-         */
         class Output {
         public:
             /**
