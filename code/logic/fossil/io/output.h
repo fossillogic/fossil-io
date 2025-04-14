@@ -30,6 +30,15 @@ extern "C" {
 #define FOSSIL_IO_COLOR_CYAN        "\033[36m"
 #define FOSSIL_IO_COLOR_WHITE       "\033[37m"
 
+// Bright colors
+#define FOSSIL_IO_COLOR_BRIGHT_RED   "\033[91m"
+#define FOSSIL_IO_COLOR_BRIGHT_GREEN "\033[92m"
+#define FOSSIL_IO_COLOR_BRIGHT_YELLOW "\033[93m"
+#define FOSSIL_IO_COLOR_BRIGHT_BLUE  "\033[94m"
+#define FOSSIL_IO_COLOR_BRIGHT_MAGENTA "\033[95m"
+#define FOSSIL_IO_COLOR_BRIGHT_CYAN  "\033[96m"
+#define FOSSIL_IO_COLOR_BRIGHT_WHITE "\033[97m"
+
 // Define text attributes
 #define FOSSIL_IO_ATTR_BOLD         "\033[1m"
 #define FOSSIL_IO_ATTR_UNDERLINE    "\033[4m"
@@ -37,6 +46,10 @@ extern "C" {
 #define FOSSIL_IO_ATTR_BLINK        "\033[5m"
 #define FOSSIL_IO_ATTR_HIDDEN       "\033[8m"
 #define FOSSIL_IO_ATTR_NORMAL       "\033[22m" // For reverting to normal text
+
+// Additional attributes
+#define FOSSIL_IO_ATTR_ITALIC       "\033[3m"
+#define FOSSIL_IO_ATTR_STRIKETHROUGH "\033[9m"
 
 /**
  * Prints a string to the output.
