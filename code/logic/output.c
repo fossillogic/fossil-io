@@ -160,7 +160,26 @@ void fossil_io_print_with_attributes(const char *format, ...) {
     va_end(args);
 }
 
+// Function to print a sanitized formatted string to a specific file stream with attributes
+void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str) {
+    if (str != NULL && stream != NULL) {
+        char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
+        strncpy(sanitized_str, str, sizeof(sanitized_str));
+        sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
+
+        // Apply color and attribute logic (same as the print version)
+        fossil_io_print_with_attributes(sanitized_str);
+
+        // Write the sanitized string to the stream
+        fputs(sanitized_str, stream->file);
+    } else {
+        fputs("cnullptr\n", stderr);
+    }
+}
+
+//
 // OUTPUT FUNCTIONS
+//
 
 // Function to print a sanitized string with attributes inside {}
 void fossil_io_puts(const char *str) {
@@ -172,7 +191,7 @@ void fossil_io_puts(const char *str) {
         // Print the sanitized string with attributes
         fossil_io_print_with_attributes(sanitized_str);
     } else {
-        fputs("NULL\n", stderr);
+        fputs("cnullptr\n", stderr);
     }
 }
 
@@ -198,15 +217,15 @@ void fossil_io_printf(const char *format, ...) {
 
 // Function to print a sanitized string to a specific file stream
 void fossil_io_fputs(fossil_fstream_t *stream, const char *str) {
-    if (str != NULL) {
+    if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
-        
-        // Print the sanitized string to the specified stream
+
+        // Apply color/attributes and sanitize the string before printing
         fossil_io_fprint_with_attributes(stream, sanitized_str);
     } else {
-        fputs("NULL\n", stderr);
+        fputs("cnullptr\n", stderr);
     }
 }
 
@@ -219,7 +238,7 @@ void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...) {
     char buffer[FOSSIL_IO_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
 
-    // Print the sanitized formatted string to the specified stream
+    // Print the sanitized formatted string with attributes to the specified stream
     fossil_io_fprint_with_attributes(stream, buffer);
 
     va_end(args);
