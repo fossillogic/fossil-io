@@ -34,6 +34,51 @@ typedef enum {
     FOSSIL_BUFFER_GIANT  = 10000
 } fossil_limit_t;
 
+typedef struct {
+    const char *keyword;
+    const char *mode;
+} fossil_fstream_mode_entry_t;
+
+static const fossil_fstream_mode_entry_t fossil_fstream_mode_table[] = {
+    // Classic C modes (standard fopen strings)
+    { "r",     "r"   }, { "rb",    "rb"  },
+    { "w",     "w"   }, { "wb",    "wb"  },
+    { "a",     "a"   }, { "ab",    "ab"  },
+    { "r+",    "r+"  }, { "rb+",   "r+b" }, { "r+b", "r+b" },
+    { "w+",    "w+"  }, { "wb+",   "w+b" }, { "w+b", "w+b" },
+    { "a+",    "a+"  }, { "ab+",   "a+b" }, { "a+b", "a+b" },
+
+    // Extended readable modes
+    { "read",          "r"   },
+    { "readb",         "rb"  },
+    { "write",         "w"   },
+    { "writeb",        "wb"  },
+    { "append",        "a"   },
+    { "appendb",       "ab"  },
+    { "read+write",    "r+"  },
+    { "read+writeb",   "r+b" },
+    { "write+read",    "w+"  },
+    { "write+readb",   "w+b" },
+    { "append+read",   "a+"  },
+    { "append+readb",  "a+b" },
+    { "read+t",        "rt"  },
+    { "write+t",       "wt"  },
+    { "read+write+t",  "r+t" },
+
+    // Optional end-of-table sentinel
+    { NULL, NULL }
+};
+
+static const char *fossil_fstream_mode_from_keyword(const char *keyword) {
+    if (keyword == NULL) return NULL;
+    for (int i = 0; fossil_fstream_mode_table[i].keyword != NULL; i++) {
+        if (strcmp(keyword, fossil_fstream_mode_table[i].keyword) == 0) {
+            return fossil_fstream_mode_table[i].mode;
+        }
+    }
+    return NULL;
+}
+
 // Open a stream for file operations
 int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, const char *mode) {
     if (stream == NULL || filename == NULL || mode == NULL) {
@@ -46,7 +91,7 @@ int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, cons
         return FOSSIL_ERROR_LIMIT_REACHED;
     }
 
-    stream->file = fopen(filename, mode);
+    stream->file = fopen(filename, fossil_fstream_mode_from_keyword(mode));
     if (stream->file == NULL) {
         fprintf(stderr, "Error: File not found - %s\n", filename);
         return FOSSIL_ERROR_FILE_NOT_FOUND;
@@ -73,7 +118,7 @@ int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, c
         return FOSSIL_ERROR_NULL_POINTER;
     }
 
-    FILE *new_file = freopen(filename, mode, file);
+    FILE *new_file = freopen(filename, fossil_fstream_mode_from_keyword(mode), file);
     if (new_file == NULL) {
         fprintf(stderr, "Error: File not found - %s\n", filename);
         return FOSSIL_ERROR_FILE_NOT_FOUND;
