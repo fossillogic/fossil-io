@@ -17,10 +17,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define FOSSIL_STDIN  stdin
-#define FOSSIL_STDOUT stdout
-#define FOSSIL_STDERR stderr
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +28,14 @@ typedef struct {
     FILE *file;                                       // Pointer to the FILE structure for the stream
     char filename[500]; // Array to store the filename
 } fossil_fstream_t;
+
+extern fossil_fstream_t *FOSSIL_STDIN;
+extern fossil_fstream_t *FOSSIL_STDOUT;
+extern fossil_fstream_t *FOSSIL_STDERR;
+
+#define FOSSIL_STDIN  (FOSSIL_STDIN)
+#define FOSSIL_STDOUT (FOSSIL_STDOUT)
+#define FOSSIL_STDERR (FOSSIL_STDERR)
 
 /**
  * Reopen a stream with a new file.
