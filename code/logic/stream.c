@@ -26,6 +26,10 @@
     #include <fcntl.h>
 #endif
 
+fossil_fstream_t *FOSSIL_STDIN;
+fossil_fstream_t *FOSSIL_STDOUT;
+fossil_fstream_t *FOSSIL_STDERR;
+
 typedef enum {
     FOSSIL_BUFFER_SMALL  = 100,
     FOSSIL_BUFFER_MEDIUM = 500,
