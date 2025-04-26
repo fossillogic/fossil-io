@@ -20,6 +20,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #else
+#include <sys/select.h>  // For fd_set and select
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
