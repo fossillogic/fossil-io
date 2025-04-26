@@ -13,6 +13,7 @@
  */
 #include "fossil/io/network.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>  // For fd_set and select
 #include <sys/time.h>    // For struct timeval
@@ -150,77 +151,6 @@ int fossil_nstream_set_nonblocking(fossil_nstream_t *ns, int enable) {
     return ioctlsocket(ns->socket, FIONBIO, &mode);
 #else
     int flags = fcntl(ns->socket, F_GETFL, 0);
-    if (flags == -1) {
-        return -1;
-    }
-
-    if (enable) {
-        flags |= O_NONBLOCK;
-    } else {
-        flags &= ~O_NONBLOCK;
-    }
-
-    return fcntl(ns->socket, F_SETFL, flags);
-#endif
-}
-
-// Send a line of text (appends \r\n)
-ssize_t fossil_nstream_send_line(fossil_nstream_t *ns, const char *line) {
-    size_t len = strlen(line);
-    char *buffer = malloc(len + 3);
-    if (!buffer) return -1;
-
-    strcpy(buffer, line);
-    buffer[len] = '\r';
-    buffer[len + 1] = '\n';
-    buffer[len + 2] = '\0';
-
-    ssize_t result = fossil_nstream_send(ns, buffer, len + 2);
-    free(buffer);
-    return result;
-}
-
-// Receive a line (stops at \r\n or max_len)
-ssize_t fossil_nstream_recv_line(fossil_nstream_t *ns, char *buf, size_t max_len) {
-    ssize_t total_received = 0;
-    char c;
-    size_t i = 0;
-
-    while (i < max_len - 1) {
-        ssize_t result = fossil_nstream_recv(ns, &c, 1);
-        if (result <= 0) {
-#ifdef _WIN32
-            if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                continue;  // Non-blocking mode, retry
-            }
-#else
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                continue;  // Non-blocking mode, retry
-            }
-#endif
-            return result;
-        }
-
-        buf[i++] = c;
-        total_received++;
-
-        // Stop when \r\n is found
-        if (i >= 2 && buf[i-1] == '\n' && buf[i-2] == '\r') {
-            break;
-        }
-    }
-
-    buf[i] = '\0';  // Null-terminate the buffer
-    return total_received;
-}
-
-// Set socket to non-blocking mode
-int fossil_nstream_set_nonblocking(fossil_nstream_t *ns, int enable) {
-#ifdef _WIN32
-    u_long mode = enable ? 1 : 0;
-    return ioctlsocket(ns->socket, FIONBIO, &mode);
-#else
-    int flags = fcntl(ns->socket, F_GETFL, 0);
     if (flags == -1) return -1;
 
     if (enable) {
@@ -326,7 +256,7 @@ ssize_t fossil_nstream_send_line(fossil_nstream_t *ns, const char *line) {
 ssize_t fossil_nstream_recv_line(fossil_nstream_t *ns, char *buf, size_t max_len) {
     ssize_t bytes_received = 0;
     char ch;
-    while (bytes_received < max_len - 1) {
+    while ((size_t)bytes_received < max_len - 1) {
         if (fossil_nstream_recv(ns, &ch, 1) <= 0) return -1;
 
         buf[bytes_received++] = ch;
