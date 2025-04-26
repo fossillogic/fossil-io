@@ -202,6 +202,7 @@ const char *fossil_nstream_strerror(void);
 
 #ifdef __cplusplus
 }
+#include <string>
 
 /**
  * C++ wrapper for the output functions.
