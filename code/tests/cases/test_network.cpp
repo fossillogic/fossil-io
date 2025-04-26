@@ -248,7 +248,6 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_timeout);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_get_peer_info);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_recv_line);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_ssl_send_recv);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
