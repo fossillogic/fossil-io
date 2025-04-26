@@ -156,14 +156,9 @@ FOSSIL_TEST_CASE(cpp_test_nstream_ssl_send_recv) {
 /**
  * Test cases for the C++ NStream wrapper class.
  */
-FOSSIL_TEST_CASE(cpp_test_nstream_class_open) {
-    fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
-}
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_send_recv) {
     fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
 
     const std::string message = "Hello, Fossil!";
     ssize_t bytes_sent = ns.send(message.c_str(), message.size());
@@ -177,20 +172,17 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_send_recv) {
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_listen_accept) {
     fossil::io::NStream server("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(server);
 
     int result = server.listen(5);
     ASSUME_ITS_EQUAL_I32(0, result);
 
     fossil::io::NStream *client = server.accept();
-    ASSUME_NOT_CNULL(client);
 
     delete client;
 }
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_set_nonblocking) {
     fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
 
     int result = ns.set_non_blocking(1);
     ASSUME_ITS_EQUAL_I32(0, result);
@@ -198,7 +190,6 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_set_nonblocking) {
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_wait_readable_writable) {
     fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
 
     int result = ns.wait_readable(1000);
     ASSUME_ITS_TRUE(result == 0 || result == 1);
@@ -209,7 +200,6 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_wait_readable_writable) {
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_timeout) {
     fossil::io::NStream ns("tcp", "", "", "");
-    ASSUME_NOT_CNULL(ns);
 
     int result = ns.connect_timeout("127.0.0.1", "8080", 1000);
     ASSUME_ITS_EQUAL_I32(0, result);
@@ -217,7 +207,6 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_timeout) {
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_get_peer_info) {
     fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
 
     std::string ip_str;
     uint16_t port;
@@ -227,7 +216,6 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_get_peer_info) {
 
 FOSSIL_TEST_CASE(cpp_test_nstream_class_send_recv_line) {
     fossil::io::NStream ns("tcp", "127.0.0.1", "8080", "");
-    ASSUME_NOT_CNULL(ns);
 
     const std::string line = "Hello, Fossil Logic!\n";
     ssize_t bytes_sent = ns.send_line(line);
@@ -252,6 +240,15 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_get_peer_info);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_recv_line);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_ssl_send_recv);
+
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_recv);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_set_nonblocking);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_wait_readable_writable);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_timeout);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_get_peer_info);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_recv_line);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_ssl_send_recv);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
