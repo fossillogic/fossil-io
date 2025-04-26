@@ -43,77 +43,114 @@ FOSSIL_TEARDOWN(c_network_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(c_test_network_init) {
-    int result = fossil_io_network_create();
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(c_test_nstream_open) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+    fossil_nstream_close(ns);
 }
 
-FOSSIL_TEST_CASE(c_test_network_create_socket) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
+FOSSIL_TEST_CASE(c_test_nstream_send_recv) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
 
-FOSSIL_TEST_CASE(c_test_network_bind) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil_io_network_bind(sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
-
-FOSSIL_TEST_CASE(c_test_network_listen) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_bind(sock, "127.0.0.1", 8080);
-    int result = fossil_io_network_listen(sock, 5);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
-
-FOSSIL_TEST_CASE(c_test_network_close) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    // No direct way to test close, but we assume no errors if it reaches here
-    fossil_io_network_destroy();
-}
-
-FOSSIL_TEST_CASE(c_test_network_create_udp_socket) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
-
-FOSSIL_TEST_CASE(c_test_network_bind_udp) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil_io_network_bind(sock, "127.0.0.1", 8081);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
-}
-
-FOSSIL_TEST_CASE(c_test_network_sendto_udp) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    const char *message = "Hello, UDP!";
-    int bytes_sent = fossil_io_network_sendto(sock, message, strlen(message), "127.0.0.1", 8081);
+    const char *message = "Hello, Fossil!";
+    ssize_t bytes_sent = fossil_nstream_send(ns, message, strlen(message));
     ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+
+    char buffer[128];
+    ssize_t bytes_received = fossil_nstream_recv(ns, buffer, sizeof(buffer));
+    ASSUME_ITS_TRUE(bytes_received > 0);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_listen_accept) {
+    fossil_nstream_t *server = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(server);
+
+    int result = fossil_nstream_listen(server, 5);
+    ASSUME_ITS_EQUAL_I32(0, result);
+
+    fossil_nstream_t *client = fossil_nstream_accept(server);
+    ASSUME_NOT_CNULL(client);
+
+    fossil_nstream_close(client);
+    fossil_nstream_close(server);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_set_nonblocking) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    int result = fossil_nstream_set_nonblocking(ns, 1);
+    ASSUME_ITS_EQUAL_I32(0, result);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_wait_readable_writable) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    int result = fossil_nstream_wait_readable(ns, 1000);
+    ASSUME_ITS_TRUE(result == 0 || result == 1);
+
+    result = fossil_nstream_wait_writable(ns, 1000);
+    ASSUME_ITS_TRUE(result == 0 || result == 1);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_connect_timeout) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", NULL, NULL, NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    int result = fossil_nstream_connect_timeout(ns, "127.0.0.1", "8080", 1000);
+    ASSUME_ITS_EQUAL_I32(0, result);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_get_peer_info) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    char ip_str[64];
+    uint16_t port;
+    int result = fossil_nstream_get_peer_info(ns, ip_str, sizeof(ip_str), &port);
+    ASSUME_ITS_EQUAL_I32(0, result);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_send_recv_line) {
+    fossil_nstream_t *ns = fossil_nstream_open("tcp", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    const char *line = "Hello, Fossil Logic!\n";
+    ssize_t bytes_sent = fossil_nstream_send_line(ns, line);
+    ASSUME_ITS_EQUAL_I32((int)strlen(line), bytes_sent);
+
+    char buffer[128];
+    ssize_t bytes_received = fossil_nstream_recv_line(ns, buffer, sizeof(buffer));
+    ASSUME_ITS_TRUE(bytes_received > 0);
+
+    fossil_nstream_close(ns);
+}
+
+FOSSIL_TEST_CASE(c_test_nstream_ssl_send_recv) {
+    fossil_nstream_t *ns = fossil_nstream_open("tls", "127.0.0.1", "8080", NULL);
+    ASSUME_NOT_CNULL(ns);
+
+    const char *message = "Secure Hello!";
+    ssize_t bytes_sent = fossil_nstream_ssl_send(ns, message, strlen(message));
+    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
+
+    char buffer[128];
+    ssize_t bytes_received = fossil_nstream_ssl_recv(ns, buffer, sizeof(buffer));
+    ASSUME_ITS_TRUE(bytes_received > 0);
+
+    fossil_nstream_close(ns);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -121,14 +158,15 @@ FOSSIL_TEST_CASE(c_test_network_sendto_udp) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_network_tests) {
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_init);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_socket);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_listen);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_close);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_create_udp_socket);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_bind_udp);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_network_sendto_udp);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_open);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_send_recv);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_listen_accept);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_set_nonblocking);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_wait_readable_writable);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_connect_timeout);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_get_peer_info);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_send_recv_line);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_ssl_send_recv);
 
     FOSSIL_TEST_REGISTER(c_network_suite);
 }
