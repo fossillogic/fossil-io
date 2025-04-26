@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>  // For fd_set and select
 #include <sys/time.h>    // For struct timeval
 #include <unistd.h>      // For close on POSIX systems
 
