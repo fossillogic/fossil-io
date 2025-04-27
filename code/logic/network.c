@@ -26,26 +26,41 @@
 
 // Helper function to resolve the port number
 static int resolve_port(const char *port_str) {
-    return atoi(port_str);
+    if (!port_str || !*port_str) return -1;
+
+    // Make sure the string is numeric
+    for (const char *p = port_str; *p; ++p) {
+        if (!isdigit((unsigned char)*p)) return -1;
+    }
+
+    int port = atoi(port_str);
+    if (port <= 0 || port > 65535) return -1;
+    return port;
 }
 
 // Initialize socket (for both client and server)
 static int init_socket(const char *protocol) {
-    int sock = -1;
+    if (!protocol) return -1;
 
-    if (strcmp(protocol, "tcp") == 0) {
-        sock = socket(AF_INET, SOCK_STREAM, 0);
-    } else if (strcmp(protocol, "udp") == 0) {
-        sock = socket(AF_INET, SOCK_DGRAM, 0);
-    } else if (strcmp(protocol, "raw") == 0) {
-        sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-    } else if (strcmp(protocol, "icmp") == 0) {
-        sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    } else {
-        return -1;  // Unsupported protocol
+    struct {
+        const char *name;
+        int type;
+        int proto;
+    } protocols[] = {
+        { "tcp",  SOCK_STREAM, 0 },
+        { "udp",  SOCK_DGRAM,  0 },
+        { "raw",  SOCK_RAW,    IPPROTO_RAW },
+        { "icmp", SOCK_RAW,    IPPROTO_ICMP },
+    };
+
+    for (size_t i = 0; i < sizeof(protocols)/sizeof(protocols[0]); ++i) {
+        if (strcmp(protocol, protocols[i].name) == 0) {
+            int sock = socket(AF_INET, protocols[i].type, protocols[i].proto);
+            return sock >= 0 ? sock : -1;
+        }
     }
 
-    return sock;
+    return -1; // Unsupported protocol
 }
 
 // Open a new network stream (TCP/UDP)
@@ -91,11 +106,12 @@ fossil_nstream_t *fossil_nstream_open(const char *protocol, const char *host, co
 
 // Send data through the network stream
 ssize_t fossil_nstream_send(fossil_nstream_t *ns, const void *buf, size_t len) {
-    if (strcmp(ns->protocol, "udp") == 0) {
-        return sendto(ns->socket, buf, len, 0, (struct sockaddr *)&ns->addr, sizeof(ns->addr));
-    } else if (strcmp(ns->protocol, "raw") == 0 || strcmp(ns->protocol, "icmp") == 0) {
+    if (!ns || ns->socket < 0 || !buf || len == 0) return -1;
+
+    if (strcmp(ns->protocol, "udp") == 0 || strcmp(ns->protocol, "raw") == 0 || strcmp(ns->protocol, "icmp") == 0) {
         return sendto(ns->socket, buf, len, 0, (struct sockaddr *)&ns->addr, sizeof(ns->addr));
     }
+
     return send(ns->socket, buf, len, 0);
 }
 
@@ -127,12 +143,14 @@ fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *ns) {
     
     if (client_sock < 0) return NULL;
 
-    fossil_nstream_t *client_ns = malloc(sizeof(fossil_nstream_t));
+    fossil_nstream_t *client_ns = calloc(1, sizeof(fossil_nstream_t));  // safer
     if (!client_ns) return NULL;
 
     client_ns->socket = client_sock;
     client_ns->addr = client_addr;
-    strcpy(client_ns->protocol, ns->protocol);  // Inherit protocol from server
+    strncpy(client_ns->protocol, ns->protocol, sizeof(client_ns->protocol) - 1);
+    client_ns->protocol[sizeof(client_ns->protocol) - 1] = '\0';
+    client_ns->is_tls = ns->is_tls;  // inherit TLS flag
 
     return client_ns;
 }
@@ -145,6 +163,7 @@ void fossil_nstream_close(fossil_nstream_t *ns) {
 
 // Set socket to non-blocking mode
 int fossil_nstream_set_nonblocking(fossil_nstream_t *ns, int enable) {
+    if (!ns || ns->socket < 0) return -1;
 #ifdef _WIN32
     u_long mode = enable ? 1 : 0;
     return ioctlsocket(ns->socket, FIONBIO, &mode);
@@ -152,11 +171,8 @@ int fossil_nstream_set_nonblocking(fossil_nstream_t *ns, int enable) {
     int flags = fcntl(ns->socket, F_GETFL, 0);
     if (flags == -1) return -1;
 
-    if (enable) {
-        flags |= O_NONBLOCK;
-    } else {
-        flags &= ~O_NONBLOCK;
-    }
+    if (enable) flags |= O_NONBLOCK;
+    else flags &= ~O_NONBLOCK;
 
     return fcntl(ns->socket, F_SETFL, flags);
 #endif
@@ -190,40 +206,59 @@ int fossil_nstream_wait_writable(fossil_nstream_t *ns, int timeout_ms) {
 
 // Connect with timeout
 int fossil_nstream_connect_timeout(fossil_nstream_t *ns, const char *host, const char *port, int timeout_ms) {
+    if (!ns || ns->socket < 0 || !host || !port) return -1;
+
     struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(resolve_port(port));
-    server_addr.sin_addr.s_addr = inet_addr(host);
 
-    // Set socket to non-blocking
-    fossil_nstream_set_nonblocking(ns, 1);
+    in_addr_t addr = inet_addr(host);
+    if (addr == INADDR_NONE) return -1;  // Invalid address
+
+    server_addr.sin_addr.s_addr = addr;
+
+    // Set non-blocking
+    if (fossil_nstream_set_nonblocking(ns, 1) != 0) return -1;
 
     int result = connect(ns->socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
-
     if (result < 0) {
 #ifdef _WIN32
-        if (WSAGetLastError() == WSAEWOULDBLOCK) {
+        int last_error = WSAGetLastError();
+        if (last_error == WSAEWOULDBLOCK) {
 #else
         if (errno == EINPROGRESS) {
 #endif
-            struct timeval timeout;
-            timeout.tv_sec = timeout_ms / 1000;
-            timeout.tv_usec = (timeout_ms % 1000) * 1000;
-
             fd_set writefds;
             FD_ZERO(&writefds);
             FD_SET(ns->socket, &writefds);
 
+            struct timeval timeout;
+            timeout.tv_sec = timeout_ms / 1000;
+            timeout.tv_usec = (timeout_ms % 1000) * 1000;
+
             result = select(ns->socket + 1, NULL, &writefds, NULL, &timeout);
-            if (result <= 0) return -1;  // Timeout or error
+            if (result <= 0) {
+                fossil_nstream_set_nonblocking(ns, 0);
+                return -1;  // Timeout or select error
+            }
+
+            // Check if there was a socket error
+            int so_error = 0;
+            socklen_t len = sizeof(so_error);
+            getsockopt(ns->socket, SOL_SOCKET, SO_ERROR, (char *)&so_error, &len);
+            if (so_error != 0) {
+                fossil_nstream_set_nonblocking(ns, 0);
+                return -1;
+            }
         } else {
-            return -1;  // Immediate error
+            fossil_nstream_set_nonblocking(ns, 0);
+            return -1;
         }
     }
 
-    // Set socket back to blocking
+    // Set back to blocking
     fossil_nstream_set_nonblocking(ns, 0);
-
     return 0;
 }
 
@@ -280,5 +315,11 @@ ssize_t fossil_nstream_ssl_recv(fossil_nstream_t *ns, void *buf, size_t len) {
 
 // Get the string representation of the last error
 const char *fossil_nstream_strerror(void) {
+#ifdef _WIN32
+    static char buf[64];
+    snprintf(buf, sizeof(buf), "WSA Error: %d", WSAGetLastError());
+    return buf;
+#else
     return strerror(errno);
+#endif
 }
