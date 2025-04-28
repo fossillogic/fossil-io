@@ -88,6 +88,20 @@ void fossil_io_show_progress(int progress) {
     fflush(stdout);
 }
 
+int fossil_io_getc(FILE *input_stream) {
+    if (input_stream == NULL) {
+        fprintf(stderr, "Error: Invalid input stream.\n");
+        return EOF;
+    }
+    
+    int c = fgetc(input_stream);
+    if (c == EOF && ferror(input_stream)) {
+        fprintf(stderr, "Error: Failed to read from input stream.\n");
+    }
+    
+    return c;
+}
+
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
 char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
     if (buf == NULL || size == 0 || input_stream == NULL) {
