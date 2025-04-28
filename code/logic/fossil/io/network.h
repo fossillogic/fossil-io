@@ -21,6 +21,89 @@
 extern "C" {
 #endif
 
+/**
+ * @file network.c
+ * @brief Network logic implementation for handling communication protocols and client types.
+ *
+ * This file contains the core logic for managing network communication in the application.
+ * It is responsible for implementing various protocols and handling different types of clients
+ * that interact with the system. The following details outline the key aspects of the network
+ * logic:
+ *
+ * ## Supported Protocols:
+ * 1. **TCP (Transmission Control Protocol):**
+ *    - Provides reliable, ordered, and error-checked delivery of data.
+ *    - Used for persistent connections and critical data exchange.
+ *    - Ensures data integrity and retransmission in case of packet loss.
+ *
+ * 2. **UDP (User Datagram Protocol):**
+ *    - Provides connectionless communication with minimal overhead.
+ *    - Suitable for real-time applications where speed is prioritized over reliability.
+ *    - Commonly used for streaming, gaming, and other low-latency scenarios.
+ *
+ * 3. **HTTP/HTTPS:**
+ *    - Supports web-based communication using the Hypertext Transfer Protocol.
+ *    - HTTPS ensures secure communication via SSL/TLS encryption.
+ *    - Used for RESTful APIs and web client interactions.
+ *
+ * 4. **WebSocket:**
+ *    - Enables full-duplex communication channels over a single TCP connection.
+ *    - Ideal for real-time applications such as chat systems and live updates.
+ *
+ * ## Client Types:
+ * 1. **Standard Clients:**
+ *    - General-purpose clients that use standard protocols like HTTP or WebSocket.
+ *    - Typically include web browsers, mobile apps, and desktop applications.
+ *
+ * 2. **Embedded Clients:**
+ *    - Lightweight clients running on embedded systems or IoT devices.
+ *    - Often use UDP or custom lightweight protocols for communication.
+ *
+ * 3. **Service Clients:**
+ *    - Backend services or microservices that interact with the system.
+ *    - May use HTTP APIs, gRPC, or other service-to-service communication protocols.
+ *
+ * 4. **Real-Time Clients:**
+ *    - Clients requiring low-latency communication, such as gaming or streaming applications.
+ *    - Often rely on WebSocket or UDP for real-time data exchange.
+ *
+ * ## Supported Flags:
+ * - **Protocol Flags:**
+ *   - `tcp`: Specifies the use of the TCP protocol.
+ *   - `udp`: Specifies the use of the UDP protocol.
+ *   - `http`: Specifies the use of the HTTP protocol.
+ *   - `https`: Specifies the use of the HTTPS protocol.
+ *   - `raw`: Specifies the use of raw sockets.
+ *   - `icmp`: Specifies the use of ICMP protocol.
+ *   - `sctp`: Specifies the use of SCTP protocol.
+ *   - `ftp`: Specifies the use of the FTP protocol.
+ *   - `ssh`: Specifies the use of the SSH protocol.
+ *   - `dns`: Specifies the use of the DNS protocol.
+ *   - `ntp`: Specifies the use of the NTP protocol.
+ *   - `smtp`: Specifies the use of the SMTP protocol.
+ *   - `pop3`: Specifies the use of the POP3 protocol.
+ *   - `imap`: Specifies the use of the IMAP protocol.
+ *   - `ldap`: Specifies the use of the LDAP protocol.
+ *   - `mqtt`: Specifies the use of the MQTT protocol.
+ *
+ * - **Client Type Flags:**
+ *   - `mail-server`: Represents a mail server client.
+ *   - `server`: Represents a general server client.
+ *   - `mail-client`: Represents a mail client.
+ *   - `client`: Represents a general client.
+ *   - `mail-bot`: Represents an automated mail bot client.
+ *   - `bot`: Represents a general bot client.
+ *   - `multicast`: Represents a multicast client.
+ *   - `broadcast`: Represents a broadcast client.
+ *
+ * ## Additional Notes:
+ * - The implementation ensures scalability and fault tolerance for handling multiple clients
+ *   simultaneously.
+ * - Security measures, such as encryption and authentication, are integrated to protect
+ *   communication channels.
+ * - The file is designed to be modular, allowing easy extension for new protocols or client types.
+ */
+
 typedef struct fossil_nstream_t fossil_nstream_t;
 
 typedef enum {
