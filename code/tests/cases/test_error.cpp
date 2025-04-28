@@ -48,8 +48,8 @@ FOSSIL_TEST_CASE(cpp_test_io_what_no_error) {
     ASSUME_ITS_EQUAL_CSTR("No error, operation successful.", result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_what_null_pointer) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_NULL_POINTER);
+FOSSIL_TEST_CASE(cpp_test_io_what_CNULL_pointer) {
+    const char *result = fossil_io_what(FOSSIL_ERROR_CNULL_POINTER);
     ASSUME_ITS_EQUAL_CSTR("Null pointer encountered.", result);
 }
 
@@ -207,7 +207,7 @@ FOSSIL_TEST_CASE(cpp_test_io_error_exception_no_error) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_error_exception_null_pointer) {
+FOSSIL_TEST_CASE(cpp_test_io_error_exception_CNULL_pointer) {
     try {
         throw fossil::io::Error(fossil::io::ErrorCode::NULL_POINTER);
     } catch (const fossil::io::Error& e) {
@@ -483,7 +483,7 @@ FOSSIL_TEST_CASE(cpp_test_io_error_exception_serialization_failed) {
 
 FOSSIL_TEST_GROUP(cpp_error_tests) {
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_no_error);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_null_pointer);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_CNULL_pointer);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_invalid_argument);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_type_mismatch);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_invalid_operation);
@@ -515,7 +515,7 @@ FOSSIL_TEST_GROUP(cpp_error_tests) {
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_serialization_failed);
 
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_no_error);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_null_pointer);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_CNULL_pointer);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_invalid_argument);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_type_mismatch);
     FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_invalid_operation);

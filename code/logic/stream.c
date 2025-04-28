@@ -87,7 +87,7 @@ static const char *fossil_fstream_mode_from_keyword(const char *keyword) {
 int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, const char *mode) {
     if (stream == NULL || filename == NULL || mode == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (strlen(filename) >= FOSSIL_BUFFER_MEDIUM) {
@@ -119,7 +119,7 @@ void fossil_fstream_close(fossil_fstream_t *stream) {
 int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
     if (stream == NULL || filename == NULL || mode == NULL || file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     FILE *new_file = freopen(filename, fossil_fstream_mode_from_keyword(mode), file);
@@ -138,7 +138,7 @@ int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, c
 size_t fossil_fstream_read(fossil_fstream_t *stream, void *buffer, size_t size, size_t count) {
     if (stream == NULL || buffer == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     size_t bytes_read = fread(buffer, size, count, stream->file);
@@ -155,7 +155,7 @@ size_t fossil_fstream_read(fossil_fstream_t *stream, void *buffer, size_t size, 
 size_t fossil_fstream_write(fossil_fstream_t *stream, const void *buffer, size_t size, size_t count) {
     if (stream == NULL || buffer == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     size_t bytes_written = fwrite(buffer, size, count, stream->file);
@@ -172,7 +172,7 @@ size_t fossil_fstream_write(fossil_fstream_t *stream, const void *buffer, size_t
 int32_t fossil_fstream_append(fossil_fstream_t *stream, const void * restrict buffer, size_t size, int32_t count) {
     if (stream == NULL || buffer == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     fseek(stream->file, 0, SEEK_END);
@@ -190,7 +190,7 @@ int32_t fossil_fstream_append(fossil_fstream_t *stream, const void * restrict bu
 int32_t fossil_fstream_seek(fossil_fstream_t *stream, int64_t offset, int32_t origin) {
     if (stream == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     int32_t result = fseek(stream->file, offset, origin);
@@ -207,7 +207,7 @@ int32_t fossil_fstream_seek(fossil_fstream_t *stream, int64_t offset, int32_t or
 int32_t fossil_fstream_tell(fossil_fstream_t *stream) {
     if (stream == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     long position = ftell(stream->file);
@@ -224,7 +224,7 @@ int32_t fossil_fstream_tell(fossil_fstream_t *stream) {
 int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename) {
     if (stream == NULL || stream->file == NULL || new_filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (strlen(new_filename) >= FOSSIL_BUFFER_MEDIUM) {
@@ -236,7 +236,7 @@ int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename) 
 
     if (rename(stream->filename, new_filename) != 0) {
         fprintf(stderr, "Error: Failed to save %s\n", new_filename);
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     // Reopen the file with the new name
@@ -253,7 +253,7 @@ int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename) 
 int32_t fossil_fstream_copy(const char *source_filename, const char *destination_filename) {
     if (source_filename == NULL || destination_filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     FILE *source_file = fopen(source_filename, "rb");
@@ -291,7 +291,7 @@ int32_t fossil_fstream_copy(const char *source_filename, const char *destination
 int32_t fossil_fstream_remove(const char *filename) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (remove(filename) == 0) {
@@ -305,7 +305,7 @@ int32_t fossil_fstream_remove(const char *filename) {
 int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {
     if (old_filename == NULL || new_filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (rename(old_filename, new_filename) != 0) {
@@ -319,7 +319,7 @@ int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename
 int32_t fossil_fstream_flush(fossil_fstream_t *stream) {
     if (stream == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (fflush(stream->file) != 0) {
@@ -333,7 +333,7 @@ int32_t fossil_fstream_flush(fossil_fstream_t *stream) {
 int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos) {
     if (stream == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (fseek(stream->file, pos, SEEK_SET) != 0) {
@@ -347,7 +347,7 @@ int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos) {
 int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos) {
     if (stream == NULL || stream->file == NULL || pos == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     *pos = ftell(stream->file);
@@ -362,7 +362,7 @@ int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos) {
 int32_t fossil_fstream_rotate(const char *filename, int32_t n) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     char old_filename[FOSSIL_BUFFER_MEDIUM];
@@ -389,7 +389,7 @@ int32_t fossil_fstream_rotate(const char *filename, int32_t n) {
 int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix) {
     if (filename == NULL || backup_suffix == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     char backup_filename[FOSSIL_BUFFER_MEDIUM + 10];  // Length of backup_suffix + maximum integer length
@@ -407,7 +407,7 @@ int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix) {
 int32_t fossil_fstream_file_exists(const char *filename) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     FILE *file = fopen(filename, "r");
@@ -422,7 +422,7 @@ int32_t fossil_fstream_file_exists(const char *filename) {
 int32_t fossil_fstream_get_size(fossil_fstream_t *stream) {
     if (stream == NULL || stream->file == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     fseek(stream->file, 0, SEEK_END);
@@ -441,7 +441,7 @@ int32_t fossil_fstream_get_size(fossil_fstream_t *stream) {
 int32_t fossil_fstream_delete(const char *filename) {
     if (filename == NULL) {
         fprintf(stderr, "Error: Null pointer\n");
-        return FOSSIL_ERROR_NULL_POINTER;
+        return FOSSIL_ERROR_CNULL_POINTER;
     }
 
     if (remove(filename) == 0) {
