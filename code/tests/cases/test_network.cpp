@@ -131,6 +131,69 @@ FOSSIL_TEST_CASE(cpp_test_nstream_client_types) {
     }
 }
 
+FOSSIL_TEST_CASE(cpp_test_nstream_class_create_and_destroy) {
+    using namespace fossil::io;
+
+    const std::string protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
+    const std::string clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
+
+    for (const auto &protocol : protocols) {
+        for (const auto &client : clients) {
+            NStream stream(protocol, client);
+        }
+    }
+}
+
+FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_invalid_host) {
+    using namespace fossil::io;
+
+    try {
+        NStream stream("tcp", "client");
+        stream.connect("invalid_host", 12345);
+        ASSUME_ITS_FALSE("Expected exception for invalid host");
+    } catch (const std::runtime_error &e) {
+        ASSUME_ITS_TRUE("Caught expected exception");
+    }
+}
+
+FOSSIL_TEST_CASE(cpp_test_nstream_class_listen_and_accept) {
+    using namespace fossil::io;
+
+    NStream server("tcp", "server");
+    server.listen("127.0.0.1", 12345);
+
+    NStream client("tcp", "client");
+    client.connect("127.0.0.1", 12345);
+
+    NStream *accepted_client = server.accept();
+    ASSUME_NOT_CNULL(accepted_client);
+
+    delete accepted_client;
+}
+
+FOSSIL_TEST_CASE(cpp_test_nstream_class_send_and_receive) {
+    using namespace fossil::io;
+
+    NStream server("tcp", "server");
+    server.listen("127.0.0.1", 12345);
+
+    NStream client("tcp", "client");
+    client.connect("127.0.0.1", 12345);
+
+    NStream *accepted_client = server.accept();
+    ASSUME_NOT_CNULL(accepted_client);
+
+    const std::string message = "Hello, Fossil!";
+    client.send(message.c_str(), message.size());
+
+    char buffer[1024] = {0};
+    ssize_t bytes_received = accepted_client->recv(buffer, sizeof(buffer));
+    ASSUME_ITS_EQUAL_I32(message.size(), bytes_received);
+    ASSUME_ITS_EQUAL_CSTR(message.c_str(), buffer);
+
+    delete accepted_client;
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -142,6 +205,11 @@ FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_protocols);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_client_types);
+
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_create_and_destroy);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_invalid_host);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }
