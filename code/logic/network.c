@@ -217,7 +217,7 @@ int fossil_nstream_connect(fossil_nstream_t *stream, const char *host, int port)
     }
     
     stream->socket_fd = fossil_create_socket(stream->protocol);
-    if (stream->socket_fd < 0) {
+    if ((int)stream->socket_fd < 0) {
         return -1;
     }
     
@@ -285,7 +285,7 @@ fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *server) {
     socklen_t addrlen = sizeof(addr);
 
     socket_t client_fd = accept(server->socket_fd, (struct sockaddr *)&addr, &addrlen);
-    if (client_fd < 0) {
+    if ((int)client_fd < 0) {
 #ifdef _WIN32
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
 #else
@@ -316,7 +316,7 @@ fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *server) {
 }
 
 ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t size) {
-    if (!stream || stream->socket_fd < 0) {
+    if (!stream || (int)stream->socket_fd < 0) {
         fossil_set_last_error("Invalid stream or socket");
         return -1;
     }
@@ -348,7 +348,7 @@ ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size)
 }
 
 void fossil_nstream_close(fossil_nstream_t *stream) {
-    if (!stream || stream->socket_fd < 0) return;
+    if (!stream || (socket_t)(stream->socket_fd) < 0) return;
 #ifdef _WIN32
     closesocket(stream->socket_fd);
 #else
