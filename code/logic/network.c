@@ -52,7 +52,7 @@ const char *fossil_nstream_last_error(void) {
     return fossil_last_error;
 }
 
-static int fossil_socket_init() {
+static int fossil_socket_init(void) {
 #ifdef _WIN32
     WSADATA wsa;
     return WSAStartup(MAKEWORD(2,2), &wsa);
@@ -61,7 +61,7 @@ static int fossil_socket_init() {
 #endif
 }
 
-static void fossil_socket_cleanup() {
+static void fossil_socket_cleanup(void) {
 #ifdef _WIN32
     WSACleanup();
 #endif
@@ -246,7 +246,7 @@ int fossil_nstream_listen(fossil_nstream_t *stream, const char *host, int port) 
     }
     
     stream->socket_fd = fossil_create_socket(stream->protocol);
-    if (stream->socket_fd < 0) {
+    if (stream->socket_fd == (socket_t)-1) {
         return -1;
     }
     
@@ -332,7 +332,7 @@ ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t
 }
 
 ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size) {
-    if (!stream || stream->socket_fd < 0) {
+    if (!stream || stream->socket_fd == (socket_t)-1) {
         fossil_set_last_error("Invalid stream or socket");
         return -1;
     }
@@ -348,7 +348,7 @@ ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size)
 }
 
 void fossil_nstream_close(fossil_nstream_t *stream) {
-    if (!stream || (socket_t)(stream->socket_fd) < 0) return;
+    if (!stream || stream->socket_fd == (socket_t)-1) return;
 #ifdef _WIN32
     closesocket(stream->socket_fd);
 #else
