@@ -12,190 +12,355 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/network.h"
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <errno.h>  // For POSIX error handling
-#include <stdlib.h> // For exit()
+#include <errno.h>
 
 #ifdef _WIN32
-    static WSADATA wsa;
+#include <winsock2.h>
+#include <ws2tcpip.h>
+typedef SOCKET socket_t;
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+typedef int socket_t;
 #endif
 
-int fossil_io_network_create(void) {
+struct fossil_nstream_t {
+    socket_t socket_fd;
+    fossil_protocol_t protocol;
+    fossil_client_type_t client_type;
+    char protocol_flag[32];
+    char client_type_flag[32];
+    int is_connected;
+    int is_server;
+};
+
+static char fossil_last_error[256] = {0};
+
+static void fossil_set_last_error(const char *msg) {
+    snprintf(fossil_last_error, sizeof(fossil_last_error), "%s", msg);
+}
+
+const char *fossil_nstream_last_error(void) {
+    return fossil_last_error;
+}
+
+static int fossil_socket_init(void) {
 #ifdef _WIN32
-    return WSAStartup(MAKEWORD(2, 2), &wsa);
+    WSADATA wsa;
+    return WSAStartup(MAKEWORD(2,2), &wsa);
 #else
-    return 0; // No initialization needed on Unix-like systems
+    return 0;
 #endif
 }
 
-void fossil_io_network_destroy(void) {
+static void fossil_socket_cleanup(void) {
 #ifdef _WIN32
     WSACleanup();
 #endif
 }
 
-fossil_io_socket_t fossil_io_network_create_socket(int type) {
-    fossil_io_socket_t sock = socket(AF_INET, type, 0);
-    if (sock == FOSSIL_IO_INVALID_SOCKET) {
-#ifdef _WIN32
-        fprintf(stderr, "Socket creation failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Socket creation failed");
-#endif
+typedef struct {
+    const char *name;
+    fossil_protocol_t proto;
+} proto_entry_t;
+
+typedef struct {
+    const char *name;
+    fossil_client_type_t type;
+} client_entry_t;
+
+static const proto_entry_t proto_table[] = {
+    {"tcp", FOSSIL_PROTO_TCP},
+    {"udp", FOSSIL_PROTO_UDP},
+    {"raw", FOSSIL_PROTO_RAW},
+    {"icmp", FOSSIL_PROTO_ICMP},
+    {"sctp", FOSSIL_PROTO_SCTP},
+    {"http", FOSSIL_PROTO_HTTP},
+    {"https", FOSSIL_PROTO_HTTPS},
+    {"ftp", FOSSIL_PROTO_FTP},
+    {"ssh", FOSSIL_PROTO_SSH},
+    {"dns", FOSSIL_PROTO_DNS},
+    {"ntp", FOSSIL_PROTO_NTP},
+    {"smtp", FOSSIL_PROTO_SMTP},
+    {"pop3", FOSSIL_PROTO_POP3},
+    {"imap", FOSSIL_PROTO_IMAP},
+    {"ldap", FOSSIL_PROTO_LDAP},
+    {"mqtt", FOSSIL_PROTO_MQTT},
+    {NULL, FOSSIL_PROTO_UNKNOWN}
+};
+
+static const client_entry_t client_table[] = {
+    {"mail-server", FOSSIL_CLIENT_MAIL_SERVER},
+    {"server", FOSSIL_CLIENT_SERVER},
+    {"mail-client", FOSSIL_CLIENT_MAIL_CLIENT},
+    {"client", FOSSIL_CLIENT_CLIENT},
+    {"mail-bot", FOSSIL_CLIENT_MAIL_BOT},
+    {"bot", FOSSIL_CLIENT_BOT},
+    {"multicast", FOSSIL_CLIENT_MULTICAST},
+    {"broadcast", FOSSIL_CLIENT_BROADCAST},
+    {NULL, FOSSIL_CLIENT_UNKNOWN}
+};
+
+fossil_protocol_t fossil_protocol_from_string(const char *str) {
+    if (!str) return FOSSIL_PROTO_UNKNOWN;
+    for (int i = 0; proto_table[i].name; ++i) {
+        if (strncmp(str, proto_table[i].name, strlen(proto_table[i].name)) == 0)
+            return proto_table[i].proto;
     }
-    return sock;
+    return FOSSIL_PROTO_UNKNOWN;
 }
 
-int fossil_io_network_bind(fossil_io_socket_t sock, const char *ip, uint16_t port) {
-    struct sockaddr_in addr;
+fossil_client_type_t fossil_client_type_from_string(const char *str) {
+    if (!str) return FOSSIL_CLIENT_UNKNOWN;
+    for (int i = 0; client_table[i].name; ++i) {
+        if (strncmp(str, client_table[i].name, strlen(client_table[i].name)) == 0)
+            return client_table[i].type;
+    }
+    return FOSSIL_CLIENT_UNKNOWN;
+}
+
+const char *fossil_protocol_to_string(fossil_protocol_t proto) {
+    for (int i = 0; proto_table[i].name; ++i) {
+        if (proto_table[i].proto == proto)
+            return proto_table[i].name;
+    }
+    return "unknown";
+}
+
+const char *fossil_client_type_to_string(fossil_client_type_t type) {
+    for (int i = 0; client_table[i].name; ++i) {
+        if (client_table[i].type == type)
+            return client_table[i].name;
+    }
+    return "unknown";
+}
+
+fossil_nstream_t *fossil_nstream_create(const char *protocol_flag, const char *client_type_flag) {
+    if (fossil_socket_init() != 0) {
+        fossil_set_last_error("Socket system initialization failed");
+        return NULL;
+    }
+    
+    if (!protocol_flag || !client_type_flag) {
+        fossil_set_last_error("Invalid protocol or client type flag");
+        return NULL;
+    }
+    
+    fossil_protocol_t protocol = fossil_protocol_from_string(protocol_flag);
+    fossil_client_type_t client_type = fossil_client_type_from_string(client_type_flag);
+    
+    if (protocol == FOSSIL_PROTO_UNKNOWN) {
+        fossil_set_last_error("Unsupported protocol");
+        return NULL;
+    }
+    
+    if (client_type == FOSSIL_CLIENT_UNKNOWN) {
+        fossil_set_last_error("Unsupported client type");
+        return NULL;
+    }
+    
+    fossil_nstream_t *stream = (fossil_nstream_t *)calloc(1, sizeof(fossil_nstream_t));
+    if (!stream) {
+        fossil_set_last_error("Memory allocation failed");
+        return NULL;
+    }
+    
+    stream->protocol = protocol;
+    stream->client_type = client_type;
+    snprintf(stream->protocol_flag, sizeof(stream->protocol_flag), "%s", protocol_flag);
+    snprintf(stream->client_type_flag, sizeof(stream->client_type_flag), "%s", client_type_flag);
+    stream->socket_fd = -1;
+    return stream;
+}
+
+static socket_t fossil_create_socket(fossil_protocol_t proto) {
+    int type = SOCK_STREAM;
+    int proto_num = IPPROTO_TCP;
+    
+    switch (proto) {
+        case FOSSIL_PROTO_TCP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_UDP: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
+        case FOSSIL_PROTO_RAW: type = SOCK_RAW; proto_num = IPPROTO_RAW; break;
+        case FOSSIL_PROTO_ICMP: type = SOCK_RAW; proto_num = IPPROTO_ICMP; break;
+        case FOSSIL_PROTO_SCTP: type = SOCK_STREAM; proto_num = IPPROTO_SCTP; break;
+        case FOSSIL_PROTO_HTTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_HTTPS: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_FTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_SSH: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_DNS: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
+        case FOSSIL_PROTO_NTP: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
+        case FOSSIL_PROTO_SMTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_POP3: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_IMAP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_LDAP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        case FOSSIL_PROTO_MQTT: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
+        default:
+            fossil_set_last_error("Unsupported protocol for socket creation");
+            return -1;
+    }
+    
+    return socket(AF_INET, type, proto_num);
+}
+
+int fossil_nstream_connect(fossil_nstream_t *stream, const char *host, int port) {
+    if (!stream) {
+        fossil_set_last_error("Stream is NULL");
+        return -1;
+    }
+    
+    stream->socket_fd = fossil_create_socket(stream->protocol);
+    if ((int)stream->socket_fd < 0) {
+        return -1;
+    }
+    
+    struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = ip ? inet_addr(ip) : INADDR_ANY;
-
-    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-#ifdef _WIN32
-        fprintf(stderr, "Bind failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Bind failed");
-#endif
+    
+    if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
+        fossil_set_last_error("Invalid address or address not supported");
         return -1;
     }
+    
+    if (connect(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        fossil_set_last_error("Connection to the server failed");
+        return -1;
+    }
+    
+    stream->is_connected = 1;
     return 0;
 }
 
-int fossil_io_network_listen(fossil_io_socket_t sock, int backlog) {
-    if (listen(sock, backlog) == -1) {
-#ifdef _WIN32
-        fprintf(stderr, "Listen failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Listen failed");
-#endif
+int fossil_nstream_listen(fossil_nstream_t *stream, const char *host, int port) {
+    if (!stream) {
+        fossil_set_last_error("Stream is NULL");
         return -1;
     }
+    
+    stream->socket_fd = fossil_create_socket(stream->protocol);
+    if (stream->socket_fd == (socket_t)-1) {
+        return -1;
+    }
+    
+    int opt = 1;
+    if (setsockopt(stream->socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
+        fossil_set_last_error("Failed to set socket options");
+        return -1;
+    }
+    
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = (host == NULL) ? INADDR_ANY : inet_addr(host);
+    
+    if (bind(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        fossil_set_last_error("Bind failed");
+        return -1;
+    }
+    
+    if (listen(stream->socket_fd, SOMAXCONN) < 0) {
+        fossil_set_last_error("Listen failed");
+        return -1;
+    }
+    
+    stream->is_server = 1;
     return 0;
 }
 
-fossil_io_socket_t fossil_io_network_accept(fossil_io_socket_t sock, char *client_ip, uint16_t *client_port) {
-    struct sockaddr_in client_addr;
-    socklen_t addr_len = sizeof(client_addr);
-    fossil_io_socket_t client_sock = accept(sock, (struct sockaddr*)&client_addr, &addr_len);
-
-    if (client_sock == FOSSIL_IO_INVALID_SOCKET) {
-#ifdef _WIN32
-        fprintf(stderr, "Accept failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Accept failed");
-#endif
-    } else if (client_ip) {
-        strcpy(client_ip, inet_ntoa(client_addr.sin_addr));
-        if (client_port) {
-            *client_port = ntohs(client_addr.sin_port);
-        }
+fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *server) {
+    if (!server || !server->is_server) {
+        fossil_set_last_error("Invalid server stream");
+        return NULL;
     }
+    
+    struct sockaddr_in addr;
+    socklen_t addrlen = sizeof(addr);
 
-    return client_sock;
+    socket_t client_fd = accept(server->socket_fd, (struct sockaddr *)&addr, &addrlen);
+    if ((int)client_fd < 0) {
+#ifdef _WIN32
+        if (WSAGetLastError() != WSAEWOULDBLOCK) {
+#else
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+#endif
+            fossil_set_last_error("Accept failed");
+        }
+        return NULL;
+    }
+    
+    fossil_nstream_t *client = (fossil_nstream_t *)calloc(1, sizeof(fossil_nstream_t));
+    if (!client) {
+        fossil_set_last_error("Memory allocation failed");
+#ifdef _WIN32
+        closesocket(client_fd);
+#else
+        close(client_fd);
+#endif
+        return NULL;
+    }
+    
+    *client = *server;
+    client->socket_fd = client_fd;
+    client->is_server = 0;
+    client->is_connected = 1;
+    
+    return client;
 }
 
-int fossil_io_network_connect(fossil_io_socket_t sock, const char *ip, uint16_t port) {
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = inet_addr(ip);
-
-    if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-#ifdef _WIN32
-        fprintf(stderr, "Connect failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Connect failed");
-#endif
+ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t size) {
+    if (!stream || (int)stream->socket_fd < 0) {
+        fossil_set_last_error("Invalid stream or socket");
         return -1;
     }
-    return 0;
-}
-
-int fossil_io_network_send(fossil_io_socket_t sock, const void *data, size_t len) {
-    int bytes_sent = send(sock, data, (int)len, 0);
-    if (bytes_sent == -1) {
 #ifdef _WIN32
-        fprintf(stderr, "Send failed with error: %d\n", WSAGetLastError());
+    ssize_t sent_bytes = send(stream->socket_fd, (const char *)buffer, (int)size, 0);
 #else
-        perror("Send failed");
+    ssize_t sent_bytes = send(stream->socket_fd, buffer, size, 0);
 #endif
+    if (sent_bytes < 0) {
+        fossil_set_last_error("Failed to send data");
     }
-    return bytes_sent;
+    return sent_bytes;
 }
 
-int fossil_io_network_receive(fossil_io_socket_t sock, void *buffer, size_t len) {
-    int bytes_received = recv(sock, buffer, (int)len, 0);
-    if (bytes_received == -1) {
+ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size) {
+    if (!stream || stream->socket_fd == (socket_t)-1) {
+        fossil_set_last_error("Invalid stream or socket");
+        return -1;
+    }
 #ifdef _WIN32
-        fprintf(stderr, "Receive failed with error: %d\n", WSAGetLastError());
+    ssize_t received_bytes = recv(stream->socket_fd, (char *)buffer, (int)size, 0);
 #else
-        perror("Receive failed");
+    ssize_t received_bytes = recv(stream->socket_fd, buffer, size, 0);
 #endif
+    if (received_bytes < 0) {
+        fossil_set_last_error("Failed to receive data");
     }
-    return bytes_received;
+    return received_bytes;
 }
 
-int fossil_io_network_sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port) {
-    struct sockaddr_in dest_addr;
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(port);
-    dest_addr.sin_addr.s_addr = inet_addr(ip);
-
-    int bytes_sent = sendto(sock, data, (int)len, 0, (struct sockaddr*)&dest_addr, sizeof(dest_addr));
-    if (bytes_sent == -1) {
+void fossil_nstream_close(fossil_nstream_t *stream) {
+    if (!stream || stream->socket_fd == (socket_t)-1) return;
 #ifdef _WIN32
-        fprintf(stderr, "Sendto failed with error: %d\n", WSAGetLastError());
+    closesocket(stream->socket_fd);
 #else
-        perror("Sendto failed");
+    close(stream->socket_fd);
 #endif
-    }
-    return bytes_sent;
+    stream->socket_fd = -1;
+    stream->is_connected = 0;
 }
 
-int fossil_io_network_recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port) {
-    struct sockaddr_in src_addr;
-    socklen_t addr_len = sizeof(src_addr);
-
-    int bytes_received = recvfrom(sock, buffer, (int)len, 0, (struct sockaddr*)&src_addr, &addr_len);
-    if (bytes_received == -1) {
-#ifdef _WIN32
-        fprintf(stderr, "Recvfrom failed with error: %d\n", WSAGetLastError());
-#else
-        perror("Recvfrom failed");
-#endif
-    } else if (ip) {
-        strcpy(ip, inet_ntoa(src_addr.sin_addr));
-        if (port) {
-            *port = ntohs(src_addr.sin_port);
-        }
-    }
-    return bytes_received;
-}
-
-void fossil_io_network_close(fossil_io_socket_t sock) {
-#ifdef _WIN32
-    if (closesocket(sock) == SOCKET_ERROR) {
-        fprintf(stderr, "Close socket failed with error: %d\n", WSAGetLastError());
-    }
-#else
-    if (close(sock) == -1) {
-        perror("Close socket failed");
-    }
-#endif
-}
-
-int fossil_io_network_bridge(fossil_io_socket_t sock1, fossil_io_socket_t sock2) {
-    char buffer[1024];
-    int bytes_received;
-
-    while ((bytes_received = fossil_io_network_receive(sock1, buffer, sizeof(buffer))) > 0) {
-        if (fossil_io_network_send(sock2, buffer, bytes_received) == -1) {
-            return -1;
-        }
-    }
-
-    return bytes_received;
+void fossil_nstream_destroy(fossil_nstream_t *stream) {
+    if (!stream) return;
+    fossil_nstream_close(stream);
+    free(stream);
+    fossil_socket_cleanup();
 }

@@ -21,7 +21,7 @@ extern "C" {
 typedef enum {
     // Success and General Errors
     FOSSIL_ERROR_OK = 0,
-    FOSSIL_ERROR_NULL_POINTER,
+    FOSSIL_ERROR_CNULL_POINTER,
     FOSSIL_ERROR_INVALID_ARGUMENT,
     FOSSIL_ERROR_TYPE_MISMATCH,
     FOSSIL_ERROR_INVALID_OPERATION,
@@ -200,7 +200,7 @@ namespace fossil {
         enum class ErrorCode {
             // Success and General Errors
             OK = FOSSIL_ERROR_OK,
-            NULL_POINTER = FOSSIL_ERROR_NULL_POINTER,
+            NULL_POINTER = FOSSIL_ERROR_CNULL_POINTER,
             INVALID_ARGUMENT = FOSSIL_ERROR_INVALID_ARGUMENT,
             TYPE_MISMATCH = FOSSIL_ERROR_TYPE_MISMATCH,
             INVALID_OPERATION = FOSSIL_ERROR_INVALID_OPERATION,

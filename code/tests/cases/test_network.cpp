@@ -12,180 +12,186 @@
  * -----------------------------------------------------------------------------
  */
 #include <fossil/test/framework.h>
-
 #include "fossil/io/framework.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test Utilites
+// * Fossil Logic Test Utilities
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // Setup steps for things like test fixtures and
 // mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-// Define the test suite and add test cases
 FOSSIL_TEST_SUITE(cpp_network_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_network_suite) {
-    // Setup code here
+    // Setup code (if needed)
 }
 
 // Teardown function for the test suite
 FOSSIL_TEARDOWN(cpp_network_suite) {
-    // Teardown code here
+    // Teardown code (if needed)
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Cases
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// The test cases below are provided as samples, inspired
-// by the Meson build system's approach of using test cases
-// as samples for library usage.
-// * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_test_network_init) {
-    int result = fossil_io_network_create();
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_create_and_destroy) {
+    const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
+    const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
+
+    for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
+        for (size_t j = 0; j < sizeof(clients) / sizeof(clients[0]); j++) {
+            fossil_nstream_t *stream = fossil_nstream_create(protocols[i], clients[j]);
+            ASSUME_NOT_CNULL(stream);
+            fossil_nstream_destroy(stream);
+        }
+    }
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_create_socket) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_connect_invalid_host) {
+    fossil_nstream_t *stream = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(stream);
+
+    // Attempt to connect to an invalid host
+    ASSUME_ITS_EQUAL_I32(-1, fossil_nstream_connect(stream, "invalid_host", 12345));
+    fossil_nstream_destroy(stream);
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_bind) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil_io_network_bind(sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_listen_and_accept) {
+    fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
+    ASSUME_NOT_CNULL(server);
+
+    // Start listening on a local port
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+
+    // Simulate a client connecting
+    fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(client);
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+
+    // Accept the client connection
+    fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
+    ASSUME_NOT_CNULL(accepted_client);
+
+    // Cleanup
+    fossil_nstream_destroy(client);
+    fossil_nstream_destroy(accepted_client);
+    fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_listen) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_bind(sock, "127.0.0.1", 8080);
-    int result = fossil_io_network_listen(sock, 5);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_send_and_receive) {
+    fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
+    ASSUME_NOT_CNULL(server);
+
+    // Start listening on a local port
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+
+    // Simulate a client connecting
+    fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(client);
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+
+    // Accept the client connection
+    fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
+    ASSUME_NOT_CNULL(accepted_client);
+
+    // Send and receive data
+    const char *message = "Hello, Fossil!";
+    ASSUME_ITS_EQUAL_I32(strlen(message), fossil_nstream_send(client, message, strlen(message)));
+
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(strlen(message), fossil_nstream_recv(accepted_client, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR(message, buffer);
+
+    // Cleanup
+    fossil_nstream_destroy(client);
+    fossil_nstream_destroy(accepted_client);
+    fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_close) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    // No direct way to test close, but we assume no errors if it reaches here
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_protocols) {
+    const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
+
+    for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
+        fossil_nstream_t *stream = fossil_nstream_create(protocols[i], "client");
+        ASSUME_NOT_CNULL(stream);
+        fossil_nstream_destroy(stream);
+    }
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_create_udp_socket) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_client_types) {
+    const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
+
+    for (size_t i = 0; i < sizeof(clients) / sizeof(clients[0]); i++) {
+        fossil_nstream_t *stream = fossil_nstream_create("tcp", clients[i]);
+        ASSUME_NOT_CNULL(stream);
+        fossil_nstream_destroy(stream);
+    }
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_bind_udp) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil_io_network_bind(sock, "127.0.0.1", 8081);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_class_create_and_destroy) {
+    using namespace fossil::io;
+
+    const std::string protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
+    const std::string clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
+
+    for (const auto &protocol : protocols) {
+        for (const auto &client : clients) {
+            NStream stream(protocol, client);
+        }
+    }
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_sendto_udp) {
-    fossil_io_network_create();
-    fossil_io_socket_t sock = fossil_io_network_create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    const char *message = "Hello, UDP!";
-    int bytes_sent = fossil_io_network_sendto(sock, message, strlen(message), "127.0.0.1", 8081);
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
-    fossil_io_network_close(sock);
-    fossil_io_network_destroy();
+FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_invalid_host) {
+    using namespace fossil::io;
+
+    try {
+        NStream stream("tcp", "client");
+        stream.connect("invalid_host", 12345);
+        ASSUME_ITS_FALSE("Expected exception for invalid host");
+    } catch (const std::runtime_error &e) {
+        ASSUME_ITS_TRUE("Caught expected exception");
+    }
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_class_init) {
-    int result = fossil::io::Network::init();
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil::io::Network::cleanup();
+FOSSIL_TEST_CASE(cpp_test_nstream_class_listen_and_accept) {
+    using namespace fossil::io;
+
+    NStream server("tcp", "server");
+    server.listen("127.0.0.1", 12345);
+
+    NStream client("tcp", "client");
+    client.connect("127.0.0.1", 12345);
+
+    NStream *accepted_client = server.accept();
+    ASSUME_NOT_CNULL(accepted_client);
+
+    delete accepted_client;
 }
 
-FOSSIL_TEST_CASE(cpp_test_network_class_create_socket) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+FOSSIL_TEST_CASE(cpp_test_nstream_class_send_and_receive) {
+    using namespace fossil::io;
 
-FOSSIL_TEST_CASE(cpp_test_network_class_bind) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil::io::Network::bind(sock, "127.0.0.1", 8080);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+    NStream server("tcp", "server");
+    server.listen("127.0.0.1", 12345);
 
-FOSSIL_TEST_CASE(cpp_test_network_class_listen) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil::io::Network::bind(sock, "127.0.0.1", 8080);
-    int result = fossil::io::Network::listen(sock, 5);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+    NStream client("tcp", "client");
+    client.connect("127.0.0.1", 12345);
 
-FOSSIL_TEST_CASE(cpp_test_network_class_close) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_TCP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+    NStream *accepted_client = server.accept();
+    ASSUME_NOT_CNULL(accepted_client);
 
-FOSSIL_TEST_CASE(cpp_test_network_class_create_udp_socket) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+    const std::string message = "Hello, Fossil!";
+    client.send(message.c_str(), message.size());
 
-FOSSIL_TEST_CASE(cpp_test_network_class_bind_udp) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    int result = fossil::io::Network::bind(sock, "127.0.0.1", 8081);
-    ASSUME_ITS_EQUAL_I32(0, result);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
-}
+    char buffer[1024] = {0};
+    ssize_t bytes_received = accepted_client->recv(buffer, sizeof(buffer));
+    ASSUME_ITS_EQUAL_I32(message.size(), bytes_received);
+    ASSUME_ITS_EQUAL_CSTR(message.c_str(), buffer);
 
-FOSSIL_TEST_CASE(cpp_test_network_class_sendto_udp) {
-    fossil::io::Network::init();
-    fossil_io_socket_t sock = fossil::io::Network::create_socket(FOSSIL_IO_SOCKET_TYPE_UDP);
-    ASSUME_NOT_EQUAL_I32(FOSSIL_IO_INVALID_SOCKET, sock);
-    const char *message = "Hello, UDP!";
-    int bytes_sent = fossil::io::Network::sendto(sock, message, strlen(message), "127.0.0.1", 8081);
-    ASSUME_ITS_EQUAL_I32((int)strlen(message), bytes_sent);
-    fossil::io::Network::close(sock);
-    fossil::io::Network::cleanup();
+    delete accepted_client;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -193,23 +199,17 @@ FOSSIL_TEST_CASE(cpp_test_network_class_sendto_udp) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_network_tests) {
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_init);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_listen);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_close);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_create_udp_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_bind_udp);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_sendto_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_create_and_destroy);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_connect_invalid_host);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_listen_and_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_protocols);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_client_types);
 
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_init);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_listen);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_close);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_create_udp_socket);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_bind_udp);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_network_class_sendto_udp);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_create_and_destroy);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_invalid_host);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
+    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }

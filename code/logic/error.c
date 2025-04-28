@@ -40,7 +40,7 @@ const char *fossil_io_what(fossil_status_t error_code) {
     switch (error_code) {
         // Success and General Errors
         case FOSSIL_ERROR_OK: return "No error, operation successful.";
-        case FOSSIL_ERROR_NULL_POINTER: return "Null pointer encountered.";
+        case FOSSIL_ERROR_CNULL_POINTER: return "Null pointer encountered.";
         case FOSSIL_ERROR_INVALID_ARGUMENT: return "Invalid argument provided.";
         case FOSSIL_ERROR_TYPE_MISMATCH: return "Type mismatch encountered.";
         case FOSSIL_ERROR_INVALID_OPERATION: return "Invalid operation.";

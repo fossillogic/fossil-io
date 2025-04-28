@@ -14,169 +14,212 @@
 #ifndef FOSSIL_IO_NETWORK_H
 #define FOSSIL_IO_NETWORK_H
 
-#include <stdint.h>
-
-#ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    typedef SOCKET fossil_io_socket_t;
-    #define FOSSIL_IO_INVALID_SOCKET INVALID_SOCKET
-#else
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <netdb.h>
-    #include <unistd.h>
-    #define closesocket close
-    typedef int fossil_io_socket_t;
-    #define FOSSIL_IO_INVALID_SOCKET (-1)
-#endif
-
-#define FOSSIL_IO_SOCKET_TYPE_TCP SOCK_STREAM
-#define FOSSIL_IO_SOCKET_TYPE_UDP SOCK_DGRAM
+#include <stddef.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Initialize the network stack. This function is necessary for Windows
- * platforms to set up the Winsock library. On other platforms, it may
- * perform other necessary initializations.
- * 
- * @return 0 on success, non-zero on failure.
+ * @file network.c
+ * @brief Network logic implementation for handling communication protocols and client types.
+ *
+ * This file contains the core logic for managing network communication in the application.
+ * It is responsible for implementing various protocols and handling different types of clients
+ * that interact with the system. The following details outline the key aspects of the network
+ * logic:
+ *
+ * ## Supported Protocols:
+ * 1. **TCP (Transmission Control Protocol):**
+ *    - Provides reliable, ordered, and error-checked delivery of data.
+ *    - Used for persistent connections and critical data exchange.
+ *    - Ensures data integrity and retransmission in case of packet loss.
+ *
+ * 2. **UDP (User Datagram Protocol):**
+ *    - Provides connectionless communication with minimal overhead.
+ *    - Suitable for real-time applications where speed is prioritized over reliability.
+ *    - Commonly used for streaming, gaming, and other low-latency scenarios.
+ *
+ * 3. **HTTP/HTTPS:**
+ *    - Supports web-based communication using the Hypertext Transfer Protocol.
+ *    - HTTPS ensures secure communication via SSL/TLS encryption.
+ *    - Used for RESTful APIs and web client interactions.
+ *
+ * 4. **WebSocket:**
+ *    - Enables full-duplex communication channels over a single TCP connection.
+ *    - Ideal for real-time applications such as chat systems and live updates.
+ *
+ * ## Client Types:
+ * 1. **Standard Clients:**
+ *    - General-purpose clients that use standard protocols like HTTP or WebSocket.
+ *    - Typically include web browsers, mobile apps, and desktop applications.
+ *
+ * 2. **Embedded Clients:**
+ *    - Lightweight clients running on embedded systems or IoT devices.
+ *    - Often use UDP or custom lightweight protocols for communication.
+ *
+ * 3. **Service Clients:**
+ *    - Backend services or microservices that interact with the system.
+ *    - May use HTTP APIs, gRPC, or other service-to-service communication protocols.
+ *
+ * 4. **Real-Time Clients:**
+ *    - Clients requiring low-latency communication, such as gaming or streaming applications.
+ *    - Often rely on WebSocket or UDP for real-time data exchange.
+ *
+ * ## Supported Flags:
+ * - **Protocol Flags:**
+ *   - `tcp`: Specifies the use of the TCP protocol.
+ *   - `udp`: Specifies the use of the UDP protocol.
+ *   - `http`: Specifies the use of the HTTP protocol.
+ *   - `https`: Specifies the use of the HTTPS protocol.
+ *   - `raw`: Specifies the use of raw sockets.
+ *   - `icmp`: Specifies the use of ICMP protocol.
+ *   - `sctp`: Specifies the use of SCTP protocol.
+ *   - `ftp`: Specifies the use of the FTP protocol.
+ *   - `ssh`: Specifies the use of the SSH protocol.
+ *   - `dns`: Specifies the use of the DNS protocol.
+ *   - `ntp`: Specifies the use of the NTP protocol.
+ *   - `smtp`: Specifies the use of the SMTP protocol.
+ *   - `pop3`: Specifies the use of the POP3 protocol.
+ *   - `imap`: Specifies the use of the IMAP protocol.
+ *   - `ldap`: Specifies the use of the LDAP protocol.
+ *   - `mqtt`: Specifies the use of the MQTT protocol.
+ *
+ * - **Client Type Flags:**
+ *   - `mail-server`: Represents a mail server client.
+ *   - `server`: Represents a general server client.
+ *   - `mail-client`: Represents a mail client.
+ *   - `client`: Represents a general client.
+ *   - `mail-bot`: Represents an automated mail bot client.
+ *   - `bot`: Represents a general bot client.
+ *   - `multicast`: Represents a multicast client.
+ *   - `broadcast`: Represents a broadcast client.
+ *
+ * ## Additional Notes:
+ * - The implementation ensures scalability and fault tolerance for handling multiple clients
+ *   simultaneously.
+ * - Security measures, such as encryption and authentication, are integrated to protect
+ *   communication channels.
+ * - The file is designed to be modular, allowing easy extension for new protocols or client types.
  */
-int fossil_io_network_create(void);
+
+typedef struct fossil_nstream_t fossil_nstream_t;
+
+typedef enum {
+    FOSSIL_PROTO_TCP,
+    FOSSIL_PROTO_UDP,
+    FOSSIL_PROTO_RAW,
+    FOSSIL_PROTO_ICMP,
+    FOSSIL_PROTO_SCTP,
+    FOSSIL_PROTO_HTTP,
+    FOSSIL_PROTO_HTTPS,
+    FOSSIL_PROTO_FTP,
+    FOSSIL_PROTO_SSH,
+    FOSSIL_PROTO_DNS,
+    FOSSIL_PROTO_NTP,
+    FOSSIL_PROTO_SMTP,
+    FOSSIL_PROTO_POP3,
+    FOSSIL_PROTO_IMAP,
+    FOSSIL_PROTO_LDAP,
+    FOSSIL_PROTO_MQTT,
+    FOSSIL_PROTO_UNKNOWN
+} fossil_protocol_t;
+
+typedef enum {
+    FOSSIL_CLIENT_MAIL_SERVER,
+    FOSSIL_CLIENT_SERVER,
+    FOSSIL_CLIENT_MAIL_CLIENT,
+    FOSSIL_CLIENT_CLIENT,
+    FOSSIL_CLIENT_MAIL_BOT,
+    FOSSIL_CLIENT_BOT,
+    FOSSIL_CLIENT_MULTICAST,
+    FOSSIL_CLIENT_BROADCAST,
+    FOSSIL_CLIENT_UNKNOWN
+} fossil_client_type_t;
 
 /**
- * Clean up the network stack. This function is necessary for Windows
- * platforms to clean up the Winsock library. On other platforms, it may
- * perform other necessary clean-up operations.
+ * Create a new network stream.
+ *
+ * @param protocol_flag The protocol to use (e.g., "tcp", "udp").
+ * @param client_type_flag The type of client (e.g., "server", "client").
+ * @return A pointer to the newly created network stream, or NULL on failure.
  */
-void fossil_io_network_destroy(void);
+fossil_nstream_t *fossil_nstream_create(const char *protocol_flag, const char *client_type_flag);
 
 /**
- * Create a new socket of the specified type (TCP or UDP).
- * 
- * @param type The type of socket to create (e.g., SOCK_STREAM for TCP, SOCK_DGRAM for UDP).
- * @return A valid socket on success, or FOSSIL_IO_INVALID_SOCKET on failure.
+ * Connect a network stream to a remote host.
+ *
+ * @param stream The network stream to connect.
+ * @param host The hostname or IP address of the remote host.
+ * @param port The port number to connect to.
+ * @return 0 on success, or -1 on failure.
  */
-fossil_io_socket_t fossil_io_network_create_socket(int type);
+int fossil_nstream_connect(fossil_nstream_t *stream, const char *host, int port);
 
 /**
- * Bind a socket to a specific IP address and port. This function associates
- * the socket with a local address so that it can listen for incoming connections
- * or send data.
- * 
- * @param sock The socket to bind.
- * @param ip The IP address to bind to (e.g., "127.0.0.1" for localhost).
- * @param port The port number to bind to.
- * @return 0 on success, -1 on failure.
+ * Set up a network stream to listen for incoming connections.
+ *
+ * @param stream The network stream to set up.
+ * @param host The hostname or IP address to bind to.
+ * @param port The port number to listen on.
+ * @return 0 on success, or -1 on failure.
  */
-int fossil_io_network_bind(fossil_io_socket_t sock, const char *ip, uint16_t port);
+int fossil_nstream_listen(fossil_nstream_t *stream, const char *host, int port);
 
 /**
- * Listen for incoming connections on a bound socket. This function puts the
- * socket into a state where it can accept incoming connection requests.
- * 
- * @param sock The socket to listen on.
- * @param backlog The maximum length of the queue of pending connections.
- * @return 0 on success, -1 on failure.
+ * Accept a new incoming connection on a listening network stream.
+ *
+ * @param server The listening network stream.
+ * @return A pointer to the new network stream for the accepted connection, or NULL on failure.
  */
-int fossil_io_network_listen(fossil_io_socket_t sock, int backlog);
+fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *server);
 
 /**
- * Accept a new incoming connection on a listening socket. This function
- * extracts the first connection request on the queue of pending connections
- * and creates a new socket for the connection.
- * 
- * @param sock The listening socket.
- * @param client_ip A buffer to store the IP address of the connecting client.
- * @param client_port A pointer to store the port number of the connecting client.
- * @return A valid socket for the new connection on success, or FOSSIL_IO_INVALID_SOCKET on failure.
- */
-fossil_io_socket_t fossil_io_network_accept(fossil_io_socket_t sock, char *client_ip, uint16_t *client_port);
-
-/**
- * Connect to a remote server. This function establishes a connection to a
- * specified IP address and port.
- * 
- * @param sock The socket to use for the connection.
- * @param ip The IP address of the remote server.
- * @param port The port number of the remote server.
- * @return 0 on success, -1 on failure.
- */
-int fossil_io_network_connect(fossil_io_socket_t sock, const char *ip, uint16_t port);
-
-/**
- * Send data over a connected socket. This function transmits data to the
- * remote peer connected to the socket.
- * 
- * @param sock The socket to use for sending data.
- * @param data A pointer to the data to be sent.
- * @param len The length of the data to be sent.
+ * Send data through a network stream.
+ *
+ * @param stream The network stream to send data through.
+ * @param buffer The buffer containing the data to send.
+ * @param size The size of the data to send, in bytes.
  * @return The number of bytes sent, or -1 on failure.
  */
-int fossil_io_network_send(fossil_io_socket_t sock, const void *data, size_t len);
+ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t size);
 
 /**
- * Receive data from a connected socket. This function reads data from the
- * remote peer connected to the socket.
- * 
- * @param sock The socket to use for receiving data.
- * @param buffer A buffer to store the received data.
- * @param len The maximum length of data to be received.
+ * Receive data through a network stream.
+ *
+ * @param stream The network stream to receive data from.
+ * @param buffer The buffer to store the received data.
+ * @param size The maximum size of the buffer, in bytes.
  * @return The number of bytes received, or -1 on failure.
  */
-int fossil_io_network_receive(fossil_io_socket_t sock, void *buffer, size_t len);
+ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size);
 
 /**
- * Close a socket. This function releases the resources associated with the
- * socket and closes the connection.
- * 
- * @param sock The socket to be closed.
+ * Close a network stream.
+ *
+ * @param stream The network stream to close.
  */
-void fossil_io_network_close(fossil_io_socket_t sock);
+void fossil_nstream_close(fossil_nstream_t *stream);
 
 /**
- * Send data to a specific IP address and port using a UDP socket. This function
- * transmits data to the specified address and port without establishing a connection.
- * 
- * @param sock The socket to use for sending data.
- * @param data A pointer to the data to be sent.
- * @param len The length of the data to be sent.
- * @param ip The IP address of the destination.
- * @param port The port number of the destination.
- * @return The number of bytes sent, or -1 on failure.
+ * Destroy a network stream and free its resources.
+ *
+ * @param stream The network stream to destroy.
  */
-int fossil_io_network_sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port);
+void fossil_nstream_destroy(fossil_nstream_t *stream);
 
 /**
- * Receive data from a specific IP address and port using a UDP socket. This function
- * reads data from the specified address and port without establishing a connection.
- * 
- * @param sock The socket to use for receiving data.
- * @param buffer A buffer to store the received data.
- * @param len The maximum length of data to be received.
- * @param ip A buffer to store the IP address of the sender.
- * @param port A pointer to store the port number of the sender.
- * @return The number of bytes received, or -1 on failure.
+ * Get a string describing the last error that occurred.
+ *
+ * @return A string describing the last error.
  */
-int fossil_io_network_recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port);
-
-/**
- * Bridge function for network operations. This function can be used to
- * transfer data between two sockets, effectively bridging them.
- * 
- * @param sock1 The first socket.
- * @param sock2 The second socket.
- * @return 0 on success, -1 on failure.
- */
-int fossil_io_network_bridge(fossil_io_socket_t sock1, fossil_io_socket_t sock2);
+const char *fossil_nstream_last_error(void);
 
 #ifdef __cplusplus
 }
+#include <stdexcept>
+#include <string>
 
 /**
  * C++ wrapper for the output functions.
@@ -189,173 +232,127 @@ namespace fossil {
         /**
          * Class for network operations.
          */
-        class Network {
+        /**
+         * A C++ wrapper class for the Fossil network stream API.
+         * Provides an object-oriented interface for managing network streams.
+         */
+        class NStream {
         public:
             /**
-             * Initialize the network stack. This function is necessary for Windows
-             * platforms to set up the Winsock library. On other platforms, it may
-             * perform other necessary initializations.
-             * 
-             * @return 0 on success, non-zero on failure.
+             * Constructor to create a new network stream.
+             *
+             * @param protocol_flag The protocol to use (e.g., "tcp", "udp").
+             * @param client_type_flag The type of client (e.g., "server", "client").
+             * @throws std::runtime_error If the stream creation fails.
              */
-            static int init(void) {
-                return fossil_io_network_create();
+            NStream(const std::string &protocol_flag, const std::string &client_type_flag) {
+                stream_ = fossil_nstream_create(protocol_flag.c_str(), client_type_flag.c_str());
+                if (!stream_) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
             }
 
             /**
-             * Clean up the network stack. This function is necessary for Windows
-             * platforms to clean up the Winsock library. On other platforms, it may
-             * perform other necessary clean-up operations.
+             * Destructor to destroy the network stream and free its resources.
              */
-            static void cleanup(void) {
-                fossil_io_network_destroy();
+            ~NStream() {
+                if (stream_) {
+                    fossil_nstream_destroy(stream_);
+                }
             }
 
             /**
-             * Create a new socket of the specified type (TCP or UDP).
-             * 
-             * @param type The type of socket to create (e.g., SOCK_STREAM for TCP, SOCK_DGRAM for UDP).
-             * @return A valid socket on success, or FOSSIL_IO_INVALID_SOCKET on failure.
+             * Connect the network stream to a remote host.
+             *
+             * @param host The hostname or IP address of the remote host.
+             * @param port The port number to connect to.
+             * @throws std::runtime_error If the connection fails.
              */
-            static fossil_io_socket_t create_socket(int type) {
-                return fossil_io_network_create_socket(type);
+            void connect(const std::string &host, int port) {
+                if (fossil_nstream_connect(stream_, host.c_str(), port) != 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
             }
 
             /**
-             * Bind a socket to a specific IP address and port. This function associates
-             * the socket with a local address so that it can listen for incoming connections
-             * or send data.
-             * 
-             * @param sock The socket to bind.
-             * @param ip The IP address to bind to (e.g., "127.0.0.1" for localhost).
-             * @param port The port number to bind to.
-             * @return 0 on success, -1 on failure.
+             * Set up the network stream to listen for incoming connections.
+             *
+             * @param host The hostname or IP address to bind to.
+             * @param port The port number to listen on.
+             * @throws std::runtime_error If the setup fails.
              */
-            static int bind(fossil_io_socket_t sock, const char *ip, uint16_t port) {
-                return fossil_io_network_bind(sock, ip, port);
+            void listen(const std::string &host, int port) {
+                if (fossil_nstream_listen(stream_, host.c_str(), port) != 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
             }
 
             /**
-             * Listen for incoming connections on a bound socket. This function puts the
-             * socket into a state where it can accept incoming connection requests.
-             * 
-             * @param sock The socket to listen on.
-             * @param backlog The maximum length of the queue of pending connections.
-             * @return 0 on success, -1 on failure.
+             * Accept a new incoming connection on a listening network stream.
+             *
+             * @return A pointer to a new NStream object for the accepted connection.
+             * @throws std::runtime_error If accepting the connection fails.
              */
-            static int listen(fossil_io_socket_t sock, int backlog) {
-                return fossil_io_network_listen(sock, backlog);
+            NStream *accept() {
+                fossil_nstream_t *accepted_stream = fossil_nstream_accept(stream_);
+                if (!accepted_stream) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
+                return new NStream(accepted_stream);
             }
 
             /**
-             * Accept a new incoming connection on a listening socket. This function
-             * extracts the first connection request on the queue of pending connections
-             * and creates a new socket for the connection.
-             * 
-             * @param sock The listening socket.
-             * @param client_ip A buffer to store the IP address of the connecting client.
-             * @param client_port A pointer to store the port number of the connecting client.
-             * @return A valid socket for the new connection on success, or FOSSIL_IO_INVALID_SOCKET on failure.
+             * Send data through the network stream.
+             *
+             * @param buffer The buffer containing the data to send.
+             * @param size The size of the data to send, in bytes.
+             * @return The number of bytes sent.
+             * @throws std::runtime_error If sending the data fails.
              */
-            static fossil_io_socket_t accept(fossil_io_socket_t sock, char *client_ip, uint16_t *client_port) {
-                return fossil_io_network_accept(sock, client_ip, client_port);
+            ssize_t send(const void *buffer, size_t size) {
+                ssize_t bytes_sent = fossil_nstream_send(stream_, buffer, size);
+                if (bytes_sent < 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
+                return bytes_sent;
             }
 
             /**
-             * Connect to a remote server. This function establishes a connection to a
-             * specified IP address and port.
-             * 
-             * @param sock The socket to use for the connection.
-             * @param ip The IP address of the remote server.
-             * @param port The port number of the remote server.
-             * @return 0 on success, -1 on failure.
+             * Receive data through the network stream.
+             *
+             * @param buffer The buffer to store the received data.
+             * @param size The maximum size of the buffer, in bytes.
+             * @return The number of bytes received.
+             * @throws std::runtime_error If receiving the data fails.
              */
-            static int connect(fossil_io_socket_t sock, const char *ip, uint16_t port) {
-                return fossil_io_network_connect(sock, ip, port);
+            ssize_t recv(void *buffer, size_t size) {
+                ssize_t bytes_received = fossil_nstream_recv(stream_, buffer, size);
+                if (bytes_received < 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
+                return bytes_received;
             }
 
             /**
-             * Send data over a connected socket. This function transmits data to the
-             * remote peer connected to the socket.
-             * 
-             * @param sock The socket to use for sending data.
-             * @param data A pointer to the data to be sent.
-             * @param len The length of the data to be sent.
-             * @return The number of bytes sent, or -1 on failure.
+             * Close the network stream.
              */
-            static int send(fossil_io_socket_t sock, const void *data, size_t len) {
-                return fossil_io_network_send(sock, data, len);
+            void close() {
+                fossil_nstream_close(stream_);
             }
 
+        private:
             /**
-             * Receive data from a connected socket. This function reads data from the
-             * remote peer connected to the socket.
-             * 
-             * @param sock The socket to use for receiving data.
-             * @param buffer A buffer to store the received data.
-             * @param len The maximum length of data to be received.
-             * @return The number of bytes received, or -1 on failure.
+             * Private constructor to wrap an existing fossil_nstream_t object.
+             *
+             * @param stream A pointer to an existing fossil_nstream_t object.
              */
-            static int receive(fossil_io_socket_t sock, void *buffer, size_t len) {
-                return fossil_io_network_receive(sock, buffer, len);
-            }
+            NStream(fossil_nstream_t *stream) : stream_(stream) {}
 
-            /**
-             * Close a socket. This function releases the resources associated with the
-             * socket and closes the connection.
-             * 
-             * @param sock The socket to be closed.
-             */
-            static void close(fossil_io_socket_t sock) {
-                fossil_io_network_close(sock);
-            }
-
-            /**
-             * Send data to a specific IP address and port using a UDP socket. This function
-             * transmits data to the specified address and port without establishing a connection.
-             * 
-             * @param sock The socket to use for sending data.
-             * @param data A pointer to the data to be sent.
-             * @param len The length of the data to be sent.
-             * @param ip The IP address of the destination.
-             * @param port The port number of the destination.
-             * @return The number of bytes sent, or -1 on failure.
-             */
-            static int sendto(fossil_io_socket_t sock, const void *data, size_t len, const char *ip, uint16_t port) {
-                return fossil_io_network_sendto(sock, data, len, ip, port);
-            }
-
-            /**
-             * Receive data from a specific IP address and port using a UDP socket. This function
-             * reads data from the specified address and port without establishing a connection.
-             * 
-             * @param sock The socket to use for receiving data.
-             * @param buffer A buffer to store the received data.
-             * @param len The maximum length of data to be received.
-             * @param ip A buffer to store the IP address of the sender.
-             * @param port A pointer to store the port number of the sender.
-             * @return The number of bytes received, or -1 on failure.
-             */
-            static int recvfrom(fossil_io_socket_t sock, void *buffer, size_t len, char *ip, uint16_t *port) {
-                return fossil_io_network_recvfrom(sock, buffer, len, ip, port);
-            }
-
-            /**
-             * Bridge function for network operations. This function can be used to
-             * transfer data between two sockets, effectively bridging them.
-             * 
-             * @param sock1 The first socket.
-             * @param sock2 The second socket.
-             * @return 0 on success, -1 on failure.
-             */
-            static int bridge(fossil_io_socket_t sock1, fossil_io_socket_t sock2) {
-                return fossil_io_network_bridge(sock1, sock2);
-            }
-
+            fossil_nstream_t *stream_; /**< Pointer to the underlying network stream. */
         };
     }
 }
 
 #endif
 
-#endif /* FOSSIL_IO_FRAMEWORK_H */
+#endif /* FOSSIL_IO_NETWORK_H */
