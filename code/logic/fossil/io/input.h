@@ -23,6 +23,14 @@ extern "C" {
 #endif
 
 /**
+ * Reads a single character from the input stream.
+ * 
+ * @param input_stream  Pointer to the input stream to read from.
+ * @return              The character read as an unsigned char cast to an int, or EOF on end-of-file or error.
+ */
+int fossil_io_getc(FILE *input_stream);
+
+/**
  * Reads a line from the input stream and stores it into the buffer pointed to by 'buf'.
  * 
  * @param buf           Pointer to the buffer where the line will be stored.
@@ -171,6 +179,16 @@ namespace fossil {
          */
         class Input {
         public:
+            /**
+             * Reads a single character from the input stream.
+             * 
+             * @param input_stream  Pointer to the input stream to read from.
+             * @return              The character read as an unsigned char cast to an int, or EOF on end-of-file or error.
+             */
+            static int getc(FILE *input_stream) {
+                return fossil_io_getc(input_stream);
+            }
+
             /**
              * Reads a line from the input stream and stores it into the buffer pointed to by 'buf'.
              *
