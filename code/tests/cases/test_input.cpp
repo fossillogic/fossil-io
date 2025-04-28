@@ -335,6 +335,17 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_whitespace_only) {
     fclose(input_stream);
 }
 
+FOSSIL_TEST_CASE(cpp_test_io_getc) {
+    const char *input_data = "test input\n";
+    FILE *input_stream = tmpfile();
+    fwrite(input_data, 1, strlen(input_data), input_stream);
+    rewind(input_stream);
+
+    int ch = fossil::io::Input::getc(input_stream);
+    ASSUME_ITS_EQUAL_I32('t', ch);
+    fclose(input_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -369,6 +380,7 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_utf8_valid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_empty);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_whitespace_only);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_getc);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }
