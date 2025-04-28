@@ -12,153 +12,123 @@
  * -----------------------------------------------------------------------------
  */
 #include <fossil/test/framework.h>
-
 #include "fossil/io/framework.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test Utilites
+// * Fossil Logic Test Utilities
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // Setup steps for things like test fixtures and
 // mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-// Define the test suite and add test cases
 FOSSIL_TEST_SUITE(c_network_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(c_network_suite) {
-    // Setup code here
+    // Setup code (if needed)
 }
 
 // Teardown function for the test suite
 FOSSIL_TEARDOWN(c_network_suite) {
-    // Teardown code here
+    // Teardown code (if needed)
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Cases
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// The test cases below are provided as samples, inspired
-// by the Meson build system's approach of using test cases
-// as samples for library usage.
-// * * * * * * * * * * * * * * * * * * * * * * * *
 
-// Fossil Logic Test Cases
+FOSSIL_TEST_CASE(c_test_nstream_create_and_destroy) {
+    const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
+    const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
-// Helper: Open connection or skip
-static fossil_nstream_t *try_open_tcp(const char *addr, const char *port) {
-    fossil_nstream_t *ns = fossil_nstream_open("tcp", addr, port, NULL);
-    if (!ns) {
-        FOSSIL_TEST_SKIP("Unable to open TCP connection to %s:%s", addr, port);
+    for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
+        for (size_t j = 0; j < sizeof(clients) / sizeof(clients[0]); j++) {
+            fossil_nstream_t *stream = fossil_nstream_create(protocols[i], clients[j]);
+            ASSUME_NOT_CNULL(stream);
+            fossil_nstream_destroy(stream);
+        }
     }
-    return ns;
 }
 
-static fossil_nstream_t *try_open_tls(const char *addr, const char *port) {
-    fossil_nstream_t *ns = fossil_nstream_open("tls", addr, port, NULL);
-    if (!ns) {
-        FOSSIL_TEST_SKIP("Unable to open TLS connection to %s:%s", addr, port);
-    }
-    return ns;
+FOSSIL_TEST_CASE(c_test_nstream_connect_invalid_host) {
+    fossil_nstream_t *stream = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(stream);
+
+    // Attempt to connect to an invalid host
+    ASSUME_ITS_EQUAL_I32(-1, fossil_nstream_connect(stream, "invalid_host", 12345));
+    fossil_nstream_destroy(stream);
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_open) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
-    fossil_nstream_close(ns);
+FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
+    fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
+    ASSUME_NOT_CNULL(server);
+
+    // Start listening on a local port
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+
+    // Simulate a client connecting
+    fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(client);
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+
+    // Accept the client connection
+    fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
+    ASSUME_NOT_CNULL(accepted_client);
+
+    // Cleanup
+    fossil_nstream_destroy(client);
+    fossil_nstream_destroy(accepted_client);
+    fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_send_recv) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
+FOSSIL_TEST_CASE(c_test_nstream_send_and_receive) {
+    fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
+    ASSUME_NOT_CNULL(server);
 
+    // Start listening on a local port
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+
+    // Simulate a client connecting
+    fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
+    ASSUME_NOT_CNULL(client);
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+
+    // Accept the client connection
+    fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
+    ASSUME_NOT_CNULL(accepted_client);
+
+    // Send and receive data
     const char *message = "Hello, Fossil!";
-    ssize_t bytes_sent = fossil_nstream_send(ns, message, strlen(message));
-    ASSUME_ITS_TRUE(bytes_sent >= 0);
+    ASSUME_ITS_EQUAL_I32(strlen(message), fossil_nstream_send(client, message, strlen(message)));
 
-    char buffer[128];
-    ssize_t bytes_received = fossil_nstream_recv(ns, buffer, sizeof(buffer));
-    ASSUME_ITS_TRUE(bytes_received >= 0);
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(strlen(message), fossil_nstream_recv(accepted_client, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR(message, buffer);
 
-    fossil_nstream_close(ns);
+    // Cleanup
+    fossil_nstream_destroy(client);
+    fossil_nstream_destroy(accepted_client);
+    fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_listen_accept) {
-    fossil_nstream_t *server = try_open_tcp("127.0.0.1", "8080");
+FOSSIL_TEST_CASE(c_test_nstream_protocols) {
+    const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
 
-    int result = fossil_nstream_listen(server, 5);
-    ASSUME_ITS_EQUAL_I32(0, result);
-
-    // We don't expect actual client in this minimal test
-    fossil_nstream_close(server);
+    for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
+        fossil_nstream_t *stream = fossil_nstream_create(protocols[i], "client");
+        ASSUME_NOT_CNULL(stream);
+        fossil_nstream_destroy(stream);
+    }
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_set_nonblocking) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
+FOSSIL_TEST_CASE(c_test_nstream_client_types) {
+    const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
-    int result = fossil_nstream_set_nonblocking(ns, 1);
-    ASSUME_ITS_EQUAL_I32(0, result);
-
-    fossil_nstream_close(ns);
-}
-
-FOSSIL_TEST_CASE(c_test_nstream_wait_readable_writable) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
-
-    int readable = fossil_nstream_wait_readable(ns, 1000);
-    int writable = fossil_nstream_wait_writable(ns, 1000);
-
-    ASSUME_ITS_TRUE(readable >= 0);
-    ASSUME_ITS_TRUE(writable >= 0);
-
-    fossil_nstream_close(ns);
-}
-
-FOSSIL_TEST_CASE(c_test_nstream_connect_timeout) {
-    fossil_nstream_t *ns = fossil_nstream_open("tcp", NULL, NULL, NULL);
-    ASSUME_NOT_CNULL(ns);
-
-    int result = fossil_nstream_connect_timeout(ns, "127.0.0.1", "8080", 1000);
-    ASSUME_ITS_TRUE(result == 0 || result == -1); // Allow failure if no server.
-
-    fossil_nstream_close(ns);
-}
-
-FOSSIL_TEST_CASE(c_test_nstream_get_peer_info) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
-
-    char ip_str[64];
-    uint16_t port;
-    int result = fossil_nstream_get_peer_info(ns, ip_str, sizeof(ip_str), &port);
-    ASSUME_ITS_EQUAL_I32(0, result);
-
-    fossil_nstream_close(ns);
-}
-
-FOSSIL_TEST_CASE(c_test_nstream_send_recv_line) {
-    fossil_nstream_t *ns = try_open_tcp("127.0.0.1", "8080");
-
-    const char *line = "Hello, Fossil Logic!";
-    ssize_t bytes_sent = fossil_nstream_send_line(ns, line);
-    ASSUME_ITS_TRUE(bytes_sent >= 0);
-
-    char buffer[128];
-    ssize_t bytes_received = fossil_nstream_recv_line(ns, buffer, sizeof(buffer));
-    ASSUME_ITS_TRUE(bytes_received >= 0);
-
-    fossil_nstream_close(ns);
-}
-
-FOSSIL_TEST_CASE(c_test_nstream_ssl_send_recv) {
-    fossil_nstream_t *ns = try_open_tls("127.0.0.1", "8080");
-
-    const char *message = "Secure Hello!";
-    ssize_t bytes_sent = fossil_nstream_ssl_send(ns, message, strlen(message));
-    ASSUME_ITS_TRUE(bytes_sent >= 0);
-
-    char buffer[128];
-    ssize_t bytes_received = fossil_nstream_ssl_recv(ns, buffer, sizeof(buffer));
-    ASSUME_ITS_TRUE(bytes_received >= 0);
-
-    fossil_nstream_close(ns);
+    for (size_t i = 0; i < sizeof(clients) / sizeof(clients[0]); i++) {
+        fossil_nstream_t *stream = fossil_nstream_create("tcp", clients[i]);
+        ASSUME_NOT_CNULL(stream);
+        fossil_nstream_destroy(stream);
+    }
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -166,15 +136,12 @@ FOSSIL_TEST_CASE(c_test_nstream_ssl_send_recv) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_network_tests) {
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_open);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_send_recv);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_listen_accept);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_set_nonblocking);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_wait_readable_writable);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_connect_timeout);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_get_peer_info);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_send_recv_line);
-    FOSSIL_TEST_ADD(c_network_tests, c_test_nstream_ssl_send_recv);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_create_and_destroy);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_connect_invalid_host);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_listen_and_accept);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_send_and_receive);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_protocols);
+    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_client_types);
 
-    FOSSIL_TEST_REGISTER(c_network_tests);
+    FOSSIL_TEST_REGISTER(c_network_suite);
 }
