@@ -362,7 +362,7 @@ namespace fossil {
              * @param input The Input object to populate.
              * @return The input stream after reading.
              */
-            friend std::istream &operator>>(std::istream &input_stream, Input &input) {
+            friend std::istream &operator>>(std::istream &input_stream, Input & /*input*/) {
                 // Implement the logic for populating the Input object from the input stream.
                 // This is a placeholder implementation.
                 char buffer[256];
