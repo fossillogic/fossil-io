@@ -61,6 +61,34 @@ FOSSIL_TEST_CASE(c_test_stream_let_write_and_read_file) {
     fossil_fstream_close(&c_stream);
 }
 
+FOSSIL_TEST_CASE(c_test_stream_redirect_to_devnull) {
+    const char *filename = "testfile_redirect.txt";
+    const char *content = "This is a test.";
+
+    // Create the file and write data to it
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+
+    // Redirect the stream to /dev/null
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_redirect_to_devnull(&c_stream));
+
+    // Attempt to write more data (should not affect the file)
+    const char *extra_content = "This should not be written.";
+    fossil_fstream_write(&c_stream, extra_content, strlen(extra_content), 1);
+
+    // Close the stream
+    fossil_fstream_close(&c_stream);
+
+    // Reopen the file and verify its content remains unchanged
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "r"));
+    fossil_fstream_read(&c_stream, buffer, sizeof(buffer), 1);
+    fossil_fstream_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_CSTR(content, buffer);
+}
+
+
 FOSSIL_TEST_CASE(c_test_stream_let_open_and_close_file) {
     const char *filename = "testfile.txt";
 
@@ -240,6 +268,7 @@ FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
 FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_let_write_and_read_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_let_open_and_close_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_redirect_to_devnull);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_multiple_files);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_seek_and_tell);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_type);
