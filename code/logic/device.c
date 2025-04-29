@@ -338,10 +338,8 @@ void fossil_io_touch_clear_bindings(void) {
 
 void fossil_io_touch_init(void) {
     memset(&touch_manager, 0, sizeof(touch_manager));
-    fossil_io_printf("[touch] Initialized: bindings cleared\n");
 }
 
 void fossil_io_touch_shutdown(void) {
     memset(&touch_manager, 0, sizeof(touch_manager));
-    fossil_io_printf("[touch] Shutdown: bindings released\n");
 }
