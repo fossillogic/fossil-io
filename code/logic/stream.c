@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/stream.h"
+#include "fossil/io/output.h"
 #include "fossil/io/error.h"
 #include <stdio.h>
 #include <stdlib.h>
