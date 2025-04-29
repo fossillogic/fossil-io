@@ -279,6 +279,15 @@ int32_t fossil_fstream_delete(const char *filename);
 int fossil_fstream_get_type(const char *filename);
 
 /**
+ * Create a temporary file.
+ *
+ * This function creates a temporary file and returns its name.
+ *
+ * @return A pointer to the name of the temporary file, or NULL on failure.
+ */
+fossil_fstream_t fossil_fstream_tempfile(void);
+
+/**
  * Check if a file is readable.
  *
  * This function checks if a file has read permissions.
@@ -774,6 +783,17 @@ namespace fossil {
              */
             static int get_type(const std::string &filename) {
                 return fossil_fstream_get_type(filename.c_str());
+            }
+
+            /**
+             * Create a temporary file.
+             *
+             * This function creates a temporary file and returns its name.
+             *
+             * @return A pointer to the name of the temporary file, or NULL on failure.
+             */
+            static fossil_fstream_t tempfile() {
+                return fossil_fstream_tempfile();
             }
 
             /**
