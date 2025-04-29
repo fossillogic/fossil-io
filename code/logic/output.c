@@ -18,6 +18,9 @@
 #include <string.h>
 #include <stdio.h>
 
+int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
+int32_t FOSSIL_IO_ATTR_ENABLE = 1; // Flag to enable/disable attribute output
+
 // Define color codes for output
 #define FOSSIL_IO_COLOR_RESET       "\033[0m"
 #define FOSSIL_IO_COLOR_RED         "\033[31m"
@@ -171,11 +174,11 @@ void fossil_io_print_with_attributes(const char *format, ...) {
                 pos = color + 4; // Skip the "pos:" prefix
                 fossil_io_apply_position(pos);
             } else {
-                // Apply color and/or attribute
-                if (color) {
+                // Apply color and/or attribute based on flags
+                if (FOSSIL_IO_COLOR_ENABLE && color) {
                     fossil_io_apply_color(color);
                 }
-                if (attribute) {
+                if (FOSSIL_IO_ATTR_ENABLE && attribute) {
                     fossil_io_apply_attribute(attribute);
                 }
             }
