@@ -14,9 +14,8 @@
 #ifndef FOSSIL_IO_INPUT_H
 #define FOSSIL_IO_INPUT_H
 
-#include <stddef.h>
 #include <stdarg.h>
-#include <stdio.h>
+#include "stream.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +27,7 @@ extern "C" {
  * @param input_stream  Pointer to the input stream to read from.
  * @return              The character read as an unsigned char cast to an int, or EOF on end-of-file or error.
  */
-int fossil_io_getc(FILE *input_stream);
+int fossil_io_getc(fossil_fstream_t *input_stream);
 
 /**
  * Reads a line from the input stream and stores it into the buffer pointed to by 'buf'.
@@ -38,7 +37,7 @@ int fossil_io_getc(FILE *input_stream);
  * @param input_stream  Pointer to the input stream to read from.
  * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
  */
-char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream);
+char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_fstream_t *input_stream);
 
 /**
  * Reads a line from the input stream with error reporting.
@@ -49,7 +48,7 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream);
  * @param error_code    Pointer to an integer to store the error code (e.g., EOF, input error).
  * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
  */
-char *fossil_io_gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, int *error_code);
+char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code);
 
 /**
  * Reads formatted input from the standard input stream.
@@ -70,7 +69,7 @@ int fossil_io_scanf(const char *format, ...);
  * @return              On success, the number of input items successfully matched and assigned is returned.
  *                      On failure, EOF is returned.
  */
-int fossil_io_fscanf(FILE *input_stream, const char *format, ...);
+int fossil_io_fscanf(fossil_fstream_t *input_stream, const char *format, ...);
 
 /**
  * Validates the input buffer and size before reading.
@@ -89,7 +88,7 @@ int fossil_io_validate_input_buffer(const char *buf, size_t size);
  * @param input_stream  Pointer to the input stream to read from.
  * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
  */
-char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream);
+char *fossil_io_gets_utf8(char *buf, size_t size, fossil_fstream_t *input_stream);
 
 /**
  * @brief Validates if the input string is a valid integer.
@@ -185,7 +184,7 @@ namespace fossil {
              * @param input_stream  Pointer to the input stream to read from.
              * @return              The character read as an unsigned char cast to an int, or EOF on end-of-file or error.
              */
-            static int getc(FILE *input_stream) {
+            static int getc(fossil_fstream_t *input_stream) {
                 return fossil_io_getc(input_stream);
             }
 
@@ -197,7 +196,7 @@ namespace fossil {
              * @param input_stream  Pointer to the input stream to read from.
              * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
              */
-            static char *gets_from_stream(char *buf, size_t size, FILE *input_stream) {
+            static char *gets_from_stream(char *buf, size_t size, fossil_fstream_t *input_stream) {
                 return fossil_io_gets_from_stream(buf, size, input_stream);
             }
 
@@ -210,7 +209,7 @@ namespace fossil {
              * @param error_code    Pointer to an integer to store the error code (e.g., EOF, input error).
              * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
              */
-            static char *gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, int *error_code) {
+            static char *gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code) {
                 return fossil_io_gets_from_stream_ex(buf, size, input_stream, error_code);
             }
 
@@ -233,7 +232,7 @@ namespace fossil {
              * @param input_stream  Pointer to the input stream to read from.
              * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
              */
-            static char *gets_utf8(char *buf, size_t size, FILE *input_stream) {
+            static char *gets_utf8(char *buf, size_t size, fossil_fstream_t *input_stream) {
                 return fossil_io_gets_utf8(buf, size, input_stream);
             }
 
@@ -262,7 +261,7 @@ namespace fossil {
              * @return              On success, the number of input items successfully matched and assigned is returned.
              *                      On failure, EOF is returned.
              */
-            static int fscanf(FILE *input_stream, const char *format, ...) {
+            static int fscanf(fossil_fstream_t *input_stream, const char *format, ...) {
                 va_list args;
                 va_start(args, format);
                 int result = fossil_io_fscanf(input_stream, format, args);
@@ -357,25 +356,21 @@ namespace fossil {
             }
 
             /**
-             * @brief Override the output stream operator to display Input object details.
+             * @brief Overloads the input stream operator for the Input class.
              * 
-             * @param os The output stream where data will be printed.
-             * @param input The Input object to display.
-             * @return The modified output stream.
+             * @param input_stream The input stream to read from.
+             * @param input The Input object to populate.
+             * @return The input stream after reading.
              */
-            friend std::ostream& operator<<(std::ostream& os, const Input& input) {
-                // Example of what to output: printing the state or some meaningful data
-                os << "Input Stream Details:\n";
-                os << " - Max Buffer Size: " << input.max_buffer_size << "\n";
-                os << " - Input Stream: " << (input.stream ? "Valid Stream" : "Invalid Stream") << "\n";
-                
-                // Return the output stream
-                return os;
+            friend std::istream &operator>>(std::istream &input_stream, Input & /*input*/) {
+                // Implement the logic for populating the Input object from the input stream.
+                // This is a placeholder implementation.
+                char buffer[256];
+                input_stream.getline(buffer, sizeof(buffer));
+                // Process the buffer as needed to populate the Input object.
+                return input_stream;
             }
 
-        private:
-            size_t max_buffer_size;  // Example private member
-            FILE* stream;            // Example stream (pointer to the input stream, like stdin)
         };
 
     }

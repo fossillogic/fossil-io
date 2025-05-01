@@ -53,18 +53,18 @@ void fossil_io_trim(char *str) {
 
 int fossil_io_display_menu(const char *prompt, const char *choices[], int num_choices) {
     if (prompt != NULL) {
-        printf("%s\n", prompt);
+        fossil_io_printf("%s\n", prompt);
     }
 
     for (int i = 0; i < num_choices; i++) {
-        printf("%d. %s\n", i + 1, choices[i]);
+        fossil_io_printf("%d. %s\n", i + 1, choices[i]);
     }
 
     int choice;
     do {
-        printf("Please choose an option (1-%d): ", num_choices);
+        fossil_io_printf("Please choose an option (1-%d): ", num_choices);
         if (fossil_io_scanf("%d", &choice) != 1 || choice < 1 || choice > num_choices) {
-            printf("Invalid choice. Please try again.\n");
+            fossil_io_printf("Invalid choice. Please try again.\n");
         }
     } while (choice < 1 || choice > num_choices);
 
@@ -74,47 +74,47 @@ int fossil_io_display_menu(const char *prompt, const char *choices[], int num_ch
 void fossil_io_show_progress(int progress) {
     int width = 50; // Width of the progress bar
     int pos = (progress * width) / 100;
-    printf("[");
+    fossil_io_printf("[");
     for (int i = 0; i < width; i++) {
         if (i < pos) {
-            printf("=");
+            fossil_io_printf("=");
         } else if (i == pos) {
-            printf(">");
+            fossil_io_printf(">");
         } else {
-            printf(" ");
+            fossil_io_printf(" ");
         }
     }
-    printf("] %d%%\r", progress);
+    fossil_io_printf("] %d%%\r", progress);
     fflush(stdout);
 }
 
-int fossil_io_getc(FILE *input_stream) {
+int fossil_io_getc(fossil_fstream_t *input_stream) {
     if (input_stream == NULL) {
-        fprintf(stderr, "Error: Invalid input stream.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid input stream.\n");
         return EOF;
     }
     
-    int c = fgetc(input_stream);
-    if (c == EOF && ferror(input_stream)) {
-        fprintf(stderr, "Error: Failed to read from input stream.\n");
+    int c = fgetc(input_stream->file);
+    if (c == EOF && ferror(input_stream->file)) {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
     }
     
     return c;
 }
 
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
-char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
+char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_fstream_t *input_stream) {
     if (buf == NULL || size == 0 || input_stream == NULL) {
-        fprintf(stderr, "Error: Invalid buffer or stream.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer or stream.\n");
         return NULL;
     }
 
     // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream) == NULL) {
-        if (feof(input_stream)) {
+    if (fgets(buf, size, input_stream->file) == NULL) {
+        if (feof(input_stream->file)) {
             return NULL; // End of file reached
         }
-        fprintf(stderr, "Error: Failed to read from input stream.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -130,20 +130,20 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, FILE *input_stream) {
     return buf;
 }
 
-char *fossil_io_gets_from_stream_ex(char *buf, size_t size, FILE *input_stream, int *error_code) {
+char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code) {
     if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL) {
-        fprintf(stderr, "Error: Invalid buffer, stream, or error code.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer, stream, or error code.\n");
         return NULL;
     }
 
     // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream) == NULL) {
-        if (feof(input_stream)) {
+    if (fgets(buf, size, input_stream->file) == NULL) {
+        if (feof(input_stream->file)) {
             *error_code = EOF;
             return NULL; // End of file reached
         }
-        *error_code = ferror(input_stream);
-        fprintf(stderr, "Error: Failed to read from input stream.\n");
+        *error_code = ferror(input_stream->file);
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -167,33 +167,33 @@ int fossil_io_scanf(const char *format, ...) {
     return result;
 }
 
-int fossil_io_fscanf(FILE *input_stream, const char *format, ...) {
+int fossil_io_fscanf(fossil_fstream_t *input_stream, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    int result = vfscanf(input_stream, format, args);
+    int result = vfscanf(input_stream->file, format, args);
     va_end(args);
     return result;
 }
 
 int fossil_io_validate_input_buffer(const char *buf, size_t size) {
     if (buf == NULL || size == 0) {
-        fprintf(stderr, "Error: Invalid buffer or size.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer or size.\n");
         return 0;
     }
     return 1;
 }
 
-char *fossil_io_gets_utf8(char *buf, size_t size, FILE *input_stream) {
+char *fossil_io_gets_utf8(char *buf, size_t size, fossil_fstream_t *input_stream) {
     if (!fossil_io_validate_input_buffer(buf, size)) {
         return NULL;
     }
 
     // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream) == NULL) {
-        if (feof(input_stream)) {
+    if (fgets(buf, size, input_stream->file) == NULL) {
+        if (feof(input_stream->file)) {
             return NULL; // End of file reached
         }
-        fprintf(stderr, "Error: Failed to read from input stream.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
@@ -273,7 +273,17 @@ int fossil_io_validate_is_email(const char *input) {
         return 0;
     }
 
-    return 1;
+    // Validate the domain against a list of known mailing services
+    const char *valid_services[] = {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"};
+    size_t num_services = sizeof(valid_services) / sizeof(valid_services[0]);
+
+    for (size_t i = 0; i < num_services; i++) {
+        if (strcmp(at + 1, valid_services[i]) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 int fossil_io_validate_is_length(const char *input, size_t max_length) {
