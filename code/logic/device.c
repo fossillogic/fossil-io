@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/device.h"
+#include "fossil/io/output.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,7 +140,6 @@ static fossil_io_keyboard_event_t fossil_io_keyboard_get_event(void) {
 
 void fossil_io_keyboard_init(void) {
     memset(&keyboard_manager, 0, sizeof(keyboard_manager));
-    printf("[mouse] Initialized: bindings cleared\n");
 #if defined(_WIN32) || defined(_WIN64)
     // Windows doesn't require explicit setup for raw mode.
 #else
@@ -150,7 +150,6 @@ void fossil_io_keyboard_init(void) {
 
 void fossil_io_keyboard_shutdown(void) {
     memset(&keyboard_manager, 0, sizeof(keyboard_manager));
-    printf("[mouse] Shutdown: bindings released\n");
 #if defined(_WIN32) || defined(_WIN64)
     // Windows doesn't require explicit cleanup for raw mode.
 #else
@@ -168,7 +167,7 @@ void fossil_io_keyboard_register_binding(fossil_io_keyboard_event_t event, fossi
         keyboard_manager.bindings[keyboard_manager.count].callback = callback;
         keyboard_manager.count++;
     } else {
-        fprintf(stderr, "Max keybindings reached.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "Max keybindings reached.\n");
     }
 }
 
@@ -185,7 +184,7 @@ void fossil_io_keyboard_unregister_binding(fossil_io_keyboard_event_t event) {
             return;
         }
     }
-    fprintf(stderr, "No matching keybinding to unregister.\n");
+    fossil_io_fprintf(FOSSIL_STDERR, "No matching keybinding to unregister.\n");
 }
 
 void fossil_io_keyboard_poll_events(void) {
@@ -228,7 +227,7 @@ static void fossil_io_mouse_get_event(fossil_io_mouse_event_t* event) {
 
 void fossil_io_mouse_register_binding(fossil_io_mouse_event_t event, fossil_io_mouse_callback_t callback) {
     if (mouse_manager.count >= MAX_MOUSEBINDS) {
-        fprintf(stderr, "[mouse] Max bindings reached\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "[mouse] Max bindings reached\n");
         return;
     }
 
@@ -244,7 +243,7 @@ void fossil_io_mouse_unregister_binding(fossil_io_mouse_event_t event) {
             return;
         }
     }
-    fprintf(stderr, "[mouse] Binding not found\n");
+    fossil_io_fprintf(FOSSIL_STDERR, "[mouse] Binding not found\n");
 }
 
 void fossil_io_mouse_poll_events(void) {
@@ -269,12 +268,10 @@ void fossil_io_mouse_clear_bindings(void) {
 
 void fossil_io_mouse_init(void) {
     memset(&mouse_manager, 0, sizeof(mouse_manager));
-    printf("[mouse] Initialized: bindings cleared\n");
 }
 
 void fossil_io_mouse_shutdown(void) {
     memset(&mouse_manager, 0, sizeof(mouse_manager));
-    printf("[mouse] Shutdown: bindings released\n");
 }
 
 // TOUCH
@@ -300,7 +297,7 @@ static void fossil_io_touch_get_event(fossil_io_touch_event_t* event) {
 
 void fossil_io_touch_register_binding(fossil_io_touch_event_t event, fossil_io_touch_callback_t callback) {
     if (touch_manager.count >= MAX_TOUCHBINDS) {
-        fprintf(stderr, "[touch] Max bindings reached\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "[touch] Max bindings reached\n");
         return;
     }
 
@@ -316,7 +313,7 @@ void fossil_io_touch_unregister_binding(fossil_io_touch_event_t event) {
             return;
         }
     }
-    fprintf(stderr, "[touch] Binding not found\n");
+    fossil_io_fprintf(FOSSIL_STDERR, "[touch] Binding not found\n");
 }
 
 void fossil_io_touch_poll_events(void) {
@@ -341,10 +338,8 @@ void fossil_io_touch_clear_bindings(void) {
 
 void fossil_io_touch_init(void) {
     memset(&touch_manager, 0, sizeof(touch_manager));
-    printf("[touch] Initialized: bindings cleared\n");
 }
 
 void fossil_io_touch_shutdown(void) {
     memset(&touch_manager, 0, sizeof(touch_manager));
-    printf("[touch] Shutdown: bindings released\n");
 }

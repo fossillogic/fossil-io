@@ -21,6 +21,9 @@
 extern "C" {
 #endif
 
+extern int32_t FOSSIL_IO_COLOR_ENABLE; // Flag to enable/disable color output
+extern int32_t FOSSIL_IO_ATTR_ENABLE; // Flag to enable/disable attribute output
+
 /** 
  * This code provides a robust set of functions for formatting and manipulating terminal output, 
  * allowing developers to apply color, text attributes (like bold, underline, etc.), and cursor positioning 
@@ -69,6 +72,16 @@ extern "C" {
  * command-line interfaces. The markup-based approach is simple to use and can be easily extended to meet the 
  * needs of more complex applications.
  */
+
+/**
+ * Redirects the output to a specified stream.
+ *
+ * This function allows you to change the default output destination to a custom stream.
+ * It is useful when you want to redirect output to a file or another output stream.
+ *
+ * @param stream The output stream where subsequent output should be redirected.
+ */
+void fossil_io_redirect_output(fossil_fstream_t *stream);
 
 /**
  * Prints a string to the output.
