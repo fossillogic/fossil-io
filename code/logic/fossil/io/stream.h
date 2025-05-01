@@ -25,7 +25,7 @@ extern "C" {
  * Structure representing a file stream.
  */
 typedef struct {
-    FILE *file;                                       // Pointer to the FILE structure for the stream
+    FILE *file;         // Pointer to the FILE structure for the stream
     char filename[500]; // Array to store the filename
 } fossil_fstream_t;
 
@@ -70,6 +70,16 @@ int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, cons
  * @param stream Pointer to the fossil_fstream_t structure to be closed.
  */
 void fossil_fstream_close(fossil_fstream_t *stream);
+
+/**
+ * Redirect a stream to /dev/null.
+ *
+ * This function redirects the given stream to /dev/null, effectively discarding any data written to it.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to redirect.
+ * @return       0 on success, non-zero on failure.
+ */
+int32_t fossil_fstream_redirect_to_devnull(fossil_fstream_t *stream);
 
 /**
  * Check if a stream is open.
@@ -416,6 +426,18 @@ namespace fossil {
              */
             static void close(fossil_fstream_t *stream) {
                 fossil_fstream_close(stream);
+            }
+
+            /**
+             * Redirect a stream to /dev/null.
+             *
+             * This function redirects the given stream to /dev/null, effectively discarding any data written to it.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to redirect.
+             * @return       0 on success, non-zero on failure.
+             */
+            static int32_t redirect_to_devnull(fossil_fstream_t *stream) {
+                return fossil_fstream_redirect_to_devnull(stream);
             }
 
             /**
