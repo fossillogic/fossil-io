@@ -45,6 +45,31 @@ FOSSIL_TEARDOWN(c_stream_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
+FOSSIL_TEST_CASE(c_test_stream_tempfile_creation) {
+    // Create a temporary file
+    fossil_fstream_t temp_stream = fossil_fstream_tempfile();
+
+    // Check if the temporary file is open
+    ASSUME_ITS_TRUE(fossil_fstream_is_open(&temp_stream));
+
+    // Close the temporary file
+    fossil_fstream_close(&temp_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_tempfile_cleanup) {
+    // Create a temporary file
+    fossil_fstream_t temp_stream = fossil_fstream_tempfile();
+
+    // Get the temporary file name
+    const char *temp_filename = temp_stream.filename;
+
+    // Close the temporary file
+    fossil_fstream_close(&temp_stream);
+
+    // Verify the temporary file is deleted
+    ASSUME_NOT_EQUAL_I32(0, fossil_fstream_file_exists(temp_filename));
+}
+
 FOSSIL_TEST_CASE(c_test_stream_let_write_and_read_file) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
@@ -266,6 +291,8 @@ FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_file_tests) {
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempfile_creation);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempfile_cleanup);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_let_write_and_read_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_let_open_and_close_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_redirect_to_devnull);

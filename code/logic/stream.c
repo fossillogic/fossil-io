@@ -24,6 +24,9 @@
     #include <windows.h>
 #else
     #include <unistd.h>
+    #ifndef _POSIX_C_SOURCE
+    extern int mkstemp(char *);
+    #endif
     #include <fcntl.h>
 #endif
 
@@ -528,6 +531,34 @@ int32_t fossil_fstream_is_readable(const char *filename) {
 #else
     return (access(filename, R_OK) == 0) ? 1 : 0;
 #endif
+}
+
+fossil_fstream_t fossil_fstream_tempfile(void) {
+    fossil_fstream_t temp_stream;
+    char temp_filename[FOSSIL_BUFFER_MEDIUM];
+
+#ifdef _WIN32
+    if (GetTempFileNameA(".", "fossil", 0, temp_filename) == 0) {
+        fprintf(stderr, "Error: Failed to create temporary file\n");
+        return (fossil_fstream_t){NULL, ""};
+    }
+#else
+    char template[] = "fossil_tempfile_XXXXXX";
+    int fd = mkstemp(template);
+    if (fd == -1) {
+        fprintf(stderr, "Error: Failed to create temporary file\n");
+        return (fossil_fstream_t){NULL, ""};
+    }
+    close(fd); // Close the file descriptor as it's no longer needed
+    strncpy(temp_filename, template, FOSSIL_BUFFER_MEDIUM);
+#endif
+
+    if (fossil_fstream_open(&temp_stream, temp_filename, "wb+") != FOSSIL_ERROR_OK) {
+        fprintf(stderr, "Error: Failed to open temporary file - %s\n", temp_filename);
+        return (fossil_fstream_t){NULL, ""};
+    }
+
+    return temp_stream;
 }
 
 int32_t fossil_fstream_is_writable(const char *filename) {
