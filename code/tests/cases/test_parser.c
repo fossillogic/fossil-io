@@ -139,6 +139,43 @@ FOSSIL_TEST_CASE(c_argument_types) {
     fossil_io_parser_free(palette);
 } // end case
 
+FOSSIL_TEST_CASE(c_null_palette) {
+    fossil_io_parser_palette_t *palette = NULL;
+    FOSSIL_TEST_ASSUME(fossil_io_parser_add_command(palette, "test_command", "Test Command Description") == NULL, "Adding command to NULL palette should return NULL");
+    fossil_io_parser_parse(palette, 0, NULL);
+} // end case
+
+FOSSIL_TEST_CASE(c_empty_command_name) {
+    fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
+    fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "", "Empty Command Name Description");
+    FOSSIL_TEST_ASSUME(command == NULL, "Command with empty name should not be added");
+    fossil_io_parser_free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(c_duplicate_command_name) {
+    fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
+    fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
+    fossil_io_parser_command_t *duplicate = fossil_io_parser_add_command(palette, "test_command", "Duplicate Command Description");
+    FOSSIL_TEST_ASSUME(duplicate == NULL, "Duplicate command name should not be allowed");
+    fossil_io_parser_free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(c_null_argument_name) {
+    fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
+    fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
+    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, NULL, FOSSIL_IO_PARSER_STRING, NULL, 0);
+    FOSSIL_TEST_ASSUME(argument == NULL, "Argument with NULL name should not be added");
+    fossil_io_parser_free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(c_invalid_argument_type) {
+    fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
+    fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
+    fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "invalid_arg", FOSSIL_IO_PARSER_INVALID, NULL, 0);
+    FOSSIL_TEST_ASSUME(argument == NULL, "Argument with invalid type should not be added");
+    fossil_io_parser_free(palette);
+} // end case
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -149,6 +186,11 @@ FOSSIL_TEST_GROUP(c_parser_test_cases) {
     FOSSIL_TEST_ADD(c_parser_suite, c_parse_command);
     FOSSIL_TEST_ADD(c_parser_suite, c_free_palette);
     FOSSIL_TEST_ADD(c_parser_suite, c_argument_types);
+    FOSSIL_TEST_ADD(c_parser_suite, c_null_palette);
+    FOSSIL_TEST_ADD(c_parser_suite, c_empty_command_name);
+    FOSSIL_TEST_ADD(c_parser_suite, c_duplicate_command_name);
+    FOSSIL_TEST_ADD(c_parser_suite, c_null_argument_name);
+    FOSSIL_TEST_ADD(c_parser_suite, c_invalid_argument_type);
 
     FOSSIL_TEST_REGISTER(c_parser_suite);
 } // end of group

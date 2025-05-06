@@ -249,6 +249,48 @@ FOSSIL_TEST_CASE(cpp_wrapper_argument_types) {
     parser.free(palette);
 } // end case
 
+FOSSIL_TEST_CASE(cpp_wrapper_null_palette) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = NULL;
+    FOSSIL_TEST_ASSUME(parser.add_command(palette, "test_command", "Test Command Description") == NULL, "Adding command to NULL palette should return NULL");
+    parser.parse(palette, 0, NULL);
+} // end case
+
+FOSSIL_TEST_CASE(cpp_wrapper_empty_command_name) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
+    fossil_io_parser_command_t *command = parser.add_command(palette, "", "Empty Command Name Description");
+    FOSSIL_TEST_ASSUME(command == NULL, "Command with empty name should not be added");
+    parser.free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(cpp_wrapper_duplicate_command_name) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
+    parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
+    fossil_io_parser_command_t *duplicate = parser.add_command(palette, "wrapper_command", "Duplicate Command Description");
+    FOSSIL_TEST_ASSUME(duplicate == NULL, "Duplicate command name should not be allowed");
+    parser.free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(cpp_wrapper_null_argument_name) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
+    fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
+    fossil_io_parser_argument_t *argument = parser.add_argument(command, NULL, FOSSIL_IO_PARSER_STRING, NULL, 0);
+    FOSSIL_TEST_ASSUME(argument == NULL, "Argument with NULL name should not be added");
+    parser.free(palette);
+} // end case
+
+FOSSIL_TEST_CASE(cpp_wrapper_invalid_argument_type) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
+    fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
+    fossil_io_parser_argument_t *argument = parser.add_argument(command, "invalid_arg", FOSSIL_IO_PARSER_INVALID, NULL, 0);
+    FOSSIL_TEST_ASSUME(argument == NULL, "Argument with invalid type should not be added");
+    parser.free(palette);
+} // end case
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -267,6 +309,11 @@ FOSSIL_TEST_GROUP(cpp_parser_test_cases) {
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_parse_command);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_free_palette);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_argument_types);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_null_palette);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_empty_command_name);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_duplicate_command_name);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_null_argument_name);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_invalid_argument_type);
 
     FOSSIL_TEST_REGISTER(cpp_parser_suite);
 } // end of group
