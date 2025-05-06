@@ -78,6 +78,48 @@ FOSSIL_TEST_CASE(cpp_add_argument) {
     fossil_io_parser_free(palette);
 } // end case
 
+FOSSIL_TEST_CASE(cpp_argument_types) {
+    fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
+    fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
+
+    // Test BOOL argument
+    fossil_io_parser_argument_t *bool_arg = fossil_io_parser_add_argument(command, "bool_arg", FOSSIL_IO_PARSER_BOOL, NULL, 0);
+    FOSSIL_TEST_ASSUME(bool_arg != NULL, "BOOL argument should be added");
+    FOSSIL_TEST_ASSUME(bool_arg->type == FOSSIL_IO_PARSER_BOOL, "BOOL argument type should be correct");
+
+    // Test STRING argument
+    fossil_io_parser_argument_t *string_arg = fossil_io_parser_add_argument(command, "string_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
+    FOSSIL_TEST_ASSUME(string_arg != NULL, "STRING argument should be added");
+    FOSSIL_TEST_ASSUME(string_arg->type == FOSSIL_IO_PARSER_STRING, "STRING argument type should be correct");
+
+    // Test INT argument
+    fossil_io_parser_argument_t *int_arg = fossil_io_parser_add_argument(command, "int_arg", FOSSIL_IO_PARSER_INT, NULL, 0);
+    FOSSIL_TEST_ASSUME(int_arg != NULL, "INT argument should be added");
+    FOSSIL_TEST_ASSUME(int_arg->type == FOSSIL_IO_PARSER_INT, "INT argument type should be correct");
+
+    // Test FLOAT argument
+    fossil_io_parser_argument_t *float_arg = fossil_io_parser_add_argument(command, "float_arg", FOSSIL_IO_PARSER_FLOAT, NULL, 0);
+    FOSSIL_TEST_ASSUME(float_arg != NULL, "FLOAT argument should be added");
+    FOSSIL_TEST_ASSUME(float_arg->type == FOSSIL_IO_PARSER_FLOAT, "FLOAT argument type should be correct");
+
+    // Test DATE argument
+    fossil_io_parser_argument_t *date_arg = fossil_io_parser_add_argument(command, "date_arg", FOSSIL_IO_PARSER_DATE, NULL, 0);
+    FOSSIL_TEST_ASSUME(date_arg != NULL, "DATE argument should be added");
+    FOSSIL_TEST_ASSUME(date_arg->type == FOSSIL_IO_PARSER_DATE, "DATE argument type should be correct");
+
+    // Test ARRAY argument
+    fossil_io_parser_argument_t *array_arg = fossil_io_parser_add_argument(command, "array_arg", FOSSIL_IO_PARSER_ARRAY, NULL, 0);
+    FOSSIL_TEST_ASSUME(array_arg != NULL, "ARRAY argument should be added");
+    FOSSIL_TEST_ASSUME(array_arg->type == FOSSIL_IO_PARSER_ARRAY, "ARRAY argument type should be correct");
+
+    // Test FEATURE argument
+    fossil_io_parser_argument_t *feature_arg = fossil_io_parser_add_argument(command, "feature_arg", FOSSIL_IO_PARSER_FEATURE, NULL, 0);
+    FOSSIL_TEST_ASSUME(feature_arg != NULL, "FEATURE argument should be added");
+    FOSSIL_TEST_ASSUME(feature_arg->type == FOSSIL_IO_PARSER_FEATURE, "FEATURE argument type should be correct");
+
+    fossil_io_parser_free(palette);
+} // end case
+
 FOSSIL_TEST_CASE(cpp_parse_command) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
@@ -165,6 +207,47 @@ FOSSIL_TEST_CASE(cpp_wrapper_free_palette) {
     // No explicit assumptions here, just ensuring no memory leaks or crashes
 } // end case
 
+FOSSIL_TEST_CASE(cpp_wrapper_argument_types) {
+    fossil::io::Parser parser;
+    fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
+    fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
+
+    // Test BOOL argument
+    fossil_io_parser_argument_t *bool_arg = parser.add_argument(command, "bool_arg", FOSSIL_IO_PARSER_BOOL, NULL, 0);
+    FOSSIL_TEST_ASSUME(bool_arg != NULL, "BOOL argument should be added");
+    FOSSIL_TEST_ASSUME(bool_arg->type == FOSSIL_IO_PARSER_BOOL, "BOOL argument type should be correct");
+
+    // Test STRING argument
+    fossil_io_parser_argument_t *string_arg = parser.add_argument(command, "string_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
+    FOSSIL_TEST_ASSUME(string_arg != NULL, "STRING argument should be added");
+    FOSSIL_TEST_ASSUME(string_arg->type == FOSSIL_IO_PARSER_STRING, "STRING argument type should be correct");
+
+    // Test INT argument
+    fossil_io_parser_argument_t *int_arg = parser.add_argument(command, "int_arg", FOSSIL_IO_PARSER_INT, NULL, 0);
+    FOSSIL_TEST_ASSUME(int_arg != NULL, "INT argument should be added");
+    FOSSIL_TEST_ASSUME(int_arg->type == FOSSIL_IO_PARSER_INT, "INT argument type should be correct");
+
+    // Test FLOAT argument
+    fossil_io_parser_argument_t *float_arg = parser.add_argument(command, "float_arg", FOSSIL_IO_PARSER_FLOAT, NULL, 0);
+    FOSSIL_TEST_ASSUME(float_arg != NULL, "FLOAT argument should be added");
+    FOSSIL_TEST_ASSUME(float_arg->type == FOSSIL_IO_PARSER_FLOAT, "FLOAT argument type should be correct");
+
+    // Test DATE argument
+    fossil_io_parser_argument_t *date_arg = parser.add_argument(command, "date_arg", FOSSIL_IO_PARSER_DATE, NULL, 0);
+    FOSSIL_TEST_ASSUME(date_arg != NULL, "DATE argument should be added");
+    FOSSIL_TEST_ASSUME(date_arg->type == FOSSIL_IO_PARSER_DATE, "DATE argument type should be correct");
+
+    // Test ARRAY argument
+    fossil_io_parser_argument_t *array_arg = parser.add_argument(command, "array_arg", FOSSIL_IO_PARSER_ARRAY, NULL, 0);
+    FOSSIL_TEST_ASSUME(array_arg != NULL, "ARRAY argument should be added");
+    FOSSIL_TEST_ASSUME(array_arg->type == FOSSIL_IO_PARSER_ARRAY, "ARRAY argument type should be correct");
+
+    // Test FEATURE argument
+    fossil_io_parser_argument_t *feature_arg = parser.add_argument(command, "feature_arg", FOSSIL_IO_PARSER_FEATURE, NULL, 0);
+    FOSSIL_TEST_ASSUME(feature_arg != NULL, "FEATURE argument should be added");
+    FOSSIL_TEST_ASSUME(feature_arg->type == FOSSIL_IO_PARSER_FEATURE, "FEATURE argument type should be correct");
+    parser.free(palette);
+} // end case
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -176,11 +259,14 @@ FOSSIL_TEST_GROUP(cpp_parser_test_cases) {
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_add_argument);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_parse_command);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_free_palette);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_argument_types);
+
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_create_palette);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_add_command);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_add_argument);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_parse_command);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_free_palette);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_wrapper_argument_types);
 
     FOSSIL_TEST_REGISTER(cpp_parser_suite);
 } // end of group
