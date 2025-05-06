@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/parser.h"
+#include "fossil/io/output.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -76,36 +77,33 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
 
     // If no specific command is provided, show all commands
     if (!command_name) {
-        printf("Available commands:\n");
+        fossil_io_printf("{blue}Available commands:{reset}\n");
         while (command) {
-            printf("  %s: %s\n", command->name, command->description);
+            fossil_io_printf("{cyan}  %s: %s{reset}\n", command->name, command->description);
             command = command->next;
         }
-        printf("\nUse '--help <command>' for details on a specific command.\n");
+        fossil_io_printf("\n{blue}Use '--help <command>' for details on a specific command.{reset}\n");
         return;
     }
 
     // Search for the specific command
     while (command) {
         if (strcmp(command->name, command_name) == 0) {
-            printf("Command: %s\nDescription: %s\n", command->name, command->description);
-            printf("Arguments:\n");
+            fossil_io_printf("{blue}Command: %s\nDescription: %s{reset}\n", command->name, command->description);
+            fossil_io_printf("{blue}Arguments:{reset}\n");
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
-                printf("  --%s (%s): %s\n", 
+                fossil_io_printf("{cyan}  --%s (%s): %s{reset}\n", 
                        arg->name, 
                        arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
                        arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
                        arg->type == FOSSIL_IO_PARSER_INT ? "int" :
-                       "combo", 
+                       arg->type == FOSSIL_IO_PARSER_FLOAT ? "float" :
+                       arg->type == FOSSIL_IO_PARSER_DATE ? "date" :
+                       arg->type == FOSSIL_IO_PARSER_ARRAY ? "array" :
+                       arg->type == FOSSIL_IO_PARSER_FEATURE ? "feature" :
+                       "unknown", 
                        arg->value ? arg->value : "No default value");
-                if (arg->type == FOSSIL_IO_PARSER_COMBO) {
-                    printf("    Options: ");
-                    for (int i = 0; i < arg->combo_count; i++) {
-                        printf("%s%s", arg->combo_options[i], i == arg->combo_count - 1 ? "" : ", ");
-                    }
-                    printf("\n");
-                }
                 arg = arg->next;
             }
             return;
@@ -114,9 +112,8 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
     }
 
     // If the command is not found
-    fprintf(stderr, "Unknown command '%s'. Use '--help' to see available commands.\n", command_name);
+    fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command '%s'. Use '--help' to see available commands.{reset}\n", command_name);
 }
-
 
 void show_usage(const char *command_name, const fossil_io_parser_palette_t *palette) {
     fossil_io_parser_command_t *command = palette->commands;
@@ -124,31 +121,48 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
     // Search for the specific command
     while (command) {
         if (strcmp(command->name, command_name) == 0) {
-            printf("Usage example for '%s':\n", command->name);
-            printf("  %s", command->name);
+            fossil_io_printf("{blue}Usage example for '%s':{reset}\n", command->name);
+            fossil_io_printf("{cyan}  %s{reset}", command->name);
 
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
-                printf(" --%s ", arg->name);
-                if (arg->type == FOSSIL_IO_PARSER_STRING) {
-                    printf("<string>");
-                } else if (arg->type == FOSSIL_IO_PARSER_INT) {
-                    printf("<int>");
-                } else if (arg->type == FOSSIL_IO_PARSER_BOOL) {
-                    printf("<true/false>");
-                } else if (arg->type == FOSSIL_IO_PARSER_COMBO) {
-                    printf("<%s>", arg->combo_options[0]); // Show first combo option
+                fossil_io_printf("{cyan} --%s {reset}", arg->name);
+                switch (arg->type) {
+                    case FOSSIL_IO_PARSER_STRING:
+                        fossil_io_printf("{cyan}<string>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_INT:
+                        fossil_io_printf("{cyan}<int>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_BOOL:
+                        fossil_io_printf("{cyan}<true/false>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_FLOAT:
+                        fossil_io_printf("{cyan}<float>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_DATE:
+                        fossil_io_printf("{cyan}<YYYY-MM-DD>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_ARRAY:
+                        fossil_io_printf("{cyan}<value1,value2,...>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_FEATURE:
+                        fossil_io_printf("{cyan}<enable/disable>{reset}");
+                        break;
+                    default:
+                        fossil_io_printf("{cyan}<unknown>{reset}");
+                        break;
                 }
                 arg = arg->next;
             }
-            printf("\n");
+            fossil_io_printf("\n");
             return;
         }
         command = command->next;
     }
 
     // If the command is not found
-    fprintf(stderr, "Unknown command '%s'. Use '--help' to see available commands.\n", command_name);
+    fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command '%s'. Use '--help' to see available commands.{reset}\n", command_name);
 }
 
 fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, const char *description) {
@@ -188,7 +202,7 @@ fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_comm
 // Updated parse function
 void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "No command provided.\n");
+        fossil_io_fprintf(FOSSIL_STDERR, "{red}No command provided.{reset}\n");
         return;
     }
 
@@ -208,7 +222,7 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
         if (argc == 3) {
             show_usage(argv[2], palette); // Show usage for a specific command
         } else {
-            fprintf(stderr, "Usage: --usage <command>\n");
+            fossil_io_fprintf(FOSSIL_STDERR, "{blue}Usage:{cuan} --usage <command>{reset}\n");
         }
         return;
     }
@@ -225,9 +239,9 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
         // Suggest a similar command or show an error
         const char *suggestion = suggest_command(command_name, palette);
         if (suggestion) {
-            fprintf(stderr, "Unknown command: '%s'. Did you mean '%s'?\n", command_name, suggestion);
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Did you mean '%s'?{reset}\n", command_name, suggestion);
         } else {
-            fprintf(stderr, "Unknown command: '%s'. Type '--help' to see available commands.\n", command_name);
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Type '--help' to see available commands.{reset}\n", command_name);
         }
         return;
     }
@@ -241,30 +255,59 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
                 switch (argument->type) {
                     case FOSSIL_IO_PARSER_BOOL:
                         argument->value = malloc(sizeof(int));
-                        if (strcmp(arg_value, "enable") == 0) {
+                        if (strcmp(arg_value, "true") == 0 || strcmp(arg_value, "yes") == 0) {
                             *(int *)argument->value = 1; // Enable
-                        } else if (strcmp(arg_value, "disable") == 0) {
+                        } else if (strcmp(arg_value, "false") == 0|| strcmp(arg_value, "no") == 0) {
                             *(int *)argument->value = 0; // Disable
                         } else {
-                            fprintf(stderr, "Invalid value for boolean argument: %s\n", arg_value);
-                            free(argument->value);
+                            fossil_io_fprintf(FOSSIL_STDERR, "{red}Invalid value for boolean argument: %s{reset}\n", arg_value);
                             argument->value = NULL;
                         }
                         break;
                     case FOSSIL_IO_PARSER_STRING:
-                        argument->value = _custom_strdup(arg_value); // Custom _custom_strdup
+                        argument->value = _custom_strdup(arg_value);
                         break;
                     case FOSSIL_IO_PARSER_INT:
                         argument->value = malloc(sizeof(int));
                         *(int *)argument->value = atoi(arg_value);
                         break;
-                    case FOSSIL_IO_PARSER_COMBO:
-                        for (int j = 0; j < argument->combo_count; j++) {
-                            if (strcmp(arg_value, argument->combo_options[j]) == 0) {
-                                argument->value = _custom_strdup(arg_value);
-                                break;
-                            }
+                    case FOSSIL_IO_PARSER_FLOAT:
+                        argument->value = malloc(sizeof(float));
+                        *(float *)argument->value = atof(arg_value);
+                        break;
+                    case FOSSIL_IO_PARSER_DATE:
+                        argument->value = _custom_strdup(arg_value); // Assume valid date format
+                        break;
+                    case FOSSIL_IO_PARSER_ARRAY: {
+                        char *array_copy = _custom_strdup(arg_value);
+                        char *token = strtok(array_copy, ",");
+                        char **array_values = NULL;
+                        int count = 0;
+
+                        while (token) {
+                            array_values = realloc(array_values, sizeof(char *) * (count + 1));
+                            array_values[count++] = _custom_strdup(token);
+                            token = strtok(NULL, ",");
                         }
+
+                        argument->value = (char *)array_values;
+                        break;
+                    }
+                    case FOSSIL_IO_PARSER_FEATURE:
+                        argument->value = malloc(sizeof(int));
+                        if (strcmp(arg_value, "enable") == 0) {
+                            *(int *)argument->value = 1; // Enable
+                        } else if (strcmp(arg_value, "disable") == 0) {
+                            *(int *)argument->value = 0; // Disable
+                        } else if (strcmp(arg_value, "auto") == 0) {
+                            *(int *)argument->value = 2; // Auto
+                        } else {
+                            fossil_io_fprintf(FOSSIL_STDERR, "{red}Invalid value for feature argument: %s{reset}\n", arg_value);
+                            argument->value = NULL;
+                        }
+                        break;
+                    default:
+                        fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown argument type for: %s{reset}\n", arg_value);
                         break;
                 }
                 break;
@@ -279,11 +322,10 @@ void fossil_io_parser_free(fossil_io_parser_palette_t *palette) {
     while (command) {
         fossil_io_parser_argument_t *argument = command->arguments;
         while (argument) {
-            if (argument->type == FOSSIL_IO_PARSER_COMBO) {
-                free(argument->combo_options);
-            }
             free(argument->name);
-            free(argument->value);
+            if (argument->value && argument->value != (char *)argument->combo_options) {
+                free(argument->value);
+            }
             argument = argument->next;
         }
         free(command->name);
