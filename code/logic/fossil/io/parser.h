@@ -22,10 +22,14 @@ extern "C" {
 
 // Types of command argument
 typedef enum {
-    FOSSIL_IO_PARSER_BOOL,   // Boolean (enable/disable)
-    FOSSIL_IO_PARSER_STRING, // String argument
-    FOSSIL_IO_PARSER_INT,    // Integer argument
-    FOSSIL_IO_PARSER_COMBO   // Combo of predefined values
+    FOSSIL_IO_PARSER_BOOL,    // Boolean (enable/disable)
+    FOSSIL_IO_PARSER_STRING,  // String argument
+    FOSSIL_IO_PARSER_INT,     // Integer argument
+    FOSSIL_IO_PARSER_FLOAT,   // Floating-point argument
+    FOSSIL_IO_PARSER_DATE,    // Date argument
+    FOSSIL_IO_PARSER_ARRAY,   // Array of values
+    FOSSIL_IO_PARSER_FEATURE, // Feature flag
+    FOSSIL_IO_PARSER_INVALID  // Invalid argument type
 } fossil_io_parser_arg_type_t;
 
 // Structure to represent each argument in the command
@@ -53,6 +57,21 @@ typedef struct fossil_io_parser_palette_s {
     char *description;                        // Palette description
     fossil_io_parser_command_t *commands; // List of commands
 } fossil_io_parser_palette_t;
+
+// ==================================================================
+// Global Variables
+// ==================================================================
+
+extern int FOSSIL_CLI_TOGGLE_DRY_RUN;
+extern int FOSSIL_CLI_TOGGLE_VERBOSE;
+extern int FOSSIL_CLI_TOGGLE_SANITY;
+
+extern char *FOSSIL_CLI_TOOL_NAME;
+extern char *FOSSIL_CLI_TOOL_VERSION;
+extern char *FOSSIL_CLI_TOOL_AUTHOR;
+extern char *FOSSIL_CLI_TOOL_LICENSE;
+extern char *FOSSIL_CLI_TOOL_DESCRIPTION;
+extern char *FOSSIL_CLI_TOOL_WEBSITE;
 
 // ==================================================================
 // Functions
