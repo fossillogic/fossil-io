@@ -37,7 +37,7 @@ To get started with Fossil Io, ensure you have the following installed:
    # ======================
    [wrap-git]
    url = https://github.com/fossillogic/fossil-io.git
-   revision = v0.1.8
+   revision = v0.2.0
 
    [provide]
    fossil-io = fossil_io_dep
