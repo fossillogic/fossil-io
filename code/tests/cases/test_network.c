@@ -63,6 +63,9 @@ FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
 
+    // Set SO_REUSEADDR before binding/listening to avoid bind failures
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_set_reuseaddr(server, 1));
+
     // Start listening on a local port
     ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
 
@@ -84,6 +87,9 @@ FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
 FOSSIL_TEST_CASE(c_test_nstream_send_and_receive) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
+
+    // Set SO_REUSEADDR before binding/listening
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_set_reuseaddr(server, 1));
 
     // Start listening on a local port
     ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));

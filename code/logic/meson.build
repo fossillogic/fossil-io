@@ -8,8 +8,8 @@ else
     winsock_dep = []
 endif
 
-fossil_io_lib = library('fossil-io',
-    files('serialize.c', 'parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'device.c', 'network.c', 'cstring.c'),
+fossil_io_lib = static_library('fossil-io',
+    files('serialize.c', 'parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'network.c', 'cstring.c'),
     install: true,
     dependencies: [cc.find_library('m', required: false), winsock_dep],
     include_directories: dir)

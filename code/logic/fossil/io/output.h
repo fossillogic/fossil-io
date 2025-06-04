@@ -22,7 +22,6 @@ extern "C" {
 #endif
 
 extern int32_t FOSSIL_IO_COLOR_ENABLE; // Flag to enable/disable color output
-extern int32_t FOSSIL_IO_ATTR_ENABLE; // Flag to enable/disable attribute output
 
 /** 
  * This code provides a robust set of functions for formatting and manipulating terminal output, 
