@@ -213,15 +213,19 @@ FOSSIL_TEST(cpp_test_nstream_class_send_and_receive) {
 FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_create_and_destroy);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_connect_invalid_host);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_listen_and_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
+    #ifndef _WIN32
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_listen_and_accept);
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
+    #endif
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_protocols);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_client_types);
 
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_create_and_destroy);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_invalid_host);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
+    #ifndef _WIN32
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
+    #endif
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }

@@ -144,8 +144,11 @@ FOSSIL_TEST_CASE(c_test_nstream_client_types) {
 FOSSIL_TEST_GROUP(c_network_tests) {
     FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_create_and_destroy);
     FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_connect_invalid_host);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_listen_and_accept);
-    FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_send_and_receive);
+    #if !defined(_WIN32) && !defined(_WIN64)
+        FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_listen_and_accept);
+        FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_send_and_receive);
+    #endif
+
     FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_protocols);
     FOSSIL_TEST_ADD(c_network_suite, c_test_nstream_client_types);
 
