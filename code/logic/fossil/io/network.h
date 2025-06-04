@@ -21,6 +21,7 @@
 extern "C" {
 #endif
 
+
 /**
  * @file network.c
  * @brief Network logic implementation for handling communication protocols and client types.
