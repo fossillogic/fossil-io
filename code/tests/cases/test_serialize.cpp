@@ -43,14 +43,14 @@ FOSSIL_TEARDOWN(cpp_serialize_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_create) {
+FOSSIL_TEST(cpp_test_io_serialize_create) {
     fossil_io_serialize_buffer_t buf;
     int result = fossil_io_serialize_create(&buf, 1024);
     ASSUME_ITS_EQUAL_I32(0, result);
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_expand) {
+FOSSIL_TEST(cpp_test_io_serialize_expand) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_expand(&buf, 512);
@@ -58,7 +58,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_expand) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_i8) {
+FOSSIL_TEST(cpp_test_io_serialize_i8) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_i8(&buf, 127);
@@ -66,7 +66,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_i8) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_i16) {
+FOSSIL_TEST(cpp_test_io_serialize_i16) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_i16(&buf, 32767);
@@ -74,7 +74,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_i16) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_i32) {
+FOSSIL_TEST(cpp_test_io_serialize_i32) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_i32(&buf, 2147483647);
@@ -82,7 +82,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_i32) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_i64) {
+FOSSIL_TEST(cpp_test_io_serialize_i64) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_i64(&buf, 9223372036854775807LL);
@@ -90,7 +90,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_i64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_u8) {
+FOSSIL_TEST(cpp_test_io_serialize_u8) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_u8(&buf, 255);
@@ -98,7 +98,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_u8) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_u16) {
+FOSSIL_TEST(cpp_test_io_serialize_u16) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_u16(&buf, 65535);
@@ -106,7 +106,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_u16) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_u32) {
+FOSSIL_TEST(cpp_test_io_serialize_u32) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_u32(&buf, 4294967295U);
@@ -114,7 +114,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_u32) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_u64) {
+FOSSIL_TEST(cpp_test_io_serialize_u64) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_u64(&buf, 18446744073709551615ULL);
@@ -122,7 +122,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_u64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_cstr) {
+FOSSIL_TEST(cpp_test_io_serialize_cstr) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_cstr(&buf, "test string");
@@ -130,7 +130,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_cstr) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_bool) {
+FOSSIL_TEST(cpp_test_io_serialize_bool) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     int result = fossil_io_serialize_bool(&buf, 1);
@@ -138,7 +138,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_bool) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_i8) {
+FOSSIL_TEST(cpp_test_io_deserialize_i8) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_i8(&buf, 127);
@@ -150,7 +150,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_i8) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_i16) {
+FOSSIL_TEST(cpp_test_io_deserialize_i16) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_i16(&buf, 32767);
@@ -162,7 +162,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_i16) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_i32) {
+FOSSIL_TEST(cpp_test_io_deserialize_i32) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_i32(&buf, 2147483647);
@@ -174,7 +174,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_i32) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_i64) {
+FOSSIL_TEST(cpp_test_io_deserialize_i64) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_i64(&buf, 9223372036854775807LL);
@@ -186,7 +186,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_i64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_u8) {
+FOSSIL_TEST(cpp_test_io_deserialize_u8) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_u8(&buf, 255);
@@ -198,7 +198,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_u8) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_u16) {
+FOSSIL_TEST(cpp_test_io_deserialize_u16) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_u16(&buf, 65535);
@@ -210,7 +210,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_u16) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_u32) {
+FOSSIL_TEST(cpp_test_io_deserialize_u32) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_u32(&buf, 4294967295U);
@@ -222,7 +222,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_u32) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_u64) {
+FOSSIL_TEST(cpp_test_io_deserialize_u64) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_u64(&buf, 18446744073709551615ULL);
@@ -234,7 +234,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_u64) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_cstr) {
+FOSSIL_TEST(cpp_test_io_deserialize_cstr) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_cstr(&buf, "test string");
@@ -246,7 +246,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_cstr) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_bool) {
+FOSSIL_TEST(cpp_test_io_deserialize_bool) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_bool(&buf, 1);
@@ -258,7 +258,7 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_bool) {
     fossil_io_serialize_destroy(&buf);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_serialize_to_file) {
+FOSSIL_TEST(cpp_test_io_serialize_to_file) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_cstr(&buf, "test string");
@@ -268,7 +268,7 @@ FOSSIL_TEST_CASE(cpp_test_io_serialize_to_file) {
     remove("test_file.bin");
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_deserialize_from_file) {
+FOSSIL_TEST(cpp_test_io_deserialize_from_file) {
     fossil_io_serialize_buffer_t buf;
     fossil_io_serialize_create(&buf, 1024);
     fossil_io_serialize_cstr(&buf, "test string");
@@ -286,73 +286,73 @@ FOSSIL_TEST_CASE(cpp_test_io_deserialize_from_file) {
     remove("test_file.bin");
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_expand) {
+FOSSIL_TEST(cpp_test_serialize_class_expand) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.expand(512);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_i8) {
+FOSSIL_TEST(cpp_test_serialize_class_i8) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_i8(127);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_i16) {
+FOSSIL_TEST(cpp_test_serialize_class_i16) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_i16(32767);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_i32) {
+FOSSIL_TEST(cpp_test_serialize_class_i32) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_i32(2147483647);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_i64) {
+FOSSIL_TEST(cpp_test_serialize_class_i64) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_i64(9223372036854775807LL);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_u8) {
+FOSSIL_TEST(cpp_test_serialize_class_u8) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_u8(255);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_u16) {
+FOSSIL_TEST(cpp_test_serialize_class_u16) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_u16(65535);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_u32) {
+FOSSIL_TEST(cpp_test_serialize_class_u32) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_u32(4294967295U);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_u64) {
+FOSSIL_TEST(cpp_test_serialize_class_u64) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_u64(18446744073709551615ULL);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_cstr) {
+FOSSIL_TEST(cpp_test_serialize_class_cstr) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_cstr("test string");
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_bool) {
+FOSSIL_TEST(cpp_test_serialize_class_bool) {
     fossil::io::Serialize serializer(1024);
     int result = serializer.serialize_bool(1);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_i8) {
+FOSSIL_TEST(cpp_test_deserialize_class_i8) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_i8(127);
     size_t offset = 0;
@@ -362,7 +362,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_i8) {
     ASSUME_ITS_EQUAL_I32(127, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_i16) {
+FOSSIL_TEST(cpp_test_deserialize_class_i16) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_i16(32767);
     size_t offset = 0;
@@ -372,7 +372,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_i16) {
     ASSUME_ITS_EQUAL_I32(32767, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_i32) {
+FOSSIL_TEST(cpp_test_deserialize_class_i32) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_i32(2147483647);
     size_t offset = 0;
@@ -382,7 +382,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_i32) {
     ASSUME_ITS_EQUAL_I32(2147483647, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_i64) {
+FOSSIL_TEST(cpp_test_deserialize_class_i64) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_i64(9223372036854775807LL);
     size_t offset = 0;
@@ -392,7 +392,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_i64) {
     ASSUME_ITS_EQUAL_I32(9223372036854775807LL, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_u8) {
+FOSSIL_TEST(cpp_test_deserialize_class_u8) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_u8(255);
     size_t offset = 0;
@@ -402,7 +402,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_u8) {
     ASSUME_ITS_EQUAL_I32(255, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_u16) {
+FOSSIL_TEST(cpp_test_deserialize_class_u16) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_u16(65535);
     size_t offset = 0;
@@ -412,7 +412,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_u16) {
     ASSUME_ITS_EQUAL_I32(65535, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_u32) {
+FOSSIL_TEST(cpp_test_deserialize_class_u32) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_u32(4294967295U);
     size_t offset = 0;
@@ -422,7 +422,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_u32) {
     ASSUME_ITS_EQUAL_I32(4294967295U, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_u64) {
+FOSSIL_TEST(cpp_test_deserialize_class_u64) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_u64(18446744073709551615ULL);
     size_t offset = 0;
@@ -432,7 +432,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_u64) {
     ASSUME_ITS_EQUAL_I32(18446744073709551615ULL, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_cstr) {
+FOSSIL_TEST(cpp_test_deserialize_class_cstr) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_cstr("test string");
     size_t offset = 0;
@@ -442,7 +442,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_cstr) {
     ASSUME_ITS_EQUAL_CSTR("test string", out);
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_bool) {
+FOSSIL_TEST(cpp_test_deserialize_class_bool) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_bool(1);
     size_t offset = 0;
@@ -452,7 +452,7 @@ FOSSIL_TEST_CASE(cpp_test_deserialize_class_bool) {
     ASSUME_ITS_EQUAL_I32(1, value);
 }
 
-FOSSIL_TEST_CASE(cpp_test_serialize_class_to_file) {
+FOSSIL_TEST(cpp_test_serialize_class_to_file) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_cstr("test string");
     int result = serializer.serialize_to_file("test_file.bin");
@@ -460,7 +460,7 @@ FOSSIL_TEST_CASE(cpp_test_serialize_class_to_file) {
     remove("test_file.bin");
 }
 
-FOSSIL_TEST_CASE(cpp_test_deserialize_class_from_file) {
+FOSSIL_TEST(cpp_test_deserialize_class_from_file) {
     fossil::io::Serialize serializer(1024);
     serializer.serialize_cstr("test string");
     serializer.serialize_to_file("test_file.bin");

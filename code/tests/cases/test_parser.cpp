@@ -46,7 +46,7 @@ FOSSIL_TEARDOWN(cpp_parser_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_create_palette) {
+FOSSIL_TEST(cpp_create_palette) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created");
     FOSSIL_TEST_ASSUME(strcmp(palette->name, "test_palette") == 0, "Palette name should be 'test_palette'");
@@ -55,7 +55,7 @@ FOSSIL_TEST_CASE(cpp_create_palette) {
     fossil_io_parser_free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_add_command) {
+FOSSIL_TEST(cpp_add_command) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Command should be added");
@@ -66,7 +66,7 @@ FOSSIL_TEST_CASE(cpp_add_command) {
     fossil_io_parser_free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_add_argument) {
+FOSSIL_TEST(cpp_add_argument) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
     fossil_io_parser_argument_t *argument = fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
@@ -78,7 +78,7 @@ FOSSIL_TEST_CASE(cpp_add_argument) {
     fossil_io_parser_free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_argument_types) {
+FOSSIL_TEST(cpp_argument_types) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
 
@@ -120,7 +120,7 @@ FOSSIL_TEST_CASE(cpp_argument_types) {
     fossil_io_parser_free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_parse_command) {
+FOSSIL_TEST(cpp_parse_command) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
     fossil_io_parser_command_t *command = fossil_io_parser_add_command(palette, "test_command", "Test Command Description");
     fossil_io_parser_add_argument(command, "test_arg", FOSSIL_IO_PARSER_STRING, NULL, 0);
@@ -136,7 +136,7 @@ FOSSIL_TEST_CASE(cpp_parse_command) {
     fossil_io_parser_free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_free_palette) {
+FOSSIL_TEST(cpp_free_palette) {
     fossil_io_parser_palette_t *palette = fossil_io_parser_create_palette("test_palette", "Test Description");
 
     ASSUME_NOT_CNULL(palette);
@@ -145,7 +145,7 @@ FOSSIL_TEST_CASE(cpp_free_palette) {
     // No explicit assumptions here, just ensuring no memory leaks or crashes
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_create_palette) {
+FOSSIL_TEST(cpp_wrapper_create_palette) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created");
@@ -155,7 +155,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_create_palette) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_add_command) {
+FOSSIL_TEST(cpp_wrapper_add_command) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -167,7 +167,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_add_command) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_add_argument) {
+FOSSIL_TEST(cpp_wrapper_add_argument) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -180,7 +180,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_add_argument) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_parse_command) {
+FOSSIL_TEST(cpp_wrapper_parse_command) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -197,7 +197,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_parse_command) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_free_palette) {
+FOSSIL_TEST(cpp_wrapper_free_palette) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
 
@@ -207,7 +207,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_free_palette) {
     // No explicit assumptions here, just ensuring no memory leaks or crashes
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_argument_types) {
+FOSSIL_TEST(cpp_wrapper_argument_types) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -249,14 +249,14 @@ FOSSIL_TEST_CASE(cpp_wrapper_argument_types) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_null_palette) {
+FOSSIL_TEST(cpp_wrapper_null_palette) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = NULL;
     FOSSIL_TEST_ASSUME(parser.add_command(palette, "test_command", "Test Command Description") == NULL, "Adding command to NULL palette should return NULL");
     parser.parse(palette, 0, NULL);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_empty_command_name) {
+FOSSIL_TEST(cpp_wrapper_empty_command_name) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "", "Empty Command Name Description");
@@ -264,7 +264,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_empty_command_name) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_duplicate_command_name) {
+FOSSIL_TEST(cpp_wrapper_duplicate_command_name) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -273,7 +273,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_duplicate_command_name) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_null_argument_name) {
+FOSSIL_TEST(cpp_wrapper_null_argument_name) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");
@@ -282,7 +282,7 @@ FOSSIL_TEST_CASE(cpp_wrapper_null_argument_name) {
     parser.free(palette);
 } // end case
 
-FOSSIL_TEST_CASE(cpp_wrapper_invalid_argument_type) {
+FOSSIL_TEST(cpp_wrapper_invalid_argument_type) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("wrapper_palette", "Wrapper Test Description");
     fossil_io_parser_command_t *command = parser.add_command(palette, "wrapper_command", "Wrapper Command Description");

@@ -43,7 +43,7 @@ FOSSIL_TEARDOWN(cpp_input_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -59,7 +59,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_no_offensive) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_no_offensive) {
     char input[] = "This is a clean sentence.\n";
     char expected[] = "This is a clean sentence.";
     char buffer[256];
@@ -76,7 +76,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_no_offensive) {
     ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_with_punctuation) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_with_punctuation) {
     char input[] = "This is a test with punctuation, and special characters!\n";
     char expected[] = "This is a test with punctuation, and special characters!";
     char buffer[256];
@@ -93,7 +93,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_with_punctuation) {
     ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_empty_input) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_empty_input) {
     const char *input_data = "\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -109,7 +109,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_empty_input) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_only_whitespace) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_only_whitespace) {
     const char *input_data = "   \n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -125,7 +125,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_only_whitespace) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_long_input) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_long_input) {
     const char *input_data = "This is a very long input string that exceeds the buffer size\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -141,7 +141,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_long_input) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_ex) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_ex) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -158,7 +158,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_ex) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_utf8) {
+FOSSIL_TEST(cpp_test_io_gets_utf8) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -174,7 +174,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_utf8) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_class) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_class) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -190,7 +190,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_class) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_ex_class) {
+FOSSIL_TEST(cpp_test_io_gets_from_stream_ex_class) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -207,14 +207,14 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_from_stream_ex_class) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_input_buffer_class) {
+FOSSIL_TEST(cpp_test_io_validate_input_buffer_class) {
     const char *buf = "test buffer";
     size_t size = strlen(buf);
     int result = fossil::io::Input::validate_input_buffer(buf, size);
     ASSUME_ITS_EQUAL_I32(1, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_gets_utf8_class) {
+FOSSIL_TEST(cpp_test_io_gets_utf8_class) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -230,7 +230,7 @@ FOSSIL_TEST_CASE(cpp_test_io_gets_utf8_class) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_int_valid) {
+FOSSIL_TEST(cpp_test_io_validate_is_int_valid) {
     const char *input = "12345";
     int output;
     int result = fossil_io_validate_is_int(input, &output);
@@ -238,57 +238,57 @@ FOSSIL_TEST_CASE(cpp_test_io_validate_is_int_valid) {
     ASSUME_ITS_EQUAL_I32(12345, output);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_int_invalid) {
+FOSSIL_TEST(cpp_test_io_validate_is_int_invalid) {
     const char *input = "123abc";
     int output;
     int result = fossil_io_validate_is_int(input, &output);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_float_invalid) {
+FOSSIL_TEST(cpp_test_io_validate_is_float_invalid) {
     const char *input = "123.abc";
     float output;
     int result = fossil_io_validate_is_float(input, &output);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_alnum_valid) {
+FOSSIL_TEST(cpp_test_io_validate_is_alnum_valid) {
     const char *input = "abc123";
     int result = fossil_io_validate_is_alnum(input);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_alnum_invalid) {
+FOSSIL_TEST(cpp_test_io_validate_is_alnum_invalid) {
     const char *input = "abc 123";
     int result = fossil_io_validate_is_alnum(input);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_email_valid) {
+FOSSIL_TEST(cpp_test_io_validate_is_email_valid) {
     const char *input = "test@icloud.com";
     int result = fossil_io_validate_is_email(input);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_email_invalid) {
+FOSSIL_TEST(cpp_test_io_validate_is_email_invalid) {
     const char *input = "test@com";
     int result = fossil_io_validate_is_email(input);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_length_valid) {
+FOSSIL_TEST(cpp_test_io_validate_is_length_valid) {
     const char *input = "short";
     int result = fossil_io_validate_is_length(input, 10);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_validate_is_length_invalid) {
+FOSSIL_TEST(cpp_test_io_validate_is_length_invalid) {
     const char *input = "this is a very long string";
     int result = fossil_io_validate_is_length(input, 10);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream) {
+FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream) {
     const char *input_data = "input data\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -304,7 +304,7 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_ex) {
+FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_ex) {
     const char *input_data = "input data\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -321,21 +321,21 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_ex) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_validate_input_buffer_valid) {
+FOSSIL_TEST(cpp_test_io_input_class_validate_input_buffer_valid) {
     const char *buf = "valid buffer";
     size_t size = strlen(buf);
     int result = fossil::io::Input::validate_input_buffer(buf, size);
     ASSUME_ITS_EQUAL_I32(1, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_validate_input_buffer_invalid) {
+FOSSIL_TEST(cpp_test_io_input_class_validate_input_buffer_invalid) {
     const char *buf = nullptr;
     size_t size = 0;
     int result = fossil::io::Input::validate_input_buffer(buf, size);
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_utf8_valid) {
+FOSSIL_TEST(cpp_test_io_input_class_gets_utf8_valid) {
     const char *input_data = "utf8 valid input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -351,7 +351,7 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_utf8_valid) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_empty) {
+FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_empty) {
     const char *input_data = "\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -367,7 +367,7 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_empty) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_whitespace_only) {
+FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_whitespace_only) {
     const char *input_data = "   \n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();
@@ -383,7 +383,7 @@ FOSSIL_TEST_CASE(cpp_test_io_input_class_gets_from_stream_whitespace_only) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(cpp_test_io_getc) {
+FOSSIL_TEST(cpp_test_io_getc) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream;
     input_stream.file = tmpfile();

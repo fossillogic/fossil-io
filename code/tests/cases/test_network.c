@@ -37,7 +37,7 @@ FOSSIL_TEARDOWN(c_network_suite) {
 // * Fossil Logic Test Cases
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(c_test_nstream_create_and_destroy) {
+FOSSIL_TEST(c_test_nstream_create_and_destroy) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
     const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
@@ -50,7 +50,7 @@ FOSSIL_TEST_CASE(c_test_nstream_create_and_destroy) {
     }
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_connect_invalid_host) {
+FOSSIL_TEST(c_test_nstream_connect_invalid_host) {
     fossil_nstream_t *stream = fossil_nstream_create("tcp", "client");
     ASSUME_NOT_CNULL(stream);
 
@@ -60,7 +60,7 @@ FOSSIL_TEST_CASE(c_test_nstream_connect_invalid_host) {
 }
 
 #if !defined(_WIN32) && !defined(_WIN64)
-FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
+FOSSIL_TEST(c_test_nstream_listen_and_accept) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
 
@@ -85,7 +85,7 @@ FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
     fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_send_and_receive) {
+FOSSIL_TEST(c_test_nstream_send_and_receive) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
 
@@ -119,7 +119,7 @@ FOSSIL_TEST_CASE(c_test_nstream_send_and_receive) {
 }
 #endif
 
-FOSSIL_TEST_CASE(c_test_nstream_protocols) {
+FOSSIL_TEST(c_test_nstream_protocols) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
 
     for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
@@ -129,7 +129,7 @@ FOSSIL_TEST_CASE(c_test_nstream_protocols) {
     }
 }
 
-FOSSIL_TEST_CASE(c_test_nstream_client_types) {
+FOSSIL_TEST(c_test_nstream_client_types) {
     const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
     for (size_t i = 0; i < sizeof(clients) / sizeof(clients[0]); i++) {

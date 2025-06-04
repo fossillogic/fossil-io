@@ -45,7 +45,7 @@ FOSSIL_TEARDOWN(c_stream_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(c_test_stream_tempfile_creation) {
+FOSSIL_TEST(c_test_stream_tempfile_creation) {
     // Create a temporary file
     fossil_fstream_t temp_stream = fossil_fstream_tempfile();
 
@@ -56,7 +56,7 @@ FOSSIL_TEST_CASE(c_test_stream_tempfile_creation) {
     fossil_fstream_close(&temp_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_tempfile_cleanup) {
+FOSSIL_TEST(c_test_stream_tempfile_cleanup) {
     // Create a temporary file
     fossil_fstream_t temp_stream = fossil_fstream_tempfile();
 
@@ -70,7 +70,7 @@ FOSSIL_TEST_CASE(c_test_stream_tempfile_cleanup) {
     ASSUME_NOT_EQUAL_I32(0, fossil_fstream_file_exists(temp_filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_let_write_and_read_file) {
+FOSSIL_TEST(c_test_stream_let_write_and_read_file) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
 
@@ -86,7 +86,7 @@ FOSSIL_TEST_CASE(c_test_stream_let_write_and_read_file) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_redirect_to_devnull) {
+FOSSIL_TEST(c_test_stream_redirect_to_devnull) {
     const char *filename = "testfile_redirect.txt";
     const char *content = "This is a test.";
 
@@ -114,7 +114,7 @@ FOSSIL_TEST_CASE(c_test_stream_redirect_to_devnull) {
 }
 
 
-FOSSIL_TEST_CASE(c_test_stream_let_open_and_close_file) {
+FOSSIL_TEST(c_test_stream_let_open_and_close_file) {
     const char *filename = "testfile.txt";
 
     // Open the file
@@ -122,7 +122,7 @@ FOSSIL_TEST_CASE(c_test_stream_let_open_and_close_file) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_multiple_files) {
+FOSSIL_TEST(c_test_stream_multiple_files) {
     const char *filename1 = "testfile1.txt";
     const char *filename2 = "testfile2.txt";
 
@@ -135,7 +135,7 @@ FOSSIL_TEST_CASE(c_test_stream_multiple_files) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_seek_and_tell) {
+FOSSIL_TEST(c_test_stream_seek_and_tell) {
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
 
@@ -159,7 +159,7 @@ FOSSIL_TEST_CASE(c_test_stream_seek_and_tell) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_get_type) {
+FOSSIL_TEST(c_test_stream_get_type) {
     const char *filename = "testfile_type.txt";
 
     // Create the file
@@ -170,7 +170,7 @@ FOSSIL_TEST_CASE(c_test_stream_get_type) {
     ASSUME_ITS_EQUAL_I32(2, fossil_fstream_get_type(filename));  // Regular file
 }
 
-FOSSIL_TEST_CASE(c_test_stream_is_readable) {
+FOSSIL_TEST(c_test_stream_is_readable) {
     const char *filename = "testfile_readable.txt";
 
     // Create the file
@@ -181,7 +181,7 @@ FOSSIL_TEST_CASE(c_test_stream_is_readable) {
     ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_readable(filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_is_writable) {
+FOSSIL_TEST(c_test_stream_is_writable) {
     const char *filename = "testfile_writable.txt";
 
     // Create the file
@@ -192,7 +192,7 @@ FOSSIL_TEST_CASE(c_test_stream_is_writable) {
     ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_is_executable) {
+FOSSIL_TEST(c_test_stream_is_executable) {
     const char *filename = "testfile_executable.txt";
 
     // Create the file
@@ -203,7 +203,7 @@ FOSSIL_TEST_CASE(c_test_stream_is_executable) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_is_executable(filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_set_permissions) {
+FOSSIL_TEST(c_test_stream_set_permissions) {
     const char *filename = "testfile_permissions.txt";
 
     // Create the file
@@ -218,7 +218,7 @@ FOSSIL_TEST_CASE(c_test_stream_set_permissions) {
     ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_get_permissions) {
+FOSSIL_TEST(c_test_stream_get_permissions) {
     const char *filename = "testfile_get_permissions.txt";
     int32_t mode;
 
@@ -233,7 +233,7 @@ FOSSIL_TEST_CASE(c_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_remove_file) {
+FOSSIL_TEST(c_test_stream_remove_file) {
     const char *filename = "testfile_remove.txt";
     const char *content = "This is a test.";
 
@@ -249,7 +249,7 @@ FOSSIL_TEST_CASE(c_test_stream_remove_file) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_flush_file) {
+FOSSIL_TEST(c_test_stream_flush_file) {
     const char *filename = "testfile_flush.txt";
     const char *content = "This is a test.";
 
@@ -262,7 +262,7 @@ FOSSIL_TEST_CASE(c_test_stream_flush_file) {
     fossil_fstream_close(&c_stream);
 }
 
-FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
+FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
     int32_t pos;

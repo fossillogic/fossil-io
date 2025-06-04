@@ -45,7 +45,7 @@ FOSSIL_TEARDOWN(c_string_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(c_test_cstring_create_and_free) {
+FOSSIL_TEST(c_test_cstring_create_and_free) {
     const char *init = "Hello, World!";
     cstring str = fossil_io_cstring_create(init);
     ASSUME_NOT_CNULL(str);
@@ -53,7 +53,7 @@ FOSSIL_TEST_CASE(c_test_cstring_create_and_free) {
     fossil_io_cstring_free(str);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_copy) {
+FOSSIL_TEST(c_test_cstring_copy) {
     const char *init = "Hello, World!";
     cstring str = fossil_io_cstring_create(init);
     cstring copy = fossil_io_cstring_copy(str);
@@ -63,7 +63,7 @@ FOSSIL_TEST_CASE(c_test_cstring_copy) {
     fossil_io_cstring_free(copy);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_concat) {
+FOSSIL_TEST(c_test_cstring_concat) {
     const char *s1 = "Hello, ";
     const char *s2 = "World!";
     cstring result = fossil_io_cstring_concat(s1, s2);
@@ -72,13 +72,13 @@ FOSSIL_TEST_CASE(c_test_cstring_concat) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_length) {
+FOSSIL_TEST(c_test_cstring_length) {
     const char *str = "Hello, World!";
     size_t length = fossil_io_cstring_length(str);
     ASSUME_ITS_EQUAL_SIZE(strlen(str), length);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_compare) {
+FOSSIL_TEST(c_test_cstring_compare) {
     const char *s1 = "Hello";
     const char *s2 = "Hello";
     const char *s3 = "World";
@@ -87,14 +87,14 @@ FOSSIL_TEST_CASE(c_test_cstring_compare) {
     ASSUME_ITS_TRUE(fossil_io_cstring_compare(s3, s1) > 0);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_trim) {
+FOSSIL_TEST(c_test_cstring_trim) {
     cstring str = fossil_io_cstring_create("   Hello, World!   ");
     fossil_io_cstring_trim(str);
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", str);
     fossil_io_cstring_free(str);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_split) {
+FOSSIL_TEST(c_test_cstring_split) {
     const char *str = "Hello,World,Test";
     size_t count;
     cstring *result = fossil_io_cstring_split(str, ',', &count);
@@ -109,7 +109,7 @@ FOSSIL_TEST_CASE(c_test_cstring_split) {
     free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_replace) {
+FOSSIL_TEST(c_test_cstring_replace) {
     const char *str = "Hello, World!";
     const char *old = "World";
     const char *new_str = "Fossil";
@@ -119,7 +119,7 @@ FOSSIL_TEST_CASE(c_test_cstring_replace) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_to_upper) {
+FOSSIL_TEST(c_test_cstring_to_upper) {
     cstring str = fossil_io_cstring_create("Hello, World!");
     cstring result = fossil_io_cstring_to_upper(str);
     ASSUME_NOT_CNULL(result);
@@ -128,7 +128,7 @@ FOSSIL_TEST_CASE(c_test_cstring_to_upper) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_to_lower) {
+FOSSIL_TEST(c_test_cstring_to_lower) {
     cstring str = fossil_io_cstring_create("Hello, World!");
     cstring result = fossil_io_cstring_to_lower(str);
     ASSUME_NOT_CNULL(result);
@@ -137,19 +137,19 @@ FOSSIL_TEST_CASE(c_test_cstring_to_lower) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_starts_with) {
+FOSSIL_TEST(c_test_cstring_starts_with) {
     const char *str = "Hello, World!";
     const char *prefix = "Hello";
     ASSUME_ITS_TRUE(fossil_io_cstring_starts_with(str, prefix));
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_ends_with) {
+FOSSIL_TEST(c_test_cstring_ends_with) {
     const char *str = "Hello, World!";
     const char *suffix = "World!";
     ASSUME_ITS_TRUE(fossil_io_cstring_ends_with(str, suffix));
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_substring) {
+FOSSIL_TEST(c_test_cstring_substring) {
     const char *str = "Hello, World!";
     cstring result = fossil_io_cstring_substring(str, 7, 5);
     ASSUME_NOT_CNULL(result);
@@ -157,7 +157,7 @@ FOSSIL_TEST_CASE(c_test_cstring_substring) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_reverse) {
+FOSSIL_TEST(c_test_cstring_reverse) {
     cstring str = fossil_io_cstring_create("Hello, World!");
     cstring result = fossil_io_cstring_reverse(str);
     ASSUME_NOT_CNULL(result);
@@ -166,13 +166,13 @@ FOSSIL_TEST_CASE(c_test_cstring_reverse) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_contains) {
+FOSSIL_TEST(c_test_cstring_contains) {
     const char *str = "Hello, World!";
     const char *substr = "World";
     ASSUME_ITS_TRUE(fossil_io_cstring_contains(str, substr));
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_repeat) {
+FOSSIL_TEST(c_test_cstring_repeat) {
     const char *str = "Hello";
     cstring result = fossil_io_cstring_repeat(str, 3);
     ASSUME_NOT_CNULL(result);
@@ -180,7 +180,7 @@ FOSSIL_TEST_CASE(c_test_cstring_repeat) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_strip) {
+FOSSIL_TEST(c_test_cstring_strip) {
     const char *str = "!!!Hello, World!!!";
     cstring result = fossil_io_cstring_strip(str, '!');
     ASSUME_NOT_CNULL(result);
@@ -188,14 +188,14 @@ FOSSIL_TEST_CASE(c_test_cstring_strip) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_count) {
+FOSSIL_TEST(c_test_cstring_count) {
     const char *str = "Hello, World! Hello, Fossil!";
     const char *substr = "Hello";
     size_t count = fossil_io_cstring_count(str, substr);
     ASSUME_ITS_EQUAL_SIZE(2, count);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_pad_left) {
+FOSSIL_TEST(c_test_cstring_pad_left) {
     const char *str = "Hello";
     cstring result = fossil_io_cstring_pad_left(str, 10, '*');
     ASSUME_NOT_CNULL(result);
@@ -203,7 +203,7 @@ FOSSIL_TEST_CASE(c_test_cstring_pad_left) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_pad_right) {
+FOSSIL_TEST(c_test_cstring_pad_right) {
     const char *str = "Hello";
     cstring result = fossil_io_cstring_pad_right(str, 10, '*');
     ASSUME_NOT_CNULL(result);
@@ -211,13 +211,13 @@ FOSSIL_TEST_CASE(c_test_cstring_pad_right) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_stream_create_and_free) {
+FOSSIL_TEST(c_test_cstring_stream_create_and_free) {
     fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
     ASSUME_NOT_CNULL(stream);
     fossil_io_cstring_stream_free(stream);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_stream_write_and_read) {
+FOSSIL_TEST(c_test_cstring_stream_write_and_read) {
     fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
     fossil_io_cstring_stream_write(stream, "Hello, World!");
     ccstring result = fossil_io_cstring_stream_read(stream);
@@ -226,7 +226,7 @@ FOSSIL_TEST_CASE(c_test_cstring_stream_write_and_read) {
     fossil_io_cstring_stream_free(stream);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_stream_multiple_writes) {
+FOSSIL_TEST(c_test_cstring_stream_multiple_writes) {
     fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
     fossil_io_cstring_stream_write(stream, "Hello, ");
     fossil_io_cstring_stream_write(stream, "World!");
@@ -236,7 +236,7 @@ FOSSIL_TEST_CASE(c_test_cstring_stream_multiple_writes) {
     fossil_io_cstring_stream_free(stream);
 }
 
-FOSSIL_TEST_CASE(c_test_cstring_stream_empty_read) {
+FOSSIL_TEST(c_test_cstring_stream_empty_read) {
     fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
     ccstring result = fossil_io_cstring_stream_read(stream);
     ASSUME_NOT_CNULL(result);
