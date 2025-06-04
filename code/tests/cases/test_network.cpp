@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/test/framework.h>
+#include <fossil/pizza/framework.h>
 #include "fossil/io/framework.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -21,7 +21,7 @@
 // mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_SUITE(cpp_network_suite);
+FOSSIL_SUITE(cpp_network_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_network_suite) {

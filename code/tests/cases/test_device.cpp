@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/test/framework.h>
+#include <fossil/pizza/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -23,7 +23,7 @@
 // mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_SUITE(cpp_device_suite);
+FOSSIL_SUITE(cpp_device_suite);
 
 FOSSIL_SETUP(cpp_device_suite) {
     // Setup for all device tests (keyboard, mouse, touch)

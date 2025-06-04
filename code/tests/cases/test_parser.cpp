@@ -12,7 +12,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/test/framework.h>
+#include <fossil/pizza/framework.h>
 #include <fossil/io/framework.h>
 #include <vector>
 #include <string>
@@ -26,7 +26,7 @@
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 // Define the test suite and add test cases
-FOSSIL_TEST_SUITE(cpp_parser_suite);
+FOSSIL_SUITE(cpp_parser_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_parser_suite) {
