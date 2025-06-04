@@ -302,6 +302,8 @@ FOSSIL_TEST_GROUP(c_serialize_tests) {
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u16);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u32);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_u64);
+    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_cstr);
+    FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_serialize_bool);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i8);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i16);
     FOSSIL_TEST_ADD(c_serialize_suite, c_test_io_deserialize_i32);
