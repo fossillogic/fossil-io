@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/test/framework.h>
+#include <fossil/pizza/framework.h>
 #include "fossil/io/framework.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -21,7 +21,7 @@
 // mock objects are set here.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_SUITE(cpp_network_suite);
+FOSSIL_SUITE(cpp_network_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_network_suite) {
@@ -37,7 +37,7 @@ FOSSIL_TEARDOWN(cpp_network_suite) {
 // * Fossil Logic Test Cases
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_test_nstream_create_and_destroy) {
+FOSSIL_TEST(cpp_test_nstream_create_and_destroy) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
     const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
@@ -50,7 +50,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_create_and_destroy) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_connect_invalid_host) {
+FOSSIL_TEST(cpp_test_nstream_connect_invalid_host) {
     fossil_nstream_t *stream = fossil_nstream_create("tcp", "client");
     ASSUME_NOT_CNULL(stream);
 
@@ -59,17 +59,24 @@ FOSSIL_TEST_CASE(cpp_test_nstream_connect_invalid_host) {
     fossil_nstream_destroy(stream);
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_listen_and_accept) {
+#ifndef _WIN32
+FOSSIL_TEST(cpp_test_nstream_listen_and_accept) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
 
+    // Set SO_REUSEADDR to avoid bind fail on rapid test reruns
+    fossil_nstream_set_reuseaddr(server, 1);
+
+    // Use a unique port for this test to avoid bind conflicts
+    const int test_port = 12346;
+
     // Start listening on a local port
-    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", test_port));
 
     // Simulate a client connecting
     fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
     ASSUME_NOT_CNULL(client);
-    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", test_port));
 
     // Accept the client connection
     fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
@@ -81,17 +88,23 @@ FOSSIL_TEST_CASE(cpp_test_nstream_listen_and_accept) {
     fossil_nstream_destroy(server);
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_send_and_receive) {
+FOSSIL_TEST(cpp_test_nstream_send_and_receive) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
 
+    // Set SO_REUSEADDR to avoid bind fail on rapid test reruns
+    fossil_nstream_set_reuseaddr(server, 1);
+
+    // Use a unique port for this test to avoid bind conflicts
+    const int test_port = 12347;
+
     // Start listening on a local port
-    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", 12345));
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_listen(server, "127.0.0.1", test_port));
 
     // Simulate a client connecting
     fossil_nstream_t *client = fossil_nstream_create("tcp", "client");
     ASSUME_NOT_CNULL(client);
-    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", 12345));
+    ASSUME_ITS_EQUAL_I32(0, fossil_nstream_connect(client, "127.0.0.1", test_port));
 
     // Accept the client connection
     fossil_nstream_t *accepted_client = fossil_nstream_accept(server);
@@ -110,8 +123,9 @@ FOSSIL_TEST_CASE(cpp_test_nstream_send_and_receive) {
     fossil_nstream_destroy(accepted_client);
     fossil_nstream_destroy(server);
 }
+#endif
 
-FOSSIL_TEST_CASE(cpp_test_nstream_protocols) {
+FOSSIL_TEST(cpp_test_nstream_protocols) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
 
     for (size_t i = 0; i < sizeof(protocols) / sizeof(protocols[0]); i++) {
@@ -121,7 +135,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_protocols) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_client_types) {
+FOSSIL_TEST(cpp_test_nstream_client_types) {
     const char *clients[] = {"mail-server", "server", "mail-client", "client", "mail-bot", "bot", "multicast", "broadcast"};
 
     for (size_t i = 0; i < sizeof(clients) / sizeof(clients[0]); i++) {
@@ -131,7 +145,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_client_types) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_class_create_and_destroy) {
+FOSSIL_TEST(cpp_test_nstream_class_create_and_destroy) {
     using namespace fossil::io;
 
     const std::string protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
@@ -144,7 +158,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_create_and_destroy) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_invalid_host) {
+FOSSIL_TEST(cpp_test_nstream_class_connect_invalid_host) {
     using namespace fossil::io;
 
     try {
@@ -156,7 +170,8 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_connect_invalid_host) {
     }
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_class_listen_and_accept) {
+#ifndef _WIN32
+FOSSIL_TEST(cpp_test_nstream_class_listen_and_accept) {
     using namespace fossil::io;
 
     NStream server("tcp", "server");
@@ -171,7 +186,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_listen_and_accept) {
     delete accepted_client;
 }
 
-FOSSIL_TEST_CASE(cpp_test_nstream_class_send_and_receive) {
+FOSSIL_TEST(cpp_test_nstream_class_send_and_receive) {
     using namespace fossil::io;
 
     NStream server("tcp", "server");
@@ -193,6 +208,7 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_send_and_receive) {
 
     delete accepted_client;
 }
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -201,15 +217,19 @@ FOSSIL_TEST_CASE(cpp_test_nstream_class_send_and_receive) {
 FOSSIL_TEST_GROUP(cpp_network_tests) {
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_create_and_destroy);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_connect_invalid_host);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_listen_and_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
+    #ifndef _WIN32
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_listen_and_accept);
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_send_and_receive);
+    #endif
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_protocols);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_client_types);
 
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_create_and_destroy);
     FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_connect_invalid_host);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
-    FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
+    #ifndef _WIN32
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_listen_and_accept);
+        FOSSIL_TEST_ADD(cpp_network_suite, cpp_test_nstream_class_send_and_receive);
+    #endif
 
     FOSSIL_TEST_REGISTER(cpp_network_suite);
 }

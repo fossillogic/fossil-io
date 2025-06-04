@@ -186,6 +186,15 @@ fossil_nstream_t *fossil_nstream_accept(fossil_nstream_t *server);
 ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t size);
 
 /**
+ * Set the SO_REUSEADDR option on a network stream's underlying socket.
+ *
+ * @param stream The network stream to configure.
+ * @param enable Nonzero to enable SO_REUSEADDR, zero to disable.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_set_reuseaddr(fossil_nstream_t *stream, int enable);
+
+/**
  * Receive data through a network stream.
  *
  * @param stream The network stream to receive data from.

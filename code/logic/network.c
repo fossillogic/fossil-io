@@ -331,6 +331,21 @@ ssize_t fossil_nstream_send(fossil_nstream_t *stream, const void *buffer, size_t
     return sent_bytes;
 }
 
+int fossil_nstream_set_reuseaddr(fossil_nstream_t *stream, int enable) {
+    if (!stream || stream->socket_fd == (socket_t)-1) {
+        fossil_set_last_error("Invalid stream or socket");
+        return -1;
+    }
+    
+    int optval = enable ? 1 : 0;
+    if (setsockopt(stream->socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)) < 0) {
+        fossil_set_last_error("Failed to set SO_REUSEADDR option");
+        return -1;
+    }
+    
+    return 0;
+}
+
 ssize_t fossil_nstream_recv(fossil_nstream_t *stream, void *buffer, size_t size) {
     if (!stream || stream->socket_fd == (socket_t)-1) {
         fossil_set_last_error("Invalid stream or socket");

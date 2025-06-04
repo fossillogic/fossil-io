@@ -11,7 +11,7 @@
  * Copyright (C) 2024 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/test/framework.h>
+#include <fossil/pizza/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -23,7 +23,7 @@
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 // Define the test suite and add test cases
-FOSSIL_TEST_SUITE(c_input_suite);
+FOSSIL_SUITE(c_input_suite);
 
 // Setup function for the test suite
 FOSSIL_SETUP(c_input_suite) {
@@ -43,7 +43,7 @@ FOSSIL_TEARDOWN(c_input_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream) {
+FOSSIL_TEST(c_test_io_gets_from_stream) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -56,7 +56,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_no_offensive) {
+FOSSIL_TEST(c_test_io_gets_from_stream_no_offensive) {
     char input[] = "This is a clean sentence.\n";
     char expected[] = "This is a clean sentence.";
     char buffer[256];
@@ -70,7 +70,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_no_offensive) {
     ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_with_punctuation) {
+FOSSIL_TEST(c_test_io_gets_from_stream_with_punctuation) {
     char input[] = "This is a test with punctuation, and special characters!\n";
     char expected[] = "This is a test with punctuation, and special characters!";
     char buffer[256];
@@ -84,7 +84,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_with_punctuation) {
     ASSUME_ITS_EQUAL_CSTR(expected, result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_empty_input) {
+FOSSIL_TEST(c_test_io_gets_from_stream_empty_input) {
     const char *input_data = "\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -97,7 +97,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_empty_input) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_only_whitespace) {
+FOSSIL_TEST(c_test_io_gets_from_stream_only_whitespace) {
     const char *input_data = "   \n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -110,7 +110,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_only_whitespace) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_long_input) {
+FOSSIL_TEST(c_test_io_gets_from_stream_long_input) {
     const char *input_data = "This is a very long input string that exceeds the buffer size\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -123,7 +123,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_long_input) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_from_stream_ex) {
+FOSSIL_TEST(c_test_io_gets_from_stream_ex) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -137,7 +137,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_from_stream_ex) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_gets_utf8) {
+FOSSIL_TEST(c_test_io_gets_utf8) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
@@ -150,7 +150,7 @@ FOSSIL_TEST_CASE(c_test_io_gets_utf8) {
     fclose(input_stream.file);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_int_valid) {
+FOSSIL_TEST(c_test_io_validate_is_int_valid) {
     const char *input = "12345";
     int output;
     int result = fossil_io_validate_is_int(input, &output);
@@ -158,57 +158,57 @@ FOSSIL_TEST_CASE(c_test_io_validate_is_int_valid) {
     ASSUME_ITS_EQUAL_I32(12345, output);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_int_invalid) {
+FOSSIL_TEST(c_test_io_validate_is_int_invalid) {
     const char *input = "123abc";
     int output;
     int result = fossil_io_validate_is_int(input, &output);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_float_invalid) {
+FOSSIL_TEST(c_test_io_validate_is_float_invalid) {
     const char *input = "123.abc";
     float output;
     int result = fossil_io_validate_is_float(input, &output);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_alnum_valid) {
+FOSSIL_TEST(c_test_io_validate_is_alnum_valid) {
     const char *input = "abc123";
     int result = fossil_io_validate_is_alnum(input);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_alnum_invalid) {
+FOSSIL_TEST(c_test_io_validate_is_alnum_invalid) {
     const char *input = "abc 123";
     int result = fossil_io_validate_is_alnum(input);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_email_valid) {
+FOSSIL_TEST(c_test_io_validate_is_email_valid) {
     const char *input = "test@gmail.com"; // now checks for valid email providers like gmail.com
     int result = fossil_io_validate_is_email(input);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_email_invalid) {
+FOSSIL_TEST(c_test_io_validate_is_email_invalid) {
     const char *input = "test@com";
     int result = fossil_io_validate_is_email(input);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_length_valid) {
+FOSSIL_TEST(c_test_io_validate_is_length_valid) {
     const char *input = "short";
     int result = fossil_io_validate_is_length(input, 10);
     ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_validate_is_length_invalid) {
+FOSSIL_TEST(c_test_io_validate_is_length_invalid) {
     const char *input = "this is a very long string";
     int result = fossil_io_validate_is_length(input, 10);
     ASSUME_ITS_FALSE(result);
 }
 
-FOSSIL_TEST_CASE(c_test_io_getc) {
+FOSSIL_TEST(c_test_io_getc) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
