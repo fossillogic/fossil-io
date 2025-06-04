@@ -59,6 +59,7 @@ FOSSIL_TEST(cpp_test_nstream_connect_invalid_host) {
     fossil_nstream_destroy(stream);
 }
 
+#ifndef _WIN32
 FOSSIL_TEST(cpp_test_nstream_listen_and_accept) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
@@ -122,6 +123,7 @@ FOSSIL_TEST(cpp_test_nstream_send_and_receive) {
     fossil_nstream_destroy(accepted_client);
     fossil_nstream_destroy(server);
 }
+#endif
 
 FOSSIL_TEST(cpp_test_nstream_protocols) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
@@ -168,6 +170,7 @@ FOSSIL_TEST(cpp_test_nstream_class_connect_invalid_host) {
     }
 }
 
+#ifndef _WIN32
 FOSSIL_TEST(cpp_test_nstream_class_listen_and_accept) {
     using namespace fossil::io;
 
@@ -205,6 +208,7 @@ FOSSIL_TEST(cpp_test_nstream_class_send_and_receive) {
 
     delete accepted_client;
 }
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool

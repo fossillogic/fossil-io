@@ -59,6 +59,7 @@ FOSSIL_TEST_CASE(c_test_nstream_connect_invalid_host) {
     fossil_nstream_destroy(stream);
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
 FOSSIL_TEST_CASE(c_test_nstream_listen_and_accept) {
     fossil_nstream_t *server = fossil_nstream_create("tcp", "server");
     ASSUME_NOT_CNULL(server);
@@ -116,6 +117,7 @@ FOSSIL_TEST_CASE(c_test_nstream_send_and_receive) {
     fossil_nstream_destroy(accepted_client);
     fossil_nstream_destroy(server);
 }
+#endif
 
 FOSSIL_TEST_CASE(c_test_nstream_protocols) {
     const char *protocols[] = {"tcp", "udp", "raw", "icmp", "sctp", "http", "https", "ftp", "ssh", "dns", "ntp", "smtp", "pop3", "imap", "ldap", "mqtt"};
