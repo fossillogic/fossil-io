@@ -130,13 +130,6 @@ static const char *SKIP_WORDS[] = {
     NULL // Sentinel to mark the end
 };
 
-static void hash_to_hex(const uint8_t *hash, size_t len, char *out_hex) {
-    for (size_t i = 0; i < len; ++i) {
-        sprintf(out_hex + i * 2, "%02x", hash[i]);
-    }
-    out_hex[len * 2] = '\0';
-}
-
 /**
  * @brief Convert leetspeak to normal letters.
  */
