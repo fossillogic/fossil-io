@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#define FOSSIL_JELLYFISH_HASH_SIZE 16
 #define MAX_CUSTOM_FILTERS 64
 
 /** Lookup table for rot-brain words and their suggested replacements */
@@ -130,48 +129,6 @@ static const char *SKIP_WORDS[] = {
     "size",
     NULL // Sentinel to mark the end
 };
-
-#define FNV_PRIME 0x01000193
-#define FNV_BASIS 0x811c9dc5
-
-void fossil_io_soap_jellyfish_hash(const char *input, const char *output, uint8_t *hash_out) {
-    uint32_t hash = FNV_BASIS;
-    size_t in_len = strlen(input);
-    size_t out_len = strlen(output);
-
-    // Mix lengths
-    hash ^= in_len;
-    hash *= FNV_PRIME;
-    hash ^= out_len;
-    hash *= FNV_PRIME;
-
-    // Mix input string
-    for (size_t i = 0; i < in_len; ++i) {
-        hash ^= (uint8_t)input[i];
-        hash *= FNV_PRIME;
-        hash ^= (hash >> 5);
-    }
-
-    // Mix output string
-    for (size_t i = 0; i < out_len; ++i) {
-        hash ^= (uint8_t)output[i];
-        hash *= FNV_PRIME;
-        hash ^= (hash >> 5);
-    }
-
-    // Final avalanche
-    hash ^= (hash << 7);
-    hash ^= (hash >> 3);
-
-    // Expand to fixed size
-    uint32_t h = hash;
-    for (size_t i = 0; i < FOSSIL_JELLYFISH_HASH_SIZE; ++i) {
-        h ^= (h >> 13);
-        h *= FNV_PRIME;
-        h ^= (h << 11);
-        hash_out[i] = (uint8_t)((h >> (8 * (i % 4))) & 0xFF);
-    }
-}
 
 static void hash_to_hex(const uint8_t *hash, size_t len, char *out_hex) {
     for (size_t i = 0; i < len; ++i) {
@@ -470,129 +427,130 @@ char *fossil_io_soap_normalize(const char *text) {
     return normalized;
 }
 
-char *fossil_io_soap_generate_audit_block(const char *text) {
+
+char *fossil_io_soap_normalize_slang(const char *text) {
     if (!text) return NULL;
 
-    char *sanitized = fossil_io_soap_sanitize(text);
-    if (!sanitized) return NULL;
+    char *result = fossil_io_cstring_dup(text);
+    if (!result) return NULL;
 
-    uint8_t hash[FOSSIL_JELLYFISH_HASH_SIZE];
-    char hash_hex[FOSSIL_JELLYFISH_HASH_SIZE * 2 + 1];
-
-    fossil_io_soap_jellyfish_hash(text, sanitized, hash);
-    hash_to_hex(hash, FOSSIL_JELLYFISH_HASH_SIZE, hash_hex);
-
-    char *audit_block = malloc(1024);
-    if (!audit_block) {
-        free(sanitized);
-        return NULL;
+    for (size_t i = 0; result[i]; i++) {
+        result[i] = tolower(result[i]);
     }
 
-    snprintf(audit_block, 1024,
-        "{ \"original\": \"%s\", \"sanitized\": \"%s\", \"hash\": \"%s\" }",
-        text, sanitized, hash_hex);
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad != NULL; i++) {
+        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
+        const char *sugg = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
 
-    free(sanitized);
-    return audit_block;
+        char *found = NULL;
+        while ((found = custom_strcasestr(result, bad)) != NULL) {
+            size_t offset = found - result;
+            size_t newlen = strlen(result) - strlen(bad) + strlen(sugg) + 1;
+
+            char *temp = malloc(newlen);
+            if (!temp) {
+                free(result);
+                return NULL;
+            }
+
+            strncpy(temp, result, offset);
+            temp[offset] = '\0';
+            strcat(temp, sugg);
+            strcat(temp, found + strlen(bad));
+
+            free(result);
+            result = temp;
+        }
+    }
+
+    return result;
 }
 
-char *fossil_io_soap_diff_digest(const char *original, const char *transformed) {
-    if (!original || !transformed) return NULL;
-
-    size_t size = strlen(original) + strlen(transformed) + 2;
-    char *combo = malloc(size);
-    if (!combo) return NULL;
-
-    snprintf(combo, size, "%s|%s", original, transformed);
-
-    char *digest = fossil_io_cstring_dup(fossil_hash_string(combo));
-    free(combo);
-    return digest;
-}
-
-int fossil_io_soap_detect_sarcasm(const char *text) {
+int fossil_io_soap_detect_clickbait(const char *text) {
     if (!text) return 0;
-    for (size_t i = 0; SARCASTIC_PHRASES[i]; i++) {
-        if (custom_strcasestr(text, SARCASTIC_PHRASES[i])) return 1;
+
+    static const char *CLICKBAIT_PATTERNS[] = {
+        "you won't believe",
+        "shocking",
+        "what happened next",
+        "top [0-9]",
+        "things you didn't know",
+        "one weird trick",
+        "will blow your mind",
+        "can't handle this",
+        "before you die",
+        NULL
+    };
+
+    for (int i = 0; CLICKBAIT_PATTERNS[i] != NULL; i++) {
+        if (custom_strcasestr(text, CLICKBAIT_PATTERNS[i])) {
+            return 1;
+        }
     }
+
     return 0;
 }
 
-const char *fossil_io_soap_detect_intent(const char *text) {
-    if (!text) return "unknown";
-    if (fossil_io_soap_detect_sarcasm(text)) return "sarcastic";
-    if (custom_strcasestr(text, "please") || custom_strcasestr(text, "I would like"))
-        return "formal";
-    if (strchr(text, '!') != NULL) return "emotional";
-    return "neutral";
-}
+int fossil_io_soap_detect_exaggeration(const char *text) {
+    if (!text) return 0;
 
-char *fossil_io_soap_flag_ethics(const char *text) {
-    if (!text) return NULL;
+    static const char *EXAGGERATED_WORDS[] = {
+        "literally", "always", "never", "every", "everyone", "nobody",
+        "forever", "insane", "unbelievable", "outrageous", "epic", "mind-blowing",
+        NULL
+    };
 
-    // Simulate simple filter
-    const char *bad_words[] = {"stupid", "idiot", "hate", "kill", NULL};
-
-    char *flagged = fossil_io_cstring_dup(text);
-    if (!flagged) return NULL;
-
-    for (size_t i = 0; bad_words[i]; i++) {
-        const char *ptr;
-        while ((ptr = custom_strcasestr(flagged, bad_words[i]))) {
-            size_t offset = ptr - flagged;
-            memset(flagged + offset, '*', strlen(bad_words[i]));
-        }
-    }
-    return flagged;
-}
-
-char *fossil_io_soap_list_ethics_flags(const char *text) {
-    if (!text) return NULL;
-
-    const char *categories[] = {"violence", "hate-speech", "bias", NULL};
-    const char *keywords[] = {"kill", "hate", "stupid", NULL};
-
-    char buffer[256] = {0};
-    for (size_t i = 0; keywords[i]; i++) {
-        if (custom_strcasestr(text, keywords[i])) {
-            strcat(buffer, categories[i]);
-            strcat(buffer, ",");
+    for (int i = 0; EXAGGERATED_WORDS[i] != NULL; i++) {
+        if (custom_strcasestr(text, EXAGGERATED_WORDS[i])) {
+            return 1;
         }
     }
 
-    if (strlen(buffer) > 0) buffer[strlen(buffer) - 1] = '\0'; // Remove last comma
-    return fossil_io_cstring_dup(buffer);
-}
-
-int fossil_io_soap_load_mindset_file(const char *filename) {
-    FILE *f = fopen(filename, "r");
-    if (!f) return -1;
-
-    char line[256];
-    while (fgets(line, sizeof(line), f)) {
-        if (strncmp(line, "filter:", 7) == 0) {
-            char *phrase = line + 7;
-            while (*phrase == ' ') phrase++;
-            phrase[strcspn(phrase, "\r\n")] = 0;
-            fossil_io_soap_add_custom_filter(phrase);
-        }
-    }
-
-    fclose(f);
     return 0;
 }
 
-char *fossil_io_soap_export_mindset(void) {
-    char *output = malloc(2048);
-    if (!output) return NULL;
-    strcpy(output, "#mindset('soap') {\n");
+char *fossil_io_soap_filter_offensive(const char *text) {
+    if (!text) return NULL;
 
-    for (size_t i = 0; i < MAX_CUSTOM_FILTERS && custom_filters[i]; i++) {
-        strcat(output, "  filter: ");
-        strcat(output, custom_filters[i]);
-        strcat(output, "\n");
+    static const struct {
+        const char *offensive;
+        const char *replacement;
+    } OFFENSIVE_WORDS[] = {
+        {"dumb", "uninformed"},
+        {"stupid", "ill-advised"},
+        {"idiot", "misguided"},
+        {"moron", "uninformed"},
+        {"sucks", "is not ideal"},
+        {NULL, NULL}
+    };
+
+    char *result = fossil_io_cstring_dup(text);
+    if (!result) return NULL;
+
+    for (size_t i = 0; OFFENSIVE_WORDS[i].offensive != NULL; i++) {
+        const char *bad = OFFENSIVE_WORDS[i].offensive;
+        const char *good = OFFENSIVE_WORDS[i].replacement;
+
+        char *found = NULL;
+        while ((found = custom_strcasestr(result, bad)) != NULL) {
+            size_t offset = found - result;
+            size_t newlen = strlen(result) - strlen(bad) + strlen(good) + 1;
+
+            char *temp = malloc(newlen);
+            if (!temp) {
+                free(result);
+                return NULL;
+            }
+
+            strncpy(temp, result, offset);
+            temp[offset] = '\0';
+            strcat(temp, good);
+            strcat(temp, found + strlen(bad));
+
+            free(result);
+            result = temp;
+        }
     }
 
-    strcat(output, "}\n");
-    return output;
+    return result;
 }
