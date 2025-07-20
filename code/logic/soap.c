@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/soap.h"
+#include "fossil/io/cstring.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
