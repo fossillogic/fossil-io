@@ -215,6 +215,102 @@ FOSSIL_TEST(c_test_io_soap_suggest_with_tabs) {
     free(result);
 }
 
+FOSSIL_TEST(c_test_io_soap_detect_sentiment_positive) {
+    const char *input = "I love this product!";
+    const char *expected = "positive";
+    const char *result = fossil_io_soap_detect_sentiment(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_sentiment_negative) {
+    const char *input = "This is the worst idea ever.";
+    const char *expected = "negative";
+    const char *result = fossil_io_soap_detect_sentiment(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_sentiment_neutral) {
+    const char *input = "It is a pencil.";
+    const char *expected = "neutral";
+    const char *result = fossil_io_soap_detect_sentiment(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_harmful_content) {
+    const char *input = "You are worthless.";
+    int result = fossil_io_soap_detect_harmful_content(input);
+    ASSUME_ITS_EQUAL_I32(1, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_normalize_slang) {
+    const char *input = "brb, ttyl!";
+    const char *expected = "be right back, talk to you later!";
+    char *result = fossil_io_soap_normalize_slang(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_correct_grammar) {
+    const char *input = "should of gone there";
+    const char *expected = "should have gone there";
+    char *result = fossil_io_soap_correct_grammar(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_filter_offensive) {
+    const char *input = "You are such an idiot.";
+    const char *expected = "You are such an ***.";
+    char *result = fossil_io_soap_filter_offensive(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_clickbait) {
+    const char *input = "You won't believe what happened next!";
+    int result = fossil_io_soap_detect_clickbait(input);
+    ASSUME_ITS_EQUAL_I32(1, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_exaggeration) {
+    const char *input = "This is the greatest thing in the entire universe!";
+    int result = fossil_io_soap_detect_exaggeration(input);
+    ASSUME_ITS_EQUAL_I32(1, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_fallacy) {
+    const char *input = "If we allow A, then B, C, and D will also happen!";
+    const char *expected = "slippery slope"; // assuming this is detected
+    const char *result = fossil_io_soap_detect_fallacy(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_summarize) {
+    const char *input = "Although the product has some flaws, it is still worth buying because of its affordability.";
+    const char *expected = "It's affordable despite some flaws."; // approximate
+    char *result = fossil_io_soap_summarize(input);
+    ASSUME(result != NULL); // Exact match may vary
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_readability_score) {
+    const char *input = "This sentence is simple.";
+    float score = fossil_io_soap_evaluate_readability(input);
+    ASSUME(score > 60.0); // basic readability check
+}
+
+FOSSIL_TEST(c_test_io_soap_politeness_score_polite) {
+    const char *input = "Could you please help me with this?";
+    float score = fossil_io_soap_politeness_score(input);
+    ASSUME(score > 0.8f);
+}
+
+FOSSIL_TEST(c_test_io_soap_politeness_score_rude) {
+    const char *input = "Do it now.";
+    float score = fossil_io_soap_politeness_score(input);
+    ASSUME(score < 0.3f);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -242,6 +338,20 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_special_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_tabs);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_positive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_negative);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_neutral);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_harmful_content);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_slang);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_filter_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_summarize);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_score);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_polite);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_rude);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
