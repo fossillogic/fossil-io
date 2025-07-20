@@ -85,6 +85,8 @@ void fossil_io_apply_color(const char *color) {
         printf(FOSSIL_IO_COLOR_BRIGHT_CYAN);
     } else if (strcmp(color, "bright_white") == 0) {
         printf(FOSSIL_IO_COLOR_BRIGHT_WHITE);
+    } else {
+        printf(FOSSIL_IO_COLOR_RESET); // Reset to default if color not recognized
     }
 }
 
