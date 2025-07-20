@@ -276,28 +276,6 @@ namespace fossil {
                 std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_filter_offensive(text.c_str()), free);
                 return ptr ? std::string(ptr.get()) : std::string{};
             }
-
-            /**
-             * @brief Attempt to identify logical fallacies in the input.
-             * 
-             * @param text The input string.
-             * @return Description of detected fallacy or empty string.
-             */
-            static std::string detect_fallacy(const std::string &text) {
-                const char* result = fossil_io_soap_detect_fallacy(text.c_str());
-                return result ? std::string(result) : std::string{};
-            }
-
-            /**
-             * @brief Generate a brief summary of the key idea in the input.
-             * 
-             * @param text The input string.
-             * @return Summary string.
-             */
-            static std::string summarize(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_summarize(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
-            }
         };
 
     } // namespace io
