@@ -287,9 +287,14 @@ FOSSIL_TEST(c_test_io_soap_detect_fallacy) {
 
 FOSSIL_TEST(c_test_io_soap_summarize) {
     const char *input = "Although the product has some flaws, it is still worth buying because of its affordability.";
-    const char *expected = "It's affordable despite some flaws."; // approximate
+    const char *expected = "affordable despite some flaws";  // approximate key meaning
+
     char *result = fossil_io_soap_summarize(input);
-    ASSUME_ITS_TRUE(result != NULL); // Exact match may vary
+    ASSUME_ITS_TRUE(result != NULL);
+
+    // Check if expected meaning is included in the result
+    ASSUME_ITS_TRUE(strstr(result, expected) != NULL);
+
     free(result);
 }
 
