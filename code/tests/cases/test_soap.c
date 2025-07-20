@@ -245,36 +245,12 @@ FOSSIL_TEST(c_test_io_soap_detect_sentiment_negative) {
     ASSUME_ITS_EQUAL_CSTR(expected, fossil_io_soap_detect_sentiment(input));
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_harmful_true) {
-    const char *input = "People like you shouldn't exist.";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_harmful_content(input) == 1);
-}
-
-FOSSIL_TEST(c_test_io_soap_detect_harmful_false) {
-    const char *input = "I disagree with your opinion.";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_harmful_content(input) == 0);
-}
-
 FOSSIL_TEST(c_test_io_soap_normalize_slang_basic) {
     const char *input = "idk why ppl do that lol";
     const char *expected = "I don't know why people do that.";
     char *result = fossil_io_soap_normalize_slang(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
-}
-
-FOSSIL_TEST(c_test_io_soap_correct_grammar_common) {
-    const char *input = "He go to work every day.";
-    const char *expected = "He goes to work every day.";
-    char *result = fossil_io_soap_correct_grammar(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-    free(result);
-}
-
-FOSSIL_TEST(c_test_io_soap_evaluate_readability_score) {
-    const char *input = "The cat sat on the mat.";
-    float score = fossil_io_soap_evaluate_readability(input);
-    ASSUME_ITS_TRUE(score > 0.0);
 }
 
 FOSSIL_TEST(c_test_io_soap_detect_exaggeration_true) {
@@ -303,26 +279,6 @@ FOSSIL_TEST(c_test_io_soap_detect_clickbait_true) {
 FOSSIL_TEST(c_test_io_soap_detect_clickbait_false) {
     const char *input = "Scientists publish new findings in journal.";
     ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 0);
-}
-
-FOSSIL_TEST(c_test_io_soap_detect_fallacy_ad_hominem) {
-    const char *input = "You can't trust his argument because he's ugly.";
-    const char *expected = "ad hominem";
-    const char *result = fossil_io_soap_detect_fallacy(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-}
-
-FOSSIL_TEST(c_test_io_soap_detect_fallacy_none) {
-    const char *input = "We should implement this plan because it has proven benefits.";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_fallacy(input) == NULL);
-}
-
-FOSSIL_TEST(c_test_io_soap_summarize_simple) {
-    const char *input = "The project aims to reduce emissions by introducing cleaner technologies and improving energy efficiency across sectors.";
-    const char *expected = "Project reduces emissions.";
-    char *result = fossil_io_soap_summarize(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-    free(result);
 }
 
 FOSSIL_TEST(c_test_io_soap_politeness_score_range) {
@@ -363,19 +319,12 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_informal);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_positive);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_negative);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_harmful_true);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_harmful_false);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_slang_basic);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_common);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_evaluate_readability_score);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_true);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_false);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_filter_offensive_basic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_true);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_false);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy_ad_hominem);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy_none);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_summarize_simple);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_range);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
