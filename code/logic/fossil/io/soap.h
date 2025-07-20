@@ -75,102 +75,92 @@ int fossil_io_soap_check_grammar(const char *text);
 char *fossil_io_soap_normalize(const char *text);
 
 /**
- * @brief Generate a hashed audit trail of all detected issues in input.
+ * @brief Analyze the sentiment of the input text.
  *
- * @param text Input string to audit.
- * @return A JSON-formatted string with all flags and replacements, signed (caller must free).
+ * @param text The input string.
+ * @return A string like "positive", "negative", or "neutral".
  */
-char *fossil_io_soap_generate_audit_block(const char *text);
+const char *fossil_io_soap_detect_sentiment(const char *text);
 
 /**
- * @brief Return a digest summary of all transformations made to a string.
+ * @brief Detect potential hate speech or harmful content.
  *
- * @param original Original input.
- * @param transformed Transformed result.
- * @return A cryptographic hash or short audit ID.
+ * @param text The input string.
+ * @return 1 if harmful content is detected, 0 otherwise.
  */
-char *fossil_io_soap_diff_digest(const char *original, const char *transformed);
+int fossil_io_soap_detect_harmful_content(const char *text);
 
 /**
- * @brief Generate a hashed audit trail of all detected issues in input.
+ * @brief Normalize internet slang or leetspeak in input text.
  *
- * @param text Input string to audit.
- * @return A JSON-formatted string with all flags and replacements, signed (caller must free).
+ * @param text The input string.
+ * @return A dynamically allocated cleaned-up version (must be freed).
  */
-char *fossil_io_soap_generate_audit_block(const char *text);
+char *fossil_io_soap_normalize_slang(const char *text);
 
 /**
- * @brief Return a digest summary of all transformations made to a string.
+ * @brief Apply a grammar correction pass over the input text.
  *
- * @param original Original input.
- * @param transformed Transformed result.
- * @return A cryptographic hash or short audit ID.
+ * @param text The input text.
+ * @return A dynamically allocated corrected string (must be freed).
  */
-char *fossil_io_soap_diff_digest(const char *original, const char *transformed);
+char *fossil_io_soap_correct_grammar(const char *text);
 
 /**
- * @brief Detect sarcasm, satire, or irony in a phrase.
+ * @brief Evaluate the clarity and readability level of the input text.
  *
- * @param text Input string.
- * @return 1 if detected, 0 if not.
+ * @param text The input string.
+ * @return Readability score (e.g., Flesch-Kincaid grade level).
  */
-int fossil_io_soap_detect_sarcasm(const char *text);
+float fossil_io_soap_evaluate_readability(const char *text);
 
 /**
- * @brief Determine if the tone of the input is informative, persuasive, emotional, etc.
+ * @brief Detect exaggeration or hyperbolic language in a sentence.
  *
- * @param text Input text.
- * @return A short string such as "informative", "emotional", "neutral".
+ * @param text The input string.
+ * @return 1 if exaggeration detected, 0 otherwise.
  */
-const char *fossil_io_soap_detect_intent(const char *text);
+int fossil_io_soap_detect_exaggeration(const char *text);
 
 /**
- * @brief Flag potentially offensive, biased, or manipulative phrases.
+ * @brief Replace offensive language with neutral alternatives.
  *
- * @param text Input string.
- * @return A sanitized copy of the input with flagged content marked (caller must free).
+ * @param text The input string.
+ * @return A dynamically allocated sanitized string (must be freed).
  */
-char *fossil_io_soap_flag_ethics(const char *text);
+char *fossil_io_soap_filter_offensive(const char *text);
 
 /**
- * @brief Return a list of ethical categories the input violates.
+ * @brief Check if input contains clickbait-style language.
  *
- * @param text Input string.
- * @return JSON or CSV string of category names (caller must free).
+ * @param text The input string.
+ * @return 1 if clickbait is detected, 0 otherwise.
  */
-char *fossil_io_soap_list_ethics_flags(const char *text);
+int fossil_io_soap_detect_clickbait(const char *text);
 
 /**
- * @brief Load SOAP behavior extensions from a `.fish` or `.jellyfish` mindset file.
+ * @brief Detect logical fallacies or flawed reasoning in a sentence.
  *
- * @param filename Path to file to load.
- * @return 0 on success, non-zero on error.
+ * @param text The input string.
+ * @return A string describing the detected fallacy, or NULL if none found.
  */
-int fossil_io_soap_load_mindset_file(const char *filename);
+const char *fossil_io_soap_detect_fallacy(const char *text);
 
 /**
- * @brief Serialize SOAP's current state into a `.jellyfish` compatible format.
+ * @brief Summarize the key idea in the input sentence.
  *
- * @return A `.jellyfish` format string with active filters, models, and thresholds (caller must free).
+ * @param text The input string.
+ * @return A dynamically allocated short summary (must be freed).
  */
-char *fossil_io_soap_export_mindset(void);
+char *fossil_io_soap_summarize(const char *text);
 
 /**
- * @brief Score the semantic similarity between two phrases.
+ * @brief Score how polite or impolite the tone of the input is.
  *
- * @param a First input.
- * @param b Second input.
- * @return A similarity score from 0.0 to 1.0.
+ * @param text The input string.
+ * @return A score from 0.0 (rude) to 1.0 (very polite).
  */
-float fossil_io_soap_semantic_similarity(const char *a, const char *b);
-
-/**
- * @brief Determine if the given input matches a known propaganda or meme pattern.
- *
- * @param text Input to check.
- * @return 1 if matched, 0 otherwise.
- */
-int fossil_io_soap_detect_memetic_pattern(const char *text);
+float fossil_io_soap_politeness_score(const char *text);
 
 #ifdef __cplusplus
 }
