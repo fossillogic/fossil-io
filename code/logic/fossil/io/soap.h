@@ -166,46 +166,69 @@ float fossil_io_soap_politeness_score(const char *text);
 }
 
 #include <string>
+#include <memory>
 
 /**
  * C++ wrapper for the SOAP API.
  */
 namespace fossil {
-
-    /**
-     * Namespace for I/O operations.
-     */
     namespace io {
+
         /**
-         * SOAP API for sanitizing strings.
+         * @brief SOAP API for sanitizing and analyzing user text input.
+         * 
+         * Provides C++ wrappers for detecting, transforming, or correcting slang, tone, sentiment,
+         * clickbait, and other language features with a focus on clarity and safety.
          */
         class Soap {
         public:
+
             /**
-             * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
-             *
-             * @param text The input text to sanitize.
-             * @return A dynamically allocated sanitized string (must be freed by the caller).
+             * @brief Sanitize input by replacing meme/rot-brain terms with standard alternatives.
+             * 
+             * @param text The input string.
+             * @return A cleaned-up version of the text.
              */
             static std::string sanitize(const std::string &text) {
-                return fossil_io_soap_sanitize(text.c_str());
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_sanitize(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
             }
 
             /**
-             * Suggest proper alternatives for rot-brain words or grammar fixes.
+             * @brief Sanitize input text (C-style).
              *
-             * @param text The input text.
-             * @param format_type Custom format for output (e.g., "*" or "#").
-             * @return A dynamically allocated string with suggestions (must be freed by the caller).
+             * @param text The input string.
+             * @return A heap-allocated cleaned-up version (must be freed manually).
+             */
+            static char* sanitize(const char* text) {
+                return fossil_io_soap_sanitize(text);
+            }
+
+            /**
+             * @brief Suggest alternative expressions for slang or incorrect grammar.
+             * 
+             * @param text The input string.
+             * @return A string with suggested improvements.
              */
             static std::string suggest(const std::string &text) {
-                return fossil_io_soap_suggest(text.c_str());
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_suggest(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
             }
 
             /**
-             * Add a custom word or phrase to the filter.
-             *
-             * @param phrase The phrase to add.
+             * @brief Suggest improvements (C-style).
+             * 
+             * @param text The input string.
+             * @return A heap-allocated suggestion (must be freed manually).
+             */
+            static char* suggest(const char* text) {
+                return fossil_io_soap_suggest(text);
+            }
+
+            /**
+             * @brief Add a custom slang or flagged phrase to the filter.
+             * 
+             * @param phrase The custom phrase.
              * @return 0 on success, nonzero on failure.
              */
             static int add_custom_filter(const std::string &phrase) {
@@ -213,47 +236,9 @@ namespace fossil {
             }
 
             /**
-             * Clear all custom filters.
-             */
-            static void clear_custom_filters() {
-                fossil_io_soap_clear_custom_filters();
-            }
-
-            /**
-             * Detect the tone of a sentence.
-             *
-             * @param text The input text.
-             * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
-             */
-            static std::string detect_tone(const std::string &text) {
-                return fossil_io_soap_detect_tone(text.c_str());
-            }
-
-            /**
-             * Sanitize input text by removing or replacing "rot-brain" and meme-based language.
-             *
-             * @param text The input text to sanitize.
-             * @return A dynamically allocated sanitized string (must be freed by the caller).
-             */
-            static char* sanitize(const char* text) {
-                return fossil_io_soap_sanitize(text);
-            }
-
-            /**
-             * Suggest proper alternatives for rot-brain words or grammar fixes.
-             *
-             * @param text The input text.
-             * @param format_type Custom format for output (e.g., "*" or "#").
-             * @return A dynamically allocated string with suggestions (must be freed by the caller).
-             */
-            static char* suggest(const char* text) {
-                return fossil_io_soap_suggest(text);
-            }
-
-            /**
-             * Add a custom word or phrase to the filter.
-             *
-             * @param phrase The phrase to add.
+             * @brief Add a custom slang or flagged phrase to the filter (C-style).
+             * 
+             * @param phrase The custom phrase.
              * @return 0 on success, nonzero on failure.
              */
             static int add_custom_filter(const char* phrase) {
@@ -261,20 +246,160 @@ namespace fossil {
             }
 
             /**
-             * Detect the tone of a sentence.
-             *
-             * @param text The input text.
-             * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
+             * @brief Clear all user-added custom filters.
+             */
+            static void clear_custom_filters() {
+                fossil_io_soap_clear_custom_filters();
+            }
+
+            /**
+             * @brief Detect tone of the input (e.g., "sarcastic", "formal").
+             * 
+             * @param text The input string.
+             * @return A tone descriptor string.
+             */
+            static std::string detect_tone(const std::string &text) {
+                return std::string(fossil_io_soap_detect_tone(text.c_str()));
+            }
+
+            /**
+             * @brief Detect tone of the input (C-style).
+             * 
+             * @param text The input string.
+             * @return A tone descriptor string.
              */
             static const char* detect_tone(const char* text) {
                 return fossil_io_soap_detect_tone(text);
             }
 
+            /**
+             * @brief Analyze sentiment in the input ("positive", "neutral", "negative").
+             * 
+             * @param text The input string.
+             * @return Sentiment label.
+             */
+            static std::string detect_sentiment(const std::string &text) {
+                return std::string(fossil_io_soap_detect_sentiment(text.c_str()));
+            }
+
+            /**
+             * @brief Analyze sentiment (C-style).
+             * 
+             * @param text The input string.
+             * @return Sentiment label string.
+             */
+            static const char* detect_sentiment(const char* text) {
+                return fossil_io_soap_detect_sentiment(text);
+            }
+
+            /**
+             * @brief Check for harmful or inappropriate content.
+             * 
+             * @param text The input string.
+             * @return true if flagged, false otherwise.
+             */
+            static bool is_harmful(const std::string &text) {
+                return fossil_io_soap_detect_harmful_content(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Check if the input contains exaggerated or hyperbolic language.
+             * 
+             * @param text The input string.
+             * @return true if exaggerated, false otherwise.
+             */
+            static bool is_exaggerated(const std::string &text) {
+                return fossil_io_soap_detect_exaggeration(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Check if the input uses clickbait language.
+             * 
+             * @param text The input string.
+             * @return true if clickbait detected, false otherwise.
+             */
+            static bool is_clickbait(const std::string &text) {
+                return fossil_io_soap_detect_clickbait(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Normalize slang and internet abbreviations.
+             * 
+             * @param text The input string.
+             * @return A cleaned version of the input text.
+             */
+            static std::string normalize_slang(const std::string &text) {
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_normalize_slang(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Fix common grammar errors in input text.
+             * 
+             * @param text The input string.
+             * @return A corrected version of the input.
+             */
+            static std::string correct_grammar(const std::string &text) {
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_correct_grammar(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Replace offensive language with neutral alternatives.
+             * 
+             * @param text The input string.
+             * @return A sanitized version with offensive terms filtered out.
+             */
+            static std::string filter_offensive(const std::string &text) {
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_filter_offensive(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Attempt to identify logical fallacies in the input.
+             * 
+             * @param text The input string.
+             * @return Description of detected fallacy or empty string.
+             */
+            static std::string detect_fallacy(const std::string &text) {
+                const char* result = fossil_io_soap_detect_fallacy(text.c_str());
+                return result ? std::string(result) : std::string{};
+            }
+
+            /**
+             * @brief Generate a brief summary of the key idea in the input.
+             * 
+             * @param text The input string.
+             * @return Summary string.
+             */
+            static std::string summarize(const std::string &text) {
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_summarize(text.c_str()), free);
+                return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Return a readability score (e.g., Flesch-Kincaid).
+             * 
+             * @param text The input string.
+             * @return Readability score as a float.
+             */
+            static float readability_score(const std::string &text) {
+                return fossil_io_soap_evaluate_readability(text.c_str());
+            }
+
+            /**
+             * @brief Compute a politeness score (0.0 = rude, 1.0 = very polite).
+             * 
+             * @param text The input string.
+             * @return Politeness score.
+             */
+            static float politeness_score(const std::string &text) {
+                return fossil_io_soap_politeness_score(text.c_str());
+            }
         };
 
-    }
-
-}
+    } // namespace io
+} // namespace fossil
 
 #endif
 
