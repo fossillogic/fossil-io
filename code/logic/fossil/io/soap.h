@@ -75,22 +75,6 @@ int fossil_io_soap_check_grammar(const char *text);
 char *fossil_io_soap_normalize(const char *text);
 
 /**
- * @brief Analyze the sentiment of the input text.
- *
- * @param text The input string.
- * @return A string like "positive", "negative", or "neutral".
- */
-const char *fossil_io_soap_detect_sentiment(const char *text);
-
-/**
- * @brief Detect potential hate speech or harmful content.
- *
- * @param text The input string.
- * @return 1 if harmful content is detected, 0 otherwise.
- */
-int fossil_io_soap_detect_harmful_content(const char *text);
-
-/**
  * @brief Normalize internet slang or leetspeak in input text.
  *
  * @param text The input string.
@@ -105,14 +89,6 @@ char *fossil_io_soap_normalize_slang(const char *text);
  * @return A dynamically allocated corrected string (must be freed).
  */
 char *fossil_io_soap_correct_grammar(const char *text);
-
-/**
- * @brief Evaluate the clarity and readability level of the input text.
- *
- * @param text The input string.
- * @return Readability score (e.g., Flesch-Kincaid grade level).
- */
-float fossil_io_soap_evaluate_readability(const char *text);
 
 /**
  * @brief Detect exaggeration or hyperbolic language in a sentence.
@@ -137,30 +113,6 @@ char *fossil_io_soap_filter_offensive(const char *text);
  * @return 1 if clickbait is detected, 0 otherwise.
  */
 int fossil_io_soap_detect_clickbait(const char *text);
-
-/**
- * @brief Detect logical fallacies or flawed reasoning in a sentence.
- *
- * @param text The input string.
- * @return A string describing the detected fallacy, or NULL if none found.
- */
-const char *fossil_io_soap_detect_fallacy(const char *text);
-
-/**
- * @brief Summarize the key idea in the input sentence.
- *
- * @param text The input string.
- * @return A dynamically allocated short summary (must be freed).
- */
-char *fossil_io_soap_summarize(const char *text);
-
-/**
- * @brief Score how polite or impolite the tone of the input is.
- *
- * @param text The input string.
- * @return A score from 0.0 (rude) to 1.0 (very polite).
- */
-float fossil_io_soap_politeness_score(const char *text);
 
 #ifdef __cplusplus
 }
@@ -273,36 +225,6 @@ namespace fossil {
             }
 
             /**
-             * @brief Analyze sentiment in the input ("positive", "neutral", "negative").
-             * 
-             * @param text The input string.
-             * @return Sentiment label.
-             */
-            static std::string detect_sentiment(const std::string &text) {
-                return std::string(fossil_io_soap_detect_sentiment(text.c_str()));
-            }
-
-            /**
-             * @brief Analyze sentiment (C-style).
-             * 
-             * @param text The input string.
-             * @return Sentiment label string.
-             */
-            static const char* detect_sentiment(const char* text) {
-                return fossil_io_soap_detect_sentiment(text);
-            }
-
-            /**
-             * @brief Check for harmful or inappropriate content.
-             * 
-             * @param text The input string.
-             * @return true if flagged, false otherwise.
-             */
-            static bool is_harmful(const std::string &text) {
-                return fossil_io_soap_detect_harmful_content(text.c_str()) != 0;
-            }
-
-            /**
              * @brief Check if the input contains exaggerated or hyperbolic language.
              * 
              * @param text The input string.
@@ -375,26 +297,6 @@ namespace fossil {
             static std::string summarize(const std::string &text) {
                 std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_summarize(text.c_str()), free);
                 return ptr ? std::string(ptr.get()) : std::string{};
-            }
-
-            /**
-             * @brief Return a readability score (e.g., Flesch-Kincaid).
-             * 
-             * @param text The input string.
-             * @return Readability score as a float.
-             */
-            static float readability_score(const std::string &text) {
-                return fossil_io_soap_evaluate_readability(text.c_str());
-            }
-
-            /**
-             * @brief Compute a politeness score (0.0 = rude, 1.0 = very polite).
-             * 
-             * @param text The input string.
-             * @return Politeness score.
-             */
-            static float politeness_score(const std::string &text) {
-                return fossil_io_soap_politeness_score(text.c_str());
             }
         };
 
