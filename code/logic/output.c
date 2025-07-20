@@ -114,19 +114,30 @@ void fossil_io_apply_attribute(const char *attribute) {
 // Function to handle named positions (like top, bottom, left, right)
 void fossil_io_apply_position(const char *pos) {
     if (strcmp(pos, "top") == 0) {
-        // Apply position logic for top
-        printf("\033[H"); // Move cursor to the top
+        printf("\033[1;1H"); // Move to top
     } else if (strcmp(pos, "bottom") == 0) {
-        // Apply position logic for bottom
-        printf("\033[1000H"); // Move cursor to the bottom (just as an example)
+        printf("\033[1000;1H"); // Move cursor to bottom-left
     } else if (strcmp(pos, "left") == 0) {
-        // Apply position logic for left
-        printf("\033[1000;0H"); // Move cursor to the left
+        printf("\033[1;1H"); // Move to top-left (as a general left start)
     } else if (strcmp(pos, "right") == 0) {
-        // Apply position logic for right
-        printf("\033[1000;1000H"); // Move cursor to the right
+        printf("\033[1;1000H"); // Move to top-right
+    } else if (strcmp(pos, "center") == 0) {
+        printf("\033[25;40H"); // Approximate center for 80x50 terminal
+    } else if (strcmp(pos, "top-left") == 0) {
+        printf("\033[1;1H");
+    } else if (strcmp(pos, "top-right") == 0) {
+        printf("\033[1;1000H");
+    } else if (strcmp(pos, "bottom-left") == 0) {
+        printf("\033[1000;1H");
+    } else if (strcmp(pos, "bottom-right") == 0) {
+        printf("\033[1000;1000H");
+    } else if (strcmp(pos, "middle-left") == 0) {
+        printf("\033[25;1H"); // Mid vertical, far left
+    } else if (strcmp(pos, "middle-right") == 0) {
+        printf("\033[25;1000H"); // Mid vertical, far right
+    } else {
+        fprintf(stderr, "Unknown position: %s\n", pos);
     }
-    // Add more positions if needed
 }
 
 // Function to print text with attributes, colors, positions, and format specifiers
