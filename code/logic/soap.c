@@ -398,7 +398,7 @@ int fossil_io_soap_check_grammar(const char *text) {
 char *fossil_io_soap_normalize(const char *text) {
     if (!text) return NULL;
 
-    char *normalized = strdup(text); // Create modifiable copy
+    char *normalized = fossil_io_cstring_dup(text); // Create modifiable copy
     if (!normalized) return NULL;
 
     for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad; i++) {
