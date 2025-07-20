@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/soap.h"
+#include "fossil/io/cstring.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -382,4 +383,167 @@ const char *fossil_io_soap_detect_tone(const char *text) {
     }
 
     return "casual";
+}
+
+int fossil_io_soap_check_grammar(const char *text) {
+    if (!text) return -1;
+    for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect; i++) {
+        if (custom_strcasestr(text, FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect)) {
+            return 1; // Grammar issue found
+        }
+    }
+    return 0;
+}
+
+char *fossil_io_soap_normalize(const char *text) {
+    if (!text) return NULL;
+
+    char *normalized = fossil_io_cstring_dup(text); // Create modifiable copy
+    if (!normalized) return NULL;
+
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad; i++) {
+        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
+        const char *fix = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
+        const char *ptr;
+        while ((ptr = custom_strcasestr(normalized, bad))) {
+            size_t prefix_len = ptr - normalized;
+            size_t new_len = strlen(normalized) - strlen(bad) + strlen(fix) + 1;
+            char *temp = malloc(new_len);
+            if (!temp) break;
+            snprintf(temp, new_len, "%.*s%s%s",
+                     (int)prefix_len, normalized, fix, ptr + strlen(bad));
+            free(normalized);
+            normalized = temp;
+        }
+    }
+
+    return normalized;
+}
+
+
+char *fossil_io_soap_normalize_slang(const char *text) {
+    if (!text) return NULL;
+
+    char *result = fossil_io_cstring_dup(text);
+    if (!result) return NULL;
+
+    for (size_t i = 0; result[i]; i++) {
+        result[i] = tolower(result[i]);
+    }
+
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad != NULL; i++) {
+        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
+        const char *sugg = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
+
+        const char *found = NULL;
+        while ((found = custom_strcasestr(result, bad)) != NULL) {
+            size_t offset = (size_t)(found - result);
+            size_t newlen = strlen(result) - strlen(bad) + strlen(sugg) + 1;
+        
+            char *temp = malloc(newlen);
+            if (!temp) {
+                free(result);
+                return NULL;
+            }
+        
+            strncpy(temp, result, offset);
+            temp[offset] = '\0';
+            strcat(temp, sugg);
+            strcat(temp, result + offset + strlen(bad));
+        
+            free(result);
+            result = temp;
+        }
+    }
+
+    return result;
+}
+
+int fossil_io_soap_detect_clickbait(const char *text) {
+    if (!text) return 0;
+
+    static const char *CLICKBAIT_PATTERNS[] = {
+        "you won't believe",
+        "shocking",
+        "what happened next",
+        "top [0-9]",
+        "things you didn't know",
+        "one weird trick",
+        "will blow your mind",
+        "can't handle this",
+        "before you die",
+        NULL
+    };
+
+    for (int i = 0; CLICKBAIT_PATTERNS[i] != NULL; i++) {
+        if (custom_strcasestr(text, CLICKBAIT_PATTERNS[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int fossil_io_soap_detect_exaggeration(const char *text) {
+    if (!text) return 0;
+
+    static const char *EXAGGERATED_WORDS[] = {
+        "literally", "always", "never", "every", "everyone", "nobody",
+        "forever", "insane", "unbelievable", "outrageous", "epic", "mind-blowing",
+        NULL
+    };
+
+    for (int i = 0; EXAGGERATED_WORDS[i] != NULL; i++) {
+        if (custom_strcasestr(text, EXAGGERATED_WORDS[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+char *fossil_io_soap_filter_offensive(const char *text) {
+    if (!text) return NULL;
+
+    static const struct {
+        const char *offensive;
+        const char *replacement;
+    } OFFENSIVE_WORDS[] = {
+        {"dumb", "uninformed"},
+        {"stupid", "ill-advised"},
+        {"idiot", "misguided"},
+        {"moron", "uninformed"},
+        {"sucks", "is not ideal"},
+        {NULL, NULL}
+    };
+
+    char *result = fossil_io_cstring_dup(text);
+    if (!result) return NULL;
+
+    for (size_t i = 0; OFFENSIVE_WORDS[i].offensive != NULL; i++) {
+        const char *bad = OFFENSIVE_WORDS[i].offensive;
+        const char *good = OFFENSIVE_WORDS[i].replacement;
+
+        const char *found = NULL;
+        while ((found = custom_strcasestr(result, bad)) != NULL) {
+            size_t offset = (size_t)(found - result);
+            size_t newlen = strlen(result) - strlen(bad) + strlen(good) + 1;
+        
+            char *temp = malloc(newlen);
+            if (!temp) {
+                free(result);
+                return NULL;
+            }
+        
+            strncpy(temp, result, offset);
+            temp[offset] = '\0';
+            strcat(temp, good);
+            strcat(temp, result + offset + strlen(bad));
+        
+            free(result);
+            result = temp;
+        }
+    }
+
+    return result;
 }

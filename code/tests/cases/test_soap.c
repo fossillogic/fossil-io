@@ -215,6 +215,60 @@ FOSSIL_TEST(c_test_io_soap_suggest_with_tabs) {
     free(result);
 }
 
+FOSSIL_TEST(c_test_io_soap_check_grammar_valid) {
+    const char *input = "She writes clearly and concisely.";
+    ASSUME_ITS_TRUE(fossil_io_soap_check_grammar(input) == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_check_grammar_error) {
+    const char *input = "Him go store.";
+    ASSUME_ITS_TRUE(fossil_io_soap_check_grammar(input) != 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_normalize_informal) {
+    const char *input = "u gotta see this";
+    const char *expected = "you have to see this";
+    char *result = fossil_io_soap_normalize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_normalize_slang_basic) {
+    const char *input = "idk why ppl do that lol";
+    const char *expected = "I don't know why people do that.";
+    char *result = fossil_io_soap_normalize_slang(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_exaggeration_true) {
+    const char *input = "This is the worst thing to ever happen in history!";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 1);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_exaggeration_false) {
+    const char *input = "The weather is mildly unpleasant today.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_filter_offensive_basic) {
+    const char *input = "You're an idiot.";
+    const char *expected = "You're being unreasonable.";
+    char *result = fossil_io_soap_filter_offensive(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_clickbait_true) {
+    const char *input = "You won't believe what happened next!";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 1);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_clickbait_false) {
+    const char *input = "Scientists publish new findings in journal.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -242,6 +296,15 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_special_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_tabs);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_check_grammar_valid);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_check_grammar_error);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_informal);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_slang_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_filter_offensive_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_false);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
