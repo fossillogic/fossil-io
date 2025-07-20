@@ -215,62 +215,120 @@ FOSSIL_TEST(c_test_io_soap_suggest_with_tabs) {
     free(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_bias_political) {
-    const char *input = "All liberals are wrong.";
-    const char *expected = "political-bias";
-    const char *result = fossil_io_soap_detect_bias(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
+FOSSIL_TEST(c_test_io_soap_check_grammar_valid) {
+    const char *input = "She writes clearly and concisely.";
+    ASSUME_ITS_TRUE(fossil_io_soap_check_grammar(input) == 0);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_bias_noneutral) {
-    const char *input = "Dogs are better than cats.";
-    const char *expected = "subjective-bias";
-    const char *result = fossil_io_soap_detect_bias(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
+FOSSIL_TEST(c_test_io_soap_check_grammar_error) {
+    const char *input = "Him go store.";
+    ASSUME_ITS_TRUE(fossil_io_soap_check_grammar(input) != 0);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_fake_news_true_case) {
-    const char *input = "NASA confirms moon is made of cheese.";
-    const char *expected = "fake";
-    const char *result = fossil_io_soap_detect_fake_news(input);
+FOSSIL_TEST(c_test_io_soap_normalize_informal) {
+    const char *input = "u gotta see this";
+    const char *expected = "you have to see this";
+    char *result = fossil_io_soap_normalize(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_fake_news_valid_fact) {
-    const char *input = "The Earth revolves around the Sun.";
-    const char *expected = "valid";
-    const char *result = fossil_io_soap_detect_fake_news(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
+FOSSIL_TEST(c_test_io_soap_detect_sentiment_positive) {
+    const char *input = "I love working with you!";
+    const char *expected = "positive";
+    ASSUME_ITS_EQUAL_CSTR(expected, fossil_io_soap_detect_sentiment(input));
 }
 
-FOSSIL_TEST(c_test_io_soap_correct_grammar_typo) {
-    const char *input = "He go to school every day.";
-    const char *expected = "He goes to school every day.";
+FOSSIL_TEST(c_test_io_soap_detect_sentiment_negative) {
+    const char *input = "This is the worst experience ever.";
+    const char *expected = "negative";
+    ASSUME_ITS_EQUAL_CSTR(expected, fossil_io_soap_detect_sentiment(input));
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_harmful_true) {
+    const char *input = "People like you shouldn't exist.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_harmful_content(input) == 1);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_harmful_false) {
+    const char *input = "I disagree with your opinion.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_harmful_content(input) == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_normalize_slang_basic) {
+    const char *input = "idk why ppl do that lol";
+    const char *expected = "I don't know why people do that.";
+    char *result = fossil_io_soap_normalize_slang(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_correct_grammar_common) {
+    const char *input = "He go to work every day.";
+    const char *expected = "He goes to work every day.";
     char *result = fossil_io_soap_correct_grammar(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_correct_grammar_punctuation) {
-    const char *input = "hello how are you";
-    const char *expected = "Hello, how are you?";
-    char *result = fossil_io_soap_correct_grammar(input);
+FOSSIL_TEST(c_test_io_soap_evaluate_readability_score) {
+    const char *input = "The cat sat on the mat.";
+    float score = fossil_io_soap_evaluate_readability(input);
+    ASSUME_ITS_TRUE(score > 0.0);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_exaggeration_true) {
+    const char *input = "This is the worst thing to ever happen in history!";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 1);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_exaggeration_false) {
+    const char *input = "The weather is mildly unpleasant today.";
+    ASSUME(fossil_io_soap_detect_exaggeration(input) == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_filter_offensive_basic) {
+    const char *input = "You're an idiot.";
+    const char *expected = "You're being unreasonable.";
+    char *result = fossil_io_soap_filter_offensive(input);
     ASSUME_ITS_EQUAL_CSTR(expected, result);
     free(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_fuzzy_match_simple) {
-    const char *a = "rotbrain";
-    const char *b = "rot-brain";
-    bool result = fossil_io_soap_fuzzy_match(a, b);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(c_test_io_soap_detect_clickbait_true) {
+    const char *input = "You won't believe what happened next!";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 1);
 }
 
-FOSSIL_TEST(c_test_io_soap_fuzzy_match_fail) {
-    const char *a = "hello";
-    const char *b = "goodbye";
-    bool result = fossil_io_soap_fuzzy_match(a, b);
-    ASSUME_ITS_TRUE(!result);
+FOSSIL_TEST(c_test_io_soap_detect_clickbait_false) {
+    const char *input = "Scientists publish new findings in journal.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_fallacy_ad_hominem) {
+    const char *input = "You can't trust his argument because he's ugly.";
+    const char *expected = "ad hominem";
+    const char *result = fossil_io_soap_detect_fallacy(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_fallacy_none) {
+    const char *input = "We should implement this plan because it has proven benefits.";
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_fallacy(input) == NULL);
+}
+
+FOSSIL_TEST(c_test_io_soap_summarize_simple) {
+    const char *input = "The project aims to reduce emissions by introducing cleaner technologies and improving energy efficiency across sectors.";
+    const char *expected = "Project reduces emissions.";
+    char *result = fossil_io_soap_summarize(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_politeness_score_range) {
+    const char *input = "Could you please help me with this task?";
+    float score = fossil_io_soap_politeness_score(input);
+    ASSUME_ITS_TRUE(score >= 0.0f && score <= 1.0f);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -300,14 +358,25 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_special_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_tabs);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bias_political);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bias_noneutral);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fake_news_true_case);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fake_news_valid_fact);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_typo);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_punctuation);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_fuzzy_match_simple);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_fuzzy_match_fail);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_check_grammar_valid);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_check_grammar_error);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_informal);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_positive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sentiment_negative);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_harmful_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_harmful_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_slang_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_common);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_evaluate_readability_score);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_filter_offensive_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy_ad_hominem);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy_none);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_summarize_simple);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_range);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
