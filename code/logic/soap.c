@@ -442,22 +442,22 @@ char *fossil_io_soap_normalize_slang(const char *text) {
         const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
         const char *sugg = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
 
-        char *found = NULL;
+        const char *found = NULL;
         while ((found = custom_strcasestr(result, bad)) != NULL) {
-            size_t offset = found - result;
+            size_t offset = (size_t)(found - result);
             size_t newlen = strlen(result) - strlen(bad) + strlen(sugg) + 1;
-
+        
             char *temp = malloc(newlen);
             if (!temp) {
                 free(result);
                 return NULL;
             }
-
+        
             strncpy(temp, result, offset);
             temp[offset] = '\0';
             strcat(temp, sugg);
-            strcat(temp, found + strlen(bad));
-
+            strcat(temp, result + offset + strlen(bad));
+        
             free(result);
             result = temp;
         }
@@ -531,22 +531,22 @@ char *fossil_io_soap_filter_offensive(const char *text) {
         const char *bad = OFFENSIVE_WORDS[i].offensive;
         const char *good = OFFENSIVE_WORDS[i].replacement;
 
-        char *found = NULL;
+        const char *found = NULL;
         while ((found = custom_strcasestr(result, bad)) != NULL) {
-            size_t offset = found - result;
+            size_t offset = (size_t)(found - result);
             size_t newlen = strlen(result) - strlen(bad) + strlen(good) + 1;
-
+        
             char *temp = malloc(newlen);
             if (!temp) {
                 free(result);
                 return NULL;
             }
-
+        
             strncpy(temp, result, offset);
             temp[offset] = '\0';
             strcat(temp, good);
-            strcat(temp, found + strlen(bad));
-
+            strcat(temp, result + offset + strlen(bad));
+        
             free(result);
             result = temp;
         }
