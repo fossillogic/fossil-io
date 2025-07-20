@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#define FOSSIL_JELLYFISH_HASH_SIZE 16
 #define MAX_CUSTOM_FILTERS 64
 
 /** Lookup table for rot-brain words and their suggested replacements */
@@ -382,4 +383,172 @@ const char *fossil_io_soap_detect_tone(const char *text) {
     }
 
     return "casual";
+}
+
+int fossil_io_soap_check_grammar(const char *text) {
+    if (!text) return -1;
+    for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect; i++) {
+        if (custom_strcasestr(text, FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect)) {
+            return 1; // Grammar issue found
+        }
+    }
+    return 0;
+}
+
+char *fossil_io_soap_normalize(const char *text) {
+    if (!text) return NULL;
+
+    char *normalized = strdup(text); // Create modifiable copy
+    if (!normalized) return NULL;
+
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad; i++) {
+        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
+        const char *fix = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
+        const char *ptr;
+        while ((ptr = custom_strcasestr(normalized, bad))) {
+            size_t prefix_len = ptr - normalized;
+            size_t new_len = strlen(normalized) - strlen(bad) + strlen(fix) + 1;
+            char *temp = malloc(new_len);
+            if (!temp) break;
+            snprintf(temp, new_len, "%.*s%s%s",
+                     (int)prefix_len, normalized, fix, ptr + strlen(bad));
+            free(normalized);
+            normalized = temp;
+        }
+    }
+
+    return normalized;
+}
+
+char *fossil_io_soap_generate_audit_block(const char *text) {
+    if (!text) return NULL;
+
+    char *sanitized = fossil_io_soap_sanitize(text);
+    if (!sanitized) return NULL;
+
+    // Compute Jellyfish-style hash
+    uint8_t hash_out[FOSSIL_JELLYFISH_HASH_SIZE];
+    fossil_jellyfish_hash(text, sanitized, hash_out);
+
+    // Convert hash to hex string
+    char hash_hex[FOSSIL_JELLYFISH_HASH_SIZE * 2 + 1] = {0};
+    for (size_t i = 0; i < FOSSIL_JELLYFISH_HASH_SIZE; ++i) {
+        sprintf(hash_hex + i * 2, "%02x", hash_out[i]);
+    }
+
+    // Allocate JSON audit block
+    size_t needed = strlen(text) + strlen(sanitized) + strlen(hash_hex) + 64;
+    char *audit_block = malloc(needed);
+    if (!audit_block) {
+        free(sanitized);
+        return NULL;
+    }
+
+    snprintf(audit_block, needed,
+        "{ \"original\": \"%s\", \"sanitized\": \"%s\", \"hash\": \"%s\" }",
+        text, sanitized, hash_hex);
+
+    free(sanitized);
+    return audit_block;
+}
+
+char *fossil_io_soap_diff_digest(const char *original, const char *transformed) {
+    if (!original || !transformed) return NULL;
+
+    size_t size = strlen(original) + strlen(transformed) + 2;
+    char *combo = malloc(size);
+    if (!combo) return NULL;
+
+    snprintf(combo, size, "%s|%s", original, transformed);
+
+    char *digest = fossil_io_cstring_dup(fossil_hash_string(combo));
+    free(combo);
+    return digest;
+}
+
+int fossil_io_soap_detect_sarcasm(const char *text) {
+    if (!text) return 0;
+    for (size_t i = 0; SARCASTIC_PHRASES[i]; i++) {
+        if (custom_strcasestr(text, SARCASTIC_PHRASES[i])) return 1;
+    }
+    return 0;
+}
+
+const char *fossil_io_soap_detect_intent(const char *text) {
+    if (!text) return "unknown";
+    if (fossil_io_soap_detect_sarcasm(text)) return "sarcastic";
+    if (custom_strcasestr(text, "please") || custom_strcasestr(text, "I would like"))
+        return "formal";
+    if (strchr(text, '!') != NULL) return "emotional";
+    return "neutral";
+}
+
+char *fossil_io_soap_flag_ethics(const char *text) {
+    if (!text) return NULL;
+
+    // Simulate simple filter
+    const char *bad_words[] = {"stupid", "idiot", "hate", "kill", NULL};
+
+    char *flagged = strdup(text);
+    if (!flagged) return NULL;
+
+    for (size_t i = 0; bad_words[i]; i++) {
+        const char *ptr;
+        while ((ptr = custom_strcasestr(flagged, bad_words[i]))) {
+            size_t offset = ptr - flagged;
+            memset(flagged + offset, '*', strlen(bad_words[i]));
+        }
+    }
+    return flagged;
+}
+
+char *fossil_io_soap_list_ethics_flags(const char *text) {
+    if (!text) return NULL;
+
+    const char *categories[] = {"violence", "hate-speech", "bias", NULL};
+    const char *keywords[] = {"kill", "hate", "stupid", NULL};
+
+    char buffer[256] = {0};
+    for (size_t i = 0; keywords[i]; i++) {
+        if (custom_strcasestr(text, keywords[i])) {
+            strcat(buffer, categories[i]);
+            strcat(buffer, ",");
+        }
+    }
+
+    if (strlen(buffer) > 0) buffer[strlen(buffer) - 1] = '\0'; // Remove last comma
+    return fossil_io_cstring_dup(buffer);
+}
+
+int fossil_io_soap_load_mindset_file(const char *filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) return -1;
+
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        if (strncmp(line, "filter:", 7) == 0) {
+            char *phrase = line + 7;
+            while (*phrase == ' ') phrase++;
+            phrase[strcspn(phrase, "\r\n")] = 0;
+            fossil_io_soap_add_custom_filter(phrase);
+        }
+    }
+
+    fclose(f);
+    return 0;
+}
+
+char *fossil_io_soap_export_mindset(void) {
+    char *output = malloc(2048);
+    if (!output) return NULL;
+    strcpy(output, "#mindset('soap') {\n");
+
+    for (size_t i = 0; i < MAX_CUSTOM_FILTERS && custom_filters[i]; i++) {
+        strcat(output, "  filter: ");
+        strcat(output, custom_filters[i]);
+        strcat(output, "\n");
+    }
+
+    strcat(output, "}\n");
+    return output;
 }
