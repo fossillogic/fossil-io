@@ -58,6 +58,46 @@ void fossil_io_soap_clear_custom_filters(void);
  */
 const char *fossil_io_soap_detect_tone(const char *text);
 
+/**
+ * @brief Detect potential misinformation, logical fallacies, or fake claims in a sentence.
+ *
+ * @param text The input text.
+ * @return A dynamically allocated report string describing potential issues (must be freed by the caller).
+ */
+char *fossil_io_soap_detect_falsehood(const char *text);
+
+/**
+ * @brief Score the factual reliability of the input statement.
+ *
+ * @param text The input text.
+ * @return A float between 0.0 (untrustworthy) and 1.0 (highly reliable).
+ */
+float fossil_io_soap_score_reliability(const char *text);
+
+/**
+ * @brief Detect biased or emotionally charged language.
+ *
+ * @param text The input text.
+ * @return A dynamically allocated summary of bias indicators (must be freed by the caller).
+ */
+char *fossil_io_soap_detect_bias(const char *text);
+
+/**
+ * @brief Normalize the tone of the text to a more neutral or factual expression.
+ *
+ * @param text The input text.
+ * @return A dynamically allocated, neutralized string (must be freed by the caller).
+ */
+char *fossil_io_soap_neutralize(const char *text);
+
+/**
+ * @brief Detect whether a sentence is meme-based or contains low-information content.
+ *
+ * @param text The input text.
+ * @return 1 if detected, 0 otherwise.
+ */
+int fossil_io_soap_is_low_information(const char *text);
+
 #ifdef __cplusplus
 }
 
