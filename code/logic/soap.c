@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#define FOSSIL_JELLYFISH_HASH_SIZE 16
 #define MAX_CUSTOM_FILTERS 64
 
 /** Lookup table for rot-brain words and their suggested replacements */
