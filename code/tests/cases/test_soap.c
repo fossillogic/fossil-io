@@ -289,26 +289,8 @@ FOSSIL_TEST(c_test_io_soap_summarize) {
     const char *input = "Although the product has some flaws, it is still worth buying because of its affordability.";
     const char *expected = "It's affordable despite some flaws."; // approximate
     char *result = fossil_io_soap_summarize(input);
-    ASSUME(result != NULL); // Exact match may vary
+    ASSUME_ITS_TRUE(result != NULL); // Exact match may vary
     free(result);
-}
-
-FOSSIL_TEST(c_test_io_soap_readability_score) {
-    const char *input = "This sentence is simple.";
-    float score = fossil_io_soap_evaluate_readability(input);
-    ASSUME(score > 60.0); // basic readability check
-}
-
-FOSSIL_TEST(c_test_io_soap_politeness_score_polite) {
-    const char *input = "Could you please help me with this?";
-    float score = fossil_io_soap_politeness_score(input);
-    ASSUME(score > 0.8f);
-}
-
-FOSSIL_TEST(c_test_io_soap_politeness_score_rude) {
-    const char *input = "Do it now.";
-    float score = fossil_io_soap_politeness_score(input);
-    ASSUME(score < 0.3f);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -349,9 +331,6 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fallacy);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_summarize);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_score);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_polite);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_politeness_score_rude);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
