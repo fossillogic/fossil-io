@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#define FOSSIL_JELLYFISH_HASH_SIZE 16
 #define MAX_CUSTOM_FILTERS 64
 
 /** Lookup table for rot-brain words and their suggested replacements */
@@ -130,6 +129,55 @@ static const char *SKIP_WORDS[] = {
     "size",
     NULL // Sentinel to mark the end
 };
+
+#define FNV_PRIME 0x01000193
+#define FNV_BASIS 0x811c9dc5
+
+void fossil_io_soap_jellyfish_hash(const char *input, const char *output, uint8_t *hash_out) {
+    uint32_t hash = FNV_BASIS;
+    size_t in_len = strlen(input);
+    size_t out_len = strlen(output);
+
+    // Mix lengths
+    hash ^= in_len;
+    hash *= FNV_PRIME;
+    hash ^= out_len;
+    hash *= FNV_PRIME;
+
+    // Mix input string
+    for (size_t i = 0; i < in_len; ++i) {
+        hash ^= (uint8_t)input[i];
+        hash *= FNV_PRIME;
+        hash ^= (hash >> 5);
+    }
+
+    // Mix output string
+    for (size_t i = 0; i < out_len; ++i) {
+        hash ^= (uint8_t)output[i];
+        hash *= FNV_PRIME;
+        hash ^= (hash >> 5);
+    }
+
+    // Final avalanche
+    hash ^= (hash << 7);
+    hash ^= (hash >> 3);
+
+    // Expand to fixed size
+    uint32_t h = hash;
+    for (size_t i = 0; i < FOSSIL_JELLYFISH_HASH_SIZE; ++i) {
+        h ^= (h >> 13);
+        h *= FNV_PRIME;
+        h ^= (h << 11);
+        hash_out[i] = (uint8_t)((h >> (8 * (i % 4))) & 0xFF);
+    }
+}
+
+static void hash_to_hex(const uint8_t *hash, size_t len, char *out_hex) {
+    for (size_t i = 0; i < len; ++i) {
+        sprintf(out_hex + i * 2, "%02x", hash[i]);
+    }
+    out_hex[len * 2] = '\0';
+}
 
 /**
  * @brief Convert leetspeak to normal letters.
@@ -427,25 +475,19 @@ char *fossil_io_soap_generate_audit_block(const char *text) {
     char *sanitized = fossil_io_soap_sanitize(text);
     if (!sanitized) return NULL;
 
-    // Compute Jellyfish-style hash
-    uint8_t hash_out[FOSSIL_JELLYFISH_HASH_SIZE];
-    fossil_jellyfish_hash(text, sanitized, hash_out);
+    uint8_t hash[FOSSIL_JELLYFISH_HASH_SIZE];
+    char hash_hex[FOSSIL_JELLYFISH_HASH_SIZE * 2 + 1];
 
-    // Convert hash to hex string
-    char hash_hex[FOSSIL_JELLYFISH_HASH_SIZE * 2 + 1] = {0};
-    for (size_t i = 0; i < FOSSIL_JELLYFISH_HASH_SIZE; ++i) {
-        sprintf(hash_hex + i * 2, "%02x", hash_out[i]);
-    }
+    fossil_io_soap_jellyfish_hash(text, sanitized, hash);
+    hash_to_hex(hash, FOSSIL_JELLYFISH_HASH_SIZE, hash_hex);
 
-    // Allocate JSON audit block
-    size_t needed = strlen(text) + strlen(sanitized) + strlen(hash_hex) + 64;
-    char *audit_block = malloc(needed);
+    char *audit_block = malloc(1024);
     if (!audit_block) {
         free(sanitized);
         return NULL;
     }
 
-    snprintf(audit_block, needed,
+    snprintf(audit_block, 1024,
         "{ \"original\": \"%s\", \"sanitized\": \"%s\", \"hash\": \"%s\" }",
         text, sanitized, hash_hex);
 
@@ -490,7 +532,7 @@ char *fossil_io_soap_flag_ethics(const char *text) {
     // Simulate simple filter
     const char *bad_words[] = {"stupid", "idiot", "hate", "kill", NULL};
 
-    char *flagged = strdup(text);
+    char *flagged = fossil_io_cstring_dup(text);
     if (!flagged) return NULL;
 
     for (size_t i = 0; bad_words[i]; i++) {
