@@ -284,7 +284,7 @@ FOSSIL_TEST(c_test_io_soap_detect_exaggeration_true) {
 
 FOSSIL_TEST(c_test_io_soap_detect_exaggeration_false) {
     const char *input = "The weather is mildly unpleasant today.";
-    ASSUME(fossil_io_soap_detect_exaggeration(input) == 0);
+    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 0);
 }
 
 FOSSIL_TEST(c_test_io_soap_filter_offensive_basic) {
