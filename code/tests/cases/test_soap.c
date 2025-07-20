@@ -215,6 +215,64 @@ FOSSIL_TEST(c_test_io_soap_suggest_with_tabs) {
     free(result);
 }
 
+FOSSIL_TEST(c_test_io_soap_detect_bias_political) {
+    const char *input = "All liberals are wrong.";
+    const char *expected = "political-bias";
+    const char *result = fossil_io_soap_detect_bias(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_bias_noneutral) {
+    const char *input = "Dogs are better than cats.";
+    const char *expected = "subjective-bias";
+    const char *result = fossil_io_soap_detect_bias(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_fake_news_true_case) {
+    const char *input = "NASA confirms moon is made of cheese.";
+    const char *expected = "fake";
+    const char *result = fossil_io_soap_detect_fake_news(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_fake_news_valid_fact) {
+    const char *input = "The Earth revolves around the Sun.";
+    const char *expected = "valid";
+    const char *result = fossil_io_soap_detect_fake_news(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+}
+
+FOSSIL_TEST(c_test_io_soap_correct_grammar_typo) {
+    const char *input = "He go to school every day.";
+    const char *expected = "He goes to school every day.";
+    char *result = fossil_io_soap_correct_grammar(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_correct_grammar_punctuation) {
+    const char *input = "hello how are you";
+    const char *expected = "Hello, how are you?";
+    char *result = fossil_io_soap_correct_grammar(input);
+    ASSUME_ITS_EQUAL_CSTR(expected, result);
+    free(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_fuzzy_match_simple) {
+    const char *a = "rotbrain";
+    const char *b = "rot-brain";
+    bool result = fossil_io_soap_fuzzy_match(a, b);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_fuzzy_match_fail) {
+    const char *a = "hello";
+    const char *b = "goodbye";
+    bool result = fossil_io_soap_fuzzy_match(a, b);
+    ASSUME_ITS_TRUE(!result);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -242,6 +300,14 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_special_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_tabs);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bias_political);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bias_noneutral);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fake_news_true_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_fake_news_valid_fact);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_typo);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_correct_grammar_punctuation);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_fuzzy_match_simple);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_fuzzy_match_fail);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
