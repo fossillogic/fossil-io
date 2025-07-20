@@ -148,66 +148,72 @@ fossil_nstream_t *fossil_nstream_create(const char *protocol_flag, const char *c
         fossil_set_last_error("Socket system initialization failed");
         return NULL;
     }
-    
+
     if (!protocol_flag || !client_type_flag) {
         fossil_set_last_error("Invalid protocol or client type flag");
         return NULL;
     }
-    
+
     fossil_protocol_t protocol = fossil_protocol_from_string(protocol_flag);
     fossil_client_type_t client_type = fossil_client_type_from_string(client_type_flag);
-    
+
     if (protocol == FOSSIL_PROTO_UNKNOWN) {
         fossil_set_last_error("Unsupported protocol");
         return NULL;
     }
-    
+
     if (client_type == FOSSIL_CLIENT_UNKNOWN) {
         fossil_set_last_error("Unsupported client type");
         return NULL;
     }
-    
+
+    // Validate protocol-specific constraints
+    switch (protocol) {
+        case FOSSIL_PROTO_ICMP:
+        case FOSSIL_PROTO_RAW:
+            #ifndef _WIN32
+            if (geteuid() != 0) {
+                fossil_set_last_error("ICMP/RAW sockets require root privileges");
+                return NULL;
+            }
+            #endif
+            break;
+        case FOSSIL_PROTO_HTTP:
+        case FOSSIL_PROTO_HTTPS:
+        case FOSSIL_PROTO_FTP:
+        case FOSSIL_PROTO_SSH:
+        case FOSSIL_PROTO_SMTP:
+        case FOSSIL_PROTO_POP3:
+        case FOSSIL_PROTO_IMAP:
+        case FOSSIL_PROTO_LDAP:
+        case FOSSIL_PROTO_MQTT:
+            // These are application-layer protocols; you may optionally enforce TCP
+            if (protocol != FOSSIL_PROTO_TCP && protocol != FOSSIL_PROTO_HTTPS) {
+                fossil_set_last_error("Application protocols require TCP/SSL");
+                return NULL;
+            }
+            break;
+        case FOSSIL_PROTO_DNS:
+        case FOSSIL_PROTO_NTP:
+            // These typically use UDP
+            break;
+        default:
+            break;
+    }
+
     fossil_nstream_t *stream = (fossil_nstream_t *)calloc(1, sizeof(fossil_nstream_t));
     if (!stream) {
         fossil_set_last_error("Memory allocation failed");
         return NULL;
     }
-    
+
     stream->protocol = protocol;
     stream->client_type = client_type;
     snprintf(stream->protocol_flag, sizeof(stream->protocol_flag), "%s", protocol_flag);
     snprintf(stream->client_type_flag, sizeof(stream->client_type_flag), "%s", client_type_flag);
     stream->socket_fd = -1;
-    return stream;
-}
 
-static socket_t fossil_create_socket(fossil_protocol_t proto) {
-    int type = SOCK_STREAM;
-    int proto_num = IPPROTO_TCP;
-    
-    switch (proto) {
-        case FOSSIL_PROTO_TCP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_UDP: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
-        case FOSSIL_PROTO_RAW: type = SOCK_RAW; proto_num = IPPROTO_RAW; break;
-        case FOSSIL_PROTO_ICMP: type = SOCK_RAW; proto_num = IPPROTO_ICMP; break;
-        case FOSSIL_PROTO_SCTP: type = SOCK_STREAM; proto_num = IPPROTO_SCTP; break;
-        case FOSSIL_PROTO_HTTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_HTTPS: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_FTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_SSH: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_DNS: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
-        case FOSSIL_PROTO_NTP: type = SOCK_DGRAM; proto_num = IPPROTO_UDP; break;
-        case FOSSIL_PROTO_SMTP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_POP3: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_IMAP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_LDAP: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        case FOSSIL_PROTO_MQTT: type = SOCK_STREAM; proto_num = IPPROTO_TCP; break;
-        default:
-            fossil_set_last_error("Unsupported protocol for socket creation");
-            return -1;
-    }
-    
-    return socket(AF_INET, type, proto_num);
+    return stream;
 }
 
 int fossil_nstream_connect(fossil_nstream_t *stream, const char *host, int port) {
@@ -215,27 +221,55 @@ int fossil_nstream_connect(fossil_nstream_t *stream, const char *host, int port)
         fossil_set_last_error("Stream is NULL");
         return -1;
     }
-    
+
+    // Validate protocol connect support
+    switch (stream->protocol) {
+        case FOSSIL_PROTO_ICMP:
+        case FOSSIL_PROTO_RAW:
+            fossil_set_last_error("Protocol does not support connect() in traditional sense");
+            return -1;
+        default:
+            break; // Proceed for connect-capable protocols
+    }
+
     stream->socket_fd = fossil_create_socket(stream->protocol);
     if ((int)stream->socket_fd < 0) {
-        return -1;
+        return -1; // fossil_create_socket() already sets error
     }
-    
+
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    
+
     if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
         fossil_set_last_error("Invalid address or address not supported");
+#ifdef _WIN32
+        closesocket(stream->socket_fd);
+#else
+        close(stream->socket_fd);
+#endif
+        stream->socket_fd = -1;
         return -1;
     }
-    
-    if (connect(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        fossil_set_last_error("Connection to the server failed");
-        return -1;
+
+    // Special handling for UDP: connect is optional
+    if (stream->protocol == FOSSIL_PROTO_UDP || stream->protocol == FOSSIL_PROTO_DNS || stream->protocol == FOSSIL_PROTO_NTP) {
+        // UDP "connect" sets a default peer address; no handshake
+        if (connect(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            fossil_set_last_error("UDP 'connect' failed — is remote peer reachable?");
+            return -1;
+        }
+    } else {
+        // TCP and application-layer protocols require real connection
+        if (connect(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            fossil_set_last_error("TCP connect() failed");
+            return -1;
+        }
     }
-    
+
     stream->is_connected = 1;
+    stream->remote_addr = addr;
+    time(&stream->last_activity); // track timestamp of connection
     return 0;
 }
 
@@ -244,34 +278,84 @@ int fossil_nstream_listen(fossil_nstream_t *stream, const char *host, int port) 
         fossil_set_last_error("Stream is NULL");
         return -1;
     }
-    
+
+    // Ensure protocol supports listening
+    switch (stream->protocol) {
+        case FOSSIL_PROTO_TCP:
+        case FOSSIL_PROTO_HTTP:
+        case FOSSIL_PROTO_HTTPS:
+        case FOSSIL_PROTO_FTP:
+        case FOSSIL_PROTO_SSH:
+        case FOSSIL_PROTO_SMTP:
+        case FOSSIL_PROTO_POP3:
+        case FOSSIL_PROTO_IMAP:
+        case FOSSIL_PROTO_LDAP:
+        case FOSSIL_PROTO_MQTT:
+            // All valid stream-based protocols
+            break;
+
+        case FOSSIL_PROTO_UDP:
+        case FOSSIL_PROTO_DNS:
+        case FOSSIL_PROTO_NTP:
+            // Datagram protocols: allow bind() but not listen()
+            break;
+
+        default:
+            fossil_set_last_error("Protocol not valid for listening");
+            return -1;
+    }
+
     stream->socket_fd = fossil_create_socket(stream->protocol);
     if (stream->socket_fd == (socket_t)-1) {
-        return -1;
+        return -1; // Error already set by fossil_create_socket
     }
-    
+
     int opt = 1;
     if (setsockopt(stream->socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
-        fossil_set_last_error("Failed to set socket options");
+        fossil_set_last_error("Failed to set SO_REUSEADDR");
         return -1;
     }
-    
+
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = (host == NULL) ? INADDR_ANY : inet_addr(host);
-    
+
+    if (!host || strcmp(host, "0.0.0.0") == 0) {
+        addr.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
+            fossil_set_last_error("Invalid listen address");
+            return -1;
+        }
+    }
+
     if (bind(stream->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         fossil_set_last_error("Bind failed");
         return -1;
     }
-    
-    if (listen(stream->socket_fd, SOMAXCONN) < 0) {
-        fossil_set_last_error("Listen failed");
-        return -1;
+
+    // Only call listen() on stream-based protocols
+    if (stream->protocol == FOSSIL_PROTO_TCP ||
+        stream->protocol == FOSSIL_PROTO_HTTP ||
+        stream->protocol == FOSSIL_PROTO_HTTPS ||
+        stream->protocol == FOSSIL_PROTO_FTP ||
+        stream->protocol == FOSSIL_PROTO_SSH ||
+        stream->protocol == FOSSIL_PROTO_SMTP ||
+        stream->protocol == FOSSIL_PROTO_POP3 ||
+        stream->protocol == FOSSIL_PROTO_IMAP ||
+        stream->protocol == FOSSIL_PROTO_LDAP ||
+        stream->protocol == FOSSIL_PROTO_MQTT) {
+
+        if (listen(stream->socket_fd, SOMAXCONN) < 0) {
+            fossil_set_last_error("Listen failed");
+            return -1;
+        }
     }
-    
+
     stream->is_server = 1;
+    time(&stream->created_at);
+    stream->local_addr = addr;
+
     return 0;
 }
 
