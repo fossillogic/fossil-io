@@ -44,6 +44,7 @@ struct fossil_nstream_t {
 
 static char fossil_last_error[256] = {0};
 
+
 static void fossil_set_last_error(const char *msg) {
     snprintf(fossil_last_error, sizeof(fossil_last_error), "%s", msg);
 }
