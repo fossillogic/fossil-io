@@ -141,24 +141,20 @@ void fossil_io_apply_position(const char *pos) {
 }
 
 // Function to print text with attributes, colors, positions, and format specifiers
-void fossil_io_print_with_attributes(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
+void fossil_io_print_with_attributes(const char *str) {
+    if (str == NULL) {
+        fputs("cnullptr\n", stderr);
+        return;
+    }
 
-    // Create a buffer to hold the formatted string
-    char buffer[FOSSIL_IO_BUFFER_SIZE];
-    vsnprintf(buffer, sizeof(buffer), format, args);
-
-    // Variable to keep track of the current position in the buffer
-    const char *current_pos = buffer;
+    const char *current_pos = str;
     const char *start = NULL;
     const char *end = NULL;
 
-    // Iterate over the buffer and process color/attribute/position inside `{}` and format specifiers
     while ((start = strchr(current_pos, '{')) != NULL) {
-        // Print text before '{'
-        printf("%.*s", (int)(start - current_pos), current_pos);
-        
+        // Output text before '{'
+        fwrite(current_pos, 1, start - current_pos, stdout);
+
         // Find the matching '}'
         end = strchr(start, '}');
         if (end) {
@@ -190,18 +186,23 @@ void fossil_io_print_with_attributes(const char *format, ...) {
                 if (FOSSIL_IO_COLOR_ENABLE && color) {
                     fossil_io_apply_color(color);
                 }
-                fossil_io_apply_attribute(attribute);
+                if (attribute) {
+                    fossil_io_apply_attribute(attribute);
+                }
             }
 
             // Move past '}' and continue processing
             current_pos = end + 1;
+        } else {
+            // No matching '}', print the rest and break
+            fputs(start, stdout);
+            break;
         }
     }
 
-    // Print remaining text after last '}'
-    printf("%s", current_pos);
-
-    va_end(args);
+    // Output remaining text after last '}'
+    fputs(current_pos, stdout);
+    fflush(stdout);
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
