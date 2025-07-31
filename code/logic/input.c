@@ -304,3 +304,14 @@ int fossil_io_validate_sanitize_string(const char *input, char *output, size_t o
 
     return 1;
 }
+
+int fossil_io_gets(char *buffer, size_t size) {
+    if (fgets(buffer, size, stdin) == NULL) {
+        return -1; // Error or EOF
+    }
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0'; // Remove newline character
+    }
+    return 0; // Success
+}
