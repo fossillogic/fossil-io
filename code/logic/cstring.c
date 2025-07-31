@@ -334,6 +334,28 @@ cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_
     return result;
 }
 
+int fossil_io_cstring_icmp(const char *str1, const char *str2) {
+    while (*str1 && *str2) {
+        if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
+            return 0; // Not equal
+        }
+        str1++;
+        str2++;
+    }
+    return (*str1 == '\0' && *str2 == '\0'); // Both strings must end at the same time
+}
+
+int fossil_io_cstring_icontains(ccstring str, ccstring substr) {
+    const char *p = str;
+    while (*p) {
+        if (fossil_io_cstring_icmp(p, substr) == 1) {
+            return 1; // Found
+        }
+        p++;
+    }
+    return 0; // Not found
+}
+
 // ============================================================================
 // String Stream Functions
 // ============================================================================
