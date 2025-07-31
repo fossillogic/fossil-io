@@ -334,7 +334,7 @@ cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_
     return result;
 }
 
-int fossil_io_cstring_icmp(const char *str1, const char *str2) {
+int fossil_io_cstring_icmp(ccstring str1, ccstring str2) {
     while (*str1 && *str2) {
         if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
             return 0; // Not equal
