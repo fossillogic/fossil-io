@@ -226,6 +226,30 @@ cstring fossil_io_cstring_pad_left(ccstring str, size_t total_length, char pad_c
 cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_char);
 
 /**
+ * @brief Performs a case-insensitive comparison of two C strings.
+ *
+ * Compares the characters of `str1` and `str2` one by one, ignoring case.
+ *
+ * @param str1 The first null-terminated string to compare.
+ * @param str2 The second null-terminated string to compare.
+ * @return 1 if the strings are equal (case-insensitive), 0 otherwise.
+ */
+int fossil_io_cstring_icmp(ccstring str1, ccstring str2);
+
+/**
+ * @brief Checks if a substring is contained within a string (case-insensitive).
+ *
+ * Iterates through `str` and checks if `substr` occurs at any position, ignoring case.
+ *
+ * @param str The null-terminated string to search within.
+ * @param substr The null-terminated substring to search for.
+ * @return 1 if `substr` is found within `str` (case-insensitive), 0 otherwise.
+ */
+int fossil_io_cstring_icontains(ccstring str, ccstring substr);
+
+// String Stream
+
+/**
  * @brief Creates a new cstring stream with the specified initial size.
  * 
  * @param initial_size The initial size of the cstring stream.
