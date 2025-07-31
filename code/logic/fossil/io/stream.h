@@ -349,6 +349,16 @@ int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
  */
 int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode);
 
+/**
+ * @brief Rewinds the file stream to the beginning.
+ *
+ * Resets the position of the file pointer in the given `fossil_fstream_t`
+ * structure to the beginning of the file, if the stream and file are valid.
+ *
+ * @param stream Pointer to a `fossil_fstream_t` structure representing the file stream.
+ */
+void fossil_fstream_rewind(fossil_fstream_t *stream);
+
 #ifdef __cplusplus
 }
 #include <string>
