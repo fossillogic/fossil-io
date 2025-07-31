@@ -160,6 +160,18 @@ int fossil_io_display_menu(const char *prompt, const char *choices[], int num_ch
  */
 void fossil_io_show_progress(int progress);
 
+/**
+ * @brief Reads a line of input from standard input into the provided buffer.
+ *
+ * Reads at most `size - 1` characters from `stdin` and stores them in `buffer`.
+ * If a newline character is read, it is replaced with a null terminator.
+ *
+ * @param buffer Pointer to the character buffer where input will be stored.
+ * @param size The size of the buffer.
+ * @return 0 on success, -1 on error or end-of-file.
+ */
+int fossil_io_gets(char *buffer, size_t size);
+
 #ifdef __cplusplus
 }
 
