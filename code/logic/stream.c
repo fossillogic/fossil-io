@@ -627,3 +627,9 @@ int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode) {
     return 0;
 #endif
 }
+
+void fossil_fstream_rewind(fossil_fstream_t *stream) {
+    if (stream && stream->file) {
+        rewind(stream->file);
+    }
+}
