@@ -525,19 +525,18 @@ cstring fossil_io_cstring_strip_quotes(ccstring str) {
     return fossil_io_cstring_dup(str);
 }
 
-cstring fossil_io_cstring_append(cstring dest, ccstring src) {
-    if (!src) return NULL;
+cstring fossil_io_cstring_append(cstring *dest, ccstring src) {
+    if (!dest || !src) return NULL;
 
-    size_t len_dest = dest ? strlen(dest) : 0;
-    size_t len_src = strlen(src);
-    
-    char *result = malloc(len_dest + len_src + 1);
-    if (!result) return NULL;
+    size_t old_len = *dest ? strlen(*dest) : 0;
+    size_t add_len = strlen(src);
 
-    if (dest) memcpy(result, dest, len_dest);
-    memcpy(result + len_dest, src, len_src + 1); // includes null terminator
+    char *new_str = realloc(*dest, old_len + add_len + 1);
+    if (!new_str) return NULL;
 
-    return result;
+    memcpy(new_str + old_len, src, add_len + 1); // includes null terminator
+    *dest = new_str;
+    return new_str;
 }
 
 // ============================================================================
