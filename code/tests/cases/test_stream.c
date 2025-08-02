@@ -242,8 +242,11 @@ FOSSIL_TEST(c_test_stream_remove_file) {
     fossil_fstream_write(&c_stream, content, strlen(content), 1);
     fossil_fstream_close(&c_stream);
 
-    // Remove the file
+    // Remove the file (should succeed)
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+
+    // Try removing again (should return file not found error)
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_FILE_NOT_FOUND, fossil_fstream_remove(filename));
 
     // Check if the file does not exist
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));

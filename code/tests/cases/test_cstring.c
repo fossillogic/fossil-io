@@ -248,8 +248,20 @@ FOSSIL_TEST(c_test_cstring_icmp) {
     const char *s1 = "Hello";
     const char *s2 = "hello";
     const char *s3 = "World";
-    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s2));
-    ASSUME_ITS_FALSE(fossil_io_cstring_icmp(s1, s3));
+    const char *s4 = NULL;
+    const char *s5 = "";
+    // Case-insensitive compare: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s1, s2));
+    // Case-insensitive compare: not equal
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s3) < 0 || fossil_io_cstring_icmp(s1, s3) > 0);
+    // NULL vs NULL: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s4, s4));
+    // NULL vs empty string: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s4, s5));
+    // NULL vs non-empty: less
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s4, s1) < 0);
+    // non-empty vs NULL: greater
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s4) > 0);
 }
 
 FOSSIL_TEST(c_test_cstring_icontains) {

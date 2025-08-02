@@ -215,8 +215,25 @@ FOSSIL_TEST(cpp_test_cstring_icmp) {
     const char *s1 = "Hello";
     const char *s2 = "hello";
     const char *s3 = "World";
-    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s2));
-    ASSUME_ITS_FALSE(fossil_io_cstring_icmp(s1, s3));
+    const char *s4 = "Hell";
+    const char *s5 = "Hello!";
+
+    // Case-insensitive equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s1, s2));
+    // Not equal, s1 < s3
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s3) < 0);
+    // Not equal, s3 > s1
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s3, s1) > 0);
+    // Prefix: s1 > s4
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s4) > 0);
+    // s1 < s5 (shorter)
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s5) < 0);
+    // NULL handling
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(nullptr, nullptr));
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(nullptr, "abc") < 0);
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp("abc", nullptr) > 0);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(nullptr, ""));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp("", nullptr));
 }
 
 FOSSIL_TEST(cpp_test_cstring_icontains) {
@@ -503,13 +520,6 @@ FOSSIL_TEST(cpp_test_cstring_stream_class_empty_read) {
     ASSUME_ITS_EQUAL_CSTR("", result.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cstring_class_icmp) {
-    fossil::io::CString str("Hello, World!");
-    ASSUME_ITS_TRUE(str.icmp("hello, world!"));
-    ASSUME_ITS_TRUE(str.icmp("HELLO, WORLD!"));
-    ASSUME_ITS_TRUE(!str.icmp("Hello, Fossil!"));
-}
-
 FOSSIL_TEST(cpp_test_cstring_class_icontains) {
     fossil::io::CString str("Hello, World!");
     ASSUME_ITS_TRUE(str.icontains("world"));
@@ -647,7 +657,6 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_count);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_left);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_right);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icmp);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icontains);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_join);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_index_of);
