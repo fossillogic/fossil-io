@@ -415,6 +415,22 @@ namespace fossil {
             }
 
             /**
+             * Constructor to create a CString from an existing cstring.
+             * 
+             * @param str The cstring to wrap.
+             */
+            CString(ccstring str) {
+                _str = fossil_io_cstring_copy(str);
+            }
+
+            /**
+             * Default constructor to create an empty CString.
+             */
+            CString() {
+                _str = fossil_io_cstring_create("");
+            }
+
+            /**
              * Destructor to free the memory allocated for the cstring.
              */
             ~CString() {

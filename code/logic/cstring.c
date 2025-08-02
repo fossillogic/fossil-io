@@ -336,7 +336,12 @@ cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_
 }
 
 int fossil_io_cstring_icmp(ccstring str1, ccstring str2) {
-    if (!str1 || !str2) return (str1 == str2) ? 0 : (str1 ? 1 : -1);
+    // Handle NULL pointers: both NULL means equal, one NULL means less/greater
+    if (str1 == str2) return 0;
+    if (!str1) return (str2 && *str2) ? -1 : 0;
+    if (!str2) return (*str1) ? 1 : 0;
+
+    // Then check
     while (*str1 && *str2) {
         int c1 = tolower((unsigned char)*str1);
         int c2 = tolower((unsigned char)*str2);
