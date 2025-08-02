@@ -626,6 +626,133 @@ namespace fossil {
             }
 
             /**
+             * Performs a case-insensitive comparison of two C strings.
+             * 
+             * @param other The other string to compare with.
+             * @return True if the strings are equal (case-insensitive), false otherwise.
+             */
+            bool icmp(const std::string &other) const {
+                return fossil_io_cstring_icmp(_str, other.c_str()) == 1;
+            }
+
+            /**
+             * Checks if a substring is contained within the string (case-insensitive).
+             * 
+             * @param substr The substring to search for.
+             * @return True if the substring is found (case-insensitive), false otherwise.
+             */
+            bool icontains(const std::string &substr) const {
+                return fossil_io_cstring_icontains(_str, substr.c_str()) == 1;
+            }
+
+            /**
+             * Creates a new CString using a formatted string (like sprintf).
+             * 
+             * @param format The format string.
+             * @param ... The arguments for the format string.
+             * @return A newly allocated CString.
+             */
+            static CString format(const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                cstring result = fossil_io_cstring_format(format, args);
+                va_end(args);
+                return CString(result);
+            }
+
+            /**
+             * Joins an array of strings with a delimiter.
+             * 
+             * @param strings The array of strings.
+             * @param delimiter The delimiter to insert between strings.
+             * @return A new CString consisting of all strings joined by the delimiter.
+             */
+            static CString join(const std::vector<std::string> &strings, char delimiter) {
+                std::vector<ccstring> cstrs;
+                for (const auto &s : strings) {
+                    cstrs.push_back(s.c_str());
+                }
+                cstring result = fossil_io_cstring_join(const_cast<ccstring*>(cstrs.data()), cstrs.size(), delimiter);
+                return CString(result);
+            }
+
+            /**
+             * Finds the first index of a substring within the string.
+             * 
+             * @param substr The substring to find.
+             * @return The index of the first occurrence, or -1 if not found.
+             */
+            int index_of(const std::string &substr) const {
+                return fossil_io_cstring_index_of(_str, substr.c_str());
+            }
+
+            /**
+             * Checks if two strings are exactly equal (case-sensitive).
+             * 
+             * @param other The other string to compare.
+             * @return True if the strings are exactly equal, false otherwise.
+             */
+            bool equals(const std::string &other) const {
+                return fossil_io_cstring_equals(_str, other.c_str()) == 1;
+            }
+
+            /**
+             * Checks if two strings are equal, ignoring case.
+             * 
+             * @param other The other string to compare.
+             * @return True if the strings are equal ignoring case, false otherwise.
+             */
+            bool iequals(const std::string &other) const {
+                return fossil_io_cstring_iequals(_str, other.c_str()) == 1;
+            }
+
+            /**
+             * Escapes the string for safe use in JSON strings.
+             * 
+             * @return A newly allocated CString containing the JSON-escaped result.
+             */
+            CString escape_json() const {
+                return CString(fossil_io_cstring_escape_json(_str));
+            }
+
+            /**
+             * Unescapes a JSON-escaped string.
+             * 
+             * @return A newly allocated CString with escape sequences resolved.
+             */
+            CString unescape_json() const {
+                return CString(fossil_io_cstring_unescape_json(_str));
+            }
+
+            /**
+             * Normalizes whitespace in the string by collapsing multiple spaces.
+             * 
+             * @return A newly allocated CString with normalized whitespace.
+             */
+            CString normalize_spaces() const {
+                return CString(fossil_io_cstring_normalize_spaces(_str));
+            }
+
+            /**
+             * Removes surrounding single or double quotes from the string.
+             * 
+             * @return A newly allocated CString without surrounding quotes.
+             */
+            CString strip_quotes() const {
+                return CString(fossil_io_cstring_strip_quotes(_str));
+            }
+
+            /**
+             * Appends src to this string in-place, resizing as necessary.
+             * 
+             * @param src The string to append.
+             * @return 0 on success, non-zero on allocation failure.
+             */
+            int append(const std::string &src) {
+                return fossil_io_cstring_append(&_str, src.c_str()) == nullptr ? 1 : 0;
+            }
+
+            /**
              * Returns the underlying cstring.
              * 
              * @return The underlying cstring.

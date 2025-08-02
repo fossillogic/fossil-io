@@ -379,6 +379,41 @@ namespace fossil {
                 fossil_nstream_close(stream_);
             }
 
+            /**
+             * Get the last error message.
+             *
+             * @return A string describing the last error.
+             */
+            std::string last_error() const {
+                return fossil_nstream_last_error();
+            }
+
+            /**
+             * Set the network stream to non-blocking mode.
+             *
+             * @param enable Nonzero to enable non-blocking mode, zero to disable.
+             * @throws std::runtime_error If setting non-blocking mode fails.
+             */
+            void set_nonblocking(int enable) {
+                if (fossil_nstream_set_nonblocking(stream_, enable) != 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
+            }
+
+            /**
+             * Retrieve the remote peer's IP address and port.
+             *
+             * @param out_ip A buffer to store the IP string.
+             * @param ip_size The size of the buffer.
+             * @param out_port Optional pointer to store the port.
+             * @throws std::runtime_error If retrieving peer info fails.
+             */
+            void get_peer_info(char *out_ip, size_t ip_size, int *out_port) {
+                if (fossil_nstream_get_peer_info(stream_, out_ip, ip_size, out_port) != 0) {
+                    throw std::runtime_error(fossil_nstream_last_error());
+                }
+            }
+
         private:
             /**
              * Private constructor to wrap an existing fossil_nstream_t object.
