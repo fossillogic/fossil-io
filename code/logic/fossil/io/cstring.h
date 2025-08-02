@@ -265,7 +265,7 @@ cstring fossil_io_cstring_format(ccstring format, ...);
  * @param delimiter The delimiter to insert between strings.
  * @return A new cstring consisting of all strings joined by the delimiter.
  */
-cstring fossil_io_cstring_join(ccstring *strings, size_t count, char delimiter);
+cstring fossil_io_cstring_join(ccstring strings, size_t count, char delimiter);
 
 /**
  * @brief Finds the first index of a substring within a string.
@@ -349,7 +349,7 @@ cstring fossil_io_cstring_strip_quotes(ccstring str);
  * @param src The string to append.
  * @return 0 on success, non-zero on allocation failure.
  */
-int fossil_io_cstring_append(cstring *dest, ccstring src);
+cstring fossil_io_cstring_append(cstring dest, ccstring src);
 
 // String Stream
 
