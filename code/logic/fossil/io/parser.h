@@ -64,14 +64,9 @@ typedef struct fossil_io_parser_palette_s {
 
 extern int FOSSIL_CLI_TOGGLE_DRY_RUN;
 extern int FOSSIL_CLI_TOGGLE_VERBOSE;
-extern int FOSSIL_CLI_TOGGLE_SANITY;
 
 extern char *FOSSIL_CLI_TOOL_NAME;
 extern char *FOSSIL_CLI_TOOL_VERSION;
-extern char *FOSSIL_CLI_TOOL_AUTHOR;
-extern char *FOSSIL_CLI_TOOL_LICENSE;
-extern char *FOSSIL_CLI_TOOL_DESCRIPTION;
-extern char *FOSSIL_CLI_TOOL_WEBSITE;
 
 // ==================================================================
 // Functions
