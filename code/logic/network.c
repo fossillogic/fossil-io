@@ -380,3 +380,116 @@ void fossil_nstream_destroy(fossil_nstream_t *stream) {
     free(stream);
     fossil_socket_cleanup();
 }
+
+int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable) {
+    if (!stream) return -1;
+
+#ifdef _WIN32
+    u_long mode = enable ? 1 : 0;
+    if (ioctlsocket(stream->socket_fd, FIONBIO, &mode) != 0) {
+        fossil_set_last_error("Failed to set non-blocking mode");
+        return -1;
+    }
+#else
+    int flags = fcntl(stream->socket_fd, F_GETFL, 0);
+    if (flags == -1) return -1;
+    if (enable)
+        flags |= O_NONBLOCK;
+    else
+        flags &= ~O_NONBLOCK;
+    if (fcntl(stream->socket_fd, F_SETFL, flags) == -1) {
+        fossil_set_last_error("Failed to set non-blocking mode");
+        return -1;
+    }
+#endif
+    return 0;
+}
+
+int fossil_nstream_set_timeout(fossil_nstream_t *stream, int timeout_ms) {
+    if (!stream) return -1;
+
+    struct timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+
+    if (setsockopt(stream->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
+        setsockopt(stream->socket_fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
+        fossil_set_last_error("Failed to set socket timeout");
+        return -1;
+    }
+    return 0;
+}
+
+int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port) {
+    if (!stream || !out_ip) return -1;
+
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof(addr);
+    if (getpeername(stream->socket_fd, (struct sockaddr*)&addr, &len) != 0)
+        return -1;
+
+    void *src;
+    int port;
+
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in *sin = (struct sockaddr_in*)&addr;
+        src = &sin->sin_addr;
+        port = ntohs(sin->sin_port);
+    } else {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)&addr;
+        src = &sin6->sin6_addr;
+        port = ntohs(sin6->sin6_port);
+    }
+
+    if (!inet_ntop(addr.ss_family, src, out_ip, ip_size))
+        return -1;
+
+    if (out_port) *out_port = port;
+
+    return 0;
+}
+
+int fossil_nstream_enable_tls(fossil_nstream_t *stream, const char *cert_file, const char *key_file) {
+    (void)stream;
+    (void)cert_file;
+    (void)key_file;
+    fossil_set_last_error("TLS support not yet implemented.");
+    return -1;
+}
+
+int fossil_nstream_upgrade(fossil_nstream_t *stream, const char *new_protocol) {
+    if (!stream || !new_protocol) return -1;
+    // Could reconfigure handlers or internal state here
+    strncpy(stream->protocol_flag, new_protocol, sizeof(stream->protocol_flag)-1);
+    return 0; // Dummy placeholder
+}
+
+int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr) {
+    if (!stream || !multicast_addr) return -1;
+
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    if (setsockopt(stream->socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+        fossil_set_last_error("Failed to join multicast group");
+        return -1;
+    }
+
+    return 0;
+}
+
+int fossil_nstream_enable_echo(fossil_nstream_t *stream) {
+    (void)stream;
+    fossil_set_last_error("Loopback echo not implemented.");
+    return -1;
+}
+
+int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv) {
+    if (!stream) return -1;
+    if (bytes_sent) *bytes_sent = stream->bytes_sent;
+    if (bytes_recv) *bytes_recv = stream->bytes_recv;
+    return 0;
+}
+
+a
