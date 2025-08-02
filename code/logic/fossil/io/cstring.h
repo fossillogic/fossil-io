@@ -247,6 +247,109 @@ int fossil_io_cstring_icmp(ccstring str1, ccstring str2);
  */
 int fossil_io_cstring_icontains(ccstring str, ccstring substr);
 
+/**
+ * @brief Creates a new cstring using a formatted string (like sprintf).
+ * 
+ * @param format The format string.
+ * @param ... The arguments for the format string.
+ * @return A newly allocated cstring.
+ */
+cstring fossil_io_cstring_format(ccstring format, ...);
+
+/**
+ * @brief Joins an array of strings with a delimiter.
+ * 
+ * @param strings The array of cstrings.
+ * @param count The number of elements in the array.
+ * @param delimiter The delimiter to insert between strings.
+ * @return A new cstring consisting of all strings joined by the delimiter.
+ */
+cstring fossil_io_cstring_join(ccstring *strings, size_t count, char delimiter);
+
+/**
+ * @brief Finds the first index of a substring within a string.
+ * 
+ * @param str The cstring to search.
+ * @param substr The substring to find.
+ * @return The index of the first occurrence, or -1 if not found.
+ */
+int fossil_io_cstring_index_of(ccstring str, ccstring substr);
+
+/**
+ * @brief Checks if two cstrings are exactly equal (case-sensitive).
+ *
+ * Compares two null-terminated strings character by character.
+ *
+ * @param a The first cstring to compare.
+ * @param b The second cstring to compare.
+ * @return 1 if the strings are exactly equal, 0 otherwise.
+ */
+int fossil_io_cstring_equals(ccstring a, ccstring b);
+
+/**
+ * @brief Checks if two cstrings are equal, ignoring case.
+ *
+ * Compares two null-terminated strings in a case-insensitive manner.
+ *
+ * @param a The first cstring to compare.
+ * @param b The second cstring to compare.
+ * @return 1 if the strings are equal ignoring case, 0 otherwise.
+ */
+int fossil_io_cstring_iequals(ccstring a, ccstring b);
+
+/**
+ * @brief Escapes a cstring for safe use in JSON strings.
+ *
+ * Replaces special characters like quotes, backslashes, and control characters
+ * with their escaped equivalents (e.g., `"` becomes `\"`, `\n` becomes `\\n`, etc.).
+ *
+ * @param str The original cstring to escape.
+ * @return A newly allocated cstring containing the JSON-escaped result.
+ */
+cstring fossil_io_cstring_escape_json(ccstring str);
+
+/**
+ * @brief Unescapes a JSON-escaped cstring.
+ *
+ * Converts escaped sequences such as `\\n`, `\\t`, `\\uXXXX`, and `\\\"` into
+ * their actual character representations.
+ *
+ * @param str The JSON-escaped cstring to unescape.
+ * @return A newly allocated cstring with escape sequences resolved.
+ */
+cstring fossil_io_cstring_unescape_json(ccstring str);
+
+/**
+ * @brief Normalizes whitespace in a cstring by collapsing multiple spaces.
+ *
+ * Replaces sequences of two or more whitespace characters with a single space.
+ * Leading and trailing whitespace is trimmed.
+ *
+ * @param str The cstring to normalize.
+ * @return A newly allocated cstring with normalized whitespace.
+ */
+cstring fossil_io_cstring_normalize_spaces(cstring str);
+
+/**
+ * @brief Removes surrounding single or double quotes from a cstring.
+ *
+ * If the string begins and ends with the same quote character (`"` or `'`),
+ * both are removed. Does not modify the contents inside the quotes.
+ *
+ * @param str The cstring to process.
+ * @return A newly allocated cstring without surrounding quotes.
+ */
+cstring fossil_io_cstring_strip_quotes(ccstring str);
+
+/**
+ * @brief Appends src to dest in-place, resizing as necessary.
+ * 
+ * @param dest A pointer to the destination cstring.
+ * @param src The string to append.
+ * @return 0 on success, non-zero on allocation failure.
+ */
+int fossil_io_cstring_append(cstring *dest, ccstring src);
+
 // String Stream
 
 /**
