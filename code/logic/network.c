@@ -21,14 +21,17 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
 typedef SOCKET socket_t;
-#else
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>  // <-- Required for struct timeval
+#include <netinet/in.h>     // for struct ip_mreq
 typedef int socket_t;
 #endif
 
@@ -408,20 +411,7 @@ int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable) {
     return 0;
 }
 
-int fossil_nstream_set_timeout(fossil_nstream_t *stream, int timeout_ms) {
-    if (!stream) return -1;
-
-    struct timeval tv;
-    tv.tv_sec = timeout_ms / 1000;
-    tv.tv_usec = (timeout_ms % 1000) * 1000;
-
-    if (setsockopt(stream->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ||
-        setsockopt(stream->socket_fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
-        fossil_set_last_error("Failed to set socket timeout");
-        return -1;
-    }
-    return 0;
-}
+x
 
 int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port) {
     if (!stream || !out_ip) return -1;
