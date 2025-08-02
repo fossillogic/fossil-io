@@ -264,14 +264,23 @@ int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t 
 int fossil_nstream_upgrade(fossil_nstream_t *stream, const char *new_protocol);
 
 /**
- * Enable TLS/SSL encryption on the stream.
+ * @brief Polls multiple fossil_nstream_t sockets for activity (readable/writable).
  *
- * @param stream The network stream.
- * @param cert_file Path to the certificate file.
- * @param key_file Path to the private key file.
- * @return 0 on success, -1 on failure.
+ * This function uses a cross-platform mechanism (select or poll) to wait for
+ * activity on a list of streams. It is non-blocking if timeout_ms is 0, and
+ * blocks up to timeout_ms milliseconds otherwise. Negative timeout disables timeout.
+ *
+ * @param streams     An array of pointers to fossil_nstream_t streams to monitor.
+ * @param count       The number of streams in the array.
+ * @param timeout_ms  Timeout in milliseconds. 0 for non-blocking, -1 for infinite wait.
+ *
+ * Each stream may define its own callback using fossil_nstream_set_callback() 
+ * to handle readable/writable/exception events in the future.
+ *
+ * @note Currently only monitors for readability. Future versions may support 
+ *       event flags and per-stream callbacks for more flexibility.
  */
-int fossil_nstream_enable_tls(fossil_nstream_t *stream, const char *cert_file, const char *key_file);
+void fossil_nstream_poll(fossil_nstream_t *streams[], size_t count, int timeout_ms);
 
 /**
  * Join a multicast group.
