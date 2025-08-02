@@ -22,6 +22,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 typedef SOCKET socket_t;
+typedef char fossil_sockopt_t;
 #else
 #include <unistd.h>
 #include <fcntl.h>
@@ -32,6 +33,7 @@ typedef SOCKET socket_t;
 #include <sys/time.h>  // <-- Required for struct timeval
 #include <netinet/in.h>     // for struct ip_mreq
 typedef int socket_t;
+typedef void fossil_sockopt_t;
 #endif
 
 struct fossil_nstream_t {
@@ -440,14 +442,28 @@ int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t 
 }
 
 int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr) {
-    if (!stream || !multicast_addr) return -1;
+    if (!stream || !multicast_addr) {
+        fossil_set_last_error("Invalid stream or multicast address");
+        return -1;
+    }
 
     struct ip_mreq mreq;
+    memset(&mreq, 0, sizeof(mreq));
     mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
-    if (setsockopt(stream->socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-        fossil_set_last_error("Failed to join multicast group");
+    if (mreq.imr_multiaddr.s_addr == INADDR_NONE) {
+        fossil_set_last_error("Invalid multicast address format");
+        return -1;
+    }
+
+    if (setsockopt(stream->socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                   (fossil_sockopt_t*)&mreq, sizeof(mreq)) < 0) {
+#ifdef _WIN32
+        fossil_set_last_error("setsockopt failed (Windows)");
+#else
+        fossil_set_last_error(strerror(errno));
+#endif
         return -1;
     }
 
