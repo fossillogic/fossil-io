@@ -466,3 +466,10 @@ int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicas
 
     return 0;
 }
+
+int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv) {
+    if (!stream) return -1;
+    if (bytes_sent) *bytes_sent = stream->bytes_sent;
+    if (bytes_recv) *bytes_recv = stream->bytes_recv;
+    return 0;
+}
