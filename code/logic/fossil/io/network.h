@@ -235,15 +235,6 @@ const char *fossil_nstream_last_error(void);
 int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable);
 
 /**
- * Set read/write timeouts on the network stream.
- *
- * @param stream The network stream.
- * @param timeout_ms Timeout duration in milliseconds.
- * @return 0 on success, or -1 on failure.
- */
-int fossil_nstream_set_timeout(fossil_nstream_t *stream, int timeout_ms);
-
-/**
  * Retrieve the remote peer's IP address and port.
  *
  * @param stream The network stream.
