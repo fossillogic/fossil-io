@@ -40,6 +40,9 @@ struct fossil_nstream_t {
     char client_type_flag[32];
     int is_connected;
     int is_server;
+
+    size_t bytes_sent;
+    size_t bytes_recv;
 };
 
 static char fossil_last_error[256] = {0};
