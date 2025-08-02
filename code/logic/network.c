@@ -441,35 +441,6 @@ int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t 
     return 0;
 }
 
-int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr) {
-    if (!stream || !multicast_addr) {
-        fossil_set_last_error("Invalid stream or multicast address");
-        return -1;
-    }
-
-    struct ip_mreq mreq;
-    memset(&mreq, 0, sizeof(mreq));
-    mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-
-    if (mreq.imr_multiaddr.s_addr == INADDR_NONE) {
-        fossil_set_last_error("Invalid multicast address format");
-        return -1;
-    }
-
-    if (setsockopt(stream->socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                   (fossil_sockopt_t*)&mreq, sizeof(mreq)) < 0) {
-#ifdef _WIN32
-        fossil_set_last_error("setsockopt failed (Windows)");
-#else
-        fossil_set_last_error(strerror(errno));
-#endif
-        return -1;
-    }
-
-    return 0;
-}
-
 int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv) {
     if (!stream) return -1;
     if (bytes_sent) *bytes_sent = stream->bytes_sent;
