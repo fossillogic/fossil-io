@@ -255,34 +255,6 @@ int fossil_nstream_set_timeout(fossil_nstream_t *stream, int timeout_ms);
 int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port);
 
 /**
- * Upgrade the current stream protocol (e.g., HTTP → WebSocket).
- *
- * @param stream The network stream.
- * @param new_protocol A string identifier of the new protocol.
- * @return 0 on success, -1 on failure.
- */
-int fossil_nstream_upgrade(fossil_nstream_t *stream, const char *new_protocol);
-
-/**
- * @brief Polls multiple fossil_nstream_t sockets for activity (readable/writable).
- *
- * This function uses a cross-platform mechanism (select or poll) to wait for
- * activity on a list of streams. It is non-blocking if timeout_ms is 0, and
- * blocks up to timeout_ms milliseconds otherwise. Negative timeout disables timeout.
- *
- * @param streams     An array of pointers to fossil_nstream_t streams to monitor.
- * @param count       The number of streams in the array.
- * @param timeout_ms  Timeout in milliseconds. 0 for non-blocking, -1 for infinite wait.
- *
- * Each stream may define its own callback using fossil_nstream_set_callback() 
- * to handle readable/writable/exception events in the future.
- *
- * @note Currently only monitors for readability. Future versions may support 
- *       event flags and per-stream callbacks for more flexibility.
- */
-void fossil_nstream_poll(fossil_nstream_t *streams[], size_t count, int timeout_ms);
-
-/**
  * Join a multicast group.
  *
  * @param stream The UDP network stream.
@@ -290,14 +262,6 @@ void fossil_nstream_poll(fossil_nstream_t *streams[], size_t count, int timeout_
  * @return 0 on success, or -1 on failure.
  */
 int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr);
-
-/**
- * Enable local loopback mode (for testing).
- *
- * @param stream The network stream.
- * @return 0 on success, or -1 on failure.
- */
-int fossil_nstream_enable_echo(fossil_nstream_t *stream);
 
 /**
  * Retrieve basic metrics from the stream.
@@ -308,19 +272,6 @@ int fossil_nstream_enable_echo(fossil_nstream_t *stream);
  * @return 0 on success, -1 on failure.
  */
 int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv);
-
-typedef void (*fossil_nstream_event_cb)(fossil_nstream_t *stream, void *userdata);
-
-/**
- * Register a callback for a specific event on the stream.
- *
- * @param stream The network stream.
- * @param event The event type (e.g., read, write, disconnect).
- * @param callback The callback function.
- * @param userdata Opaque pointer passed to the callback.
- * @return 0 on success, -1 on failure.
- */
-int fossil_nstream_set_callback(fossil_nstream_t *stream, const char *event, fossil_nstream_event_cb callback, void *userdata);
 
 #ifdef __cplusplus
 }
