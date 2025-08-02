@@ -21,9 +21,8 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
 typedef SOCKET socket_t;
-#endif
+#else
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
