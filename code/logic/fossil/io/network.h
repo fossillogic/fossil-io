@@ -246,15 +246,6 @@ int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable);
 int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port);
 
 /**
- * Join a multicast group.
- *
- * @param stream The UDP network stream.
- * @param multicast_addr The multicast group address to join.
- * @return 0 on success, or -1 on failure.
- */
-int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr);
-
-/**
  * Retrieve basic metrics from the stream.
  *
  * @param stream The network stream.
