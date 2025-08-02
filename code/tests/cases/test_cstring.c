@@ -337,11 +337,10 @@ FOSSIL_TEST(c_test_cstring_strip_quotes) {
 
 FOSSIL_TEST(c_test_cstring_append) {
     cstring str = fossil_io_cstring_create("Hello");
-    cstring result = fossil_io_cstring_append(str, ", World!");
+    cstring result = fossil_io_cstring_append(&str, ", World!");
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
     fossil_io_cstring_free(str);
-    fossil_io_cstring_free(result);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *

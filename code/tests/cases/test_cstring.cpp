@@ -304,11 +304,11 @@ FOSSIL_TEST(cpp_test_cstring_strip_quotes) {
 
 FOSSIL_TEST(cpp_test_cstring_append) {
     cstring str = fossil_io_cstring_create("Hello");
-    cstring result = fossil_io_cstring_append(str, ", World!");
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
+    int rc = fossil_io_cstring_append(&str, ", World!");
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_NOT_CNULL(str);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str);
     fossil_io_cstring_free(str);
-    fossil_io_cstring_free(result);
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_create_and_free) {
