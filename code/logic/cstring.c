@@ -336,23 +336,32 @@ cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_
 }
 
 int fossil_io_cstring_icmp(ccstring str1, ccstring str2) {
+    if (!str1 || !str2) return (str1 == str2) ? 0 : (str1 ? 1 : -1);
     while (*str1 && *str2) {
-        if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
-            return 0; // Not equal
+        int c1 = tolower((unsigned char)*str1);
+        int c2 = tolower((unsigned char)*str2);
+        if (c1 != c2) {
+            return c1 - c2;
         }
         str1++;
         str2++;
     }
-    return (*str1 == '\0' && *str2 == '\0'); // Both strings must end at the same time
+    return tolower((unsigned char)*str1) - tolower((unsigned char)*str2);
 }
 
 int fossil_io_cstring_icontains(ccstring str, ccstring substr) {
-    const char *p = str;
-    while (*p) {
-        if (fossil_io_cstring_icmp(p, substr) == 1) {
-            return 1; // Found
+    if (!str || !substr || !*substr) return 0;
+    size_t substr_len = strlen(substr);
+    for (const char *p = str; *p; ++p) {
+        size_t i = 0;
+        while (i < substr_len &&
+               tolower((unsigned char)p[i]) == tolower((unsigned char)substr[i])) {
+            i++;
         }
-        p++;
+        if (i == substr_len) {
+            return 1; // Found (case-insensitive)
+        }
+        if (!p[i]) break;
     }
     return 0; // Not found
 }
@@ -489,7 +498,14 @@ cstring fossil_io_cstring_normalize_spaces(cstring str) {
 
     int in_space = 0;
     char *dst = result;
-    for (const char *src = str; *src; ++src) {
+    const char *src = str;
+
+    // Skip leading spaces
+    while (*src && isspace((unsigned char)*src)) {
+        src++;
+    }
+
+    for (; *src; ++src) {
         if (isspace((unsigned char)*src)) {
             if (!in_space) {
                 *dst++ = ' ';
