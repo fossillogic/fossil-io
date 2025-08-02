@@ -341,7 +341,6 @@ FOSSIL_TEST(c_test_cstring_append) {
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
     fossil_io_cstring_free(str);
-    fossil_io_cstring_free(result);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *

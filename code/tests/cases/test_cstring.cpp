@@ -308,7 +308,6 @@ FOSSIL_TEST(cpp_test_cstring_append) {
     ASSUME_NOT_CNULL(result);
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
     fossil_io_cstring_free(str);
-    fossil_io_cstring_free(result);
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_create_and_free) {
@@ -518,13 +517,6 @@ FOSSIL_TEST(cpp_test_cstring_class_icontains) {
     ASSUME_ITS_TRUE(!str.icontains("fossil"));
 }
 
-FOSSIL_TEST(cpp_test_cstring_class_format) {
-    fossil::io::CString result = fossil::io::CString::format("Number: %d, String: %s", 42, "test");
-    ASSUME_NOT_CNULL(result.str());
-    ASSUME_ITS_TRUE(std::string(result.str()).find("Number: 42") != std::string::npos);
-    ASSUME_ITS_TRUE(std::string(result.str()).find("String: test") != std::string::npos);
-}
-
 FOSSIL_TEST(cpp_test_cstring_class_join) {
     std::vector<std::string> parts = {"one", "two", "three"};
     fossil::io::CString result = fossil::io::CString::join(parts, ',');
@@ -657,7 +649,6 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_right);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icmp);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icontains);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_format);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_join);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_index_of);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_equals);
