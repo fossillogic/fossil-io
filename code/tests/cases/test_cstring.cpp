@@ -211,6 +211,105 @@ FOSSIL_TEST(cpp_test_cstring_pad_right) {
     fossil_io_cstring_free(result);
 }
 
+FOSSIL_TEST(cpp_test_cstring_icmp) {
+    const char *s1 = "Hello";
+    const char *s2 = "hello";
+    const char *s3 = "World";
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s2));
+    ASSUME_ITS_FALSE(fossil_io_cstring_icmp(s1, s3));
+}
+
+FOSSIL_TEST(cpp_test_cstring_icontains) {
+    const char *str = "Hello, World!";
+    const char *substr1 = "world";
+    const char *substr2 = "planet";
+    ASSUME_ITS_TRUE(fossil_io_cstring_icontains(str, substr1));
+    ASSUME_ITS_FALSE(fossil_io_cstring_icontains(str, substr2));
+}
+
+FOSSIL_TEST(cpp_test_cstring_format) {
+    cstring result = fossil_io_cstring_format("Value: %d, %s", 42, "test");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Value: 42, test", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(cpp_test_cstring_join) {
+    ccstring arr[] = {"one", "two", "three"};
+    cstring result = fossil_io_cstring_join(arr, 3, ',');
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("one,two,three", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(cpp_test_cstring_index_of) {
+    const char *str = "Hello, World!";
+    ASSUME_ITS_EQUAL_I32(7, fossil_io_cstring_index_of(str, "World"));
+    ASSUME_ITS_EQUAL_I32(-1, fossil_io_cstring_index_of(str, "planet"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_equals) {
+    const char *a = "Test";
+    const char *b = "Test";
+    const char *c = "test";
+    ASSUME_ITS_TRUE(fossil_io_cstring_equals(a, b));
+    ASSUME_ITS_FALSE(fossil_io_cstring_equals(a, c));
+}
+
+FOSSIL_TEST(cpp_test_cstring_iequals) {
+    const char *a = "Test";
+    const char *b = "test";
+    const char *c = "toast";
+    ASSUME_ITS_TRUE(fossil_io_cstring_iequals(a, b));
+    ASSUME_ITS_FALSE(fossil_io_cstring_iequals(a, c));
+}
+
+FOSSIL_TEST(cpp_test_cstring_escape_json) {
+    cstring result = fossil_io_cstring_escape_json("He said: \"Hello\"\n");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("He said: \\\"Hello\\\"\\n", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(cpp_test_cstring_unescape_json) {
+    cstring result = fossil_io_cstring_unescape_json("He said: \\\"Hello\\\"\\n");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("He said: \"Hello\"\n", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(cpp_test_cstring_normalize_spaces) {
+    cstring str = fossil_io_cstring_create("   Hello   World   ");
+    cstring result = fossil_io_cstring_normalize_spaces(str);
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Hello World", result);
+    fossil_io_cstring_free(str);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(cpp_test_cstring_strip_quotes) {
+    cstring result1 = fossil_io_cstring_strip_quotes("\"Hello\"");
+    cstring result2 = fossil_io_cstring_strip_quotes("'World'");
+    cstring result3 = fossil_io_cstring_strip_quotes("NoQuotes");
+    ASSUME_NOT_CNULL(result1);
+    ASSUME_NOT_CNULL(result2);
+    ASSUME_NOT_CNULL(result3);
+    ASSUME_ITS_EQUAL_CSTR("Hello", result1);
+    ASSUME_ITS_EQUAL_CSTR("World", result2);
+    ASSUME_ITS_EQUAL_CSTR("NoQuotes", result3);
+    fossil_io_cstring_free(result1);
+    fossil_io_cstring_free(result2);
+    fossil_io_cstring_free(result3);
+}
+
+FOSSIL_TEST(cpp_test_cstring_append) {
+    cstring str = fossil_io_cstring_create("Hello");
+    int rc = fossil_io_cstring_append(&str, ", World!");
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str);
+    fossil_io_cstring_free(str);
+}
+
 FOSSIL_TEST(cpp_test_cstring_stream_create_and_free) {
     fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
     ASSUME_NOT_CNULL(stream);
@@ -289,9 +388,9 @@ FOSSIL_TEST(cpp_test_cstring_class_split) {
     size_t count;
     std::vector<std::string> result = str.split(',', &count);
     ASSUME_ITS_EQUAL_SIZE(3, count);
-    ASSUME_ITS_EQUAL_CSTR("Hello", result[0].c_str());
-    ASSUME_ITS_EQUAL_CSTR("World", result[1].c_str());
-    ASSUME_ITS_EQUAL_CSTR("Test", result[2].c_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello", result[0].cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("World", result[1].cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("Test", result[2].cpp_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_class_replace) {
@@ -380,14 +479,14 @@ FOSSIL_TEST(cpp_test_cstring_class_pad_right) {
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_create_and_free) {
     fossil::io::CStringStream stream(1024);
-    ASSUME_NOT_CNULL(stream.read().c_str());
+    ASSUME_NOT_CNULL(stream.read().cpp_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_write_and_read) {
     fossil::io::CStringStream stream(1024);
     stream.write("Hello, World!");
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.cpp_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_multiple_writes) {
@@ -395,13 +494,100 @@ FOSSIL_TEST(cpp_test_cstring_stream_class_multiple_writes) {
     stream.write("Hello, ");
     stream.write("World!");
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.cpp_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_empty_read) {
     fossil::io::CStringStream stream(1024);
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("", result.c_str());
+    ASSUME_ITS_EQUAL_CSTR("", result.cpp_str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_icmp) {
+    fossil::io::CString str("Hello, World!");
+    ASSUME_ITS_TRUE(str.icmp("hello, world!"));
+    ASSUME_ITS_TRUE(str.icmp("HELLO, WORLD!"));
+    ASSUME_ITS_TRUE(!str.icmp("Hello, Fossil!"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_icontains) {
+    fossil::io::CString str("Hello, World!");
+    ASSUME_ITS_TRUE(str.icontains("world"));
+    ASSUME_ITS_TRUE(str.icontains("WORLD"));
+    ASSUME_ITS_TRUE(!str.icontains("fossil"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_format) {
+    fossil::io::CString result = fossil::io::CString::format("Number: %d, String: %s", 42, "test");
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_TRUE(std::string(result.str()).find("Number: 42") != std::string::npos);
+    ASSUME_ITS_TRUE(std::string(result.str()).find("String: test") != std::string::npos);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_join) {
+    std::vector<std::string> parts = {"one", "two", "three"};
+    fossil::io::CString result = fossil::io::CString::join(parts, ',');
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("one,two,three", result.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_index_of) {
+    fossil::io::CString str("Hello, World!");
+    ASSUME_ITS_EQUAL_I32(7, str.index_of("World"));
+    ASSUME_ITS_EQUAL_I32(-1, str.index_of("Fossil"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_equals) {
+    fossil::io::CString str("Hello, World!");
+    ASSUME_ITS_TRUE(str.equals("Hello, World!"));
+    ASSUME_ITS_TRUE(!str.equals("hello, world!"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_iequals) {
+    fossil::io::CString str("Hello, World!");
+    ASSUME_ITS_TRUE(str.iequals("hello, world!"));
+    ASSUME_ITS_TRUE(str.iequals("HELLO, WORLD!"));
+    ASSUME_ITS_TRUE(!str.iequals("Hello, Fossil!"));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_escape_json) {
+    fossil::io::CString str("He said: \"Hello, World!\"\n");
+    fossil::io::CString escaped = str.escape_json();
+    ASSUME_NOT_CNULL(escaped.str());
+    ASSUME_ITS_TRUE(std::string(escaped.str()).find("\\\"Hello, World!\\\"") != std::string::npos);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_unescape_json) {
+    fossil::io::CString str("He said: \\\"Hello, World!\\\"\\n");
+    fossil::io::CString unescaped = str.unescape_json();
+    ASSUME_NOT_CNULL(unescaped.str());
+    ASSUME_ITS_TRUE(std::string(unescaped.str()).find("\"Hello, World!\"\n") != std::string::npos);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_normalize_spaces) {
+    fossil::io::CString str("Hello,    World!   This   is   Fossil.");
+    fossil::io::CString normalized = str.normalize_spaces();
+    ASSUME_NOT_CNULL(normalized.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World! This is Fossil.", normalized.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_strip_quotes) {
+    fossil::io::CString str1("\"Hello, World!\"");
+    fossil::io::CString str2("'Hello, World!'");
+    fossil::io::CString str3("Hello, World!");
+    fossil::io::CString result1 = str1.strip_quotes();
+    fossil::io::CString result2 = str2.strip_quotes();
+    fossil::io::CString result3 = str3.strip_quotes();
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result1.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result2.str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result3.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_append) {
+    fossil::io::CString str("Hello");
+    int rc = str.append(", World!");
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str());
 }
 
 
@@ -430,6 +616,18 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_count);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_pad_left);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_pad_right);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_icmp);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_icontains);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_format);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_join);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_index_of);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_equals);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_iequals);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_escape_json);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_unescape_json);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_normalize_spaces);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_strip_quotes);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_append);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
@@ -456,6 +654,18 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_count);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_left);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_right);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icmp);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icontains);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_format);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_join);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_index_of);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_equals);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_iequals);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_escape_json);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_unescape_json);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_normalize_spaces);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_strip_quotes);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_append);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_write_and_read);
