@@ -38,21 +38,27 @@ extern char *_custom_strdup(const char *str) {
 }
 
 // ==================================================================
-// AI magic tricks
+// TI Reasoning Metadata (lightweight struct for audit/debug)
 // ==================================================================
+typedef struct {
+    const char *input;
+    const char *suggested;
+    int edit_distance;
+    float confidence_score; // 0.0 to 1.0
+    const char *reason;
+} fossil_ti_reason_t;
 
-// Function to calculate Levenshtein Distance
+// ==================================================================
+// Levenshtein Distance (Unchanged Core)
+// ==================================================================
 int levenshtein_distance(const char *s1, const char *s2) {
     int len1 = strlen(s1), len2 = strlen(s2);
     int i, j;
-
-    // Allocate the dp array dynamically
     int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
     if (!dp) return INT_MAX;
     for (i = 0; i <= len1; i++) {
         dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
         if (!dp[i]) {
-            // Free previously allocated rows
             for (j = 0; j < i; j++) free(dp[j]);
             free(dp);
             return INT_MAX;
@@ -73,27 +79,47 @@ int levenshtein_distance(const char *s1, const char *s2) {
             dp[i][j] = min;
         }
     }
+
     int result = dp[len1][len2];
     for (i = 0; i <= len1; i++) free(dp[i]);
     free(dp);
     return result;
 }
 
-// Function to find the closest command match
-const char* suggest_command(const char *input, fossil_io_parser_palette_t *palette) {
+// ==================================================================
+// TI-Aware Command Suggestion (with traceable reasoning)
+// ==================================================================
+const char* suggest_command_ti(const char *input, fossil_io_parser_palette_t *palette, fossil_ti_reason_t *out_reason) {
     fossil_io_parser_command_t *current = palette->commands;
     const char *best_match = NULL;
     int min_distance = INT_MAX;
+    int best_length = 1; // Avoid divide-by-zero
 
     while (current) {
         int distance = levenshtein_distance(input, current->name);
         if (distance < min_distance) {
             min_distance = distance;
             best_match = current->name;
+            best_length = strlen(current->name);
         }
         current = current->next;
     }
-    return (min_distance <= 3) ? best_match : NULL; // Suggest only if close enough
+
+    // Compute confidence score based on edit distance
+    float confidence = 1.0f - ((float)min_distance / (float)best_length);
+    confidence = (confidence < 0.0f) ? 0.0f : (confidence > 1.0f) ? 1.0f : confidence;
+
+    // Optional reasoning trace
+    if (out_reason) {
+        out_reason->input = input;
+        out_reason->suggested = best_match;
+        out_reason->edit_distance = min_distance;
+        out_reason->confidence_score = confidence;
+        out_reason->reason = (confidence >= 0.7f) ? "Close semantic match" : "Low confidence match";
+    }
+
+    // Only return suggestions above a minimum confidence threshold
+    return (confidence >= 0.7f) ? best_match : NULL;
 }
 
 // ==================================================================
@@ -443,12 +469,25 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
     }
 
     if (!command) {
-        // Suggest a similar command or show an error
-        const char *suggestion = suggest_command(command_name, palette);
+        // Use TI-aware suggestion system
+        fossil_ti_reason_t ti_reason = {0};
+        const char *suggestion = suggest_command_ti(command_name, palette, &ti_reason);
+    
         if (suggestion) {
-            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Did you mean '%s'?{reset}\n", command_name, suggestion);
+            fossil_io_fprintf(FOSSIL_STDERR,
+                "{red}Unknown command: '%s'. Did you mean '%s'?{reset}\n"
+                "{yellow}[TI] Suggestion confidence: %.2f | Distance: %d | Reason: %s{reset}\n",
+                command_name,
+                suggestion,
+                ti_reason.confidence_score,
+                ti_reason.edit_distance,
+                ti_reason.reason
+            );
         } else {
-            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Type '--help' to see available commands.{reset}\n", command_name);
+            fossil_io_fprintf(FOSSIL_STDERR,
+                "{red}Unknown command: '%s'. Type '--help' to see available commands.{reset}\n",
+                command_name
+            );
         }
         return;
     }
