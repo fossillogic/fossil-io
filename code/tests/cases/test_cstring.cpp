@@ -388,9 +388,9 @@ FOSSIL_TEST(cpp_test_cstring_class_split) {
     size_t count;
     std::vector<std::string> result = str.split(',', &count);
     ASSUME_ITS_EQUAL_SIZE(3, count);
-    ASSUME_ITS_EQUAL_CSTR("Hello", result[0].cpp_str());
-    ASSUME_ITS_EQUAL_CSTR("World", result[1].cpp_str());
-    ASSUME_ITS_EQUAL_CSTR("Test", result[2].cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello", result[0].c_str());
+    ASSUME_ITS_EQUAL_CSTR("World", result[1].c_str());
+    ASSUME_ITS_EQUAL_CSTR("Test", result[2].c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_class_replace) {
@@ -479,14 +479,14 @@ FOSSIL_TEST(cpp_test_cstring_class_pad_right) {
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_create_and_free) {
     fossil::io::CStringStream stream(1024);
-    ASSUME_NOT_CNULL(stream.read().cpp_str());
+    ASSUME_NOT_CNULL(stream.read().c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_write_and_read) {
     fossil::io::CStringStream stream(1024);
     stream.write("Hello, World!");
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_multiple_writes) {
@@ -494,13 +494,13 @@ FOSSIL_TEST(cpp_test_cstring_stream_class_multiple_writes) {
     stream.write("Hello, ");
     stream.write("World!");
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_stream_class_empty_read) {
     fossil::io::CStringStream stream(1024);
     std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("", result.cpp_str());
+    ASSUME_ITS_EQUAL_CSTR("", result.c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_class_icmp) {
