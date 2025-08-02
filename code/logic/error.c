@@ -110,12 +110,33 @@ const char *fossil_io_what(fossil_status_t error_code) {
         // Hardware Errors
         case FOSSIL_ERROR_HARDWARE_FAILURE: return "Hardware failure.";
         case FOSSIL_ERROR_HARD_DISK_FAILURE: return "Hard disk failure.";
-        case FOSSIL_ERROR_GPU_FAILURE: return "GPU failure.";
         case FOSSIL_ERROR_CPU_OVERHEAT: return "CPU overheat detected.";
         case FOSSIL_ERROR_MEMORY_FAILURE: return "Memory failure.";
         case FOSSIL_ERROR_HARDWARE_OVERLOAD: return "Hardware overload.";
         case FOSSIL_ERROR_DEVICE_TIMEOUT: return "Device timeout.";
         case FOSSIL_ERROR_POWER_SUPPLY_FAILURE: return "Power supply failure.";
+        case FOSSIL_ERROR_MOTHERBOARD_FAILURE: return "Motherboard failure.";
+        case FOSSIL_ERROR_CPU_FAILURE: return "CPU failure.";
+        case FOSSIL_ERROR_RAM_FAILURE: return "RAM failure.";
+        case FOSSIL_ERROR_SSD_FAILURE: return "SSD failure.";
+        case FOSSIL_ERROR_HDD_FAILURE: return "HDD failure.";
+        case FOSSIL_ERROR_FAN_FAILURE: return "Fan failure.";
+        case FOSSIL_ERROR_GPU_FAILURE: return "GPU failure.";
+        case FOSSIL_ERROR_BATTERY_FAILURE: return "Battery failure.";
+        case FOSSIL_ERROR_SENSOR_FAILURE: return "Sensor failure.";
+        case FOSSIL_ERROR_USB_CONTROLLER_FAILURE: return "USB controller failure.";
+        case FOSSIL_ERROR_PCI_DEVICE_FAILURE: return "PCI device failure.";
+        case FOSSIL_ERROR_NETWORK_CARD_FAILURE: return "Network card failure.";
+        case FOSSIL_ERROR_SOUND_CARD_FAILURE: return "Sound card failure.";
+        case FOSSIL_ERROR_DISPLAY_ADAPTER_FAILURE: return "Display adapter failure.";
+        case FOSSIL_ERROR_POWER_SUPPLY_OVERVOLTAGE: return "Power supply overvoltage.";
+        case FOSSIL_ERROR_POWER_SUPPLY_UNDERVOLTAGE: return "Power supply undervoltage.";
+        case FOSSIL_ERROR_THERMAL_SHUTDOWN: return "Thermal shutdown.";
+        case FOSSIL_ERROR_FIRMWARE_CORRUPTION: return "Firmware corruption.";
+        case FOSSIL_ERROR_HARDWARE_INCOMPATIBILITY: return "Hardware incompatibility.";
+        case FOSSIL_ERROR_HARDWARE_NOT_DETECTED: return "Hardware not detected.";
+        case FOSSIL_ERROR_HARDWARE_DRIVER_MISSING: return "Hardware driver missing.";
+        case FOSSIL_ERROR_HARDWARE_DRIVER_CORRUPTED: return "Hardware driver corrupted.";
 
         // Network Errors
         case FOSSIL_ERROR_NETWORK_FAILURE: return "Network failure.";
@@ -172,6 +193,34 @@ const char *fossil_io_what(fossil_status_t error_code) {
         case FOSSIL_ERROR_DESERIALIZATION_FAILED: return "Deserialization failed.";
         case FOSSIL_ERROR_INVALID_SERIALIZATION_FORMAT: return "Invalid serialization format.";
         case FOSSIL_ERROR_DATA_CORRUPTION: return "Data corruption detected.";
+
+        // Miscellaneous Errors
+        case FOSSIL_ERROR_INDEX_OUT_OF_BOUNDS: return "Index out of bounds.";
+        case FOSSIL_ERROR_FORMAT: return "Format error.";
+        case FOSSIL_ERROR_INCOMPATIBLE_VERSION: return "Incompatible version.";
+        case FOSSIL_ERROR_JSON_PARSING_FAILED: return "JSON parsing failed.";
+        case FOSSIL_ERROR_XML_PARSING_FAILED: return "XML parsing failed.";
+        case FOSSIL_ERROR_YAML_PARSING_FAILED: return "YAML parsing failed.";
+        case FOSSIL_ERROR_INVALID_CHECKSUM: return "Invalid checksum.";
+        case FOSSIL_ERROR_TIMER_EXPIRED: return "Timer expired.";
+
+        // Truthful Intelligence Errors (TI)
+        case FOSSIL_ERROR_TI_MODEL_NOT_FOUND: return "TI: Model not found.";
+        case FOSSIL_ERROR_TI_INFERENCE_FAILED: return "TI: Inference failed.";
+        case FOSSIL_ERROR_TI_TRAINING_FAILED: return "TI: Training failed.";
+        case FOSSIL_ERROR_TI_INVALID_INPUT: return "TI: Invalid input.";
+        case FOSSIL_ERROR_TI_UNSUPPORTED_OPERATION: return "TI: Unsupported operation.";
+        case FOSSIL_ERROR_TI_TIMEOUT: return "TI: Operation timed out.";
+        case FOSSIL_ERROR_TI_MODEL_CORRUPTION: return "TI: Model corruption detected.";
+        case FOSSIL_ERROR_TI_INSUFFICIENT_RESOURCES: return "TI: Insufficient resources.";
+        case FOSSIL_ERROR_TI_INVALID_CONFIGURATION: return "TI: Invalid configuration.";
+        case FOSSIL_ERROR_TI_DATASET_NOT_FOUND: return "TI: Dataset not found.";
+        case FOSSIL_ERROR_TI_DATASET_CORRUPTION: return "TI: Dataset corruption detected.";
+        case FOSSIL_ERROR_TI_EVALUATION_FAILED: return "TI: Evaluation failed.";
+        case FOSSIL_ERROR_TI_UNSUPPORTED_MODEL_TYPE: return "TI: Unsupported model type.";
+        case FOSSIL_ERROR_TI_INCOMPATIBLE_MODEL_VERSION: return "TI: Incompatible model version.";
+        case FOSSIL_ERROR_TI_INVALID_PARAMETER: return "TI: Invalid parameter.";
+        case FOSSIL_ERROR_TI_UNEXPECTED_OUTPUT: return "TI: Unexpected output.";
 
         default: return "Unknown error code.";
     }
