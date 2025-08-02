@@ -452,19 +452,29 @@ int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t 
     return 0;
 }
 
-int fossil_nstream_enable_tls(fossil_nstream_t *stream, const char *cert_file, const char *key_file) {
-    (void)stream;
-    (void)cert_file;
-    (void)key_file;
-    fossil_set_last_error("TLS support not yet implemented.");
-    return -1;
-}
-
 int fossil_nstream_upgrade(fossil_nstream_t *stream, const char *new_protocol) {
-    if (!stream || !new_protocol) return -1;
-    // Could reconfigure handlers or internal state here
+    if (!stream || !new_protocol) {
+        fossil_set_last_error("Invalid arguments to upgrade");
+        return -1;
+    }
+
+    // Look up the protocol enum
+    fossil_protocol_t proto = fossil_protocol_from_string(new_protocol);
+    if (proto == FOSSIL_PROTO_UNKNOWN) {
+        fossil_set_last_error("Unknown protocol in upgrade");
+        return -1;
+    }
+
+    // Optionally: You could validate whether upgrade is allowed (e.g., TCP to WebSocket)
+    // For simplicity, this example just updates the protocol.
+
+    stream->protocol = proto;
+
+    // Update flag string safely
     strncpy(stream->protocol_flag, new_protocol, sizeof(stream->protocol_flag)-1);
-    return 0; // Dummy placeholder
+    stream->protocol_flag[sizeof(stream->protocol_flag)-1] = '\0';
+
+    return 0;
 }
 
 int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr) {
@@ -488,11 +498,58 @@ int fossil_nstream_enable_echo(fossil_nstream_t *stream) {
     return -1;
 }
 
-int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv) {
-    if (!stream) return -1;
-    if (bytes_sent) *bytes_sent = stream->bytes_sent;
-    if (bytes_recv) *bytes_recv = stream->bytes_recv;
-    return 0;
+void fossil_nstream_poll(fossil_nstream_t *streams[], size_t count, int timeout_ms) {
+    fd_set read_fds, write_fds;
+    struct timeval tv = { .tv_sec = timeout_ms / 1000, .tv_usec = (timeout_ms % 1000) * 1000 };
+
+    FD_ZERO(&read_fds);
+    FD_ZERO(&write_fds);
+
+    int max_fd = -1;
+    for (size_t i = 0; i < count; ++i) {
+        if (streams[i]) {
+            FD_SET(streams[i]->fd, &read_fds);
+            FD_SET(streams[i]->fd, &write_fds);
+            if (streams[i]->fd > max_fd) max_fd = streams[i]->fd;
+        }
+    }
+
+    int res = select(max_fd + 1, &read_fds, &write_fds, NULL, &tv);
+    if (res <= 0) return;
+
+    for (size_t i = 0; i < count; ++i) {
+        fossil_nstream_t *s = streams[i];
+        if (!s) continue;
+
+        if (FD_ISSET(s->fd, &read_fds)) {
+            for (int j = 0; j < FOSSIL_NSTREAM_MAX_EVENTS; ++j) {
+                if (strcmp(s->events[j].event, "readable") == 0 && s->events[j].callback)
+                    s->events[j].callback(s, s->events[j].userdata);
+            }
+        }
+
+        if (FD_ISSET(s->fd, &write_fds)) {
+            for (int j = 0; j < FOSSIL_NSTREAM_MAX_EVENTS; ++j) {
+                if (strcmp(s->events[j].event, "writable") == 0 && s->events[j].callback)
+                    s->events[j].callback(s, s->events[j].userdata);
+            }
+        }
+    }
 }
 
-a
+int fossil_nstream_set_callback(fossil_nstream_t *stream, const char *event,
+                                fossil_nstream_event_cb callback, void *userdata) {
+    if (!stream || !event || !callback) return -1;
+
+    for (int i = 0; i < FOSSIL_NSTREAM_MAX_EVENTS; ++i) {
+        if (stream->events[i].callback == NULL) {
+            strncpy(stream->events[i].event, event, sizeof(stream->events[i].event) - 1);
+            stream->events[i].callback = callback;
+            stream->events[i].userdata = userdata;
+            return 0;
+        }
+    }
+
+    fossil_set_last_error("Too many callbacks registered.");
+    return -1;
+}
