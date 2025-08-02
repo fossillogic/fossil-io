@@ -20,6 +20,7 @@
 #include "output.h"
 #include "input.h"
 #include "error.h"
+#include "cryptic.h"
 #include "cstring.h"
 #include "stream.h"
 #include "soap.h"
