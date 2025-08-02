@@ -349,7 +349,7 @@ cstring fossil_io_cstring_strip_quotes(ccstring str);
  * @param src The string to append.
  * @return 0 on success, non-zero on allocation failure.
  */
-cstring fossil_io_cstring_append(cstring dest, ccstring src);
+cstring fossil_io_cstring_append(cstring *dest, ccstring src);
 
 // String Stream
 
