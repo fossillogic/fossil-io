@@ -410,8 +410,6 @@ int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable) {
     return 0;
 }
 
-x
-
 int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port) {
     if (!stream || !out_ip) return -1;
 
