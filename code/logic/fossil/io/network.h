@@ -225,6 +225,94 @@ void fossil_nstream_destroy(fossil_nstream_t *stream);
  */
 const char *fossil_nstream_last_error(void);
 
+/**
+ * Set the network stream to non-blocking mode.
+ *
+ * @param stream The network stream.
+ * @param enable Nonzero to enable non-blocking mode, zero to disable.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_set_nonblocking(fossil_nstream_t *stream, int enable);
+
+/**
+ * Set read/write timeouts on the network stream.
+ *
+ * @param stream The network stream.
+ * @param timeout_ms Timeout duration in milliseconds.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_set_timeout(fossil_nstream_t *stream, int timeout_ms);
+
+/**
+ * Retrieve the remote peer's IP address and port.
+ *
+ * @param stream The network stream.
+ * @param out_ip A buffer to store the IP string.
+ * @param ip_size The size of the buffer.
+ * @param out_port Optional pointer to store the port.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_get_peer_info(fossil_nstream_t *stream, char *out_ip, size_t ip_size, int *out_port);
+
+/**
+ * Upgrade the current stream protocol (e.g., HTTP → WebSocket).
+ *
+ * @param stream The network stream.
+ * @param new_protocol A string identifier of the new protocol.
+ * @return 0 on success, -1 on failure.
+ */
+int fossil_nstream_upgrade(fossil_nstream_t *stream, const char *new_protocol);
+
+/**
+ * Enable TLS/SSL encryption on the stream.
+ *
+ * @param stream The network stream.
+ * @param cert_file Path to the certificate file.
+ * @param key_file Path to the private key file.
+ * @return 0 on success, -1 on failure.
+ */
+int fossil_nstream_enable_tls(fossil_nstream_t *stream, const char *cert_file, const char *key_file);
+
+/**
+ * Join a multicast group.
+ *
+ * @param stream The UDP network stream.
+ * @param multicast_addr The multicast group address to join.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_join_multicast(fossil_nstream_t *stream, const char *multicast_addr);
+
+/**
+ * Enable local loopback mode (for testing).
+ *
+ * @param stream The network stream.
+ * @return 0 on success, or -1 on failure.
+ */
+int fossil_nstream_enable_echo(fossil_nstream_t *stream);
+
+/**
+ * Retrieve basic metrics from the stream.
+ *
+ * @param stream The network stream.
+ * @param bytes_sent Output total bytes sent.
+ * @param bytes_recv Output total bytes received.
+ * @return 0 on success, -1 on failure.
+ */
+int fossil_nstream_get_stats(fossil_nstream_t *stream, size_t *bytes_sent, size_t *bytes_recv);
+
+typedef void (*fossil_nstream_event_cb)(fossil_nstream_t *stream, void *userdata);
+
+/**
+ * Register a callback for a specific event on the stream.
+ *
+ * @param stream The network stream.
+ * @param event The event type (e.g., read, write, disconnect).
+ * @param callback The callback function.
+ * @param userdata Opaque pointer passed to the callback.
+ * @return 0 on success, -1 on failure.
+ */
+int fossil_nstream_set_callback(fossil_nstream_t *stream, const char *event, fossil_nstream_event_cb callback, void *userdata);
+
 #ifdef __cplusplus
 }
 #include <stdexcept>
