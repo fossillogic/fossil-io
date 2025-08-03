@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/cstring.h"
+#include "fossil/io/output.h"
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -335,25 +336,228 @@ cstring fossil_io_cstring_pad_right(ccstring str, size_t total_length, char pad_
 }
 
 int fossil_io_cstring_icmp(ccstring str1, ccstring str2) {
+    // Handle NULL pointers: both NULL means equal, one NULL means less/greater
+    if (str1 == str2) return 0;
+    if (!str1) return (str2 && *str2) ? -1 : 0;
+    if (!str2) return (*str1) ? 1 : 0;
+
+    // Then check
     while (*str1 && *str2) {
-        if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2)) {
-            return 0; // Not equal
+        int c1 = tolower((unsigned char)*str1);
+        int c2 = tolower((unsigned char)*str2);
+        if (c1 != c2) {
+            return c1 - c2;
         }
         str1++;
         str2++;
     }
-    return (*str1 == '\0' && *str2 == '\0'); // Both strings must end at the same time
+    return tolower((unsigned char)*str1) - tolower((unsigned char)*str2);
 }
 
 int fossil_io_cstring_icontains(ccstring str, ccstring substr) {
-    const char *p = str;
-    while (*p) {
-        if (fossil_io_cstring_icmp(p, substr) == 1) {
-            return 1; // Found
+    if (!str || !substr || !*substr) return 0;
+    size_t substr_len = strlen(substr);
+    for (const char *p = str; *p; ++p) {
+        size_t i = 0;
+        while (i < substr_len &&
+               tolower((unsigned char)p[i]) == tolower((unsigned char)substr[i])) {
+            i++;
         }
-        p++;
+        if (i == substr_len) {
+            return 1; // Found (case-insensitive)
+        }
+        if (!p[i]) break;
     }
     return 0; // Not found
+}
+
+cstring fossil_io_cstring_format(ccstring format, ...) {
+    va_list args;
+    va_start(args, format);
+    va_list args_copy;
+    va_copy(args_copy, args);
+
+    int length = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+
+    if (length < 0) {
+        va_end(args_copy);
+        return NULL;
+    }
+
+    char *buffer = malloc((size_t)length + 1);
+    if (!buffer) {
+        va_end(args_copy);
+        return NULL;
+    }
+
+    vsnprintf(buffer, (size_t)length + 1, format, args_copy);
+    va_end(args_copy);
+    return buffer;
+}
+
+cstring fossil_io_cstring_join(ccstring *strings, size_t count, char delimiter) {
+    if (!strings || count == 0) return fossil_io_cstring_dup("");
+
+    size_t total = 0;
+    for (size_t i = 0; i < count; ++i) {
+        total += strlen(strings[i]);
+    }
+    total += count - 1; // space for delimiters
+
+    char *result = malloc(total + 1);
+    if (!result) return NULL;
+
+    result[0] = '\0';
+    for (size_t i = 0; i < count; ++i) {
+        strcat(result, strings[i]);
+        if (i != count - 1) {
+            size_t len = strlen(result);
+            result[len] = delimiter;
+            result[len + 1] = '\0';
+        }
+    }
+
+    return result;
+}
+
+int fossil_io_cstring_index_of(ccstring str, ccstring substr) {
+    if (!str || !substr) return -1;
+    const char *found = strstr(str, substr);
+    return found ? (int)(found - str) : -1;
+}
+
+int fossil_io_cstring_equals(ccstring a, ccstring b) {
+    return strcmp(a, b) == 0;
+}
+
+int fossil_io_cstring_iequals(ccstring a, ccstring b) {
+    if (!a || !b) return 0;
+    while (*a && *b) {
+        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return 0;
+        a++; b++;
+    }
+    return *a == *b;
+}
+
+cstring fossil_io_cstring_escape_json(ccstring str) {
+    if (!str) return NULL;
+
+    size_t len = strlen(str);
+    size_t est = len * 2 + 1;
+    char *escaped = malloc(est);
+    if (!escaped) return NULL;
+
+    char *dst = escaped;
+    for (const char *src = str; *src; ++src) {
+        switch (*src) {
+            case '\"': *dst++ = '\\'; *dst++ = '\"'; break;
+            case '\\': *dst++ = '\\'; *dst++ = '\\'; break;
+            case '\n': *dst++ = '\\'; *dst++ = 'n'; break;
+            case '\r': *dst++ = '\\'; *dst++ = 'r'; break;
+            case '\t': *dst++ = '\\'; *dst++ = 't'; break;
+            case '\b': *dst++ = '\\'; *dst++ = 'b'; break;
+            case '\f': *dst++ = '\\'; *dst++ = 'f'; break;
+            default:
+                *dst++ = *src;
+        }
+    }
+    *dst = '\0';
+    return escaped;
+}
+
+cstring fossil_io_cstring_unescape_json(ccstring str) {
+    if (!str) return NULL;
+
+    char *unescaped = malloc(strlen(str) + 1);
+    if (!unescaped) return NULL;
+
+    char *dst = unescaped;
+    for (const char *src = str; *src; ++src) {
+        if (*src == '\\') {
+            ++src;
+            switch (*src) {
+                case 'n': *dst++ = '\n'; break;
+                case 'r': *dst++ = '\r'; break;
+                case 't': *dst++ = '\t'; break;
+                case 'b': *dst++ = '\b'; break;
+                case 'f': *dst++ = '\f'; break;
+                case '\\': *dst++ = '\\'; break;
+                case '\"': *dst++ = '\"'; break;
+                default: *dst++ = *src; break;
+            }
+        } else {
+            *dst++ = *src;
+        }
+    }
+    *dst = '\0';
+    return unescaped;
+}
+
+cstring fossil_io_cstring_normalize_spaces(cstring str) {
+    if (!str) return NULL;
+
+    size_t len = strlen(str);
+    char *result = malloc(len + 1);
+    if (!result) return NULL;
+
+    int in_space = 0;
+    char *dst = result;
+    const char *src = str;
+
+    // Skip leading spaces
+    while (*src && isspace((unsigned char)*src)) {
+        src++;
+    }
+
+    for (; *src; ++src) {
+        if (isspace((unsigned char)*src)) {
+            if (!in_space) {
+                *dst++ = ' ';
+                in_space = 1;
+            }
+        } else {
+            *dst++ = *src;
+            in_space = 0;
+        }
+    }
+
+    // Trim trailing space
+    if (dst > result && dst[-1] == ' ') dst--;
+    *dst = '\0';
+
+    return result;
+}
+
+cstring fossil_io_cstring_strip_quotes(ccstring str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+    if (len < 2) return fossil_io_cstring_dup(str);
+
+    if ((str[0] == '\'' && str[len - 1] == '\'') ||
+        (str[0] == '"'  && str[len - 1] == '"')) {
+        char *result = malloc(len - 1); // len - 2 + 1
+        if (!result) return NULL;
+        memcpy(result, str + 1, len - 2);
+        result[len - 2] = '\0';
+        return result;
+    }
+
+    return fossil_io_cstring_dup(str);
+}
+
+cstring fossil_io_cstring_append(cstring *dest, ccstring src) {
+    if (!dest || !src) return NULL;
+
+    size_t old_len = *dest ? strlen(*dest) : 0;
+    size_t add_len = strlen(src);
+
+    char *new_str = realloc(*dest, old_len + add_len + 1);
+    if (!new_str) return NULL;
+
+    memcpy(new_str + old_len, src, add_len + 1); // includes null terminator
+    *dest = new_str;
+    return new_str;
 }
 
 // ============================================================================

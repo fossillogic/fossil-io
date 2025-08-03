@@ -387,12 +387,23 @@ const char *fossil_io_soap_detect_tone(const char *text) {
 
 int fossil_io_soap_check_grammar(const char *text) {
     if (!text) return -1;
+    int found = 0;
     for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect; i++) {
-        if (custom_strcasestr(text, FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect)) {
-            return 1; // Grammar issue found
+        const char *incorrect = FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect;
+        const char *ptr = text;
+        while ((ptr = custom_strcasestr(ptr, incorrect)) != NULL) {
+            // Check word boundaries
+            int before = (ptr == text) || !isalnum((unsigned char)ptr[-1]);
+            int after = !isalnum((unsigned char)ptr[strlen(incorrect)]);
+            if (before && after) {
+                found = 1;
+                break;
+            }
+            ptr += strlen(incorrect);
         }
+        if (found) break;
     }
-    return 0;
+    return found;
 }
 
 char *fossil_io_soap_normalize(const char *text) {
@@ -426,10 +437,6 @@ char *fossil_io_soap_normalize_slang(const char *text) {
 
     char *result = fossil_io_cstring_dup(text);
     if (!result) return NULL;
-
-    for (size_t i = 0; result[i]; i++) {
-        result[i] = tolower(result[i]);
-    }
 
     for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad != NULL; i++) {
         const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
@@ -528,18 +535,25 @@ char *fossil_io_soap_filter_offensive(const char *text) {
         while ((found = custom_strcasestr(result, bad)) != NULL) {
             size_t offset = (size_t)(found - result);
             size_t newlen = strlen(result) - strlen(bad) + strlen(good) + 1;
-        
-            char *temp = malloc(newlen);
+
+            char *temp = (char *)malloc(newlen);
             if (!temp) {
                 free(result);
                 return NULL;
             }
-        
-            strncpy(temp, result, offset);
+
+            // Copy prefix safely
+            if (offset > 0) {
+                memcpy(temp, result, offset);
+            }
             temp[offset] = '\0';
+
+            // Append replacement
             strcat(temp, good);
+
+            // Append suffix
             strcat(temp, result + offset + strlen(bad));
-        
+
             free(result);
             result = temp;
         }

@@ -22,14 +22,9 @@
 
 int FOSSIL_CLI_TOGGLE_DRY_RUN = 0;
 int FOSSIL_CLI_TOGGLE_VERBOSE = 0;
-int FOSSIL_CLI_TOGGLE_SANITY = 0;
 
 char *FOSSIL_CLI_TOOL_NAME = "fossil-cli";
 char *FOSSIL_CLI_TOOL_VERSION = "1.0.0";
-char *FOSSIL_CLI_TOOL_AUTHOR = "Fossil Logic";
-char *FOSSIL_CLI_TOOL_LICENSE = "Mozilla Public License 2.0";
-char *FOSSIL_CLI_TOOL_DESCRIPTION = "A command-line interface for Fossil Logic.";
-char *FOSSIL_CLI_TOOL_WEBSITE = "https://fossil-logic.com";
 
 
 extern char *_custom_strdup(const char *str) {
@@ -43,80 +38,93 @@ extern char *_custom_strdup(const char *str) {
 }
 
 // ==================================================================
-// AI magic tricks
+// TI Reasoning Metadata (lightweight struct for audit/debug)
 // ==================================================================
+typedef struct {
+    const char *input;
+    const char *suggested;
+    int edit_distance;
+    float confidence_score; // 0.0 to 1.0
+    const char *reason;
+} fossil_ti_reason_t;
 
-// Function to calculate Levenshtein Distance
+// ==================================================================
+// Levenshtein Distance (Unchanged Core)
+// ==================================================================
 int levenshtein_distance(const char *s1, const char *s2) {
     int len1 = strlen(s1), len2 = strlen(s2);
-    int dp[len1 + 1][len2 + 1];
-
-    for (int i = 0; i <= len1; i++) dp[i][0] = i;
-    for (int j = 0; j <= len2; j++) dp[0][j] = j;
-
-    for (int i = 1; i <= len1; i++) {
-        for (int j = 1; j <= len2; j++) {
-            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-            dp[i][j] = fmin(fmin(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+    int i, j;
+    int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
+    if (!dp) return INT_MAX;
+    for (i = 0; i <= len1; i++) {
+        dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
+        if (!dp[i]) {
+            for (j = 0; j < i; j++) free(dp[j]);
+            free(dp);
+            return INT_MAX;
         }
     }
-    return dp[len1][len2];
+
+    for (i = 0; i <= len1; i++) dp[i][0] = i;
+    for (j = 0; j <= len2; j++) dp[0][j] = j;
+
+    for (i = 1; i <= len1; i++) {
+        for (j = 1; j <= len2; j++) {
+            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            int del = dp[i - 1][j] + 1;
+            int ins = dp[i][j - 1] + 1;
+            int sub = dp[i - 1][j - 1] + cost;
+            int min = del < ins ? del : ins;
+            min = min < sub ? min : sub;
+            dp[i][j] = min;
+        }
+    }
+
+    int result = dp[len1][len2];
+    for (i = 0; i <= len1; i++) free(dp[i]);
+    free(dp);
+    return result;
 }
 
-// Function to find the closest command match
-const char* suggest_command(const char *input, fossil_io_parser_palette_t *palette) {
+// ==================================================================
+// TI-Aware Command Suggestion (with traceable reasoning)
+// ==================================================================
+const char* suggest_command_ti(const char *input, fossil_io_parser_palette_t *palette, fossil_ti_reason_t *out_reason) {
     fossil_io_parser_command_t *current = palette->commands;
     const char *best_match = NULL;
     int min_distance = INT_MAX;
+    int best_length = 1; // Avoid divide-by-zero
 
     while (current) {
         int distance = levenshtein_distance(input, current->name);
         if (distance < min_distance) {
             min_distance = distance;
             best_match = current->name;
+            best_length = strlen(current->name);
         }
         current = current->next;
     }
-    return (min_distance <= 3) ? best_match : NULL; // Suggest only if close enough
+
+    // Compute confidence score based on edit distance
+    float confidence = 1.0f - ((float)min_distance / (float)best_length);
+    confidence = (confidence < 0.0f) ? 0.0f : (confidence > 1.0f) ? 1.0f : confidence;
+
+    // Optional reasoning trace
+    if (out_reason) {
+        out_reason->input = input;
+        out_reason->suggested = best_match;
+        out_reason->edit_distance = min_distance;
+        out_reason->confidence_score = confidence;
+        out_reason->reason = (confidence >= 0.7f) ? "Close semantic match" : "Low confidence match";
+    }
+
+    // Only return suggestions above a minimum confidence threshold
+    return (confidence >= 0.7f) ? best_match : NULL;
 }
 
 // ==================================================================
 // Functions
 // ==================================================================
-
-void show_this(void) {
-    fossil_io_printf("{blue}About this tool:{reset}\n");
-    fossil_io_printf("{cyan}  Name:{reset} %s\n", FOSSIL_CLI_TOOL_NAME);
-    fossil_io_printf("{cyan}  Version:{reset} %s\n", FOSSIL_CLI_TOOL_VERSION);
-    fossil_io_printf("{cyan}  Author:{reset} %s\n", FOSSIL_CLI_TOOL_AUTHOR);
-    fossil_io_printf("{cyan}  License:{reset} %s\n", FOSSIL_CLI_TOOL_LICENSE);
-    fossil_io_printf("{cyan}  Description:{reset} %s\n", FOSSIL_CLI_TOOL_DESCRIPTION);
-    fossil_io_printf("{cyan}  Website:{reset} %s\n", FOSSIL_CLI_TOOL_WEBSITE);
-
-    fossil_io_printf("{blue}Operating System:{reset} %s\n", 
-#if defined(_WIN32) || defined(_WIN64)
-        "Windows"
-#elif defined(__linux__)
-        "Linux"
-#elif defined(__APPLE__) && defined(__MACH__)
-        "macOS"
-#elif defined(__unix__)
-        "Unix"
-#else
-        "Unknown"
-#endif
-    );
-
-    fossil_io_printf("{blue}Endianness:{reset} %s\n", 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        "Little Endian"
-#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        "Big Endian"
-#else
-        "Unknown"
-#endif
-    );
-}
 
 void show_version(void) {
     fossil_io_printf("{blue}Version:{reset} %s\n", FOSSIL_CLI_TOOL_VERSION);
@@ -143,7 +151,7 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
             fossil_io_printf("{blue}Arguments:{reset}\n");
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
-                fossil_io_printf("{cyan}  --%s (%s): %s{reset}\n", 
+                fossil_io_printf("{cyan}  --%s (%s): ", 
                        arg->name, 
                        arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
                        arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
@@ -153,8 +161,43 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
                        arg->type == FOSSIL_IO_PARSER_ARRAY ? "array" :
                        arg->type == FOSSIL_IO_PARSER_FEATURE ? "feature" :
                        arg->type == FOSSIL_IO_PARSER_INVALID ? "invalid" :
-                       "unknown", 
-                       arg->value ? arg->value : "No default value");
+                       "unknown");
+
+                if (arg->value) {
+                    switch (arg->type) {
+                        case FOSSIL_IO_PARSER_BOOL:
+                        case FOSSIL_IO_PARSER_FEATURE:
+                            fossil_io_printf("%s", (*(int *)arg->value) ? "true" : "false");
+                            break;
+                        case FOSSIL_IO_PARSER_INT:
+                            fossil_io_printf("%d", *(int *)arg->value);
+                            break;
+                        case FOSSIL_IO_PARSER_FLOAT:
+                            fossil_io_printf("%f", *(float *)arg->value);
+                            break;
+                        case FOSSIL_IO_PARSER_STRING:
+                        case FOSSIL_IO_PARSER_DATE:
+                            fossil_io_printf("%s", (char *)arg->value);
+                            break;
+                        case FOSSIL_IO_PARSER_ARRAY: {
+                            char **arr = (char **)arg->value;
+                            int idx = 0;
+                            fossil_io_printf("[");
+                            while (arr && arr[idx]) {
+                                fossil_io_printf("%s%s", idx > 0 ? ", " : "", arr[idx]);
+                                idx++;
+                            }
+                            fossil_io_printf("]");
+                            break;
+                        }
+                        default:
+                            fossil_io_printf("Unknown");
+                            break;
+                    }
+                } else {
+                    fossil_io_printf("No default value");
+                }
+                fossil_io_printf("{reset}\n");
                 arg = arg->next;
             }
 
@@ -162,10 +205,8 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
             fossil_io_printf("{blue}Built-in:{reset}\n");
             fossil_io_printf("{cyan}  --help: Show help information for this command.{reset}\n");
             fossil_io_printf("{cyan}  --version: Display the version of the application.{reset}\n");
-            fossil_io_printf("{cyan}  --this: Perform the operation on the current context.{reset}\n");
             fossil_io_printf("{cyan}  --dry-run: Simulate the operation without making changes.{reset}\n");
             fossil_io_printf("{cyan}  --verbose: Provide detailed output during execution.{reset}\n");
-            fossil_io_printf("{cyan}  --sanity: Perform sanity checks before execution.{reset}\n");
             return;
         }
         command = command->next;
@@ -217,7 +258,7 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
             }
 
             // Add built-in flags to the usage
-            fossil_io_printf("{cyan} [--this] [--dry-run] [--verbose] [--sanity] [--version] [--help]{reset}");
+            fossil_io_printf("{cyan} [--dry-run] [--verbose] [--version] [--help]{reset}");
             fossil_io_printf("\n");
             return;
         }
@@ -250,7 +291,7 @@ fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, co
     palette->description = _custom_strdup(description);
     if (!palette->description) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for palette description.{reset}\n");
-        free(palette->name);
+        if (palette->name) free(palette->name);
         free(palette);
         return NULL;
     }
@@ -285,6 +326,12 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for command.{reset}\n");
         return NULL;
     }
+    // Initialize all fields to zero/NULL
+    command->name = NULL;
+    command->description = NULL;
+    command->arguments = NULL;
+    command->prev = NULL;
+    command->next = NULL;
 
     command->name = _custom_strdup(command_name);
     if (!command->name) {
@@ -385,12 +432,6 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
             break;
         }
 
-        if (strcmp(arg, "--this") == 0) {
-            show_this();
-            global_flags_processed = 1;
-            break;
-        }
-
         if (strcmp(arg, "--dry-run") == 0) {
             FOSSIL_CLI_TOGGLE_DRY_RUN = 1;
             fossil_io_printf("{blue}Dry-run mode enabled.{reset}\n");
@@ -400,12 +441,6 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
         if (strcmp(arg, "--verbose") == 0) {
             FOSSIL_CLI_TOGGLE_VERBOSE = 1;
             fossil_io_printf("{blue}Verbose mode enabled.{reset}\n");
-            continue;
-        }
-
-        if (strcmp(arg, "--sanity") == 0) {
-            FOSSIL_CLI_TOGGLE_SANITY = 1;
-            fossil_io_printf("{blue}Sanity checks enabled.{reset}\n");
             continue;
         }
 
@@ -434,12 +469,25 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
     }
 
     if (!command) {
-        // Suggest a similar command or show an error
-        const char *suggestion = suggest_command(command_name, palette);
+        // Use TI-aware suggestion system
+        fossil_ti_reason_t ti_reason = {0};
+        const char *suggestion = suggest_command_ti(command_name, palette, &ti_reason);
+    
         if (suggestion) {
-            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Did you mean '%s'?{reset}\n", command_name, suggestion);
+            fossil_io_fprintf(FOSSIL_STDERR,
+                "{red}Unknown command: '%s'. Did you mean '%s'?{reset}\n"
+                "{yellow}[TI] Suggestion confidence: %.2f | Distance: %d | Reason: %s{reset}\n",
+                command_name,
+                suggestion,
+                ti_reason.confidence_score,
+                ti_reason.edit_distance,
+                ti_reason.reason
+            );
         } else {
-            fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command: '%s'. Type '--help' to see available commands.{reset}\n", command_name);
+            fossil_io_fprintf(FOSSIL_STDERR,
+                "{red}Unknown command: '%s'. Type '--help' to see available commands.{reset}\n",
+                command_name
+            );
         }
         return;
     }

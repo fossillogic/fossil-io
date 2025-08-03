@@ -249,6 +249,20 @@ namespace fossil {
             }
 
             /**
+             * Reads a line of input from standard input into the provided buffer.
+             *
+             * Reads at most `size - 1` characters from `stdin` and stores them in `buffer`.
+             * If a newline character is read, it is replaced with a null terminator.
+             *
+             * @param buffer Pointer to the character buffer where input will be stored.
+             * @param size The size of the buffer.
+             * @return 0 on success, -1 on error or end-of-file.
+             */
+            int gets(char *buffer, size_t size) {
+                return fossil_io_gets(buffer, size);
+            }
+
+            /**
              * Reads formatted input from the standard input stream.
              *
              * @param format        The format string specifying how the input should be interpreted.

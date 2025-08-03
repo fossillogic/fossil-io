@@ -244,6 +244,117 @@ FOSSIL_TEST(c_test_cstring_stream_empty_read) {
     fossil_io_cstring_stream_free(stream);
 }
 
+FOSSIL_TEST(c_test_cstring_icmp) {
+    const char *s1 = "Hello";
+    const char *s2 = "hello";
+    const char *s3 = "World";
+    const char *s4 = NULL;
+    const char *s5 = "";
+    // Case-insensitive compare: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s1, s2));
+    // Case-insensitive compare: not equal
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s3) < 0 || fossil_io_cstring_icmp(s1, s3) > 0);
+    // NULL vs NULL: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s4, s4));
+    // NULL vs empty string: equal
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_icmp(s4, s5));
+    // NULL vs non-empty: less
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s4, s1) < 0);
+    // non-empty vs NULL: greater
+    ASSUME_ITS_TRUE(fossil_io_cstring_icmp(s1, s4) > 0);
+}
+
+FOSSIL_TEST(c_test_cstring_icontains) {
+    const char *str = "Hello, World!";
+    const char *substr1 = "world";
+    const char *substr2 = "planet";
+    ASSUME_ITS_TRUE(fossil_io_cstring_icontains(str, substr1));
+    ASSUME_ITS_FALSE(fossil_io_cstring_icontains(str, substr2));
+}
+
+FOSSIL_TEST(c_test_cstring_format) {
+    cstring result = fossil_io_cstring_format("Value: %d, %s", 42, "test");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Value: 42, test", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_join) {
+    ccstring arr[] = {"one", "two", "three"};
+    cstring result = fossil_io_cstring_join(arr, 3, ',');
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("one,two,three", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_index_of) {
+    const char *str = "Hello, World!";
+    ASSUME_ITS_EQUAL_I32(7, fossil_io_cstring_index_of(str, "World"));
+    ASSUME_ITS_EQUAL_I32(-1, fossil_io_cstring_index_of(str, "planet"));
+}
+
+FOSSIL_TEST(c_test_cstring_equals) {
+    const char *a = "Test";
+    const char *b = "Test";
+    const char *c = "test";
+    ASSUME_ITS_TRUE(fossil_io_cstring_equals(a, b));
+    ASSUME_ITS_FALSE(fossil_io_cstring_equals(a, c));
+}
+
+FOSSIL_TEST(c_test_cstring_iequals) {
+    const char *a = "Test";
+    const char *b = "test";
+    const char *c = "toast";
+    ASSUME_ITS_TRUE(fossil_io_cstring_iequals(a, b));
+    ASSUME_ITS_FALSE(fossil_io_cstring_iequals(a, c));
+}
+
+FOSSIL_TEST(c_test_cstring_escape_json) {
+    cstring result = fossil_io_cstring_escape_json("He said: \"Hello\"\n");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("He said: \\\"Hello\\\"\\n", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_unescape_json) {
+    cstring result = fossil_io_cstring_unescape_json("He said: \\\"Hello\\\"\\n");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("He said: \"Hello\"\n", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_normalize_spaces) {
+    cstring str = fossil_io_cstring_create("   Hello   World   ");
+    cstring result = fossil_io_cstring_normalize_spaces(str);
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Hello World", result);
+    fossil_io_cstring_free(str);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_strip_quotes) {
+    cstring result1 = fossil_io_cstring_strip_quotes("\"Hello\"");
+    cstring result2 = fossil_io_cstring_strip_quotes("'World'");
+    cstring result3 = fossil_io_cstring_strip_quotes("NoQuotes");
+    ASSUME_NOT_CNULL(result1);
+    ASSUME_NOT_CNULL(result2);
+    ASSUME_NOT_CNULL(result3);
+    ASSUME_ITS_EQUAL_CSTR("Hello", result1);
+    ASSUME_ITS_EQUAL_CSTR("World", result2);
+    ASSUME_ITS_EQUAL_CSTR("NoQuotes", result3);
+    fossil_io_cstring_free(result1);
+    fossil_io_cstring_free(result2);
+    fossil_io_cstring_free(result3);
+}
+
+FOSSIL_TEST(c_test_cstring_append) {
+    cstring str = fossil_io_cstring_create("Hello");
+    cstring result = fossil_io_cstring_append(&str, ", World!");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
+    fossil_io_cstring_free(str);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -269,6 +380,18 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_count);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_pad_left);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_pad_right);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_icmp);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_icontains);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_format);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_join);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_index_of);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_equals);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_iequals);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_escape_json);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_unescape_json);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_normalize_spaces);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_strip_quotes);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_append);
 
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_write_and_read);

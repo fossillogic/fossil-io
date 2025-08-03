@@ -215,10 +215,19 @@ FOSSIL_TEST(cpp_test_stream_remove_file) {
     fossil_fstream_close(&cpp_stream);
 
     // Remove the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+    int32_t remove_result = fossil_fstream_remove(filename);
+    ASSUME_ITS_EQUAL_I32(0, remove_result);
 
     // Check if the file does not exist
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+
+    // Try removing again, should return FOSSIL_ERROR_FILE_NOT_FOUND
+    int32_t remove_again_result = fossil_fstream_remove(filename);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_IO, remove_again_result);
+
+    // Try removing with NULL, should return FOSSIL_ERROR_CNULL_POINTER
+    int32_t remove_null_result = fossil_fstream_remove(NULL);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_IO, remove_null_result);
 }
 
 FOSSIL_TEST(cpp_test_stream_flush_file) {

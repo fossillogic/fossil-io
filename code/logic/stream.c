@@ -330,6 +330,11 @@ int32_t fossil_fstream_remove(const char *filename) {
         return FOSSIL_ERROR_OK;  // File removed successfully
     }
 
+    if (errno == ENOENT) {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found when removing file %s\n", filename);
+        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    }
+
     fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error when removing file %s\n", filename);
     return FOSSIL_ERROR_IO;
 }
