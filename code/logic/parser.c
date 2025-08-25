@@ -54,10 +54,12 @@ typedef struct {
 int levenshtein_distance(const char *s1, const char *s2) {
     int len1 = strlen(s1), len2 = strlen(s2);
     int i, j;
+
     int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
     if (!dp) return INT_MAX;
+
     for (i = 0; i <= len1; i++) {
-        dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
+        dp[i] = (int *)calloc(len2 + 1, sizeof(int));  // <-- calloc ensures initialization
         if (!dp[i]) {
             for (j = 0; j < i; j++) free(dp[j]);
             free(dp);
