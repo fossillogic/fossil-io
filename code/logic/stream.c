@@ -105,7 +105,8 @@ int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, cons
         return FOSSIL_ERROR_FILE_NOT_FOUND;
     }
 
-    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM);
+    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM - 1);
+    stream->filename[FOSSIL_BUFFER_MEDIUM - 1] = '\0';
 
     return FOSSIL_ERROR_OK;
 }
@@ -161,7 +162,10 @@ int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, c
     }
 
     stream->file = new_file;
-    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM);
+
+    // Safe copy
+    strncpy(stream->filename, filename, FOSSIL_BUFFER_MEDIUM - 1);
+    stream->filename[FOSSIL_BUFFER_MEDIUM - 1] = '\0';
 
     return FOSSIL_ERROR_OK;
 }
