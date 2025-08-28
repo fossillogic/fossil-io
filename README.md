@@ -10,11 +10,12 @@ Fossil IO is an extensive and versatile library meticulously crafted to manage i
 4. **Efficient File Handling**: Supports file stream operations with a focus on secure and reliable file I/O.
 5. **Error Reporting**: Includes a comprehensive set of error codes and a lookup function to provide detailed error messages.
 
-## Prerequisites
+## ***Prerequisites***
 
-To get started with Fossil Io, ensure you have the following installed:
+To get started, ensure you have the following installed:
 
-- **Meson Build System**: If you don’t have Meson installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **Meson Build System**: If you don’t have Meson `1.8.0` or newer installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **Conan Package Manager**: If you prefer using Conan, ensure it is installed by following the instructions on the official [Conan website](https://docs.conan.io/en/latest/installation.html).
 
 ### Adding Dependency
 
