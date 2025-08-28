@@ -20,7 +20,7 @@ To get started with Fossil Io, ensure you have the following installed:
 
 #### Adding via Meson Git Wrap
 
-To add a git-wrap, place a `.wrap` file in `subprojects` with the Git repo URL and revision, then use `dependency('fossil-test')` in `meson.build` so Meson can fetch and build it automatically.
+To add a git-wrap, place a `.wrap` file in `subprojects` with the Git repo URL and revision, then use `dependency('fossil-io')` in `meson.build` so Meson can fetch and build it automatically.
 
 #### Adding via Conan GitHub repository
 
