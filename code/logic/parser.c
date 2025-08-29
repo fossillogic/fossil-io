@@ -20,6 +20,8 @@
 #include <ctype.h>
 #include <math.h>
 
+#define DP(i, j) dp[(i) * (len2 + 1) + (j)]
+
 int FOSSIL_CLI_TOGGLE_DRY_RUN = 0;
 int FOSSIL_CLI_TOGGLE_VERBOSE = 0;
 
@@ -54,34 +56,29 @@ typedef struct {
 int levenshtein_distance(const char *s1, const char *s2) {
     int len1 = strlen(s1), len2 = strlen(s2);
     int i, j;
-    int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
-    if (!dp) return INT_MAX;
-    for (i = 0; i <= len1; i++) {
-        dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
-        if (!dp[i]) {
-            for (j = 0; j < i; j++) free(dp[j]);
-            free(dp);
-            return INT_MAX;
-        }
-    }
 
-    for (i = 0; i <= len1; i++) dp[i][0] = i;
-    for (j = 0; j <= len2; j++) dp[0][j] = j;
+    int *dp = (int *)calloc((len1 + 1) * (len2 + 1), sizeof(int));
+    if (!dp) return INT_MAX;
+
+    // helper macro for 2D indexing
+    #define DP(i, j) dp[(i) * (len2 + 1) + (j)]
+
+    for (i = 0; i <= len1; i++) DP(i, 0) = i;
+    for (j = 0; j <= len2; j++) DP(0, j) = j;
 
     for (i = 1; i <= len1; i++) {
         for (j = 1; j <= len2; j++) {
             int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-            int del = dp[i - 1][j] + 1;
-            int ins = dp[i][j - 1] + 1;
-            int sub = dp[i - 1][j - 1] + cost;
+            int del = DP(i - 1, j) + 1;
+            int ins = DP(i, j - 1) + 1;
+            int sub = DP(i - 1, j - 1) + cost;
             int min = del < ins ? del : ins;
             min = min < sub ? min : sub;
-            dp[i][j] = min;
+            DP(i, j) = min;
         }
     }
 
-    int result = dp[len1][len2];
-    for (i = 0; i <= len1; i++) free(dp[i]);
+    int result = DP(len1, len2);
     free(dp);
     return result;
 }

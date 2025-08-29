@@ -10,49 +10,41 @@ Fossil IO is an extensive and versatile library meticulously crafted to manage i
 4. **Efficient File Handling**: Supports file stream operations with a focus on secure and reliable file I/O.
 5. **Error Reporting**: Includes a comprehensive set of error codes and a lookup function to provide detailed error messages.
 
-## Prerequisites
+## ***Prerequisites***
 
-To get started with Fossil Io, ensure you have the following installed:
+To get started, ensure you have the following installed:
 
-- **Meson Build System**: If you don’t have Meson installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **Meson Build System**: If you don’t have Meson `1.8.0` or newer installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **Conan Package Manager**: If you prefer using Conan, ensure it is installed by following the instructions on the official [Conan website](https://docs.conan.io/en/latest/installation.html).
 
-### Adding Fossil Io Dependency
+### Adding Dependency
 
-#### Adding Fossil Io Dependency With Meson
+#### Adding via Meson Git Wrap
 
-1. **Install Meson Build System**:
-   Install Meson version `1.3` or newer:
+To add a git-wrap, place a `.wrap` file in `subprojects` with the Git repo URL and revision, then use `dependency('fossil-io')` in `meson.build` so Meson can fetch and build it automatically.
 
-   ```sh
-   python -m pip install meson           # To install Meson
-   python -m pip install --upgrade meson # To upgrade Meson
-   ```
+#### Adding via Conan GitHub repository
 
-2. **Create a `.wrap` File**:
-   Add the `fossil-io.wrap` file in your `subprojects` directory and include the following content:
+ packages directly from a GitHub repository if it contains a valid `conanfile.py`.
 
-   ```ini
-   # ======================
-   # Git Wrap package definition
-   # ======================
-   [wrap-git]
-   url = https://github.com/fossillogic/fossil-io.git
-   revision = v0.2.3
+```bash
+conan install git+https://github.com/fossillogic/fossil-io.git#v0.2.4 --name fossil_io --build=missing
+```
 
-   [provide]
-   fossil-io = fossil_io_dep
-   ```
+#### Integrate the Dependency:
 
-3. **Integrate the Dependency**:
-   In your `meson.build` file, integrate Fossil Io by adding the following line:
+Add the `fossil-io.wrap` file in your `subprojects` directory and include the following content:
 
-   ```ini
-   dep = dependency('fossil-io')
-   ```
+```ini
+[wrap-git]
+url = https://github.com/fossillogic/fossil-io.git
+revision = v0.2.4
 
----
+[provide]
+dependency_names = fossil-io
+```
 
-**Note**: For the best experience, always use the latest release of Fossil Io. Visit the [Fossil Io Releases](https://github.com/fossillogic/fossil-io/releases) page for the latest versions.
+**Note**: For the best experience, always use the latest releases. Visit the [releases](https://github.com/fossillogic/fossil-io/releases) page for the latest versions.
 
 ## Configure Options
 
@@ -65,6 +57,25 @@ Example:
 ```sh
 meson setup builddir -Dwith_test=enabled
 ```
+
+### Tests Double as Samples
+
+The project is designed so that **test cases serve two purposes**:
+
+- ✅ **Unit Tests** – validate the framework’s correctness.  
+- 📖 **Usage Samples** – demonstrate how to use these libraries through test cases.  
+
+This approach keeps the codebase compact and avoids redundant “hello world” style examples.  
+Instead, the same code that proves correctness also teaches usage.  
+
+This mirrors the **Meson build system** itself, which tests its own functionality by using Meson to test Meson.  
+In the same way, Fossil Logic validates itself by demonstrating real-world usage in its own tests via Fossil Test.  
+
+```bash
+meson test -C builddir -v
+```
+
+Running the test suite gives you both verification and practical examples you can learn from.
 
 ## Contributing and Support
 
