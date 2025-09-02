@@ -8,7 +8,7 @@ else
     winsock_dep = []
 endif
 
-fossil_io_lib = static_library('fossil-io',
+fossil_io_lib = library('fossil_io',
     files('serialize.c', 'parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'network.c', 'cstring.c'),
     install: true,
     dependencies: [cc.find_library('m', required: false), winsock_dep],
@@ -17,3 +17,5 @@ fossil_io_lib = static_library('fossil-io',
 fossil_io_dep = declare_dependency(
     link_with: [fossil_io_lib],
     include_directories: dir)
+
+meson.override_dependency('fossil-io', fossil_io_dep)
