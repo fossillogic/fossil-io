@@ -98,12 +98,20 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
  *
  * @param command The command to which the argument will be added.
  * @param arg_name The name of the argument.
+ * @param short_name The short name of the argument.
  * @param arg_type The type of the argument.
  * @param combo_options (Optional) Array of valid options for COMBO type.
  * @param combo_count (Optional) Number of options for COMBO type.
  * @return A pointer to the newly added argument.
  */
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count);
+fossil_io_parser_argument_t *fossil_io_parser_add_argument(
+    fossil_io_parser_command_t *command,
+    const char *arg_name,
+    char short_name,   // NEW
+    fossil_io_parser_arg_type_t arg_type,
+    char **combo_options,
+    int combo_count
+)
 
 /**
  * @brief Parses the command-line arguments using the parser palette.
