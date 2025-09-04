@@ -68,24 +68,24 @@ typedef enum {
 } fossil_io_parser_arg_type_t;
 
 typedef union fossil_io_parser_value_u {
-    int i;                  // INT / BOOL / FEATURE
-    unsigned int u;         // UINT
-    long l;                 // HEX, OCT, BIN
-    float f;                // FLOAT
-    double d;               // DOUBLE
-    char *s;                // STRING, DATE, FILE, DIR, REGEX, URL, JSON, BASE64
-    char **arr;             // ARRAY / LIST
-    void *ptr;              // MAP or other complex type
+    int i;
+    unsigned int u;
+    long l;
+    float f;
+    double d;
+    char *s;
+    char **arr;
+    void *ptr; // For MAP or JSON structures
 } fossil_io_parser_value_t;
 
 typedef struct fossil_io_parser_argument_s {
-    char *name;                       // Long argument name (e.g., --help)
-    char short_name;                  // Short argument name (e.g., -h)
-    fossil_io_parser_arg_type_t type; // Argument type
-    fossil_io_parser_value_t value;   // Parsed value
-    char **combo_options;             // Valid options for COMBO type
-    int combo_count;                  // Number of valid options
-    struct fossil_io_parser_argument_s *next; // Next argument
+    char *name;
+    char short_name;
+    fossil_io_parser_arg_type_t type;
+    fossil_io_parser_value_t value;
+    char **combo_options;
+    int combo_count;
+    struct fossil_io_parser_argument_s *next;
 } fossil_io_parser_argument_t;
 
 // Structure for a command
