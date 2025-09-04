@@ -950,57 +950,6 @@ int fossil_io_cstring_index_of_safe(ccstring str, ccstring substr, size_t max_le
 // String Stream Functions
 // ============================================================================
 
-fossil_io_cstring_stream* fossil_io_cstring_stream_create(size_t initial_size) {
-    if (initial_size == 0) return NULL;
-    fossil_io_cstring_stream *stream = (fossil_io_cstring_stream*)malloc(sizeof(fossil_io_cstring_stream));
-    if (stream) {
-        stream->buffer = (char*)malloc(initial_size);
-        if (stream->buffer) {
-            stream->buffer[0] = '\0';
-            stream->length = 0;
-            stream->capacity = initial_size;
-        } else {
-            free(stream);
-            stream = NULL;
-        }
-    }
-    return stream;
-}
-
-void fossil_io_cstring_stream_free(fossil_io_cstring_stream *stream) {
-    if (stream) {
-        free(stream->buffer);
-        free(stream);
-    }
-}
-
-void fossil_io_cstring_stream_write(fossil_io_cstring_stream *stream, ccstring str) {
-    if (!stream || !str) return;
-    size_t length = strlen(str);
-    size_t new_length = stream->length + length;
-    if (new_length > stream->capacity) {
-        size_t new_capacity = stream->capacity * 2;
-        if (new_capacity < new_length) {
-            new_capacity = new_length;
-        }
-        char *new_buffer = (char*)realloc(stream->buffer, new_capacity);
-        if (new_buffer) {
-            stream->buffer = new_buffer;
-            stream->capacity = new_capacity;
-        } else {
-            return;
-        }
-    }
-    memcpy(stream->buffer + stream->length, str, length);
-    stream->length = new_length;
-    stream->buffer[stream->length] = '\0';
-}
-
-ccstring fossil_io_cstring_stream_read(fossil_io_cstring_stream *stream) {
-    if (!stream) return NULL;
-    return stream->buffer;
-}
-
 /* ---------------- Creation & Destruction ---------------- */
 fossil_io_cstring_stream* fossil_io_cstring_stream_create(size_t initial_size) {
     fossil_io_cstring_stream *stream = (fossil_io_cstring_stream*)malloc(sizeof(fossil_io_cstring_stream));
