@@ -1478,7 +1478,7 @@ namespace fossil {
         class CStringStream {
         private:
             fossil_io_cstring_stream* _stream;
-
+        
         public:
             /**
              * Constructor to create a new cstring stream with the specified initial size.
@@ -1488,14 +1488,14 @@ namespace fossil {
             CStringStream(size_t initial_size) {
                 _stream = fossil_io_cstring_stream_create(initial_size);
             }
-
+        
             /**
              * Destructor to free the memory allocated for the cstring stream.
              */
             ~CStringStream() {
                 fossil_io_cstring_stream_free(_stream);
             }
-
+        
             /**
              * Writes a cstring to the cstring stream.
              * 
@@ -1504,16 +1504,118 @@ namespace fossil {
             void write(const std::string &str) {
                 fossil_io_cstring_stream_write(_stream, str.c_str());
             }
-
+        
+            /**
+             * Writes a cstring to the stream safely, respecting a maximum length.
+             * 
+             * @param str The cstring to append.
+             * @param max_len Maximum number of characters to append.
+             */
+            void write_safe(const std::string &str, size_t max_len) {
+                fossil_io_cstring_stream_write_safe(_stream, str.c_str(), max_len);
+            }
+        
+            /**
+             * Writes a formatted string to the stream (like printf).
+             * 
+             * @param format Format string.
+             * @param ... Format arguments.
+             */
+            void write_format(const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                fossil_io_cstring_stream_write_format(_stream, format, args);
+                va_end(args);
+            }
+        
+            /**
+             * Inserts a cstring at a specified position in the stream.
+             * 
+             * @param str String to insert.
+             * @param pos Position to insert at (0 = beginning).
+             */
+            void insert(const std::string &str, size_t pos) {
+                fossil_io_cstring_stream_insert(_stream, str.c_str(), pos);
+            }
+        
+            /**
+             * Truncates the stream to the specified length.
+             * 
+             * @param new_length New desired length of the stream.
+             */
+            void truncate(size_t new_length) {
+                fossil_io_cstring_stream_truncate(_stream, new_length);
+            }
+        
+            /**
+             * Clears the stream content without freeing the buffer.
+             */
+            void clear() {
+                fossil_io_cstring_stream_clear(_stream);
+            }
+        
+            /**
+             * Ensures the stream has at least the specified capacity.
+             * 
+             * @param min_capacity Minimum capacity required.
+             * @return True if successful, false if allocation failed.
+             */
+            bool reserve(size_t min_capacity) {
+                return fossil_io_cstring_stream_reserve(_stream, min_capacity) == 0;
+            }
+        
+            /**
+             * Returns the current length of the stream.
+             * 
+             * @return Length of data in the stream.
+             */
+            size_t length() const {
+                return fossil_io_cstring_stream_length(_stream);
+            }
+        
+            /**
+             * Returns the remaining capacity of the stream before resizing is required.
+             * 
+             * @return Number of bytes available in the stream.
+             */
+            size_t capacity_remaining() const {
+                return fossil_io_cstring_stream_capacity_remaining(_stream);
+            }
+        
             /**
              * Reads the contents of the cstring stream.
              * 
-             * @return The contents of the cstring stream as a cstring.
+             * @return The contents of the cstring stream as a std::string.
              */
             std::string read() const {
-                return fossil_io_cstring_stream_read(_stream);
+                ccstring buf = fossil_io_cstring_stream_read(_stream);
+                return buf ? std::string(buf) : std::string();
             }
-
+        
+            /**
+             * Appends a cstring using the << operator for chaining.
+             * 
+             * @param str The string to append.
+             * @return Reference to this stream for chaining.
+             */
+            CStringStream& operator<<(const std::string &str) {
+                write(str);
+                return *this;
+            }
+        
+            /**
+             * Appends a number using the << operator for chaining.
+             * Converts the number to string before writing.
+             * 
+             * @param num The integer to append.
+             * @return Reference to this stream for chaining.
+             */
+            CStringStream& operator<<(int num) {
+                char buf[32];
+                snprintf(buf, sizeof(buf), "%d", num);
+                write(buf);
+                return *this;
+            }
         };
 
     }
