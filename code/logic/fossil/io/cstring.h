@@ -50,6 +50,43 @@ cstring fossil_io_cstring_create(const char *init);
 void fossil_io_cstring_free(cstring str);
 
 /**
+ * @brief Converts input into a "silly" string (random case and symbols).
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error (buffer too small).
+ */
+int fossil_io_cstring_silly(const char *input, char *output, size_t size);
+
+/**
+ * @brief Converts input into Pig Latin.
+ *
+ * Rules:
+ *   - Words starting with a vowel → add "yay" at the end.
+ *   - Words starting with consonant(s) → move leading consonant(s) to the end + "ay".
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error.
+ */
+int fossil_io_cstring_piglatin(const char *input, char *output, size_t size);
+
+/**
+ * @brief Converts input into "leet speak".
+ *
+ * Mapping (basic):
+ *   A → 4, E → 3, I → 1, O → 0, S → 5, T → 7
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error.
+ */
+int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size);
+
+/**
  * @brief Creates a copy of the given cstring.
  * 
  * @param str The cstring to be copied.
