@@ -536,6 +536,182 @@ cstring fossil_io_cstring_escape_json_safe(ccstring str, size_t max_len);
  */
 cstring fossil_io_cstring_unescape_json_safe(ccstring str, size_t max_len);
 
+/**
+ * @brief Extracts a substring from a given cstring safely.
+ *
+ * Ensures bounds checking and respects maximum length.
+ *
+ * @param str The original cstring.
+ * @param start The starting index for the substring.
+ * @param length The number of characters to include.
+ * @param max_len Maximum allowed length to prevent buffer overrun.
+ * @return A newly allocated cstring containing the substring, or NULL on failure.
+ */
+cstring fossil_io_cstring_substring_safe(ccstring str, size_t start, size_t length, size_t max_len);
+
+/**
+ * @brief Reverses a cstring safely.
+ *
+ * Creates a new string that is the reverse of the input while ensuring memory safety.
+ *
+ * @param str The cstring to reverse.
+ * @param max_len Maximum length to process to prevent overflow.
+ * @return A newly allocated reversed cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_reverse_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Checks if a cstring contains a substring safely.
+ *
+ * Ensures that no buffer overruns occur.
+ *
+ * @param str The cstring to search.
+ * @param substr The substring to look for.
+ * @param max_len Maximum number of characters to scan.
+ * @return 1 if substring exists, 0 otherwise.
+ */
+int fossil_io_cstring_contains_safe(ccstring str, ccstring substr, size_t max_len);
+
+/**
+ * @brief Repeats a cstring multiple times safely.
+ *
+ * Ensures the resulting string does not exceed max_len.
+ *
+ * @param str The string to repeat.
+ * @param count Number of repetitions.
+ * @param max_len Maximum length of resulting string.
+ * @return A newly allocated repeated cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_repeat_safe(ccstring str, size_t count, size_t max_len);
+
+/**
+ * @brief Strips a specified character from both ends of a cstring safely.
+ *
+ * @param str The cstring to process.
+ * @param ch The character to strip.
+ * @param max_len Maximum length to process.
+ * @return A new cstring with the specified character removed from start and end.
+ */
+cstring fossil_io_cstring_strip_safe(ccstring str, char ch, size_t max_len);
+
+/**
+ * @brief Counts the occurrences of a substring within a cstring safely.
+ *
+ * Ensures safe bounds checking.
+ *
+ * @param str The cstring to search.
+ * @param substr The substring to count.
+ * @param max_len Maximum length to scan.
+ * @return The number of occurrences of the substring.
+ */
+size_t fossil_io_cstring_count_safe(ccstring str, ccstring substr, size_t max_len);
+
+/**
+ * @brief Pads a cstring on the left with a specific character safely.
+ *
+ * Ensures total length does not exceed max_len.
+ *
+ * @param str The cstring to pad.
+ * @param total_length The desired total length after padding.
+ * @param pad_char Character to pad with.
+ * @param max_len Maximum allowed length of the resulting string.
+ * @return A newly allocated padded cstring.
+ */
+cstring fossil_io_cstring_pad_left_safe(ccstring str, size_t total_length, char pad_char, size_t max_len);
+
+/**
+ * @brief Pads a cstring on the right with a specific character safely.
+ *
+ * Ensures total length does not exceed max_len.
+ *
+ * @param str The cstring to pad.
+ * @param total_length The desired total length after padding.
+ * @param pad_char Character to pad with.
+ * @param max_len Maximum allowed length of the resulting string.
+ * @return A newly allocated padded cstring.
+ */
+cstring fossil_io_cstring_pad_right_safe(ccstring str, size_t total_length, char pad_char, size_t max_len);
+
+/**
+ * @brief Checks if a cstring starts with a specified prefix safely.
+ *
+ * @param str The cstring to check.
+ * @param prefix The prefix to test.
+ * @param max_len Maximum characters to consider.
+ * @return 1 if the cstring starts with the prefix, 0 otherwise.
+ */
+int fossil_io_cstring_starts_with_safe(ccstring str, ccstring prefix, size_t max_len);
+
+/**
+ * @brief Checks if a cstring ends with a specified suffix safely.
+ *
+ * @param str The cstring to check.
+ * @param suffix The suffix to test.
+ * @param max_len Maximum characters to consider.
+ * @return 1 if the cstring ends with the suffix, 0 otherwise.
+ */
+int fossil_io_cstring_ends_with_safe(ccstring str, ccstring suffix, size_t max_len);
+
+/**
+ * @brief Compares two cstrings for exact equality safely.
+ *
+ * @param a First cstring.
+ * @param b Second cstring.
+ * @param max_len Maximum characters to compare.
+ * @return 1 if equal, 0 otherwise.
+ */
+int fossil_io_cstring_equals_safe(ccstring a, ccstring b, size_t max_len);
+
+/**
+ * @brief Compares two cstrings for equality ignoring case safely.
+ *
+ * @param a First cstring.
+ * @param b Second cstring.
+ * @param max_len Maximum characters to compare.
+ * @return 1 if equal ignoring case, 0 otherwise.
+ */
+int fossil_io_cstring_iequals_safe(ccstring a, ccstring b, size_t max_len);
+
+/**
+ * @brief Checks if a substring exists in a cstring ignoring case safely.
+ *
+ * @param str The cstring to search.
+ * @param substr The substring to look for.
+ * @param max_len Maximum characters to scan.
+ * @return 1 if found, 0 otherwise.
+ */
+int fossil_io_cstring_icontains_safe(ccstring str, ccstring substr, size_t max_len);
+
+/**
+ * @brief Removes surrounding quotes from a cstring safely.
+ *
+ * @param str The cstring to process.
+ * @param max_len Maximum characters to process.
+ * @return A new cstring without surrounding quotes.
+ */
+cstring fossil_io_cstring_strip_quotes_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Normalizes whitespace in a cstring safely.
+ *
+ * Collapses multiple spaces into one and trims leading/trailing whitespace.
+ *
+ * @param str The cstring to normalize.
+ * @param max_len Maximum characters to process.
+ * @return A newly allocated normalized cstring.
+ */
+cstring fossil_io_cstring_normalize_spaces_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Returns the index of a substring in a cstring safely.
+ *
+ * @param str The cstring to search.
+ * @param substr The substring to find.
+ * @param max_len Maximum characters to consider.
+ * @return Index of first occurrence, or -1 if not found.
+ */
+int fossil_io_cstring_index_of_safe(ccstring str, ccstring substr, size_t max_len);
+
 // String Stream
 
 /**
@@ -951,6 +1127,267 @@ namespace fossil {
              */
             int append(const std::string &src) {
                 return fossil_io_cstring_append(&_str, src.c_str()) == nullptr ? 1 : 0;
+            }
+            
+            /* ---------------- Safe Copy / Dup / Concat ---------------- */
+
+            /**
+             * @brief Creates a safe copy of the given string.
+             *
+             * Allocates a new CString with a copy of the input string, using the
+             * secure underlying C function to prevent buffer overflows.
+             *
+             * @param str The string to copy.
+             * @return A new CString containing a safe copy of the input string.
+             */
+            static CString copy_safe(const std::string &str) {
+                return CString(fossil_io_cstring_copy_safe(str.c_str(), str.size()));
+            }
+            
+            /**
+             * @brief Duplicates a string safely.
+             *
+             * Creates a new CString with the same content as the input string,
+             * using a secure duplication function that respects the specified length.
+             *
+             * @param str The string to duplicate.
+             * @return A new CString duplicate of the input string.
+             */
+            static CString dup_safe(const std::string &str) {
+                return CString(fossil_io_cstring_dup_safe(str.c_str(), str.size()));
+            }
+            
+            /**
+             * @brief Concatenates two strings safely.
+             *
+             * Produces a new CString containing s1 followed by s2, using the secure
+             * concatenation function and respecting the maximum allowed length.
+             *
+             * @param s1 The first string.
+             * @param s2 The second string.
+             * @param max_len Maximum length of the resulting string to prevent overflow.
+             * @return A new CString with the concatenated content.
+             */
+            static CString concat_safe(const std::string &s1, const std::string &s2, size_t max_len) {
+                return CString(fossil_io_cstring_concat_safe(s1.c_str(), s2.c_str(), max_len));
+            }
+            
+            /* ---------------- Safe Substring / Reverse / Contains ---------------- */
+            
+            /**
+             * @brief Extracts a safe substring from the CString.
+             *
+             * Uses secure substring logic to prevent reading beyond the maximum length.
+             *
+             * @param start Starting index of the substring.
+             * @param length Length of the substring.
+             * @param max_len Maximum number of characters to read from the original string.
+             * @return A new CString containing the substring.
+             */
+            CString substring_safe(size_t start, size_t length, size_t max_len) const {
+                return CString(fossil_io_cstring_substring_safe(_str, start, length, max_len));
+            }
+            
+            /**
+             * @brief Reverses the CString safely.
+             *
+             * Returns a new CString containing the reverse of the original string
+             * while respecting the maximum length.
+             *
+             * @param max_len Maximum length to process for safety.
+             * @return A new reversed CString.
+             */
+            CString reverse_safe(size_t max_len) const {
+                return CString(fossil_io_cstring_reverse_safe(_str, max_len));
+            }
+            
+            /**
+             * @brief Checks if the CString contains a substring safely.
+             *
+             * Performs a bounds-checked search within the string.
+             *
+             * @param substr The substring to search for.
+             * @param max_len Maximum number of characters to check.
+             * @return True if substring is found, false otherwise.
+             */
+            bool contains_safe(const std::string &substr, size_t max_len) const {
+                return fossil_io_cstring_contains_safe(_str, substr.c_str(), max_len) != 0;
+            }
+            
+            /* ---------------- Safe Repeat / Strip / Count ---------------- */
+            
+            /**
+             * @brief Repeats the CString a specified number of times safely.
+             *
+             * Generates a new CString that repeats the content up to max_len characters.
+             *
+             * @param count Number of repetitions.
+             * @param max_len Maximum total length of the resulting string.
+             * @return A new repeated CString.
+             */
+            CString repeat_safe(size_t count, size_t max_len) const {
+                return CString(fossil_io_cstring_repeat_safe(_str, count, max_len));
+            }
+            
+            /**
+             * @brief Strips a character from both ends of the CString safely.
+             *
+             * Produces a new CString with leading and trailing characters removed,
+             * respecting max_len for safety.
+             *
+             * @param ch The character to strip.
+             * @param max_len Maximum number of characters to consider.
+             * @return A new CString with the character stripped.
+             */
+            CString strip_safe(char ch, size_t max_len) const {
+                return CString(fossil_io_cstring_strip_safe(_str, ch, max_len));
+            }
+            
+            /**
+             * @brief Counts the number of occurrences of a substring safely.
+             *
+             * Uses a secure method that respects maximum string length.
+             *
+             * @param substr The substring to count.
+             * @param max_len Maximum number of characters to process.
+             * @return Number of occurrences of substr in the CString.
+             */
+            size_t count_safe(const std::string &substr, size_t max_len) const {
+                return fossil_io_cstring_count_safe(_str, substr.c_str(), max_len);
+            }
+            
+            /* ---------------- Safe Padding ---------------- */
+            
+            /**
+             * @brief Pads the CString on the left safely.
+             *
+             * Ensures the resulting string does not exceed max_len characters.
+             *
+             * @param total_length The total desired length after padding.
+             * @param pad_char Character to pad with.
+             * @param max_len Maximum allowed length to prevent overflow.
+             * @return A new left-padded CString.
+             */
+            CString pad_left_safe(size_t total_length, char pad_char, size_t max_len) const {
+                return CString(fossil_io_cstring_pad_left_safe(_str, total_length, pad_char, max_len));
+            }
+            
+            /**
+             * @brief Pads the CString on the right safely.
+             *
+             * Ensures the resulting string does not exceed max_len characters.
+             *
+             * @param total_length The total desired length after padding.
+             * @param pad_char Character to pad with.
+             * @param max_len Maximum allowed length to prevent overflow.
+             * @return A new right-padded CString.
+             */
+            CString pad_right_safe(size_t total_length, char pad_char, size_t max_len) const {
+                return CString(fossil_io_cstring_pad_right_safe(_str, total_length, pad_char, max_len));
+            }
+            
+            /* ---------------- Safe Prefix / Suffix ---------------- */
+            
+            /**
+             * @brief Checks if the CString starts with a prefix safely.
+             *
+             * Considers max_len for safe comparison.
+             *
+             * @param prefix The prefix to check.
+             * @param max_len Maximum number of characters to read.
+             * @return True if CString starts with prefix, false otherwise.
+             */
+            bool starts_with_safe(const std::string &prefix, size_t max_len) const {
+                return fossil_io_cstring_starts_with_safe(_str, prefix.c_str(), max_len) != 0;
+            }
+            
+            /**
+             * @brief Checks if the CString ends with a suffix safely.
+             *
+             * Considers max_len for safe comparison.
+             *
+             * @param suffix The suffix to check.
+             * @param max_len Maximum number of characters to read.
+             * @return True if CString ends with suffix, false otherwise.
+             */
+            bool ends_with_safe(const std::string &suffix, size_t max_len) const {
+                return fossil_io_cstring_ends_with_safe(_str, suffix.c_str(), max_len) != 0;
+            }
+            
+            /* ---------------- Safe Equality Checks ---------------- */
+            
+            /**
+             * @brief Checks equality safely (case-sensitive).
+             *
+             * Compares CString to another string with max_len bounds.
+             *
+             * @param other The string to compare.
+             * @param max_len Maximum characters to compare.
+             * @return True if equal, false otherwise.
+             */
+            bool equals_safe(const std::string &other, size_t max_len) const {
+                return fossil_io_cstring_equals_safe(_str, other.c_str(), max_len) != 0;
+            }
+            
+            /**
+             * @brief Checks equality safely (case-insensitive).
+             *
+             * Compares CString to another string with max_len bounds, ignoring case.
+             *
+             * @param other The string to compare.
+             * @param max_len Maximum characters to compare.
+             * @return True if equal ignoring case, false otherwise.
+             */
+            bool iequals_safe(const std::string &other, size_t max_len) const {
+                return fossil_io_cstring_iequals_safe(_str, other.c_str(), max_len) != 0;
+            }
+            
+            /**
+             * @brief Checks if CString contains a substring safely (case-insensitive).
+             *
+             * @param substr Substring to check.
+             * @param max_len Maximum characters to examine.
+             * @return True if found, false otherwise.
+             */
+            bool icontains_safe(const std::string &substr, size_t max_len) const {
+                return fossil_io_cstring_icontains_safe(_str, substr.c_str(), max_len) != 0;
+            }
+            
+            /* ---------------- Safe Quotes / Whitespace / Index ---------------- */
+            
+            /**
+             * @brief Removes surrounding quotes safely.
+             *
+             * Considers max_len and removes only leading/trailing single or double quotes.
+             *
+             * @param max_len Maximum characters to process.
+             * @return A new CString with quotes removed.
+             */
+            CString strip_quotes_safe(size_t max_len) const {
+                return CString(fossil_io_cstring_strip_quotes_safe(_str, max_len));
+            }
+            
+            /**
+             * @brief Normalizes spaces safely.
+             *
+             * Collapses multiple consecutive spaces into one, respecting max_len.
+             *
+             * @param max_len Maximum characters to process.
+             * @return A new CString with normalized spaces.
+             */
+            CString normalize_spaces_safe(size_t max_len) const {
+                return CString(fossil_io_cstring_normalize_spaces_safe(_str, max_len));
+            }
+            
+            /**
+             * @brief Finds the index of a substring safely.
+             *
+             * @param substr Substring to find.
+             * @param max_len Maximum characters to search.
+             * @return Index of substring or -1 if not found.
+             */
+            int index_of_safe(const std::string &substr, size_t max_len) const {
+                return fossil_io_cstring_index_of_safe(_str, substr.c_str(), max_len);
             }
 
             /**
