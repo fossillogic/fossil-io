@@ -86,6 +86,58 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size);
  */
 int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size);
 
+// Novelty String Transforms
+
+/**
+ * @brief Converts a string into "mocking SpongeBob" case.
+ * 
+ * Example: "hello world" -> "hElLo wOrLd"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_mocking(const char *str);
+
+/**
+ * @brief Applies ROT13 cipher to a string.
+ * 
+ * Example: "hello" -> "uryyb"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_rot13(const char *str);
+
+/**
+ * @brief Shuffles the characters of a string randomly.
+ * 
+ * Example: "hello" -> "lohel" (result varies).
+ * 
+ * @param str Input string.
+ * @return Newly allocated shuffled string, or NULL on failure.
+ */
+char* fossil_io_cstring_shuffle(const char *str);
+
+/**
+ * @brief Converts a string to UPPER_SNAKE_CASE.
+ * 
+ * Example: "Hello World" -> "HELLO_WORLD"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_upper_snake(const char *str);
+
+/**
+ * @brief Generates a "zalgo" glitch text version of a string.
+ * 
+ * Example: "hello" -> "h̶͋̓e̸͆̀l̷͛̕l̶͛̀o̴̓̕"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_zalgo(const char *str);
+
 /**
  * @brief Creates a copy of the given cstring.
  * 
