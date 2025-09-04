@@ -224,7 +224,14 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
 
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
-                fossil_io_printf("{cyan} --%s {reset}", arg->name);
+                // Print both long and short names if available
+                if (arg->short_name) {
+                    fossil_io_printf("{cyan} [--%s | -%c]{reset}", arg->name, arg->short_name);
+                } else {
+                    fossil_io_printf("{cyan} --%s{reset}", arg->name);
+                }
+
+                // Show expected type/value
                 switch (arg->type) {
                     case FOSSIL_IO_PARSER_STRING:
                         fossil_io_printf("{cyan}<string>{reset}");
@@ -247,10 +254,18 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
                     case FOSSIL_IO_PARSER_FEATURE:
                         fossil_io_printf("{cyan}<enable/disable>{reset}");
                         break;
+                    case FOSSIL_IO_PARSER_COMBO:
+                        fossil_io_printf("{cyan}<");
+                        for (int i = 0; i < arg->combo_count; i++) {
+                            fossil_io_printf("%s%s", i > 0 ? "|" : "", arg->combo_options[i]);
+                        }
+                        fossil_io_printf(">{reset}");
+                        break;
                     default:
                         fossil_io_printf("{cyan}<unknown>{reset}");
                         break;
                 }
+
                 arg = arg->next;
             }
 
@@ -263,7 +278,9 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
     }
 
     // If the command is not found
-    fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command '%s'. Use '--help' to see available commands.{reset}\n", command_name);
+    fossil_io_fprintf(FOSSIL_STDERR,
+        "{red}Unknown command '%s'. Use '--help' to see available commands.{reset}\n",
+        command_name);
 }
 
 fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, const char *description) {
@@ -355,7 +372,14 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
     return command;
 }
 
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
+fossil_io_parser_argument_t *fossil_io_parser_add_argument(
+    fossil_io_parser_command_t *command,
+    const char *arg_name,
+    char short_name,   // NEW
+    fossil_io_parser_arg_type_t arg_type,
+    char **combo_options,
+    int combo_count
+) {
     if (!command || !arg_name) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Command and argument name cannot be NULL.{reset}\n");
         return NULL;
@@ -368,18 +392,7 @@ fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_comm
     }
 
     argument->name = _custom_strdup(arg_name);
-    if (!argument->name) {
-        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for argument name.{reset}\n");
-        free(argument);
-        return NULL;
-    }
-
-    if (arg_type < FOSSIL_IO_PARSER_BOOL || arg_type > FOSSIL_IO_PARSER_FEATURE) {
-        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Invalid argument type for '%s'.{reset}\n", arg_name);
-        free(argument->name);
-        free(argument);
-        return NULL;
-    }
+    argument->short_name = short_name ? short_name : '\0';
     argument->type = arg_type;
     argument->value = NULL;
     argument->combo_options = combo_options;
@@ -626,6 +639,32 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
                             }
                         } else {
                             fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for feature argument: %s{reset}\n", arg_value);
+                        }
+                        break; 
+                    case FOSSIL_IO_PARSER_COMBO:
+                        if (i + 1 < argc) {
+                            char *candidate = argv[++i];
+                            int valid = 0;
+                            for (int j = 0; j < argument->combo_count; j++) {
+                                if (strcmp(candidate, argument->combo_options[j]) == 0) {
+                                    valid = 1;
+                                    break;
+                                }
+                            }
+                            if (valid) {
+                                argument->value = _custom_strdup(candidate);
+                            } else {
+                                fossil_io_fprintf(FOSSIL_STDERR,
+                                    "{red}Invalid value '%s' for combo argument '%s'. Valid options: ",
+                                    candidate, argument->name);
+                                for (int j = 0; j < argument->combo_count; j++) {
+                                    fossil_io_printf("%s%s", j > 0 ? ", " : "", argument->combo_options[j]);
+                                }
+                                fossil_io_printf("{reset}\n");
+                            }
+                        } else {
+                            fossil_io_fprintf(FOSSIL_STDERR,
+                                "{red}Missing value for combo argument: %s{reset}\n", arg_value);
                         }
                         break;
                     default:
