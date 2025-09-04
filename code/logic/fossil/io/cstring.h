@@ -58,6 +58,29 @@ void fossil_io_cstring_free(cstring str);
 cstring fossil_io_cstring_copy(ccstring str);
 
 /**
+ * @brief Converts an English number string into an integer.
+ * 
+ * Example: "twenty-three" -> 23
+ * 
+ * @param str Input string containing the number in English.
+ * @param out Pointer to integer where the parsed number will be stored.
+ * @return 0 on success, non-zero on error (invalid input).
+ */
+int fossil_io_cstring_number_from_words(const char *str, int *out);
+
+/**
+ * @brief Converts an integer number into its English representation.
+ * 
+ * Example: 23 -> "twenty-three"
+ * 
+ * @param num The integer to convert.
+ * @param buffer The output buffer to store the English string.
+ * @param size The size of the output buffer.
+ * @return 0 on success, non-zero if the buffer is too small.
+ */
+int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size);
+
+/**
  * @brief Duplicates the given cstring.
  * 
  * @param str The cstring to be duplicated.
