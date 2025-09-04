@@ -80,7 +80,7 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
         if (word_len == 0) continue;
 
         if (strchr("AEIOUaeiou", token[0])) {
-            snprintf(word, sizeof(word), "%syay", token);
+            snprintf(word, sizeof(word), "%.*syay", (int)sizeof(buffer) - 1, token);
         } else {
             snprintf(word, sizeof(word), "%s%cay", token + 1, token[0]);
         }
