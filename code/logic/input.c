@@ -13,6 +13,7 @@
  */
 #include "fossil/io/input.h"
 #include "fossil/io/output.h"
+#include "fossil/io/cstring.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -372,7 +373,7 @@ int fossil_io_register_keybinding_with_callback(int key_code, const char *action
     }
 
     _keybindings[_num_keybindings].key_code = key_code;
-    _keybindings[_num_keybindings].action = strdup(action);
+    _keybindings[_num_keybindings].action = fossil_io_cstring_dup(action);
     _keybindings[_num_keybindings].callback = cb;
     if (!_keybindings[_num_keybindings].action) return 3; // Allocation failed
 
