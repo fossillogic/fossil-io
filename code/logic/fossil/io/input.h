@@ -172,6 +172,67 @@ void fossil_io_show_progress(int progress);
  */
 int fossil_io_gets(char *buffer, size_t size);
 
+/**
+ * @brief Type for representing a key binding.
+ */
+typedef struct {
+    int key_code;           /**< The integer key code (e.g., ASCII or special code). */
+    const char *action;     /**< The action associated with this key (e.g., "COPY", "PASTE"). */
+} fossil_io_keybinding_t;
+
+/**
+ * @brief Registers a new key binding.
+ *
+ * Adds a key-action mapping to the input library.
+ *
+ * @param key_code The integer key code to bind.
+ * @param action The action string associated with the key.
+ * @return 0 on success, non-zero on failure (e.g., duplicate key).
+ */
+int fossil_io_register_keybinding(int key_code, const char *action);
+
+/**
+ * @brief Removes an existing key binding.
+ *
+ * @param key_code The key code of the binding to remove.
+ * @return 0 on success, non-zero if the key was not found.
+ */
+int fossil_io_unregister_keybinding(int key_code);
+
+/**
+ * @brief Retrieves the action associated with a key code.
+ *
+ * @param key_code The key code to look up.
+ * @return The action string if found, NULL otherwise.
+ */
+const char* fossil_io_get_keybinding_action(int key_code);
+
+/**
+ * @brief Processes a key event.
+ *
+ * Checks if a key has a registered action and triggers it if found.
+ *
+ * @param key_code The key code that was pressed.
+ * @return 1 if an action was triggered, 0 if no binding exists.
+ */
+int fossil_io_process_keybinding(int key_code);
+
+/**
+ * @brief Lists all currently registered key bindings.
+ *
+ * @param bindings Array of fossil_io_keybinding_t to populate.
+ * @param max_bindings Maximum number of bindings to populate.
+ * @return Number of bindings populated in the array.
+ */
+size_t fossil_io_list_keybindings(fossil_io_keybinding_t *bindings, size_t max_bindings);
+
+/**
+ * @brief Clears all registered key bindings.
+ *
+ * Frees any internal memory and removes all key-action mappings.
+ */
+void fossil_io_clear_keybindings(void);
+
 #ifdef __cplusplus
 }
 
