@@ -9,7 +9,7 @@ else
 endif
 
 fossil_io_lib = library('fossil_io',
-    files('serialize.c', 'parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'network.c', 'cstring.c'),
+    files('parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'network.c', 'cstring.c'),
     install: true,
     dependencies: [cc.find_library('m', required: false), winsock_dep],
     include_directories: dir)
