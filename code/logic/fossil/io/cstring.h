@@ -745,6 +745,81 @@ void fossil_io_cstring_stream_write(fossil_io_cstring_stream *stream, ccstring s
  */
 ccstring fossil_io_cstring_stream_read(fossil_io_cstring_stream *stream);
 
+/**
+ * @brief Writes a string to the stream safely, respecting a maximum length.
+ *
+ * @param stream Pointer to the stream.
+ * @param str Null-terminated string to append.
+ * @param max_len Maximum number of characters to append.
+ */
+void fossil_io_cstring_stream_write_safe(fossil_io_cstring_stream *stream, ccstring str, size_t max_len);
+
+/**
+ * @brief Writes a formatted string to the stream (like printf).
+ *
+ * @param stream Pointer to the stream.
+ * @param format Format string.
+ * @param ... Format arguments.
+ */
+void fossil_io_cstring_stream_write_format(fossil_io_cstring_stream *stream, ccstring format, ...);
+
+/**
+ * @brief Inserts a cstring at a specified position in the stream.
+ *
+ * Shifts existing data to accommodate the new string.
+ *
+ * @param stream Pointer to the stream.
+ * @param str String to insert.
+ * @param pos Position to insert at (0 = beginning).
+ */
+void fossil_io_cstring_stream_insert(fossil_io_cstring_stream *stream, ccstring str, size_t pos);
+
+/**
+ * @brief Truncates the stream to the specified length.
+ *
+ * Reduces the stream length safely, optionally zeroing truncated data.
+ *
+ * @param stream Pointer to the stream.
+ * @param new_length New desired length of the stream.
+ */
+void fossil_io_cstring_stream_truncate(fossil_io_cstring_stream *stream, size_t new_length);
+
+/**
+ * @brief Clears the stream content without freeing the buffer.
+ *
+ * Resets length to 0 and optionally zeroes memory.
+ *
+ * @param stream Pointer to the stream.
+ */
+void fossil_io_cstring_stream_clear(fossil_io_cstring_stream *stream);
+
+/**
+ * @brief Ensures the stream has at least the specified capacity.
+ *
+ * Resizes the buffer if necessary.
+ *
+ * @param stream Pointer to the stream.
+ * @param min_capacity Minimum capacity required.
+ * @return 0 on success, non-zero on allocation failure.
+ */
+int fossil_io_cstring_stream_reserve(fossil_io_cstring_stream *stream, size_t min_capacity);
+
+/**
+ * @brief Returns the current length of the stream.
+ *
+ * @param stream Pointer to the stream.
+ * @return Length of data in the stream.
+ */
+size_t fossil_io_cstring_stream_length(fossil_io_cstring_stream *stream);
+
+/**
+ * @brief Returns the remaining capacity of the stream.
+ *
+ * @param stream Pointer to the stream.
+ * @return Number of bytes available before resizing is required.
+ */
+size_t fossil_io_cstring_stream_capacity_remaining(fossil_io_cstring_stream *stream);
+
 #ifdef __cplusplus
 }
 
