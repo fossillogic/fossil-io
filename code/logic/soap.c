@@ -26,6 +26,13 @@ static const struct {
     const char *bad;
     const char *suggested;
 } FOSSIL_SOAP_SUGGESTIONS[] = {
+    {"u", "you"},
+    {"gonna", "going to"},
+    {"ppl", "people"},
+    {"funny", "laugh out loud"},
+    {"lol", "laugh out loud"},
+    {"idk", "I don't know"},
+    {"wanna", "want to"},
     {"rizz", "charisma"},
     {"skibidi", "dance"},
     {"yeet", "throw"},
@@ -56,15 +63,13 @@ static const struct {
     {"zaddy", "attractive man"},
     {"drip", "fashion"},
     {"fire", "amazing"},
-    {"lol", "funny"},
     {"omg", "surprising"},
     {"brb", "be right back"},
-    {"idk", "I don't know"},
     {"imo", "in my opinion"},
     {"lmao", "laughing"},
     {"nvm", "never mind"},
     {"tbh", "to be honest"},
-    {"tldr", "too long"},
+    {"tldr", "too long; didn't read"},
     {"ttyl", "talk to you later"},
     {"wyd", "what are you doing"},
     {"wtf", "what the heck"},
@@ -72,6 +77,32 @@ static const struct {
     {"rot-brain", "stupid"},
     {"rot brain", "stupid"},
     {"rotbrain", "stupid"},
+    {"smh", "shaking my head"},
+    {"fomo", "fear of missing out"},
+    {"bff", "best friend forever"},
+    {"irl", "in real life"},
+    {"afaik", "as far as I know"},
+    {"btw", "by the way"},
+    {"omw", "on my way"},
+    {"ikr", "I know right"},
+    {"ikr", "I know, right"},
+    {"tgif", "thank goodness it's Friday"},
+    {"np", "no problem"},
+    {"rofl", "rolling on the floor laughing"},
+    {"lmk", "let me know"},
+    {"dm", "direct message"},
+    {"ikr", "I know, right"},
+    {"rn", "right now"},
+    {"ikr", "I know, right"},
+    {"smh", "shaking my head"},
+    {"yw", "you're welcome"},
+    {"af", "very"},
+    {"ftw", "for the win"},
+    {"gg", "good game"},
+    {"pov", "point of view"},
+    {"omfg", "oh my goodness"},
+    {"tl;dr", "too long; didn't read"},
+    {"fwiw", "for what it's worth"},
     {NULL, NULL} // Sentinel to mark the end
 };
 
@@ -84,9 +115,30 @@ static const struct {
     {"ain't", "isn't"},
     {"should of", "should have"},
     {"could of", "could have"},
+    {"would of", "would have"},
     {"not never", "never"},
     {"free gift", "gift"},
     {"very unique", "unique"},
+    {"actually true", "true"},
+    {"past history", "history"},
+    {"future plans", "plans"},
+    {"true fact", "fact"},
+    {"basic fundamentals", "fundamentals"},
+    {"completely destroyed", "destroyed"},
+    {"revert back", "revert"},
+    {"each and every", "each"},
+    {"end result", "result"},
+    {"final outcome", "outcome"},
+    {"unexpected surprise", "surprise"},
+    {"advance planning", "planning"},
+    {"close proximity", "proximity"},
+    {"ATM machine", "ATM"},
+    {"PIN number", "PIN"},
+    {"ISBN number", "ISBN"},
+    {"LCD display", "LCD"},
+    {"HIV virus", "HIV"},
+    {"true facts", "facts"},
+    {"past experiences", "experiences"},
     {NULL, NULL} // Sentinel to mark the end
 };
 
@@ -102,6 +154,23 @@ static const char *SARCASTIC_PHRASES[] = {
     "Brilliant",
     "Wonderful",
     "Perfect",
+    "Oh, just what I needed",
+    "Wow, amazing",
+    "How original",
+    "Incredible",
+    "As if that will work",
+    "Sure, that's smart",
+    "Totally believable",
+    "Oh, really?",
+    "You're a genius",
+    "Thanks a lot",
+    "Couldn't be better",
+    "That's exactly what I wanted",
+    "Well, isn't that special",
+    "Lovely",
+    "Just perfect",
+    "What could go wrong?",
+    "Right, because that makes sense",
     NULL // Sentinel to mark the end
 };
 
@@ -117,7 +186,120 @@ static const char *FORMAL_PHRASES[] = {
     "I am writing to",
     "Please find attached",
     "Thank you for your consideration",
+    "I look forward to your response",
+    "Kindly note",
+    "Please be advised",
+    "It is my pleasure to",
+    "I would appreciate your assistance",
+    "Should you require any further information",
+    "I remain at your disposal",
+    "With kind regards",
+    "Thank you for your attention",
+    "I am writing on behalf of",
+    "Please accept my apologies",
+    "I wish to inform you",
+    "We would be grateful if",
+    "I hope this message finds you well",
     NULL // Sentinel to mark the end
+};
+
+static const char *CLICKBAIT_PATTERNS[] = {
+    "you won't believe",
+    "shocking",
+    "what happened next",
+    "top [0-9]",
+    "things you didn't know",
+    "one weird trick",
+    "will blow your mind",
+    "can't handle this",
+    "before you die",
+    "this is why",
+    "the reason is shocking",
+    "you need to see",
+    "never guess",
+    "what they found",
+    "will surprise you",
+    "what no one tells you",
+    "you'll never believe",
+    "this changes everything",
+    "x things you should know",
+    "you won't expect",
+    "hidden secret",
+    "finally revealed",
+    "the truth about",
+    "this is insane",
+    "what happens next will amaze you",
+    NULL
+};
+
+static const char *RAGEBAIT_PATTERNS[] = {
+    "you won't believe",
+    "infuriating",
+    "makes me angry",
+    "outrageous",
+    "how dare they",
+    "unbelievable",
+    "ridiculous",
+    "trigger warning",
+    "enraging",
+    "shocking injustice",
+    "this will anger you",
+    "prepare to be outraged",
+    "makes no sense",
+    "disgusting",
+    "furious",
+    "utterly unacceptable",
+    "outrage",
+    "you won't forgive",
+    "shocking betrayal",
+    "how could they",
+    "beyond belief",
+    "makes my blood boil",
+    "appalling",
+    "you'll be mad",
+    "infuriated by",
+    "outrageously unfair",
+    "absurd",
+    "scandalous",
+    "unacceptable",
+    "utter nonsense",
+    "provoking anger",
+    "makes me furious",
+    NULL // Sentinel
+};
+
+static const char *EXAGGERATED_WORDS[] = {
+    "literally",
+    "always",
+    "never",
+    "every",
+    "everyone",
+    "nobody",
+    "forever",
+    "insane",
+    "unbelievable",
+    "outrageous",
+    "epic",
+    "mind-blowing",
+    "extremely",
+    "completely",
+    "totally",
+    "absolutely",
+    "massive",
+    "huge",
+    "gigantic",
+    "tremendous",
+    "incredible",
+    "unreal",
+    "astonishing",
+    "stunning",
+    "jaw-dropping",
+    "ridiculous",
+    "crazy",
+    "fantastic",
+    "amazing",
+    "phenomenal",
+    NULL
 };
 
 static char custom_storage[MAX_CUSTOM_FILTERS][64];
@@ -127,6 +309,27 @@ static const char *custom_filters[MAX_CUSTOM_FILTERS] = {0};
 static const char *SKIP_WORDS[] = {
     "limit",
     "size",
+    "width",
+    "height",
+    "length",
+    "depth",
+    "volume",
+    "capacity",
+    "weight",
+    "age",
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "second",
+    "ID",
+    "serial",
+    "version",
+    "code",
+    "label",
+    "status",
+    "level",
     NULL // Sentinel to mark the end
 };
 
@@ -466,21 +669,20 @@ char *fossil_io_soap_normalize_slang(const char *text) {
     return result;
 }
 
-int fossil_io_soap_detect_clickbait(const char *text) {
+int fossil_io_soap_detect_ragebait(const char *text) {
     if (!text) return 0;
 
-    static const char *CLICKBAIT_PATTERNS[] = {
-        "you won't believe",
-        "shocking",
-        "what happened next",
-        "top [0-9]",
-        "things you didn't know",
-        "one weird trick",
-        "will blow your mind",
-        "can't handle this",
-        "before you die",
-        NULL
-    };
+    for (int i = 0; RAGEBAIT_PATTERNS[i] != NULL; i++) {
+        if (custom_strcasestr(text, RAGEBAIT_PATTERNS[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int fossil_io_soap_detect_clickbait(const char *text) {
+    if (!text) return 0;
 
     for (int i = 0; CLICKBAIT_PATTERNS[i] != NULL; i++) {
         if (custom_strcasestr(text, CLICKBAIT_PATTERNS[i])) {
@@ -493,12 +695,6 @@ int fossil_io_soap_detect_clickbait(const char *text) {
 
 int fossil_io_soap_detect_exaggeration(const char *text) {
     if (!text) return 0;
-
-    static const char *EXAGGERATED_WORDS[] = {
-        "literally", "always", "never", "every", "everyone", "nobody",
-        "forever", "insane", "unbelievable", "outrageous", "epic", "mind-blowing",
-        NULL
-    };
 
     for (int i = 0; EXAGGERATED_WORDS[i] != NULL; i++) {
         if (custom_strcasestr(text, EXAGGERATED_WORDS[i])) {
@@ -521,6 +717,19 @@ char *fossil_io_soap_filter_offensive(const char *text) {
         {"idiot", "misguided"},
         {"moron", "uninformed"},
         {"sucks", "is not ideal"},
+        {"fool", "misguided"},
+        {"jerk", "unpleasant person"},
+        {"loser", "underperformer"},
+        {"dork", "awkward person"},
+        {"lame", "unsatisfactory"},
+        {"crazy", "unreasonable"},
+        {"idiotic", "poorly thought out"},
+        {"dunce", "uninformed individual"},
+        {"nasty", "unpleasant"},
+        {"worthless", "lacking value"},
+        {"pathetic", "disappointing"},
+        {"dimwit", "uninformed"},
+        {"clueless", "uninformed"},
         {NULL, NULL}
     };
 
