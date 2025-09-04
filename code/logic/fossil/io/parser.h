@@ -22,40 +22,42 @@ extern "C" {
 
 // Types of command argument
 typedef enum {
-    FOSSIL_IO_PARSER_BOOL,    // Boolean (enable/disable)
-    FOSSIL_IO_PARSER_STRING,  // String argument
-    FOSSIL_IO_PARSER_INT,     // Integer argument
-    FOSSIL_IO_PARSER_FLOAT,   // Floating-point argument
-    FOSSIL_IO_PARSER_DATE,    // Date argument
-    FOSSIL_IO_PARSER_ARRAY,   // Array of values
-    FOSSIL_IO_PARSER_FEATURE, // Feature flag
-    FOSSIL_IO_PARSER_INVALID  // Invalid argument type
+    FOSSIL_IO_PARSER_BOOL,     // Boolean (enable/disable)
+    FOSSIL_IO_PARSER_STRING,   // String argument
+    FOSSIL_IO_PARSER_INT,      // Integer argument
+    FOSSIL_IO_PARSER_FLOAT,    // Floating-point argument
+    FOSSIL_IO_PARSER_DATE,     // Date argument
+    FOSSIL_IO_PARSER_ARRAY,    // Array of values
+    FOSSIL_IO_PARSER_FEATURE,  // Feature flag
+    FOSSIL_IO_PARSER_COMBO,    // Combo (select from predefined options)
+    FOSSIL_IO_PARSER_INVALID   // Invalid argument type
 } fossil_io_parser_arg_type_t;
 
 // Structure to represent each argument in the command
 typedef struct fossil_io_parser_argument_s {
-    char *name;                                   // Argument name
-    fossil_io_parser_arg_type_t type;         // Argument type
+    char *name;                                   // Long argument name (e.g., --help)
+    char short_name;                              // Short argument name (e.g., -h, '\0' if unused)
+    fossil_io_parser_arg_type_t type;             // Argument type
     char *value;                                  // Parsed value
     char **combo_options;                         // Valid options for COMBO type
     int combo_count;                              // Number of valid options
-    struct fossil_io_parser_argument_s *next; // Next argument in the list
+    struct fossil_io_parser_argument_s *next;     // Next argument in the list
 } fossil_io_parser_argument_t;
 
 // Structure for a command
 typedef struct fossil_io_parser_command_s {
-    char *name;                                  // Command name
-    char *description;                           // Command description
-    fossil_io_parser_argument_t *arguments;  // List of arguments
-    struct fossil_io_parser_command_s *prev; // Previous command in the list
-    struct fossil_io_parser_command_s *next; // Next command in the list
+    char *name;                                   // Command name
+    char *description;                            // Command description
+    fossil_io_parser_argument_t *arguments;       // List of arguments
+    struct fossil_io_parser_command_s *prev;      // Previous command in the list
+    struct fossil_io_parser_command_s *next;      // Next command in the list
 } fossil_io_parser_command_t;
 
 // Structure for the command palette
 typedef struct fossil_io_parser_palette_s {
-    char *name;                               // Palette name
-    char *description;                        // Palette description
-    fossil_io_parser_command_t *commands; // List of commands
+    char *name;                                   // Palette name
+    char *description;                            // Palette description
+    fossil_io_parser_command_t *commands;         // List of commands
 } fossil_io_parser_palette_t;
 
 // ==================================================================
