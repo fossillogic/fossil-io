@@ -15,8 +15,11 @@
 #include "fossil/io/output.h"
 #include <string.h>   // For strlen, strnlen, strncasecmp
 #include <strings.h>  // For strncasecmp on POSIX
-#include <ctype.h>    // For toupper, tolower
 #include <stdlib.h>
+#include <unistd.h>    // for mkstemp
+#include <fcntl.h>     // sometimes needed for O_* flags
+#include <ctype.h>    // For toupper, tolower
+
 
 #ifndef HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen) {
