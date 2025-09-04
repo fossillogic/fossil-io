@@ -15,6 +15,7 @@
 #include "fossil/io/output.h"
 #include <ctype.h>
 #include <stdlib.h>
+#include <time.h>
 
 // ============================================================================
 // C String Functions
