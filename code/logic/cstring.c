@@ -757,6 +757,193 @@ cstring fossil_io_cstring_unescape_json_safe(ccstring str, size_t max_len) {
     return result;
 }
 
+/* ---------------- Substring ---------------- */
+cstring fossil_io_cstring_substring_safe(ccstring str, size_t start, size_t length, size_t max_len) {
+    if (!str) return NULL;
+    size_t str_len = strnlen(str, max_len);
+    if (start >= str_len) return fossil_io_cstring_create_safe("", max_len);
+    if (start + length > str_len) length = str_len - start;
+    if (length > max_len) length = max_len;
+    return fossil_io_cstring_create_safe(str + start, length);
+}
+
+/* ---------------- Reverse ---------------- */
+cstring fossil_io_cstring_reverse_safe(ccstring str, size_t max_len) {
+    if (!str) return NULL;
+    size_t len = strnlen(str, max_len);
+    cstring copy = fossil_io_cstring_copy_safe(str, len);
+    if (!copy) return NULL;
+    for (size_t i = 0; i < len / 2; i++) {
+        char tmp = copy[i];
+        copy[i] = copy[len - 1 - i];
+        copy[len - 1 - i] = tmp;
+    }
+    copy[len] = '\0';
+    return copy;
+}
+
+/* ---------------- Contains ---------------- */
+int fossil_io_cstring_contains_safe(ccstring str, ccstring substr, size_t max_len) {
+    if (!str || !substr) return 0;
+    size_t len_str = strnlen(str, max_len);
+    size_t len_sub = strnlen(substr, max_len);
+    if (len_sub > len_str) return 0;
+    return strstr(str, substr) != NULL;
+}
+
+/* ---------------- Repeat ---------------- */
+cstring fossil_io_cstring_repeat_safe(ccstring str, size_t count, size_t max_len) {
+    if (!str || count == 0) return fossil_io_cstring_create_safe("", max_len);
+    size_t len = strnlen(str, max_len);
+    if (len * count > max_len) count = max_len / len;
+    cstring result = fossil_io_cstring_create_safe("", max_len);
+    for (size_t i = 0; i < count; i++) {
+        fossil_io_cstring_append_safe(&result, str, max_len);
+    }
+    return result;
+}
+
+/* ---------------- Strip Character ---------------- */
+cstring fossil_io_cstring_strip_safe(ccstring str, char ch, size_t max_len) {
+    if (!str) return NULL;
+    size_t len = strnlen(str, max_len);
+    size_t start = 0, end = len;
+    while (start < end && str[start] == ch) start++;
+    while (end > start && str[end - 1] == ch) end--;
+    return fossil_io_cstring_substring_safe(str, start, end - start, max_len);
+}
+
+/* ---------------- Count Substring ---------------- */
+size_t fossil_io_cstring_count_safe(ccstring str, ccstring substr, size_t max_len) {
+    if (!str || !substr) return 0;
+    size_t count = 0;
+    size_t len_sub = strnlen(substr, max_len);
+    if (len_sub == 0) return 0;
+
+    const char *p = str;
+    size_t remaining = strnlen(str, max_len);
+    while (remaining >= len_sub) {
+        const char *found = strstr(p, substr);
+        if (!found) break;
+        count++;
+        remaining -= (found - p + len_sub);
+        p = found + len_sub;
+    }
+    return count;
+}
+
+/* ---------------- Pad Left ---------------- */
+cstring fossil_io_cstring_pad_left_safe(ccstring str, size_t total_length, char pad_char, size_t max_len) {
+    if (!str) return NULL;
+    size_t len = strnlen(str, max_len);
+    if (total_length > max_len) total_length = max_len;
+    if (len >= total_length) return fossil_io_cstring_substring_safe(str, 0, total_length, max_len);
+
+    cstring result = fossil_io_cstring_create_safe("", max_len);
+    for (size_t i = 0; i < total_length - len; i++) fossil_io_cstring_append_safe(&result, (ccstring)&pad_char, max_len);
+    fossil_io_cstring_append_safe(&result, str, max_len);
+    return result;
+}
+
+/* ---------------- Pad Right ---------------- */
+cstring fossil_io_cstring_pad_right_safe(ccstring str, size_t total_length, char pad_char, size_t max_len) {
+    if (!str) return NULL;
+    size_t len = strnlen(str, max_len);
+    if (total_length > max_len) total_length = max_len;
+    cstring result = fossil_io_cstring_create_safe(str, len);
+    for (size_t i = len; i < total_length; i++) fossil_io_cstring_append_safe(&result, (ccstring)&pad_char, max_len);
+    return result;
+}
+
+/* ---------------- Starts With ---------------- */
+int fossil_io_cstring_starts_with_safe(ccstring str, ccstring prefix, size_t max_len) {
+    if (!str || !prefix) return 0;
+    size_t len_prefix = strnlen(prefix, max_len);
+    size_t len_str = strnlen(str, max_len);
+    if (len_prefix > len_str) return 0;
+    return strncmp(str, prefix, len_prefix) == 0;
+}
+
+/* ---------------- Ends With ---------------- */
+int fossil_io_cstring_ends_with_safe(ccstring str, ccstring suffix, size_t max_len) {
+    if (!str || !suffix) return 0;
+    size_t len_suffix = strnlen(suffix, max_len);
+    size_t len_str = strnlen(str, max_len);
+    if (len_suffix > len_str) return 0;
+    return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
+
+/* ---------------- Equals / Case-insensitive Equals ---------------- */
+int fossil_io_cstring_equals_safe(ccstring a, ccstring b, size_t max_len) {
+    if (!a || !b) return 0;
+    return strncmp(a, b, max_len) == 0;
+}
+
+int fossil_io_cstring_iequals_safe(ccstring a, ccstring b, size_t max_len) {
+    if (!a || !b) return 0;
+    for (size_t i = 0; i < max_len && a[i] && b[i]; i++) {
+        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i])) return 0;
+        if (a[i+1] == '\0' && b[i+1] == '\0') break;
+    }
+    return 1;
+}
+
+/* ---------------- Case-insensitive Contains ---------------- */
+int fossil_io_cstring_icontains_safe(ccstring str, ccstring substr, size_t max_len) {
+    if (!str || !substr) return 0;
+    size_t len_str = strnlen(str, max_len);
+    size_t len_sub = strnlen(substr, max_len);
+    if (len_sub > len_str) return 0;
+    for (size_t i = 0; i <= len_str - len_sub; i++) {
+        size_t j;
+        for (j = 0; j < len_sub; j++) {
+            if (tolower((unsigned char)str[i + j]) != tolower((unsigned char)substr[j])) break;
+        }
+        if (j == len_sub) return 1;
+    }
+    return 0;
+}
+
+/* ---------------- Strip Quotes ---------------- */
+cstring fossil_io_cstring_strip_quotes_safe(ccstring str, size_t max_len) {
+    if (!str) return NULL;
+    size_t len = strnlen(str, max_len);
+    if (len < 2) return fossil_io_cstring_copy_safe(str, max_len);
+    if ((str[0] == '"' && str[len - 1] == '"') || (str[0] == '\'' && str[len - 1] == '\'')) {
+        return fossil_io_cstring_substring_safe(str, 1, len - 2, max_len);
+    }
+    return fossil_io_cstring_copy_safe(str, max_len);
+}
+
+/* ---------------- Normalize Spaces ---------------- */
+cstring fossil_io_cstring_normalize_spaces_safe(ccstring str, size_t max_len) {
+    if (!str) return NULL;
+    cstring result = fossil_io_cstring_create_safe("", max_len);
+    int in_space = 0;
+    for (size_t i = 0; i < strnlen(str, max_len); i++) {
+        if (isspace((unsigned char)str[i])) {
+            if (!in_space) {
+                fossil_io_cstring_append_safe(&result, " ", max_len);
+                in_space = 1;
+            }
+        } else {
+            char tmp[2] = { str[i], 0 };
+            fossil_io_cstring_append_safe(&result, tmp, max_len);
+            in_space = 0;
+        }
+    }
+    return result;
+}
+
+/* ---------------- Index Of ---------------- */
+int fossil_io_cstring_index_of_safe(ccstring str, ccstring substr, size_t max_len) {
+    if (!str || !substr) return -1;
+    const char *found = strstr(str, substr);
+    if (!found) return -1;
+    size_t idx = found - str;
+    return (idx < max_len) ? (int)idx : -1;
+}
+
 // ============================================================================
 // String Stream Functions
 // ============================================================================
