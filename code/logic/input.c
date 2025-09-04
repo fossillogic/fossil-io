@@ -330,7 +330,7 @@ int fossil_io_register_keybinding(int key_code, const char *action) {
     }
 
     _keybindings[_num_keybindings].key_code = key_code;
-    _keybindings[_num_keybindings].action = strdup(action);
+    _keybindings[_num_keybindings].action = fossil_io_cstring_dup(action);
     if (!_keybindings[_num_keybindings].action) return 3; // Allocation failure
 
     _num_keybindings++;
