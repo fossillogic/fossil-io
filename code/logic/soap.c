@@ -594,15 +594,16 @@ int fossil_io_soap_check_grammar(const char *text) {
     for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect; i++) {
         const char *incorrect = FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect;
         const char *ptr = text;
+        size_t ilen = strlen(incorrect);
         while ((ptr = custom_strcasestr(ptr, incorrect)) != NULL) {
             // Check word boundaries
             int before = (ptr == text) || !isalnum((unsigned char)ptr[-1]);
-            int after = !isalnum((unsigned char)ptr[strlen(incorrect)]);
+            int after = !isalnum((unsigned char)ptr[ilen]);
             if (before && after) {
                 found = 1;
                 break;
             }
-            ptr += strlen(incorrect);
+            ptr += ilen;
         }
         if (found) break;
     }
@@ -696,11 +697,48 @@ int fossil_io_soap_detect_clickbait(const char *text) {
 int fossil_io_soap_detect_exaggeration(const char *text) {
     if (!text) return 0;
 
+    // Check for exaggerated words as whole words only
     for (int i = 0; EXAGGERATED_WORDS[i] != NULL; i++) {
-        if (custom_strcasestr(text, EXAGGERATED_WORDS[i])) {
-            return 1;
+        const char *word = EXAGGERATED_WORDS[i];
+        const char *ptr = text;
+        size_t wlen = strlen(word);
+
+        while ((ptr = custom_strcasestr(ptr, word)) != NULL) {
+            int before = (ptr == text) || !isalnum((unsigned char)ptr[-1]);
+            int after = !isalnum((unsigned char)ptr[wlen]);
+            if (before && after) {
+                return 1;
+            }
+            ptr += wlen;
         }
     }
+
+    // Optionally, check for repeated exclamation marks or all-caps words
+    int exclam_count = 0, caps_word = 0, in_word = 0, word_len = 0, caps_count = 0;
+    for (const char *p = text; *p; ++p) {
+        if (*p == '!') {
+            exclam_count++;
+            if (exclam_count >= 3) return 1;
+        } else {
+            exclam_count = 0;
+        }
+
+        if (isalpha((unsigned char)*p)) {
+            if (!in_word) {
+                in_word = 1;
+                word_len = 0;
+                caps_count = 0;
+            }
+            word_len++;
+            if (isupper((unsigned char)*p)) caps_count++;
+        } else {
+            if (in_word && word_len >= 4 && caps_count == word_len) {
+                caps_word = 1;
+            }
+            in_word = 0;
+        }
+    }
+    if (caps_word) return 1;
 
     return 0;
 }
