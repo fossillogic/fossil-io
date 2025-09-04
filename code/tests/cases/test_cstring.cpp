@@ -593,6 +593,159 @@ FOSSIL_TEST(cpp_test_cstring_class_append) {
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str());
 }
 
+FOSSIL_TEST(cpp_test_cstring_class_copy_safe) {
+    std::string src = "SafeCopy";
+    fossil::io::CString result = fossil::io::CString::copy_safe(src);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeCopy", result.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_dup_safe) {
+    std::string src = "SafeDup";
+    fossil::io::CString result = fossil::io::CString::dup_safe(src);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeDup", result.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_concat_safe) {
+    std::string s1 = "Safe";
+    std::string s2 = "Concat";
+    fossil::io::CString result = fossil::io::CString::concat_safe(s1, s2, 16);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeConcat", result.str());
+    fossil::io::CString truncated = fossil::io::CString::concat_safe(s1, s2, 5);
+    ASSUME_ITS_EQUAL_CSTR("SafeC", truncated.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_substring_safe) {
+    fossil::io::CString str("SafeSubstringTest");
+    fossil::io::CString result = str.substring_safe(4, 9, 20);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Substring", result.str());
+    fossil::io::CString limited = str.substring_safe(4, 20, 10);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 10);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_reverse_safe) {
+    fossil::io::CString str("SafeReverse");
+    fossil::io::CString result = str.reverse_safe(11);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("esreveRefaS", result.str());
+    fossil::io::CString limited = str.reverse_safe(4);
+    ASSUME_ITS_EQUAL_CSTR("efaS", limited.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_contains_safe) {
+    fossil::io::CString str("SafeContainsTest");
+    ASSUME_ITS_TRUE(str.contains_safe("Contains", 20));
+    ASSUME_ITS_FALSE(str.contains_safe("Missing", 20));
+    ASSUME_ITS_FALSE(str.contains_safe("Contains", 5));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_repeat_safe) {
+    fossil::io::CString str("Safe");
+    fossil::io::CString result = str.repeat_safe(3, 20);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeSafeSafe", result.str());
+    fossil::io::CString limited = str.repeat_safe(10, 8);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 8);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_strip_safe) {
+    fossil::io::CString str("!!!Safe!!!");
+    fossil::io::CString result = str.strip_safe('!', 20);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Safe", result.str());
+    fossil::io::CString limited = str.strip_safe('!', 4);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 4);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_count_safe) {
+    fossil::io::CString str("Safe Safe Safe");
+    size_t count = str.count_safe("Safe", 20);
+    ASSUME_ITS_EQUAL_SIZE(3, count);
+    size_t limited = str.count_safe("Safe", 4);
+    ASSUME_ITS_EQUAL_SIZE(1, limited);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_pad_left_safe) {
+    fossil::io::CString str("Safe");
+    fossil::io::CString result = str.pad_left_safe(8, '*', 8);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("****Safe", result.str());
+    fossil::io::CString limited = str.pad_left_safe(10, '*', 6);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 6);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_pad_right_safe) {
+    fossil::io::CString str("Safe");
+    fossil::io::CString result = str.pad_right_safe(8, '*', 8);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Safe****", result.str());
+    fossil::io::CString limited = str.pad_right_safe(10, '*', 6);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 6);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_starts_with_safe) {
+    fossil::io::CString str("SafePrefixTest");
+    ASSUME_ITS_TRUE(str.starts_with_safe("Safe", 20));
+    ASSUME_ITS_FALSE(str.starts_with_safe("Prefix", 4));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_ends_with_safe) {
+    fossil::io::CString str("SafeSuffixTest");
+    ASSUME_ITS_TRUE(str.ends_with_safe("Test", 20));
+    ASSUME_ITS_FALSE(str.ends_with_safe("Suffix", 4));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_equals_safe) {
+    fossil::io::CString str("SafeEquals");
+    ASSUME_ITS_TRUE(str.equals_safe("SafeEquals", 20));
+    ASSUME_ITS_FALSE(str.equals_safe("safeequals", 20));
+    ASSUME_ITS_FALSE(str.equals_safe("SafeEquals", 4));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_iequals_safe) {
+    fossil::io::CString str("SafeEquals");
+    ASSUME_ITS_TRUE(str.iequals_safe("safeequals", 20));
+    ASSUME_ITS_FALSE(str.iequals_safe("Safe", 20));
+    ASSUME_ITS_FALSE(str.iequals_safe("SafeEquals", 4));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_icontains_safe) {
+    fossil::io::CString str("SafeContainsTest");
+    ASSUME_ITS_TRUE(str.icontains_safe("contains", 20));
+    ASSUME_ITS_FALSE(str.icontains_safe("missing", 20));
+    ASSUME_ITS_FALSE(str.icontains_safe("contains", 5));
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_strip_quotes_safe) {
+    fossil::io::CString str1("\"SafeQuotes\"");
+    fossil::io::CString str2("'SafeQuotes'");
+    fossil::io::CString str3("SafeQuotes");
+    fossil::io::CString result1 = str1.strip_quotes_safe(20);
+    fossil::io::CString result2 = str2.strip_quotes_safe(20);
+    fossil::io::CString result3 = str3.strip_quotes_safe(20);
+    ASSUME_ITS_EQUAL_CSTR("SafeQuotes", result1.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeQuotes", result2.str());
+    ASSUME_ITS_EQUAL_CSTR("SafeQuotes", result3.str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_normalize_spaces_safe) {
+    fossil::io::CString str("Safe   Spaces   Test");
+    fossil::io::CString result = str.normalize_spaces_safe(20);
+    ASSUME_NOT_CNULL(result.str());
+    ASSUME_ITS_EQUAL_CSTR("Safe Spaces Test", result.str());
+    fossil::io::CString limited = str.normalize_spaces_safe(4);
+    ASSUME_ITS_TRUE(strlen(limited.str()) <= 4);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_index_of_safe) {
+    fossil::io::CString str("SafeIndexTest");
+    ASSUME_ITS_EQUAL_I32(4, str.index_of_safe("Index", 20));
+    ASSUME_ITS_EQUAL_I32(-1, str.index_of_safe("Missing", 20));
+    ASSUME_ITS_EQUAL_I32(-1, str.index_of_safe("Index", 4));
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -631,6 +784,26 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_normalize_spaces);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_strip_quotes);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_append);
+
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_copy_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_dup_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_concat_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_substring_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_reverse_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_contains_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_repeat_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_strip_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_count_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_left_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_pad_right_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_starts_with_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_ends_with_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_equals_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_iequals_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_icontains_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_strip_quotes_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_normalize_spaces_safe);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_index_of_safe);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
