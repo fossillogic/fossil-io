@@ -128,9 +128,11 @@ void show_version(void) {
 }
 
 void show_help(const char *command_name, const fossil_io_parser_palette_t *palette) {
+    if (!palette) return;
+
     fossil_io_parser_command_t *command = palette->commands;
 
-    // If no specific command is provided, show all commands
+    // Show all commands if no specific command is requested
     if (!command_name) {
         fossil_io_printf("{blue}Available commands:{reset}\n");
         while (command) {
@@ -146,70 +148,146 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
         if (strcmp(command->name, command_name) == 0) {
             fossil_io_printf("{blue}Command: %s\nDescription: %s{reset}\n", command->name, command->description);
             fossil_io_printf("{blue}Arguments:{reset}\n");
+
             fossil_io_parser_argument_t *arg = command->arguments;
             while (arg) {
-                fossil_io_printf("{cyan}  --%s (%s): ", 
-                       arg->name, 
-                       arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
-                       arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
-                       arg->type == FOSSIL_IO_PARSER_INT ? "int" :
-                       arg->type == FOSSIL_IO_PARSER_FLOAT ? "float" :
-                       arg->type == FOSSIL_IO_PARSER_DATE ? "date" :
-                       arg->type == FOSSIL_IO_PARSER_ARRAY ? "array" :
-                       arg->type == FOSSIL_IO_PARSER_FEATURE ? "feature" :
-                       arg->type == FOSSIL_IO_PARSER_INVALID ? "invalid" :
-                       "unknown");
+                // Print long and short names
+                if (arg->short_name != '\0') {
+                    fossil_io_printf("{cyan}  -%c, --%s (%s): ", arg->short_name, arg->name,
+                        arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
+                        arg->type == FOSSIL_IO_PARSER_FLAG ? "flag" :
+                        arg->type == FOSSIL_IO_PARSER_TOGGLE ? "toggle" :
+                        arg->type == FOSSIL_IO_PARSER_INT ? "int" :
+                        arg->type == FOSSIL_IO_PARSER_UINT ? "uint" :
+                        arg->type == FOSSIL_IO_PARSER_HEX ? "hex" :
+                        arg->type == FOSSIL_IO_PARSER_OCT ? "oct" :
+                        arg->type == FOSSIL_IO_PARSER_BIN ? "bin" :
+                        arg->type == FOSSIL_IO_PARSER_FLOAT ? "float" :
+                        arg->type == FOSSIL_IO_PARSER_DOUBLE ? "double" :
+                        arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
+                        arg->type == FOSSIL_IO_PARSER_FILE ? "file" :
+                        arg->type == FOSSIL_IO_PARSER_DIR ? "dir" :
+                        arg->type == FOSSIL_IO_PARSER_DATE ? "date" :
+                        arg->type == FOSSIL_IO_PARSER_TIMESTAMP ? "timestamp" :
+                        arg->type == FOSSIL_IO_PARSER_DURATION ? "duration" :
+                        arg->type == FOSSIL_IO_PARSER_REGEX ? "regex" :
+                        arg->type == FOSSIL_IO_PARSER_JSON ? "json" :
+                        arg->type == FOSSIL_IO_PARSER_BASE64 ? "base64" :
+                        arg->type == FOSSIL_IO_PARSER_URL ? "url" :
+                        arg->type == FOSSIL_IO_PARSER_IP ? "ip" :
+                        arg->type == FOSSIL_IO_PARSER_SIZE ? "size" :
+                        arg->type == FOSSIL_IO_PARSER_PERCENT ? "percent" :
+                        arg->type == FOSSIL_IO_PARSER_ARRAY ? "array" :
+                        arg->type == FOSSIL_IO_PARSER_LIST ? "list" :
+                        arg->type == FOSSIL_IO_PARSER_MAP ? "map" :
+                        arg->type == FOSSIL_IO_PARSER_FEATURE ? "feature" :
+                        arg->type == FOSSIL_IO_PARSER_COMBO ? "combo" :
+                        "unknown");
 
-                if (arg->value) {
-                    switch (arg->type) {
-                        case FOSSIL_IO_PARSER_BOOL:
-                        case FOSSIL_IO_PARSER_FEATURE:
-                            fossil_io_printf("%s", (*(int *)arg->value) ? "true" : "false");
-                            break;
-                        case FOSSIL_IO_PARSER_INT:
-                            fossil_io_printf("%d", *(int *)arg->value);
-                            break;
-                        case FOSSIL_IO_PARSER_FLOAT:
-                            fossil_io_printf("%f", *(float *)arg->value);
-                            break;
-                        case FOSSIL_IO_PARSER_STRING:
-                        case FOSSIL_IO_PARSER_DATE:
-                            fossil_io_printf("%s", (char *)arg->value);
-                            break;
-                        case FOSSIL_IO_PARSER_ARRAY: {
-                            char **arr = (char **)arg->value;
-                            int idx = 0;
+                } else {
+                    fossil_io_printf("{cyan}  --%s (%s): ", arg->name,
+                        arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
+                        arg->type == FOSSIL_IO_PARSER_FLAG ? "flag" :
+                        arg->type == FOSSIL_IO_PARSER_TOGGLE ? "toggle" :
+                        arg->type == FOSSIL_IO_PARSER_INT ? "int" :
+                        arg->type == FOSSIL_IO_PARSER_UINT ? "uint" :
+                        arg->type == FOSSIL_IO_PARSER_HEX ? "hex" :
+                        arg->type == FOSSIL_IO_PARSER_OCT ? "oct" :
+                        arg->type == FOSSIL_IO_PARSER_BIN ? "bin" :
+                        arg->type == FOSSIL_IO_PARSER_FLOAT ? "float" :
+                        arg->type == FOSSIL_IO_PARSER_DOUBLE ? "double" :
+                        arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
+                        arg->type == FOSSIL_IO_PARSER_FILE ? "file" :
+                        arg->type == FOSSIL_IO_PARSER_DIR ? "dir" :
+                        arg->type == FOSSIL_IO_PARSER_DATE ? "date" :
+                        arg->type == FOSSIL_IO_PARSER_TIMESTAMP ? "timestamp" :
+                        arg->type == FOSSIL_IO_PARSER_DURATION ? "duration" :
+                        arg->type == FOSSIL_IO_PARSER_REGEX ? "regex" :
+                        arg->type == FOSSIL_IO_PARSER_JSON ? "json" :
+                        arg->type == FOSSIL_IO_PARSER_BASE64 ? "base64" :
+                        arg->type == FOSSIL_IO_PARSER_URL ? "url" :
+                        arg->type == FOSSIL_IO_PARSER_IP ? "ip" :
+                        arg->type == FOSSIL_IO_PARSER_SIZE ? "size" :
+                        arg->type == FOSSIL_IO_PARSER_PERCENT ? "percent" :
+                        arg->type == FOSSIL_IO_PARSER_ARRAY ? "array" :
+                        arg->type == FOSSIL_IO_PARSER_LIST ? "list" :
+                        arg->type == FOSSIL_IO_PARSER_MAP ? "map" :
+                        arg->type == FOSSIL_IO_PARSER_FEATURE ? "feature" :
+                        arg->type == FOSSIL_IO_PARSER_COMBO ? "combo" :
+                        "unknown");
+                }
+
+                // Print argument value if set
+                switch(arg->type) {
+                    case FOSSIL_IO_PARSER_BOOL:
+                    case FOSSIL_IO_PARSER_FLAG:
+                    case FOSSIL_IO_PARSER_TOGGLE:
+                    case FOSSIL_IO_PARSER_FEATURE:
+                        fossil_io_printf("%s", arg->value.i ? "true" : "false");
+                        break;
+                    case FOSSIL_IO_PARSER_INT: fossil_io_printf("%d", arg->value.i); break;
+                    case FOSSIL_IO_PARSER_UINT: fossil_io_printf("%u", arg->value.u); break;
+                    case FOSSIL_IO_PARSER_HEX: fossil_io_printf("0x%lX", arg->value.l); break;
+                    case FOSSIL_IO_PARSER_OCT: fossil_io_printf("0%lo", arg->value.l); break;
+                    case FOSSIL_IO_PARSER_BIN: {
+                        long val = arg->value.l;
+                        char buf[65] = {0};
+                        for(int i=63;i>=0;i--) buf[63-i] = (val & (1L<<i)) ? '1' : '0';
+                        fossil_io_printf("0b%s", buf);
+                        break;
+                    }
+                    case FOSSIL_IO_PARSER_FLOAT: fossil_io_printf("%f", arg->value.f); break;
+                    case FOSSIL_IO_PARSER_DOUBLE: fossil_io_printf("%lf", arg->value.d); break;
+                    case FOSSIL_IO_PARSER_SIZE:
+                    case FOSSIL_IO_PARSER_PERCENT:
+                    case FOSSIL_IO_PARSER_STRING:
+                    case FOSSIL_IO_PARSER_FILE:
+                    case FOSSIL_IO_PARSER_DIR:
+                    case FOSSIL_IO_PARSER_DATE:
+                    case FOSSIL_IO_PARSER_TIMESTAMP:
+                    case FOSSIL_IO_PARSER_DURATION:
+                    case FOSSIL_IO_PARSER_REGEX:
+                    case FOSSIL_IO_PARSER_JSON:
+                    case FOSSIL_IO_PARSER_BASE64:
+                    case FOSSIL_IO_PARSER_URL:
+                    case FOSSIL_IO_PARSER_IP:
+                    case FOSSIL_IO_PARSER_COMBO:
+                        fossil_io_printf("%s", arg->value.s ? arg->value.s : "No default");
+                        break;
+                    case FOSSIL_IO_PARSER_ARRAY:
+                    case FOSSIL_IO_PARSER_LIST:
+                        if (arg->value.arr) {
                             fossil_io_printf("[");
-                            while (arr && arr[idx]) {
-                                fossil_io_printf("%s%s", idx > 0 ? ", " : "", arr[idx]);
-                                idx++;
+                            for (int j=0; arg->value.arr[j]; j++) {
+                                if (j>0) fossil_io_printf(", ");
+                                fossil_io_printf("%s", arg->value.arr[j]);
                             }
                             fossil_io_printf("]");
-                            break;
-                        }
-                        default:
-                            fossil_io_printf("Unknown");
-                            break;
-                    }
-                } else {
-                    fossil_io_printf("No default value");
+                        } else fossil_io_printf("No default");
+                        break;
+                    case FOSSIL_IO_PARSER_MAP:
+                        fossil_io_printf("{...}"); // placeholder
+                        break;
+                    default:
+                        fossil_io_printf("Unknown");
+                        break;
                 }
+
                 fossil_io_printf("{reset}\n");
                 arg = arg->next;
             }
 
-            // Handle specific flags
+            // Built-in flags
             fossil_io_printf("{blue}Built-in:{reset}\n");
-            fossil_io_printf("{cyan}  --help: Show help information for this command.{reset}\n");
-            fossil_io_printf("{cyan}  --version: Display the version of the application.{reset}\n");
-            fossil_io_printf("{cyan}  --dry-run: Simulate the operation without making changes.{reset}\n");
-            fossil_io_printf("{cyan}  --verbose: Provide detailed output during execution.{reset}\n");
+            fossil_io_printf("{cyan}  --help: Show help information{reset}\n");
+            fossil_io_printf("{cyan}  --version: Show version{reset}\n");
+            fossil_io_printf("{cyan}  --dry-run: Simulate operation{reset}\n");
+            fossil_io_printf("{cyan}  --verbose: Verbose output{reset}\n");
             return;
         }
         command = command->next;
     }
 
-    // If the command is not found
     fossil_io_fprintf(FOSSIL_STDERR, "{red}Unknown command '%s'. Use '--help' to see available commands.{reset}\n", command_name);
 }
 
