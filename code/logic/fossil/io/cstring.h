@@ -351,6 +351,191 @@ cstring fossil_io_cstring_strip_quotes(ccstring str);
  */
 cstring fossil_io_cstring_append(cstring *dest, ccstring src);
 
+// Secure String 
+
+/**
+ * @brief Creates a new cstring with the given initial value safely.
+ *
+ * Allocates a new buffer for the string, ensuring null-termination.
+ *
+ * @param init The initial value for the cstring.
+ * @return A new cstring initialized with the given value, or NULL on failure.
+ */
+cstring fossil_io_cstring_create_safe(const char *init, size_t max_len);
+
+/**
+ * @brief Frees a cstring safely.
+ *
+ * Sets the pointer to NULL after freeing to prevent dangling references.
+ *
+ * @param str Pointer to the cstring to free.
+ */
+void fossil_io_cstring_free_safe(cstring *str);
+
+/**
+ * @brief Creates a safe copy of the given cstring.
+ *
+ * @param str The cstring to copy.
+ * @param max_len Maximum number of characters to copy.
+ * @return A newly allocated cstring copy, or NULL on failure.
+ */
+cstring fossil_io_cstring_copy_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Duplicates the given cstring safely.
+ *
+ * @param str The cstring to duplicate.
+ * @param max_len Maximum number of characters to duplicate.
+ * @return A newly allocated duplicate cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_dup_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Concatenates two cstrings safely.
+ *
+ * Ensures that the resulting string is null-terminated and does not overflow.
+ *
+ * @param s1 First cstring.
+ * @param s2 Second cstring.
+ * @param max_len Maximum allowed length of the resulting string.
+ * @return A new concatenated cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_concat_safe(ccstring s1, ccstring s2, size_t max_len);
+
+/**
+ * @brief Returns the length of the given cstring safely.
+ *
+ * Ensures that the string is properly null-terminated within max_len.
+ *
+ * @param str The cstring whose length is determined.
+ * @param max_len Maximum characters to scan.
+ * @return The length of the cstring up to max_len.
+ */
+size_t fossil_io_cstring_length_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Compares two cstrings safely.
+ *
+ * Ensures no buffer overrun; comparison stops at max_len or null terminator.
+ *
+ * @param s1 First cstring.
+ * @param s2 Second cstring.
+ * @param max_len Maximum characters to compare.
+ * @return <0 if s1<s2, 0 if equal, >0 if s1>s2
+ */
+int fossil_io_cstring_compare_safe(ccstring s1, ccstring s2, size_t max_len);
+
+/**
+ * @brief Safely concatenates src to dest in-place with bounds checking.
+ *
+ * Resizes the buffer as needed. Ensures null-termination.
+ *
+ * @param dest Pointer to destination cstring.
+ * @param src Source cstring to append.
+ * @param max_len Maximum allowed length for dest after append.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_cstring_append_safe(cstring *dest, ccstring src, size_t max_len);
+
+/**
+ * @brief Trims whitespace safely from a cstring.
+ *
+ * Ensures null-termination and modifies in-place or allocates a new string.
+ *
+ * @param str The cstring to trim.
+ * @param max_len Maximum length of the string to process.
+ */
+cstring fossil_io_cstring_trim_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Splits a cstring safely by a delimiter.
+ *
+ * Allocates an array of strings, each safely null-terminated.
+ *
+ * @param str The string to split.
+ * @param delimiter Character to split by.
+ * @param count Pointer to store number of substrings.
+ * @param max_len Maximum length of each substring.
+ * @return Array of safe cstrings, or NULL on failure.
+ */
+cstring *fossil_io_cstring_split_safe(ccstring str, char delimiter, size_t *count, size_t max_len);
+
+/**
+ * @brief Replaces all occurrences of a substring safely.
+ *
+ * Allocates a new string and ensures null-termination.
+ *
+ * @param str Original string.
+ * @param old Substring to replace.
+ * @param new_str Replacement substring.
+ * @param max_len Maximum length of resulting string.
+ * @return A new cstring with replacements, or NULL on failure.
+ */
+cstring fossil_io_cstring_replace_safe(ccstring str, ccstring old, ccstring new_str, size_t max_len);
+
+/**
+ * @brief Converts a cstring to uppercase safely.
+ *
+ * Allocates a new string, ensures null-termination.
+ *
+ * @param str The cstring to convert.
+ * @param max_len Maximum allowed length.
+ * @return Uppercase cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_to_upper_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Converts a cstring to lowercase safely.
+ *
+ * @param str The cstring to convert.
+ * @param max_len Maximum allowed length.
+ * @return Lowercase cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_to_lower_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Safely creates a formatted cstring.
+ *
+ * Allocates enough memory for the resulting string; guarantees null-termination.
+ *
+ * @param max_len Maximum length for formatted string.
+ * @param format Format string.
+ * @param ... Format arguments.
+ * @return Newly allocated formatted cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_format_safe(size_t max_len, ccstring format, ...);
+
+/**
+ * @brief Safely joins multiple strings with a delimiter.
+ *
+ * @param strings Array of cstrings.
+ * @param count Number of elements.
+ * @param delimiter Character to insert.
+ * @param max_len Maximum allowed length of resulting string.
+ * @return New cstring or NULL on failure.
+ */
+cstring fossil_io_cstring_join_safe(ccstring *strings, size_t count, char delimiter, size_t max_len);
+
+/**
+ * @brief Safely escapes a cstring for JSON output.
+ *
+ * Ensures resulting string is null-terminated and memory-safe.
+ *
+ * @param str Input cstring.
+ * @param max_len Maximum length of resulting escaped string.
+ * @return Escaped cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_escape_json_safe(ccstring str, size_t max_len);
+
+/**
+ * @brief Safely unescapes a JSON-escaped cstring.
+ *
+ * @param str JSON-escaped string.
+ * @param max_len Maximum length of resulting string.
+ * @return Unescaped cstring, or NULL on failure.
+ */
+cstring fossil_io_cstring_unescape_json_safe(ccstring str, size_t max_len);
+
 // String Stream
 
 /**
