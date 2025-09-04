@@ -175,9 +175,12 @@ int fossil_io_gets(char *buffer, size_t size);
 /**
  * @brief Type for representing a key binding.
  */
+typedef void (*fossil_io_action_callback_t)(void);
+
 typedef struct {
-    int key_code;           /**< The integer key code (e.g., ASCII or special code). */
-    const char *action;     /**< The action associated with this key (e.g., "COPY", "PASTE"). */
+    int key_code;                         /**< The integer key code (e.g., ASCII or special code). */
+    const char *action;                    /**< The action string associated with this key. */
+    fossil_io_action_callback_t callback;  /**< Optional function to call when key is pressed. */
 } fossil_io_keybinding_t;
 
 /**
