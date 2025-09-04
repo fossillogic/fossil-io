@@ -316,14 +316,6 @@ int fossil_io_gets(char *buffer, size_t size) {
     return 0; // Success
 }
 
-typedef void (*fossil_io_action_callback_t)(void);
-
-typedef struct {
-    int key_code;                         /**< The integer key code (e.g., ASCII or special code). */
-    const char *action;                    /**< The action string associated with this key. */
-    fossil_io_action_callback_t callback;  /**< Optional function to call when key is pressed. */
-} fossil_io_keybinding_t;
-
 #define MAX_KEYBINDINGS 256
 static fossil_io_keybinding_t _keybindings[MAX_KEYBINDINGS];
 static size_t _num_keybindings = 0;
