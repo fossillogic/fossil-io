@@ -22,26 +22,70 @@ extern "C" {
 
 // Types of command argument
 typedef enum {
-    FOSSIL_IO_PARSER_BOOL,     // Boolean (enable/disable)
-    FOSSIL_IO_PARSER_STRING,   // String argument
-    FOSSIL_IO_PARSER_INT,      // Integer argument
-    FOSSIL_IO_PARSER_FLOAT,    // Floating-point argument
-    FOSSIL_IO_PARSER_DATE,     // Date argument
-    FOSSIL_IO_PARSER_ARRAY,    // Array of values
-    FOSSIL_IO_PARSER_FEATURE,  // Feature flag
-    FOSSIL_IO_PARSER_COMBO,    // Combo (select from predefined options)
-    FOSSIL_IO_PARSER_INVALID   // Invalid argument type
+    // Boolean / Flag Types
+    FOSSIL_IO_PARSER_BOOL,       // Boolean (enable/disable)
+    FOSSIL_IO_PARSER_FLAG,       // Simple flag (on/off, no value)
+    FOSSIL_IO_PARSER_TOGGLE,     // Explicit enable/disable toggle
+
+    // String Types
+    FOSSIL_IO_PARSER_STRING,     // Generic string
+    FOSSIL_IO_PARSER_FILE,       // File path
+    FOSSIL_IO_PARSER_DIR,        // Directory path
+    FOSSIL_IO_PARSER_REGEX,      // Regular expression
+    FOSSIL_IO_PARSER_ENUM,       // Strict set of options
+    FOSSIL_IO_PARSER_JSON,       // JSON string
+    FOSSIL_IO_PARSER_BASE64,     // Base64-encoded string
+    FOSSIL_IO_PARSER_URL,        // URL string
+    FOSSIL_IO_PARSER_IP,         // IPv4/IPv6
+
+    // Numeric Types
+    FOSSIL_IO_PARSER_INT,        // Signed integer
+    FOSSIL_IO_PARSER_UINT,       // Unsigned integer
+    FOSSIL_IO_PARSER_HEX,        // Hexadecimal integer (0x prefix)
+    FOSSIL_IO_PARSER_OCT,        // Octal integer (0 prefix)
+    FOSSIL_IO_PARSER_BIN,        // Binary integer (0b prefix)
+    FOSSIL_IO_PARSER_FLOAT,      // Floating-point number
+    FOSSIL_IO_PARSER_DOUBLE,     // Double precision floating-point
+    FOSSIL_IO_PARSER_SIZE,       // Size values (e.g., 10K, 2M)
+    FOSSIL_IO_PARSER_PERCENT,    // Percentage (0-100%)
+
+    // Time / Date Types
+    FOSSIL_IO_PARSER_DATE,       // Date (YYYY-MM-DD)
+    FOSSIL_IO_PARSER_TIMESTAMP,  // Timestamp (YYYY-MM-DD HH:MM:SS)
+    FOSSIL_IO_PARSER_DURATION,   // Duration (e.g., 1h30m, 45s)
+
+    // Collection Types
+    FOSSIL_IO_PARSER_ARRAY,      // Array of values
+    FOSSIL_IO_PARSER_LIST,       // List of values
+    FOSSIL_IO_PARSER_MAP,        // Key-value pairs
+
+    // Feature / Option Types
+    FOSSIL_IO_PARSER_FEATURE,    // Feature flag
+    FOSSIL_IO_PARSER_COMBO,      // Select from predefined options
+
+    // Invalid / Sentinel
+    FOSSIL_IO_PARSER_INVALID      // Invalid argument type
 } fossil_io_parser_arg_type_t;
 
-// Structure to represent each argument in the command
+typedef union fossil_io_parser_value_u {
+    int i;                  // INT / BOOL / FEATURE
+    unsigned int u;         // UINT
+    long l;                 // HEX, OCT, BIN
+    float f;                // FLOAT
+    double d;               // DOUBLE
+    char *s;                // STRING, DATE, FILE, DIR, REGEX, URL, JSON, BASE64
+    char **arr;             // ARRAY / LIST
+    void *ptr;              // MAP or other complex type
+} fossil_io_parser_value_t;
+
 typedef struct fossil_io_parser_argument_s {
-    char *name;                                   // Long argument name (e.g., --help)
-    char short_name;                              // Short argument name (e.g., -h, '\0' if unused)
-    fossil_io_parser_arg_type_t type;             // Argument type
-    char *value;                                  // Parsed value
-    char **combo_options;                         // Valid options for COMBO type
-    int combo_count;                              // Number of valid options
-    struct fossil_io_parser_argument_s *next;     // Next argument in the list
+    char *name;                       // Long argument name (e.g., --help)
+    char short_name;                  // Short argument name (e.g., -h)
+    fossil_io_parser_arg_type_t type; // Argument type
+    fossil_io_parser_value_t value;   // Parsed value
+    char **combo_options;             // Valid options for COMBO type
+    int combo_count;                  // Number of valid options
+    struct fossil_io_parser_argument_s *next; // Next argument
 } fossil_io_parser_argument_t;
 
 // Structure for a command
@@ -98,20 +142,12 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
  *
  * @param command The command to which the argument will be added.
  * @param arg_name The name of the argument.
- * @param short_name The short name of the argument.
  * @param arg_type The type of the argument.
  * @param combo_options (Optional) Array of valid options for COMBO type.
  * @param combo_count (Optional) Number of options for COMBO type.
  * @return A pointer to the newly added argument.
  */
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(
-    fossil_io_parser_command_t *command,
-    const char *arg_name,
-    char short_name,   // NEW
-    fossil_io_parser_arg_type_t arg_type,
-    char **combo_options,
-    int combo_count
-)
+fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count);
 
 /**
  * @brief Parses the command-line arguments using the parser palette.
