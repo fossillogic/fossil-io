@@ -203,6 +203,11 @@ int fossil_io_register_keybinding(int key_code, const char *action);
 int fossil_io_unregister_keybinding(int key_code);
 
 /**
+ * Registers a new key binding with optional callback.
+ */
+int fossil_io_register_keybinding_with_callback(int key_code, const char *action, fossil_io_action_callback_t cb);
+
+/**
  * @brief Retrieves the action associated with a key code.
  *
  * @param key_code The key code to look up.
