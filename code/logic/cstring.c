@@ -13,6 +13,7 @@
  */
 #include "fossil/io/cstring.h"
 #include "fossil/io/output.h"
+#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
