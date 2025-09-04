@@ -13,6 +13,8 @@
  */
 #include "fossil/io/cstring.h"
 #include "fossil/io/output.h"
+#include <stdlib.h>
+#include <ctype.h>
 
 // ============================================================================
 // C String Functions
