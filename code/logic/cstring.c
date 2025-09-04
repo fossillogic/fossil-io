@@ -13,9 +13,28 @@
  */
 #include "fossil/io/cstring.h"
 #include "fossil/io/output.h"
-#include <string.h>
+#include <string.h>   // For strlen, strnlen, strncasecmp
+#include <strings.h>  // For strncasecmp on POSIX
+#include <ctype.h>    // For toupper, tolower
 #include <stdlib.h>
-#include <ctype.h>
+
+#ifndef HAVE_STRNLEN
+size_t strnlen(const char *s, size_t maxlen) {
+    size_t i;
+    for (i = 0; i < maxlen && s[i]; i++);
+    return i;
+}
+#endif
+
+#ifndef HAVE_STRNCASECMP
+int strncasecmp(const char *s1, const char *s2, size_t n) {
+    for (size_t i = 0; i < n && s1[i] && s2[i]; i++) {
+        int diff = tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
+        if (diff != 0) return diff;
+    }
+    return 0;
+}
+#endif
 
 // ============================================================================
 // C String Functions
