@@ -558,8 +558,9 @@ fossil_fstream_t fossil_fstream_tempfile(void) {
         fprintf(stderr, "Error: Failed to create temporary file\n");
         return (fossil_fstream_t){NULL, ""};
     }
-    close(fd); // Close the file descriptor as it's no longer needed
-    strncpy(temp_filename, template, FOSSIL_BUFFER_MEDIUM);
+    close(fd); // Close the file descriptor; fossil_fstream_open will reopen
+    strncpy(temp_filename, template, FOSSIL_BUFFER_MEDIUM - 1);
+    temp_filename[FOSSIL_BUFFER_MEDIUM - 1] = '\0';
 #endif
 
     if (fossil_fstream_open(&temp_stream, temp_filename, "wb+") != FOSSIL_ERROR_OK) {
