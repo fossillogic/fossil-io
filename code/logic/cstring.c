@@ -41,6 +41,102 @@ cstring fossil_io_cstring_copy(ccstring str) {
     return fossil_io_cstring_create(str);
 }
 
+static const char *units[] = {
+    "zero", "one", "two", "three", "four", "five",
+    "six", "seven", "eight", "nine", "ten", "eleven",
+    "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen"
+};
+
+static const char *tens[] = {
+    "", "", "twenty", "thirty", "forty", "fifty",
+    "sixty", "seventy", "eighty", "ninety"
+};
+
+// ---------------- Number -> Words ----------------
+int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size) {
+    if (!buffer || size == 0) return -1;
+    buffer[0] = '\0';
+
+    if (num < 0 || num > 9999) return -1; // Limit to 0..9999
+
+    if (num >= 1000) {
+        int thousands = num / 1000;
+        if (strlen(buffer) + strlen(units[thousands]) + 10 >= size) return -1;
+        strcat(buffer, units[thousands]);
+        strcat(buffer, " thousand");
+        num %= 1000;
+        if (num > 0) strcat(buffer, " ");
+    }
+
+    if (num >= 100) {
+        int hundreds = num / 100;
+        if (strlen(buffer) + strlen(units[hundreds]) + 10 >= size) return -1;
+        strcat(buffer, units[hundreds]);
+        strcat(buffer, " hundred");
+        num %= 100;
+        if (num > 0) strcat(buffer, " and ");
+    }
+
+    if (num >= 20) {
+        int t = num / 10;
+        if (strlen(buffer) + strlen(tens[t]) + 2 >= size) return -1;
+        strcat(buffer, tens[t]);
+        num %= 10;
+        if (num > 0) {
+            strcat(buffer, "-");
+            strcat(buffer, units[num]);
+        }
+    } else if (num > 0 || strlen(buffer) == 0) {
+        if (strlen(buffer) + strlen(units[num]) + 1 >= size) return -1;
+        strcat(buffer, units[num]);
+    }
+
+    return 0;
+}
+
+// ---------------- Words -> Number ----------------
+static int fossil_io_word_to_value(const char *word) {
+    for (int i = 0; i < 20; i++) if (strcmp(word, units[i]) == 0) return i;
+    for (int i = 2; i < 10; i++) if (strcmp(word, tens[i]) == 0) return i * 10;
+    if (strcmp(word, "hundred") == 0) return -100; // multiplier
+    if (strcmp(word, "thousand") == 0) return -1000; // multiplier
+    return -1; // not found
+}
+
+int fossil_io_cstring_number_from_words(const char *str, int *out) {
+    if (!str || !out) return -1;
+
+    int total = 0;
+    int current = 0;
+
+    char buffer[256];
+    strncpy(buffer, str, sizeof(buffer)-1);
+    buffer[sizeof(buffer)-1] = '\0';
+
+    // lowercase and remove extra characters
+    for (char *p = buffer; *p; ++p) *p = (char)tolower(*p);
+
+    char *token = strtok(buffer, " -");
+    while (token) {
+        int val = fossil_io_word_to_value(token);
+        if (val >= 0) {
+            current += val;
+        } else if (val == -100) { // hundred
+            current *= 100;
+        } else if (val == -1000) { // thousand
+            total += current * 1000;
+            current = 0;
+        } else {
+            return -1; // unknown word
+        }
+        token = strtok(NULL, " -");
+    }
+
+    *out = total + current;
+    return 0;
+}
+
 cstring fossil_io_cstring_dup(ccstring str) {
     if (!str) return NULL;
     size_t length = strlen(str);
