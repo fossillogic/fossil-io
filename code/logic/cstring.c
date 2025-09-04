@@ -71,26 +71,48 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
     char buffer[256];
     char word[128];
 
+    // Copy input safely into a working buffer
     strncpy(buffer, input, sizeof(buffer) - 1);
     buffer[sizeof(buffer) - 1] = '\0';
 
     char *token = strtok(buffer, delims);
     while (token) {
         size_t word_len = strlen(token);
-        if (word_len == 0) continue;
-
-        if (strchr("AEIOUaeiou", token[0])) {
-            snprintf(word, sizeof(word), "%.*syay", (int)sizeof(buffer) - 1, token);
-        } else {
-            snprintf(word, sizeof(word), "%s%cay", token + 1, token[0]);
+        if (word_len == 0) {
+            token = strtok(NULL, delims);
+            continue;
         }
 
+        // Vowel start → add "yay"
+        if (strchr("AEIOUaeiou", token[0])) {
+            strncpy(word, token, sizeof(word) - 4);  // leave room for "yay"
+            word[sizeof(word) - 4] = '\0';
+            strncat(word, "yay", sizeof(word) - strlen(word) - 1);
+        } 
+        // Consonant start → move first letter, add "ay"
+        else {
+            strncpy(word, token + 1, sizeof(word) - 4);  // leave room for "<c>ay"
+            word[sizeof(word) - 4] = '\0';
+
+            size_t len = strlen(word);
+            if (len < sizeof(word) - 3) {
+                word[len] = token[0];
+                word[len + 1] = 'a';
+                word[len + 2] = 'y';
+                word[len + 3] = '\0';
+            } else {
+                return -1; // truncated
+            }
+        }
+
+        // Check space in output before appending
         if (strlen(output) + strlen(word) + 2 > size) return -1;
         strcat(output, word);
         strcat(output, " ");
 
         token = strtok(NULL, delims);
     }
+
     return 0;
 }
 
