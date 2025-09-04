@@ -236,6 +236,13 @@ void fossil_io_clear_keybindings(void);
 #ifdef __cplusplus
 }
 
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <utility>
+#include <cstdarg>
+#include <istream>
+
 /**
  * Namespace for the Fossil Logic I/O library.
  */
@@ -456,6 +463,82 @@ namespace fossil {
                 input_stream.getline(buffer, sizeof(buffer));
                 // Process the buffer as needed to populate the Input object.
                 return input_stream;
+            }
+
+            /**
+             * Registers a key binding with an associated action string.
+             *
+             * @param key_code The integer key code.
+             * @param action The action string to associate with the key.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int register_keybinding(int key_code, const std::string &action) {
+                return fossil_io_register_keybinding(key_code, action.c_str());
+            }
+
+            /**
+             * Registers a key binding with an optional callback function.
+             *
+             * @param key_code The integer key code.
+             * @param action The action string to associate with the key.
+             * @param callback Function pointer to execute when the key is pressed.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int register_keybinding_callback(int key_code, const std::string &action, void (*callback)()) {
+                return fossil_io_register_keybinding_with_callback(key_code, action.c_str(), callback);
+            }
+
+            /**
+             * Unregisters a key binding.
+             *
+             * @param key_code The key code of the binding to remove.
+             * @return 0 on success, non-zero if the key was not found.
+             */
+            static int unregister_keybinding(int key_code) {
+                return fossil_io_unregister_keybinding(key_code);
+            }
+
+            /**
+             * Processes a key event.
+             *
+             * @param key_code The key code to process.
+             * @return 1 if an action was triggered, 0 if no binding exists.
+             */
+            static int process_keybinding(int key_code) {
+                return fossil_io_process_keybinding(key_code);
+            }
+
+            /**
+             * Retrieves the action associated with a key code.
+             *
+             * @param key_code The key code to look up.
+             * @return The action string if found, empty string otherwise.
+             */
+            static std::string get_keybinding_action(int key_code) {
+                const char *action = fossil_io_get_keybinding_action(key_code);
+                return action ? std::string(action) : std::string();
+            }
+
+            /**
+             * Lists all registered key bindings.
+             *
+             * @return A vector of key-action pairs representing all bindings.
+             */
+            static std::vector<std::pair<int, std::string>> list_keybindings() {
+                std::vector<std::pair<int, std::string>> bindings;
+                fossil_io_keybinding_t arr[256];
+                size_t count = fossil_io_list_keybindings(arr, 256);
+                for (size_t i = 0; i < count; i++) {
+                    bindings.emplace_back(arr[i].key_code, arr[i].action ? arr[i].action : "");
+                }
+                return bindings;
+            }
+
+            /**
+             * Clears all registered key bindings.
+             */
+            static void clear_keybindings() {
+                fossil_io_clear_keybindings();
             }
 
         };
