@@ -332,15 +332,15 @@ int32_t fossil_fstream_remove(const char *filename) {
 
     if (remove(filename) == 0) {
         return FOSSIL_ERROR_OK;  // File removed successfully
+    } else {
+        if (errno == ENOENT) {
+            fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found when removing file %s\n", filename);
+            return FOSSIL_ERROR_FILE_NOT_FOUND;
+        } else {
+            fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error when removing file %s\n", filename);
+            return FOSSIL_ERROR_IO;
+        }
     }
-
-    if (errno == ENOENT) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found when removing file %s\n", filename);
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
-    }
-
-    fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error when removing file %s\n", filename);
-    return FOSSIL_ERROR_IO;
 }
 
 int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename) {

@@ -107,6 +107,17 @@ int fossil_io_soap_detect_exaggeration(const char *text);
 char *fossil_io_soap_filter_offensive(const char *text);
 
 /**
+ * Detects whether the given text contains ragebait phrases.
+ *
+ * Ragebait phrases are text patterns designed to provoke anger,
+ * outrage, or strong emotional reactions in the reader.
+ *
+ * @param text The input C string to analyze.
+ * @return 1 if any ragebait phrase is detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_ragebait(const char *text);
+
+/**
  * @brief Check if input contains clickbait-style language.
  *
  * @param text The input string.
@@ -232,6 +243,19 @@ namespace fossil {
              */
             static bool is_exaggerated(const std::string &text) {
                 return fossil_io_soap_detect_exaggeration(text.c_str()) != 0;
+            }
+
+            /**
+             * Detects whether the given text contains ragebait phrases.
+             *
+             * Ragebait phrases are text patterns designed to provoke anger,
+             * outrage, or strong emotional reactions in the reader.
+             *
+             * @param text The input C string to analyze.
+             * @return 1 if any ragebait phrase is detected, 0 otherwise.
+             */
+            static int is_ragebait(const std::string &text) {
+                return fossil_io_soap_detect_ragebait(text.c_str());
             }
 
             /**
