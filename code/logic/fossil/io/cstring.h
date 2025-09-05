@@ -50,6 +50,95 @@ cstring fossil_io_cstring_create(const char *init);
 void fossil_io_cstring_free(cstring str);
 
 /**
+ * @brief Converts input into a "silly" string (random case and symbols).
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error (buffer too small).
+ */
+int fossil_io_cstring_silly(const char *input, char *output, size_t size);
+
+/**
+ * @brief Converts input into Pig Latin.
+ *
+ * Rules:
+ *   - Words starting with a vowel → add "yay" at the end.
+ *   - Words starting with consonant(s) → move leading consonant(s) to the end + "ay".
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error.
+ */
+int fossil_io_cstring_piglatin(const char *input, char *output, size_t size);
+
+/**
+ * @brief Converts input into "leet speak".
+ *
+ * Mapping (basic):
+ *   A → 4, E → 3, I → 1, O → 0, S → 5, T → 7
+ *
+ * @param input   The input string.
+ * @param output  The buffer for the transformed string.
+ * @param size    The size of the output buffer.
+ * @return        0 on success, non-zero on error.
+ */
+int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size);
+
+// Novelty String Transforms
+
+/**
+ * @brief Converts a string into "mocking SpongeBob" case.
+ * 
+ * Example: "hello world" -> "hElLo wOrLd"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_mocking(const char *str);
+
+/**
+ * @brief Applies ROT13 cipher to a string.
+ * 
+ * Example: "hello" -> "uryyb"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_rot13(const char *str);
+
+/**
+ * @brief Shuffles the characters of a string randomly.
+ * 
+ * Example: "hello" -> "lohel" (result varies).
+ * 
+ * @param str Input string.
+ * @return Newly allocated shuffled string, or NULL on failure.
+ */
+char* fossil_io_cstring_shuffle(const char *str);
+
+/**
+ * @brief Converts a string to UPPER_SNAKE_CASE.
+ * 
+ * Example: "Hello World" -> "HELLO_WORLD"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_upper_snake(const char *str);
+
+/**
+ * @brief Generates a "zalgo" glitch text version of a string.
+ * 
+ * Example: "hello" -> "h̶͋̓e̸͆̀l̷͛̕l̶͛̀o̴̓̕"
+ * 
+ * @param str Input string.
+ * @return Newly allocated transformed string, or NULL on failure.
+ */
+char* fossil_io_cstring_zalgo(const char *str);
+
+/**
  * @brief Creates a copy of the given cstring.
  * 
  * @param str The cstring to be copied.
@@ -498,6 +587,93 @@ namespace fossil {
              */
             static CString copy(const std::string &str) {
                 return CString(fossil_io_cstring_copy(str.c_str()));
+            }
+
+            /**
+             * Converts input into a "silly" string (random case and symbols).
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the silly transformation.
+             */
+            std::string silly(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_silly(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts input into Pig Latin.
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the Pig Latin transformation.
+             */
+            std::string piglatin(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_piglatin(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts input into "leet speak".
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the leet speak transformation.
+             */
+            std::string leetspeak(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_leetspeak(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts a string into "mocking SpongeBob" case.
+             * 
+             * @return A CString with the mocking transformation.
+             */
+            CString mocking() const {
+                return CString(fossil_io_cstring_mocking(_str));
+            }
+
+            /**
+             * Applies ROT13 cipher to a string.
+             * 
+             * @return A CString with the ROT13 transformation.
+             */
+            CString rot13() const {
+                return CString(fossil_io_cstring_rot13(_str));
+            }
+
+            /**
+             * Shuffles the characters of a string randomly.
+             * 
+             * @return A CString with the shuffled string.
+             */
+            CString shuffle() const {
+                return CString(fossil_io_cstring_shuffle(_str));
+            }
+
+            /**
+             * Converts a string to UPPER_SNAKE_CASE.
+             * 
+             * @return A CString with the UPPER_SNAKE_CASE transformation.
+             */
+            CString upper_snake() const {
+                return CString(fossil_io_cstring_upper_snake(_str));
+            }
+
+            /**
+             * Generates a "zalgo" glitch text version of a string.
+             * 
+             * @return A CString with the zalgo transformation.
+             */
+            CString zalgo() const {
+                return CString(fossil_io_cstring_zalgo(_str));
             }
 
             /**

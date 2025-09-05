@@ -15,6 +15,7 @@
 #include "fossil/io/output.h"
 #include <ctype.h>
 #include <stdlib.h>
+#include <time.h>
 
 // ============================================================================
 // C String Functions
@@ -34,6 +35,238 @@ void fossil_io_cstring_free(cstring str) {
     if (str) {
         free(str);
     }
+}
+
+int fossil_io_cstring_silly(const char *input, char *output, size_t size) {
+    if (!input || !output || size == 0) return -1;
+
+    size_t len = strlen(input);
+    if (len + 1 > size) return -1;
+
+    for (size_t i = 0; i < len; i++) {
+        char c = input[i];
+        // Random case change
+        if (isalpha((unsigned char)c)) {
+            if (rand() % 2) {
+                c = (char)toupper((unsigned char)c);
+            } else {
+                c = (char)tolower((unsigned char)c);
+            }
+        }
+        // Occasionally insert silly symbol
+        if (rand() % 10 == 0 && (i + 1 < size - 1)) {
+            output[i++] = '~';
+        }
+        output[i] = c;
+    }
+    output[len] = '\0';
+    return 0;
+}
+
+int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
+    if (!input || !output || size == 0) return -1;
+
+    output[0] = '\0';
+    const char *delims = " \t\n";
+    char buffer[256];
+    char word[128];
+
+    // Copy input safely into a working buffer
+    strncpy(buffer, input, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
+
+    char *token = strtok(buffer, delims);
+    while (token) {
+        size_t word_len = strlen(token);
+        if (word_len == 0) {
+            token = strtok(NULL, delims);
+            continue;
+        }
+
+        // Vowel start → add "yay"
+        if (strchr("AEIOUaeiou", token[0])) {
+            strncpy(word, token, sizeof(word) - 4);  // leave room for "yay"
+            word[sizeof(word) - 4] = '\0';
+            strncat(word, "yay", sizeof(word) - strlen(word) - 1);
+        } 
+        // Consonant start → move first letter, add "ay"
+        else {
+            strncpy(word, token + 1, sizeof(word) - 4);  // leave room for "<c>ay"
+            word[sizeof(word) - 4] = '\0';
+
+            size_t len = strlen(word);
+            if (len < sizeof(word) - 3) {
+                word[len] = token[0];
+                word[len + 1] = 'a';
+                word[len + 2] = 'y';
+                word[len + 3] = '\0';
+            } else {
+                return -1; // truncated
+            }
+        }
+
+        // Check space in output before appending
+        if (strlen(output) + strlen(word) + 2 > size) return -1;
+        strcat(output, word);
+        strcat(output, " ");
+
+        token = strtok(NULL, delims);
+    }
+
+    return 0;
+}
+
+int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size) {
+    if (!input || !output || size == 0) return -1;
+
+    size_t out_idx = 0;
+    for (size_t i = 0; input[i] && out_idx < size - 1; i++) {
+        char c = input[i];
+        char repl[3] = {0};
+
+        switch (tolower((unsigned char)c)) {
+            case 'a': strcpy(repl, "4"); break;
+            case 'e': strcpy(repl, "3"); break;
+            case 'i': strcpy(repl, "1"); break;
+            case 'o': strcpy(repl, "0"); break;
+            case 's': strcpy(repl, "5"); break;
+            case 't': strcpy(repl, "7"); break;
+            default: repl[0] = c; repl[1] = '\0'; break;
+        }
+
+        size_t repl_len = strlen(repl);
+        if (out_idx + repl_len >= size - 1) return -1;
+        strcpy(&output[out_idx], repl);
+        out_idx += repl_len;
+    }
+    output[out_idx] = '\0';
+    return 0;
+}
+
+// -------------------
+// Mocking SpongeBob
+// -------------------
+char* fossil_io_cstring_mocking(const char *str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+
+    for (size_t i = 0; i < len; i++) {
+        if (i % 2 == 0)
+            out[i] = tolower((unsigned char)str[i]);
+        else
+            out[i] = toupper((unsigned char)str[i]);
+    }
+    out[len] = '\0';
+    return out;
+}
+
+// -------------------
+// ROT13 Cipher
+// -------------------
+char* fossil_io_cstring_rot13(const char *str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+
+    for (size_t i = 0; i < len; i++) {
+        char c = str[i];
+        if ('a' <= c && c <= 'z')
+            out[i] = ((c - 'a' + 13) % 26) + 'a';
+        else if ('A' <= c && c <= 'Z')
+            out[i] = ((c - 'A' + 13) % 26) + 'A';
+        else
+            out[i] = c;
+    }
+    out[len] = '\0';
+    return out;
+}
+
+// -------------------
+// Shuffle String
+// -------------------
+char* fossil_io_cstring_shuffle(const char *str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+
+    strcpy(out, str);
+
+    // Seed RNG once per run
+    static int seeded = 0;
+    if (!seeded) {
+        srand((unsigned int)time(NULL));
+        seeded = 1;
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        size_t j = rand() % len;
+        char tmp = out[i];
+        out[i] = out[j];
+        out[j] = tmp;
+    }
+
+    return out;
+}
+
+// -------------------
+// UPPER_SNAKE_CASE
+// -------------------
+char* fossil_io_cstring_upper_snake(const char *str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+
+    // Worst case: every char becomes "_X"
+    char *out = malloc(len * 2 + 1);
+    if (!out) return NULL;
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (isspace((unsigned char)str[i])) {
+            out[j++] = '_';
+        } else if (isalpha((unsigned char)str[i])) {
+            out[j++] = toupper((unsigned char)str[i]);
+        } else {
+            out[j++] = str[i];
+        }
+    }
+    out[j] = '\0';
+    return out;
+}
+
+// -------------------
+// Zalgo Text (simplified)
+// -------------------
+char* fossil_io_cstring_zalgo(const char *str) {
+    if (!str) return NULL;
+    size_t len = strlen(str);
+
+    // Each char may get up to 3 combining marks
+    char *out = malloc(len * 10 + 1);
+    if (!out) return NULL;
+
+    static const char *zalgo_marks[] = {
+        "\u0300", "\u0301", "\u0302", "\u0303", "\u0304",
+        "\u0306", "\u0307", "\u0308", "\u030A", "\u0315",
+        "\u0327", "\u0328", "\u0334", "\u033F", "\u0346"
+    };
+    static const size_t num_marks = sizeof(zalgo_marks) / sizeof(zalgo_marks[0]);
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        j += sprintf(out + j, "%c", str[i]);
+
+        int marks = rand() % 3; // 0–2 zalgo marks
+        for (int m = 0; m < marks; m++) {
+            const char *mark = zalgo_marks[rand() % num_marks];
+            j += sprintf(out + j, "%s", mark);
+        }
+    }
+    out[j] = '\0';
+    return out;
 }
 
 cstring fossil_io_cstring_copy(ccstring str) {
