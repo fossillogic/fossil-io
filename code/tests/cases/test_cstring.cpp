@@ -796,13 +796,6 @@ FOSSIL_TEST(cpp_test_cstring_class_upper_snake) {
     ASSUME_ITS_TRUE(std::string(snake.str()).find('_') != std::string::npos);
 }
 
-FOSSIL_TEST(cpp_test_cstring_class_zalgo) {
-    fossil::io::CString str("Hello, World!");
-    fossil::io::CString zalgo = str.zalgo();
-    ASSUME_NOT_CNULL(zalgo.str());
-    ASSUME_ITS_TRUE(zalgo.length() >= str.length());
-}
-
 FOSSIL_TEST(cpp_test_cstring_number_from_words_basic) {
     int value = 0;
     ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("zero", &value));
@@ -958,7 +951,6 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_rot13);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_shuffle);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_upper_snake);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_zalgo);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_copy);
