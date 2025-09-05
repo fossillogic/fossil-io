@@ -892,12 +892,37 @@ int fossil_io_soap_detect_exaggeration(const char *text) {
 char *fossil_io_soap_filter_offensive(const char *text) {
     if (!text) return NULL;
 
+    static const struct {
+        const char *offensive;
+        const char *replacement;
+    } OFFENSIVE_WORDS[] = {
+        {"dumb", "uninformed"},
+        {"stupid", "ill-advised"},
+        {"idiot", "misguided"},
+        {"moron", "uninformed"},
+        {"sucks", "is not ideal"},
+        {"fool", "misguided"},
+        {"jerk", "unpleasant person"},
+        {"loser", "underperformer"},
+        {"dork", "awkward person"},
+        {"lame", "unsatisfactory"},
+        {"crazy", "unreasonable"},
+        {"idiotic", "poorly thought out"},
+        {"dunce", "uninformed individual"},
+        {"nasty", "unpleasant"},
+        {"worthless", "lacking value"},
+        {"pathetic", "disappointing"},
+        {"dimwit", "uninformed"},
+        {"clueless", "uninformed"},
+        {NULL, NULL}
+    };
+
     char *result = fossil_io_cstring_dup(text);
     if (!result) return NULL;
 
-    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].offensive != NULL; i++) {
-        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].offensive;
-        const char *good = FOSSIL_SOAP_SUGGESTIONS[i].replacement;
+    for (size_t i = 0; OFFENSIVE_WORDS[i].offensive != NULL; i++) {
+        const char *bad = OFFENSIVE_WORDS[i].offensive;
+        const char *good = OFFENSIVE_WORDS[i].replacement;
 
         const char *found = NULL;
         while ((found = custom_strcasestr(result, bad)) != NULL) {
