@@ -41,7 +41,7 @@ int strncasecmp(const char *s1, const char *s2, size_t n) {
 // C String Functions
 // ============================================================================
 
-cstring fossil_io_cstring_create(const char *init) {
+cstring fossil_io_cstring_create(ccstring init) {
     if (!init) return NULL;
     size_t length = strlen(init);
     cstring str = (cstring)malloc(length + 1);
@@ -55,6 +55,111 @@ void fossil_io_cstring_free(cstring str) {
     if (str) {
         free(str);
     }
+}
+
+// ---------------- Tokenizer ----------------
+cstring fossil_io_cstring_token(cstring str, ccstring delim, cstring *saveptr) {
+    if (!saveptr || (!str && !*saveptr)) return NULL;
+
+    char *start = str ? str : *saveptr;
+    start += strspn(start, delim); // skip leading delimiters
+    if (*start == '\0') {
+        *saveptr = NULL;
+        return NULL;
+    }
+
+    char *end = start + strcspn(start, delim);
+    if (*end != '\0') {
+        *end = '\0';
+        *saveptr = end + 1;
+    } else {
+        *saveptr = NULL;
+    }
+    return start;
+}
+
+// ---------------- Case-insensitive search ----------------
+ccstring fossil_io_cstring_case_search(ccstring haystack, ccstring needle) {
+    if (!haystack || !needle || !*needle) return NULL;
+
+    size_t needle_len = strlen(needle);
+    for (ccstring p = haystack; *p; p++) {
+        size_t i = 0;
+        while (i < needle_len &&
+               tolower((unsigned char)p[i]) == tolower((unsigned char)needle[i])) {
+            i++;
+        }
+        if (i == needle_len) return p;
+    }
+    return NULL;
+}
+
+// ---------------- Case-insensitive compare ----------------
+int fossil_io_cstring_case_compare(ccstring s1, ccstring s2) {
+    if (!s1 || !s2) return (s1 == s2) ? 0 : (s1 ? 1 : -1);
+
+    while (*s1 && *s2) {
+        unsigned char c1 = (unsigned char)tolower((unsigned char)*s1);
+        unsigned char c2 = (unsigned char)tolower((unsigned char)*s2);
+        if (c1 != c2) return c1 - c2;
+        s1++;
+        s2++;
+    }
+    return (unsigned char)*s1 - (unsigned char)*s2;
+}
+
+cstring fossil_io_cstring_case_replace(ccstring input,
+                                     ccstring needle,
+                                     ccstring replacement) {
+    if (!input || !needle || !*needle || !replacement) return NULL;
+
+    size_t input_len = strlen(input);
+    size_t needle_len = strlen(needle);
+    size_t repl_len = strlen(replacement);
+
+    // Allocate buffer with some extra room
+    size_t out_cap = input_len + 1 + (repl_len > needle_len ? repl_len * 8 : 0);
+    char *output = malloc(out_cap);
+    if (!output) return NULL;
+
+    size_t out_pos = 0;
+    const char *p = input;
+
+    while (*p) {
+        const char *match = fossil_io_cstring_case_search(p, needle);
+        if (!match) {
+            // Copy the rest
+            strncpy(output + out_pos, p, out_cap - out_pos);
+            break;
+        }
+
+        // Copy text before match
+        size_t chunk_len = match - p;
+        if (out_pos + chunk_len >= out_cap) {
+            free(output);
+            return NULL;
+        }
+        memcpy(output + out_pos, p, chunk_len);
+        out_pos += chunk_len;
+
+        // Copy replacement
+        if (out_pos + repl_len >= out_cap) {
+            out_cap *= 2;
+            char *tmp = realloc(output, out_cap);
+            if (!tmp) {
+                free(output);
+                return NULL;
+            }
+            output = tmp;
+        }
+        memcpy(output + out_pos, replacement, repl_len);
+        out_pos += repl_len;
+
+        p = match + needle_len;
+    }
+
+    output[out_pos] = '\0';
+    return output;
 }
 
 int fossil_io_cstring_silly(const char *input, char *output, size_t size) {
