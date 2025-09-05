@@ -50,6 +50,53 @@ cstring fossil_io_cstring_create(const char *init);
 void fossil_io_cstring_free(cstring str);
 
 /**
+ * @brief Tokenizes a string by delimiters (reentrant version).
+ *
+ * Similar to strtok_r but with Fossil IO naming.
+ *
+ * @param str The string to tokenize (or NULL to continue).
+ * @param delim Delimiter characters.
+ * @param saveptr Context pointer across calls.
+ * @return Pointer to next token, or NULL if none.
+ */
+char* fossil_io_cstring_token(char *str, const char *delim, char **saveptr);
+
+/**
+ * @brief Case-insensitive substring search.
+ *
+ * @param haystack The string to search in.
+ * @param needle The substring to search for.
+ * @return Pointer to first occurrence of needle in haystack (case-insensitive),
+ *         or NULL if not found.
+ */
+const char* fossil_io_cstring_case_search(const char *haystack, const char *needle);
+
+/**
+ * @brief Case-insensitive string comparison.
+ *
+ * @param s1 First string.
+ * @param s2 Second string.
+ * @return <0 if s1 < s2, 0 if equal, >0 if s1 > s2 (ignoring case).
+ */
+int fossil_io_cstring_case_compare(const char *s1, const char *s2);
+
+/**
+ * @brief Case-insensitive string replace.
+ *
+ * Replaces all occurrences of `needle` with `replacement` in `input`,
+ * ignoring case.
+ *
+ * @param input Source string.
+ * @param needle Substring to replace (case-insensitive).
+ * @param replacement Replacement string.
+ * @return Newly allocated string with replacements applied, or NULL on failure.
+ *         Caller must free().
+ */
+char* fossil_io_cstring_case_replace(const char *input,
+                                     const char *needle,
+                                     const char *replacement);
+
+/**
  * @brief Converts input into a "silly" string (random case and symbols).
  *
  * @param input   The input string.
