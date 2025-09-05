@@ -202,6 +202,13 @@ int fossil_io_soap_detect_formal(const char *text);
  */
 int fossil_io_soap_detect_snowflake(const char *text);
 
+/** 
+ * Detects "offensive"-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if offensive patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_offensive(const char *text);
+
 #ifdef __cplusplus
 }
 
