@@ -14,6 +14,7 @@
 #ifndef FOSSIL_IO_SOAP_H
 #define FOSSIL_IO_SOAP_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
