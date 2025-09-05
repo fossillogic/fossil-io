@@ -511,27 +511,35 @@ static const char *fossil_io_soap_get_suggestion(const char *word) {
 
 static int soap_detect_patterns(const char *text, const char **patterns) {
     if (!text || !patterns) return 0;
-    for (int i = 0; patterns[i]; i++) {
+
+    for (size_t i = 0; patterns[i] != NULL; i++) {
         if (custom_strcasestr(text, patterns[i])) {
-            return 1;
+            return 1; // Pattern found
         }
     }
-    return 0;
+    return 0; // No match
 }
 
-int fossil_io_soap_detect_category(const char *text, soap_category_t category, soap_ti_reason_t *reason) {
-    if (!text || category >= SOAP_CAT_COUNT) return 0;
+int fossil_io_soap_detect_category(const char *text, soap_category_t category) {
+    if (category >= SOAP_CAT_COUNT) return 0;
+    return SOAP_DETECTORS[category].detector(text);
+}
 
-    const soap_detector_t *detector = &SOAP_DETECTORS[category];
-    if (detector->detect(text)) {
-        if (reason) {
-            reason->category_name = detector->name;
-            reason->matched_pattern = "Pattern match"; // Could enhance to store exact phrase
-            reason->confidence = 100; // Simple scoring, could be enhanced
+int fossil_io_soap_detect_multiple(const char *text, const soap_category_t *categories, int count, bool *out_matches) {
+    if (!text || !categories || count <= 0) return 0;
+
+    int matches = 0;
+    for (int i = 0; i < count; i++) {
+        int detected = 0;
+        if (categories[i] < SOAP_CAT_COUNT) {
+            detected = SOAP_DETECTORS[categories[i]].detector(text);
         }
-        return 1;
+
+        if (out_matches) out_matches[i] = detected ? true : false;
+        if (detected) matches++;
     }
-    return 0;
+
+    return matches;
 }
 
 /**
