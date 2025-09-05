@@ -125,6 +125,22 @@ int fossil_io_soap_detect_ragebait(const char *text);
  */
 int fossil_io_soap_detect_clickbait(const char *text);
 
+/**
+ * @brief Detects if a given text contains spammy patterns
+ *
+ * @param text Input string to analyze
+ * @return 1 if spam detected, 0 otherwise
+ */
+int fossil_io_soap_detect_spam(const char *text);
+
+/**
+ * @brief Detects if a given text contains "woke" tone patterns
+ *
+ * @param text Input string to analyze
+ * @return 1 if woke tone detected, 0 otherwise
+ */
+int fossil_io_soap_detect_woke(const char *text);
+
 #ifdef __cplusplus
 }
 
