@@ -362,7 +362,7 @@ FOSSIL_TEST(c_test_cstring_create_safe_and_free_safe) {
     ASSUME_NOT_CNULL(str);
     ASSUME_ITS_EQUAL_CSTR(init, str);
     fossil_io_cstring_free_safe(&str);
-    ASSUME_CNULL(str);
+    ASSUME_ITS_CNULL(str);
 }
 
 FOSSIL_TEST(c_test_cstring_copy_safe_and_dup_safe) {
