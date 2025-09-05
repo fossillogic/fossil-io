@@ -1,4 +1,4 @@
-/*
+/**
  * -----------------------------------------------------------------------------
  * Project: Fossil Logic
  *
@@ -28,14 +28,6 @@ extern "C" {
  * @return A dynamically allocated sanitized string (must be freed by the caller).
  */
 char *fossil_io_soap_sanitize(const char *text);
-
-/**
- * Scan the text for any match in the given patterns array.
- * @param text Input text to analyze.
- * @param patterns NULL-terminated array of string patterns.
- * @return Non-zero if any pattern is found, 0 otherwise.
- */
-int soap_detect_patterns(const char *text, const char **patterns);
 
 /**
  * Detect a specific SOAP category in the text.
