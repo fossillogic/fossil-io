@@ -219,6 +219,103 @@ FOSSIL_TEST(c_test_io_getc) {
     fclose(input_stream.file);
 }
 
+FOSSIL_TEST(c_test_io_register_keybinding_success) {
+    fossil_io_clear_keybindings();
+    int result = fossil_io_register_keybinding(42, "jump");
+    ASSUME_ITS_EQUAL_I32(0, result);
+    const char *action = fossil_io_get_keybinding_action(42);
+    ASSUME_ITS_EQUAL_CSTR("jump", action);
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_register_keybinding_duplicate) {
+    fossil_io_clear_keybindings();
+    fossil_io_register_keybinding(42, "jump");
+    int result = fossil_io_register_keybinding(42, "run");
+    ASSUME_ITS_EQUAL_I32(2, result); // Duplicate key
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_unregister_keybinding_success) {
+    fossil_io_clear_keybindings();
+    fossil_io_register_keybinding(42, "jump");
+    int result = fossil_io_unregister_keybinding(42);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    const char *action = fossil_io_get_keybinding_action(42);
+    ASSUME_CNULL(action);
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_unregister_keybinding_not_found) {
+    fossil_io_clear_keybindings();
+    int result = fossil_io_unregister_keybinding(99);
+    ASSUME_ITS_EQUAL_I32(1, result); // Key not found
+    fossil_io_clear_keybindings();
+}
+
+// Callback for keybinding test
+static int cb_called = 0;
+static void cb(void) { cb_called = 1; }
+
+FOSSIL_TEST(c_test_io_register_keybinding_with_callback_success) {
+    fossil_io_clear_keybindings();
+    cb_called = 0;
+    int result = fossil_io_register_keybinding_with_callback(55, "shoot", cb);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    fossil_io_process_keybinding(55);
+    ASSUME_ITS_EQUAL_I32(1, cb_called);
+    fossil_io_clear_keybindings();
+}
+
+static void cb_empty(void) {}
+
+FOSSIL_TEST(c_test_io_register_keybinding_with_callback_duplicate) {
+    fossil_io_clear_keybindings();
+    fossil_io_register_keybinding_with_callback(55, "shoot", cb_empty);
+    int result = fossil_io_register_keybinding_with_callback(55, "reload", cb_empty);
+    fossil_io_register_keybinding_with_callback(55, "shoot", cb);
+    int result = fossil_io_register_keybinding_with_callback(55, "reload", cb);
+    ASSUME_ITS_EQUAL_I32(2, result); // Duplicate key
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_get_keybinding_action_not_found) {
+    fossil_io_clear_keybindings();
+    const char *action = fossil_io_get_keybinding_action(123);
+    ASSUME_CNULL(action);
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_process_keybinding_no_binding) {
+    fossil_io_clear_keybindings();
+    int result = fossil_io_process_keybinding(77);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_list_keybindings_populates_array) {
+    fossil_io_clear_keybindings();
+    fossil_io_register_keybinding(1, "up");
+    fossil_io_register_keybinding(2, "down");
+    fossil_io_keybinding_t bindings[4];
+    size_t count = fossil_io_list_keybindings(bindings, 4);
+    ASSUME_ITS_EQUAL_I32(2, (int)count);
+    ASSUME_ITS_EQUAL_I32(1, bindings[0].key_code);
+    ASSUME_ITS_EQUAL_CSTR("up", bindings[0].action);
+    ASSUME_ITS_EQUAL_I32(2, bindings[1].key_code);
+    ASSUME_ITS_EQUAL_CSTR("down", bindings[1].action);
+    fossil_io_clear_keybindings();
+}
+
+FOSSIL_TEST(c_test_io_clear_keybindings_removes_all) {
+    fossil_io_register_keybinding(1, "up");
+    fossil_io_register_keybinding(2, "down");
+    fossil_io_clear_keybindings();
+    fossil_io_keybinding_t bindings[2];
+    size_t count = fossil_io_list_keybindings(bindings, 2);
+    ASSUME_ITS_EQUAL_I32(0, (int)count);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -242,6 +339,17 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_invalid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_getc);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_success);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_duplicate);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_unregister_keybinding_success);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_unregister_keybinding_not_found);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_with_callback_success);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_with_callback_duplicate);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_get_keybinding_action_not_found);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_process_keybinding_no_binding);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_list_keybindings_populates_array);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_clear_keybindings_removes_all);
     
     FOSSIL_TEST_REGISTER(c_input_suite);
 }
