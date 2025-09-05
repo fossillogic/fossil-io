@@ -268,6 +268,80 @@ static const char *RAGEBAIT_PATTERNS[] = {
     NULL // Sentinel
 };
 
+// Expanded spammy phrase patterns
+static const char *SOAP_SPAM_PATTERNS[] = {
+    // Generic spam
+    "free money",
+    "work from home",
+    "earn cash fast",
+    "make money online",
+    "quick cash",
+    "get rich quick",
+    "increase followers",
+    "buy now",
+    "limited time offer",
+    "act now",
+    "click here",
+    "exclusive deal",
+
+    // Health/Scam spam
+    "lose weight fast",
+    "miracle cure",
+    "anti aging",
+    "magic pill",
+    "instant results",
+
+    // Financial spam
+    "guaranteed income",
+    "credit repair",
+    "low interest rate",
+    "investment opportunity",
+    "winner",
+    "lottery",
+    "claim your prize",
+    "100% free",
+    "no risk",
+
+    // Symbols/spam tricks
+    "$$$",
+    "###",
+    "!!!",
+    NULL
+};
+
+// Expanded woke-tone phrase patterns
+static const char *SOAP_WOKE_PATTERNS[] = {
+    // Identity & equity
+    "diversity and inclusion",
+    "equity over equality",
+    "social justice",
+    "systemic oppression",
+    "white privilege",
+    "check your privilege",
+    "lived experience",
+    "cultural appropriation",
+
+    // Gender & sexuality
+    "gender identity",
+    "gender fluid",
+    "non-binary",
+    "pronouns",
+    "misgender",
+    "deadname",
+    "trans rights",
+
+    // Safety & sensitivity
+    "safe space",
+    "trigger warning",
+    "microaggression",
+    "toxic masculinity",
+    "patriarchy",
+    "mansplaining",
+    "intersectionality",
+
+    NULL
+};
+
 static const char *EXAGGERATED_WORDS[] = {
     "literally",
     "always",
@@ -743,33 +817,18 @@ int fossil_io_soap_detect_exaggeration(const char *text) {
     return 0;
 }
 
+int fossil_io_soap_detect_spam(const char *text) {
+    if (!text) return 0;
+    for (int i = 0; SOAP_SPAM_PATTERNS[i] != NULL; i++) {
+        if (strcasestr(text, SOAP_SPAM_PATTERNS[i])) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 char *fossil_io_soap_filter_offensive(const char *text) {
     if (!text) return NULL;
-
-    static const struct {
-        const char *offensive;
-        const char *replacement;
-    } OFFENSIVE_WORDS[] = {
-        {"dumb", "uninformed"},
-        {"stupid", "ill-advised"},
-        {"idiot", "misguided"},
-        {"moron", "uninformed"},
-        {"sucks", "is not ideal"},
-        {"fool", "misguided"},
-        {"jerk", "unpleasant person"},
-        {"loser", "underperformer"},
-        {"dork", "awkward person"},
-        {"lame", "unsatisfactory"},
-        {"crazy", "unreasonable"},
-        {"idiotic", "poorly thought out"},
-        {"dunce", "uninformed individual"},
-        {"nasty", "unpleasant"},
-        {"worthless", "lacking value"},
-        {"pathetic", "disappointing"},
-        {"dimwit", "uninformed"},
-        {"clueless", "uninformed"},
-        {NULL, NULL}
-    };
 
     char *result = fossil_io_cstring_dup(text);
     if (!result) return NULL;
