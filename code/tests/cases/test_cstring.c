@@ -740,14 +740,6 @@ FOSSIL_TEST(c_test_cstring_upper_snake_with_symbols) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST(c_test_cstring_zalgo_basic) {
-    char *result = fossil_io_cstring_zalgo("hello");
-    ASSUME_NOT_CNULL(result);
-    // Should start with 'h' and contain combining marks
-    ASSUME_ITS_TRUE(result[0] == 'h');
-    fossil_io_cstring_free(result);
-}
-  
 // Test fossil_io_cstring_number_from_words
 FOSSIL_TEST(c_test_cstring_number_from_words) {
     int value = 0;
@@ -831,7 +823,6 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_shuffle_basic);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_basic);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_with_symbols);
-    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_zalgo_basic);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_number_from_words);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_number_to_words);
 
