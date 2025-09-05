@@ -283,6 +283,26 @@ namespace fossil {
             static bool is_clickbait(const std::string &text) {
                 return fossil_io_soap_detect_clickbait(text.c_str()) != 0;
             }
+            
+            /**
+             * @brief Detects if a given text contains spammy patterns
+             *
+             * @param text Input string to analyze
+             * @return 1 if spam detected, 0 otherwise
+             */
+            static int is_spam(const std::string &text){
+                return fossil_io_soap_detect_spam(text.c_str()) != 0;
+            }
+            
+            /**
+             * @brief Detects if a given text contains "woke" tone patterns
+             *
+             * @param text Input string to analyze
+             * @return 1 if woke tone detected, 0 otherwise
+             */
+            static int is_woke(const std::string &text){
+                return fossil_io_soap_detect_woke(text.c_str()) != 0;
+            }
 
             /**
              * @brief Normalize slang and internet abbreviations.
