@@ -131,8 +131,6 @@ char* fossil_io_cstring_upper_snake(const char *str);
 /**
  * @brief Generates a "zalgo" glitch text version of a string.
  * 
- * Example: "hello" -> "h̶͋̓e̸͆̀l̷͛̕l̶͛̀o̴̓̕"
- * 
  * @param str Input string.
  * @return Newly allocated transformed string, or NULL on failure.
  */
