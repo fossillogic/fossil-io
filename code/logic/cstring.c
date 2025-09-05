@@ -162,6 +162,33 @@ cstring fossil_io_cstring_case_replace(ccstring input,
     return output;
 }
 
+int fossil_io_cstring_case_starts_with(ccstring str, ccstring prefix) {
+    if (!str || !prefix) return 0;
+    size_t len_str = strlen(str);
+    size_t len_pre = strlen(prefix);
+    if (len_pre > len_str) return 0;
+
+    for (size_t i = 0; i < len_pre; i++) {
+        if (tolower((unsigned char)str[i]) != tolower((unsigned char)prefix[i]))
+            return 0;
+    }
+    return 1;
+}
+
+int fossil_io_cstring_case_ends_with(ccstring str, ccstring suffix) {
+    if (!str || !suffix) return 0;
+    size_t len_str = strlen(str);
+    size_t len_suf = strlen(suffix);
+    if (len_suf > len_str) return 0;
+
+    const char *end = str + len_str - len_suf;
+    for (size_t i = 0; i < len_suf; i++) {
+        if (tolower((unsigned char)end[i]) != tolower((unsigned char)suffix[i]))
+            return 0;
+    }
+    return 1;
+}
+
 int fossil_io_cstring_silly(const char *input, char *output, size_t size) {
     if (!input || !output || size == 0) return -1;
 
