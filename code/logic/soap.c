@@ -299,6 +299,41 @@ static const char *SOAP_SNOWFLAKE_PATTERNS[] = {
     NULL
 };
 
+/** Lookup table for offensive content detection */
+static const char *SOAP_OFFENSIVE_PATTERNS[] = {
+    "idiot",
+    "stupid",
+    "dumb",
+    "moron",
+    "fool",
+    "loser",
+    "jerk",
+    "trash",
+    "garbage",
+    "worthless",
+    "pathetic",
+    "ugly",
+    "disgusting",
+    "nonsense",
+    "ridiculous",
+    "absurd",
+    "hate",
+    "kill",
+    "die",
+    "sucks",
+    "shut up",
+    "loser",
+    "dunce",
+    "ignorant",
+    "nasty",
+    "offensive",
+    "freak",
+    "creep",
+    "weirdo",
+    "worthless",
+    NULL // Sentinel to mark the end
+};
+
 static const char *EXAGGERATED_WORDS[] = {
     "literally",
     "always",
@@ -358,7 +393,8 @@ static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
     { SOAP_CAT_FAKE_NEWS, "fake",      SOAP_FAKE_NEWS_PATTERNS, fossil_io_soap_detect_fake_news },
     { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
     { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
-    { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal }
+    { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
+    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive }
 };
 
 static char custom_storage[MAX_CUSTOM_FILTERS][64];
@@ -800,6 +836,10 @@ int fossil_io_soap_detect_snowflake(const char *text) {
     return soap_detect_patterns(text, SOAP_SNOWFLAKE_PATTERNS);
 }
 
+int fossil_io_soap_detect_offensive(const char *text) {
+    return soap_detect_patterns(text, SOAP_OFFENSIVE_PATTERNS);
+}
+
 int fossil_io_soap_detect_exaggeration(const char *text) {
     if (!text) return 0;
 
@@ -855,9 +895,9 @@ char *fossil_io_soap_filter_offensive(const char *text) {
     char *result = fossil_io_cstring_dup(text);
     if (!result) return NULL;
 
-    for (size_t i = 0; OFFENSIVE_WORDS[i].offensive != NULL; i++) {
-        const char *bad = OFFENSIVE_WORDS[i].offensive;
-        const char *good = OFFENSIVE_WORDS[i].replacement;
+    for (size_t i = 0; SOAP_OFFENSIVE_PATTERNS[i].offensive != NULL; i++) {
+        const char *bad = SOAP_OFFENSIVE_PATTERNS[i].offensive;
+        const char *good = SOAP_OFFENSIVE_PATTERNS[i].replacement;
 
         const char *found = NULL;
         while ((found = custom_strcasestr(result, bad)) != NULL) {
