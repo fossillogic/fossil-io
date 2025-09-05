@@ -265,6 +265,40 @@ static const char *SOAP_FAKE_NEWS_PATTERNS[] = {
     "hoax report", "unconfirmed news", "false story", NULL
 };
 
+static const char *SOAP_SNOWFLAKE_PATTERNS[] = {
+    "snowflake",
+    "triggered",
+    "fragile ego",
+    "offended easily",
+    "sensitive snowflake",
+    "microaggression",
+    "safe space",
+    "special snowflake",
+    "delicate",
+    "thin-skinned",
+    "overly sensitive",
+    "crybaby",
+    "tender feelings",
+    "too sensitive",
+    "emotionally fragile",
+    "overreacting",
+    "touchy",
+    "soft-hearted",
+    "extra sensitive",
+    "hyper-sensitive",
+    "prickly",
+    "easily upset",
+    "nervous nellie",
+    "fragile personality",
+    "highly sensitive",
+    "overly emotional",
+    "whiny",
+    "melodramatic",
+    "delicate flower",
+    "fragile soul",
+    NULL
+};
+
 static const char *EXAGGERATED_WORDS[] = {
     "literally",
     "always",
@@ -323,6 +357,7 @@ static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
     { SOAP_CAT_BOT,       "bot",       SOAP_BOT_PATTERNS,       fossil_io_soap_detect_bot },
     { SOAP_CAT_FAKE_NEWS, "fake",      SOAP_FAKE_NEWS_PATTERNS, fossil_io_soap_detect_fake_news },
     { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
+    { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
     { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal }
 };
 
@@ -751,6 +786,10 @@ int fossil_io_soap_detect_sarcasm(const char *text) {
 
 int fossil_io_soap_detect_formal(const char *text) {
     return soap_detect_patterns(text, SOAP_FORMAL_PATTERNS);
+}
+
+int fossil_io_soap_detect_snowflake(const char *text) {
+    return soap_detect_patterns(text, SOAP_SNOWFLAKE_PATTERNS);
 }
 
 int fossil_io_soap_detect_exaggeration(const char *text) {
