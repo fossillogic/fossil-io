@@ -258,13 +258,13 @@ char* fossil_io_cstring_upper_snake(const char *str) {
 }
 
 // -------------------
-// Zalgo Text (simplified)
+// Zalgo Text
 // -------------------
 char* fossil_io_cstring_zalgo(const char *str) {
     if (!str) return NULL;
     size_t len = strlen(str);
 
-    // Each char may get up to 3 combining marks
+    // Allocate plenty of space
     char *out = malloc(len * 10 + 1);
     if (!out) return NULL;
 
@@ -276,13 +276,28 @@ char* fossil_io_cstring_zalgo(const char *str) {
     static const size_t num_marks = sizeof(zalgo_marks) / sizeof(zalgo_marks[0]);
 
     size_t j = 0;
-    for (size_t i = 0; i < len; i++) {
-        j += sprintf(out + j, "%c", str[i]);
+    for (size_t i = 0; str[i]; ) {
+        unsigned char c = (unsigned char)str[i];
+        int char_len = 1;
 
-        int marks = rand() % 3; // 0–2 zalgo marks
+        // Detect UTF-8 leading byte length
+        if ((c & 0x80) == 0) char_len = 1;
+        else if ((c & 0xE0) == 0xC0) char_len = 2;
+        else if ((c & 0xF0) == 0xE0) char_len = 3;
+        else if ((c & 0xF8) == 0xF0) char_len = 4;
+
+        // Copy UTF-8 character
+        memcpy(out + j, str + i, char_len);
+        j += char_len;
+        i += char_len;
+
+        // Append 0–2 zalgo marks
+        int marks = rand() % 3;
         for (int m = 0; m < marks; m++) {
             const char *mark = zalgo_marks[rand() % num_marks];
-            j += sprintf(out + j, "%s", mark);
+            size_t mark_len = strlen(mark);
+            memcpy(out + j, mark, mark_len);
+            j += mark_len;
         }
     }
     out[j] = '\0';
