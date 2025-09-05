@@ -346,6 +346,7 @@ static const char *EXAGGERATED_WORDS[] = {
 };
 
 // Category enum
+// Category enum
 typedef enum {
     SOAP_CAT_RAGEBAIT,
     SOAP_CAT_CLICKBAIT,
@@ -356,8 +357,17 @@ typedef enum {
     SOAP_CAT_FAKE_NEWS,
     SOAP_CAT_SARCASM,
     SOAP_CAT_FORMAL,
-    SOAP_CAT_SNOWFLAKE,   // Added missing
-    SOAP_CAT_OFFENSIVE,    // Added missing
+    SOAP_CAT_SNOWFLAKE,
+    SOAP_CAT_OFFENSIVE,
+    SOAP_CAT_EXAGGERATION, // Overly dramatic language
+    SOAP_CAT_POLITE,       // Respectful / kind tone
+    SOAP_CAT_TOXIC,        // Hostile / aggressive tone
+    SOAP_CAT_NEUTRAL,      // Objective / factual tone
+    SOAP_CAT_CONSPIRACY,   // Conspiracy theory style
+    SOAP_CAT_SLANG,        // Informal slang-heavy speech
+    SOAP_CAT_PROFESSIONAL, // Business-like or technical tone
+    SOAP_CAT_EMOTIONAL,    // Expressing strong feelings
+    SOAP_CAT_HUMOR,        // Jokes / comedic tone
     SOAP_CAT_COUNT         // Sentinel
 } soap_category_t;
 
