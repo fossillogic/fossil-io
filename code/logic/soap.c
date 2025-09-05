@@ -38,10 +38,10 @@ typedef int (*soap_detector_fn)(const char *text);
 
 // Detector registry entry
 typedef struct {
-    soap_category_t category;      // Category
-    const char *name;              // Human-readable name
+    soap_category_t category;     // Category
+    const char *name;             // Human-readable name
     const char **patterns;         // Lookup table of phrases
-    soap_detector_fn detect;       // Optional custom function
+    soap_detector_fn detector;     // Optional custom function
 } soap_detector_t;
 
 // Optional: reasoning / TI metadata
