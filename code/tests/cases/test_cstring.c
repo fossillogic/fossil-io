@@ -492,6 +492,37 @@ FOSSIL_TEST(c_test_cstring_zalgo_basic) {
     ASSUME_ITS_TRUE(result[0] == 'h');
     fossil_io_cstring_free(result);
 }
+  
+// Test fossil_io_cstring_number_from_words
+FOSSIL_TEST(c_test_cstring_number_from_words) {
+    int value = 0;
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("twenty-three", &value));
+    ASSUME_ITS_EQUAL_I32(23, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("one hundred", &value));
+    ASSUME_ITS_EQUAL_I32(100, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("zero", &value));
+    ASSUME_ITS_EQUAL_I32(0, value);
+
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_from_words("not-a-number", &value) != 0);
+}
+
+// Test fossil_io_cstring_number_to_words
+FOSSIL_TEST(c_test_cstring_number_to_words) {
+    char buffer[64];
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(23, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("twenty-three", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(100, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("one hundred", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(0, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("zero", buffer);
+
+    // Buffer too small
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_to_words(123456789, buffer, 5) != 0);
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -530,7 +561,6 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_normalize_spaces);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_strip_quotes);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_append);
-
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_silly_basic);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_silly_buffer_too_small);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_piglatin_vowel_start);
@@ -547,6 +577,8 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_basic);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_with_symbols);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_zalgo_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_number_from_words);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_number_to_words);
 
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_write_and_read);

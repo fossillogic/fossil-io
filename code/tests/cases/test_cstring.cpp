@@ -649,6 +649,91 @@ FOSSIL_TEST(cpp_test_cstring_class_zalgo) {
     ASSUME_ITS_TRUE(zalgo.length() >= str.length());
 }
 
+FOSSIL_TEST(cpp_test_cstring_number_from_words_basic) {
+    int value = 0;
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("zero", &value));
+    ASSUME_ITS_EQUAL_I32(0, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("one", &value));
+    ASSUME_ITS_EQUAL_I32(1, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("ten", &value));
+    ASSUME_ITS_EQUAL_I32(10, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("twenty-three", &value));
+    ASSUME_ITS_EQUAL_I32(23, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("one hundred", &value));
+    ASSUME_ITS_EQUAL_I32(100, value);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_from_words("one thousand two hundred thirty-four", &value));
+    ASSUME_ITS_EQUAL_I32(1234, value);
+}
+
+FOSSIL_TEST(cpp_test_cstring_number_from_words_invalid) {
+    int value = 0;
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_from_words("not-a-number", &value) != 0);
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_from_words("", &value) != 0);
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_from_words("twenty one hundred apples", &value) != 0);
+}
+
+FOSSIL_TEST(cpp_test_cstring_number_to_words_basic) {
+    char buffer[128];
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(0, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("zero", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(1, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("one", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(23, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("twenty-three", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(100, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("one hundred", buffer);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_number_to_words(1234, buffer, sizeof(buffer)));
+    ASSUME_ITS_EQUAL_CSTR("one thousand two hundred thirty-four", buffer);
+}
+
+FOSSIL_TEST(cpp_test_cstring_number_to_words_buffer_too_small) {
+    char buffer[8];
+    ASSUME_ITS_TRUE(fossil_io_cstring_number_to_words(123456, buffer, sizeof(buffer)) != 0);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_number_from_words_and_to_words) {
+    using fossil::io::CString;
+    ASSUME_ITS_EQUAL_I32(23, CString::number_from_words("twenty-three"));
+    ASSUME_ITS_EQUAL_I32(100, CString::number_from_words("one hundred"));
+    ASSUME_ITS_EQUAL_I32(0, CString::number_from_words("zero"));
+
+    ASSUME_ITS_EQUAL_CSTR("twenty-three", CString::number_to_words(23).c_str());
+    ASSUME_ITS_EQUAL_CSTR("one hundred", CString::number_to_words(100).c_str());
+    ASSUME_ITS_EQUAL_CSTR("zero", CString::number_to_words(0).c_str());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_number_from_words_exception) {
+    using fossil::io::CString;
+    bool thrown = false;
+    try {
+        CString::number_from_words("not-a-number");
+    } catch (const std::invalid_argument&) {
+        thrown = true;
+    }
+    ASSUME_ITS_TRUE(thrown);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_number_to_words_exception) {
+    using fossil::io::CString;
+    bool thrown = false;
+    try {
+        // Use a very large number that would overflow the buffer
+        CString::number_to_words(1234567890);
+    } catch (const std::runtime_error&) {
+        thrown = true;
+    }
+    ASSUME_ITS_TRUE(thrown);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -731,6 +816,14 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_normalize_spaces);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_strip_quotes);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_append);
+
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_number_from_words_basic);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_number_from_words_invalid);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_number_to_words_basic);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_number_to_words_buffer_too_small);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_from_words_and_to_words);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_from_words_exception);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_to_words_exception);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_write_and_read);

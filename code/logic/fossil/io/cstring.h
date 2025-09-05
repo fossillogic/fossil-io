@@ -147,6 +147,29 @@ char* fossil_io_cstring_zalgo(const char *str);
 cstring fossil_io_cstring_copy(ccstring str);
 
 /**
+ * @brief Converts an English number string into an integer.
+ * 
+ * Example: "twenty-three" -> 23
+ * 
+ * @param str Input string containing the number in English.
+ * @param out Pointer to integer where the parsed number will be stored.
+ * @return 0 on success, non-zero on error (invalid input).
+ */
+int fossil_io_cstring_number_from_words(const char *str, int *out);
+
+/**
+ * @brief Converts an integer number into its English representation.
+ * 
+ * Example: 23 -> "twenty-three"
+ * 
+ * @param num The integer to convert.
+ * @param buffer The output buffer to store the English string.
+ * @param size The size of the output buffer.
+ * @return 0 on success, non-zero if the buffer is too small.
+ */
+int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size);
+
+/**
  * @brief Duplicates the given cstring.
  * 
  * @param str The cstring to be duplicated.
@@ -524,6 +547,36 @@ namespace fossil {
              */
             ~CString() {
                 fossil_io_cstring_free(_str);
+            }
+
+            /**
+             * Converts an English number string into an integer.
+             * 
+             * Example: "twenty-three" -> 23
+             * 
+             * @param str Input string containing the number in English.
+             * @return The parsed integer value, or throws std::invalid_argument on error.
+             */
+            static int number_from_words(const std::string &str) {
+                int value = 0;
+                int result = fossil_io_cstring_number_from_words(str.c_str(), &value);
+                if (result != 0) throw std::invalid_argument("Invalid English number string");
+                return value;
+            }
+
+            /**
+             * Converts an integer number into its English representation.
+             * 
+             * Example: 23 -> "twenty-three"
+             * 
+             * @param num The integer to convert.
+             * @return The English representation as a std::string.
+             */
+            static std::string number_to_words(int num) {
+                char buffer[128];
+                int result = fossil_io_cstring_number_to_words(num, buffer, sizeof(buffer));
+                if (result != 0) throw std::runtime_error("Buffer too small for English number string");
+                return std::string(buffer);
             }
 
             /**
