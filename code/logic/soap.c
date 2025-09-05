@@ -37,6 +37,17 @@ typedef enum {
     SOAP_CAT_COUNT         // Sentinel
 } soap_category_t;
 
+// Detector function type
+typedef int (*soap_detector_fn)(const char *text);
+
+// Detector registry entry
+typedef struct {
+    soap_category_t category;     // Category
+    const char *name;             // Human-readable name
+    const char **patterns;         // Lookup table of phrases
+    soap_detector_fn detect_fn;     // Optional custom function
+} soap_detector_t;
+
 // Detector registry
 static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
     { SOAP_CAT_RAGEBAIT,  "ragebait",  SOAP_RAGEBAIT_PATTERNS,  fossil_io_soap_detect_ragebait },
@@ -49,19 +60,8 @@ static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
     { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
     { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
     { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
-    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive },
+    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive }
 };
-
-// Detector function type
-typedef int (*soap_detector_fn)(const char *text);
-
-// Detector registry entry
-typedef struct {
-    soap_category_t category;     // Category
-    const char *name;             // Human-readable name
-    const char **patterns;         // Lookup table of phrases
-    soap_detector_fn detect_fn;     // Optional custom function
-} soap_detector_t;
 
 // Optional: reasoning / TI metadata
 typedef struct {
