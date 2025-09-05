@@ -389,58 +389,12 @@ char* fossil_io_cstring_upper_snake(const char *str) {
     return out;
 }
 
-// -------------------
-// Zalgo Text
-// -------------------
-char *fossil_io_cstring_zalgo(const char *str) {
-    if (!str) return NULL;
-    size_t len = strlen(str);
-
-    // Generous buffer: original length * 10 (UTF-8 + marks)
-    char *out = malloc(len * 10 + 1);
-    if (!out) return NULL;
-
-    static const char *zalgo_marks[] = {
-        "\u0300", "\u0301", "\u0302", "\u0303", "\u0304",
-        "\u0306", "\u0307", "\u0308", "\u030A", "\u0315",
-        "\u0327", "\u0328", "\u0334", "\u033F", "\u0346"
-    };
-    static const size_t num_marks = sizeof(zalgo_marks) / sizeof(zalgo_marks[0]);
-
-    size_t i = 0, j = 0;
-    while (str[i]) {
-        unsigned char c = (unsigned char)str[i];
-        int char_len = 1;
-
-        // Detect UTF-8 sequence length from leading byte
-        if ((c & 0x80) == 0x00) char_len = 1;         // 0xxxxxxx
-        else if ((c & 0xE0) == 0xC0) char_len = 2;    // 110xxxxx
-        else if ((c & 0xF0) == 0xE0) char_len = 3;    // 1110xxxx
-        else if ((c & 0xF8) == 0xF0) char_len = 4;    // 11110xxx
-
-        // Copy one full UTF-8 character
-        memcpy(out + j, str + i, char_len);
-        j += char_len;
-        i += char_len;
-
-        // Add 0–2 zalgo marks
-        int marks = rand() % 3;
-        for (int m = 0; m < marks; m++) {
-            const char *mark = zalgo_marks[rand() % num_marks];
-            size_t mark_len = strlen(mark);
-            memcpy(out + j, mark, mark_len);
-            j += mark_len;
-        }
-    }
-
-    out[j] = '\0';
-    return out;
-}
-
 cstring fossil_io_cstring_copy(ccstring str) {
     if (!str) return NULL;
     return fossil_io_cstring_create(str);
 }
+
+// ---------------- Number <-> Words Conversion ----------------
 
 static const char *units[] = {
     "zero", "one", "two", "three", "four", "five",
@@ -454,7 +408,38 @@ static const char *tens[] = {
     "sixty", "seventy", "eighty", "ninety"
 };
 
-// ---------------- Number -> Words ----------------
+// Helper for number to words (recursive for <1000)
+static int fossil_io_cstring_number_to_words_inner(int num, char *buffer, size_t size) {
+    size_t used = strlen(buffer);
+
+    if (num >= 100) {
+        int hundreds = num / 100;
+        if (used + strlen(units[hundreds]) + 8 >= size) return -1;
+        strcat(buffer, units[hundreds]);
+        strcat(buffer, " hundred");
+        num %= 100;
+        if (num > 0) {
+            strcat(buffer, " and ");
+        }
+        used = strlen(buffer);
+    }
+
+    if (num >= 20) {
+        int t = num / 10;
+        if (used + strlen(tens[t]) + 2 >= size) return -1;
+        strcat(buffer, tens[t]);
+        num %= 10;
+        if (num > 0) {
+            strcat(buffer, "-");
+            strcat(buffer, units[num]);
+        }
+    } else if (num > 0 || used == 0) {
+        if (used + strlen(units[num]) + 1 >= size) return -1;
+        strcat(buffer, units[num]);
+    }
+    return 0;
+}
+
 int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size) {
     if (!buffer || size == 0) return -1;
     buffer[0] = '\0';
@@ -470,33 +455,14 @@ int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size) {
         if (num > 0) strcat(buffer, " ");
     }
 
-    if (num >= 100) {
-        int hundreds = num / 100;
-        if (strlen(buffer) + strlen(units[hundreds]) + 10 >= size) return -1;
-        strcat(buffer, units[hundreds]);
-        strcat(buffer, " hundred");
-        num %= 100;
-        if (num > 0) strcat(buffer, " and ");
-    }
-
-    if (num >= 20) {
-        int t = num / 10;
-        if (strlen(buffer) + strlen(tens[t]) + 2 >= size) return -1;
-        strcat(buffer, tens[t]);
-        num %= 10;
-        if (num > 0) {
-            strcat(buffer, "-");
-            strcat(buffer, units[num]);
-        }
-    } else if (num > 0 || strlen(buffer) == 0) {
-        if (strlen(buffer) + strlen(units[num]) + 1 >= size) return -1;
-        strcat(buffer, units[num]);
+    if (num > 0 || strlen(buffer) == 0) {
+        if (fossil_io_cstring_number_to_words_inner(num, buffer, size) != 0) return -1;
     }
 
     return 0;
 }
 
-// ---------------- Words -> Number ----------------
+// Helper for words to number
 static int fossil_io_word_to_value(const char *word) {
     for (int i = 0; i < 20; i++) if (strcmp(word, units[i]) == 0) return i;
     for (int i = 2; i < 10; i++) if (strcmp(word, tens[i]) == 0) return i * 10;
@@ -508,15 +474,14 @@ static int fossil_io_word_to_value(const char *word) {
 int fossil_io_cstring_number_from_words(const char *str, int *out) {
     if (!str || !out) return -1;
 
-    int total = 0;
-    int current = 0;
+    int total = 0, current = 0;
 
     char buffer[256];
     strncpy(buffer, str, sizeof(buffer)-1);
     buffer[sizeof(buffer)-1] = '\0';
 
-    // lowercase and remove extra characters
-    for (char *p = buffer; *p; ++p) *p = (char)tolower(*p);
+    // Lowercase and remove extra characters
+    for (char *p = buffer; *p; ++p) *p = (char)tolower((unsigned char)*p);
 
     char *token = strtok(buffer, " -");
     while (token) {
@@ -524,8 +489,10 @@ int fossil_io_cstring_number_from_words(const char *str, int *out) {
         if (val >= 0) {
             current += val;
         } else if (val == -100) { // hundred
+            if (current == 0) return -1;
             current *= 100;
         } else if (val == -1000) { // thousand
+            if (current == 0) return -1;
             total += current * 1000;
             current = 0;
         } else {
@@ -1229,7 +1196,10 @@ cstring fossil_io_cstring_join_safe(ccstring *strings, size_t count, char delimi
     if (!strings || count == 0) return NULL;
     cstring result = fossil_io_cstring_create_safe("", max_len);
     for (size_t i = 0; i < count; i++) {
-        if (i > 0) fossil_io_cstring_append_safe(&result, &delimiter, max_len);
+        if (i > 0) {
+            char delim_str[2] = { delimiter, '\0' };
+            fossil_io_cstring_append_safe(&result, delim_str, max_len);
+        }
         fossil_io_cstring_append_safe(&result, strings[i], max_len);
     }
     return result;

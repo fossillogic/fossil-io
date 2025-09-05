@@ -1167,15 +1167,6 @@ namespace fossil {
             }
 
             /**
-             * Generates a "zalgo" glitch text version of a string.
-             * 
-             * @return A CString with the zalgo transformation.
-             */
-            CString zalgo() const {
-                return CString(fossil_io_cstring_zalgo(_str));
-            }
-
-            /**
              * Duplicates the given cstring.
              * 
              * @param str The cstring to be duplicated.
