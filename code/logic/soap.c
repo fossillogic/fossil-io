@@ -41,7 +41,7 @@ typedef struct {
     soap_category_t category;     // Category
     const char *name;             // Human-readable name
     const char **patterns;         // Lookup table of phrases
-    soap_detector_fn detector;     // Optional custom function
+    soap_detector_fn detect_fn;     // Optional custom function
 } soap_detector_t;
 
 // Optional: reasoning / TI metadata
@@ -394,7 +394,7 @@ static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
     { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
     { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
     { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
-    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive }
+    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive },
 };
 
 static char custom_storage[MAX_CUSTOM_FILTERS][64];
@@ -558,7 +558,7 @@ static int soap_detect_patterns(const char *text, const char **patterns) {
 
 int fossil_io_soap_detect_category(const char *text, soap_category_t category) {
     if (category >= SOAP_CAT_COUNT) return 0;
-    return SOAP_DETECTORS[category].detector(text);
+    return SOAP_DETECTORS[category].detect_fn(text);
 }
 
 int fossil_io_soap_detect_multiple(const char *text, const soap_category_t *categories, int count, bool *out_matches) {
@@ -568,7 +568,7 @@ int fossil_io_soap_detect_multiple(const char *text, const soap_category_t *cate
     for (int i = 0; i < count; i++) {
         int detected = 0;
         if (categories[i] < SOAP_CAT_COUNT) {
-            detected = SOAP_DETECTORS[categories[i]].detector(text);
+            detected = SOAP_DETECTORS[categories[i]].detect_fn(text);
         }
 
         if (out_matches) out_matches[i] = detected ? true : false;
@@ -895,9 +895,9 @@ char *fossil_io_soap_filter_offensive(const char *text) {
     char *result = fossil_io_cstring_dup(text);
     if (!result) return NULL;
 
-    for (size_t i = 0; SOAP_OFFENSIVE_PATTERNS[i].offensive != NULL; i++) {
-        const char *bad = SOAP_OFFENSIVE_PATTERNS[i].offensive;
-        const char *good = SOAP_OFFENSIVE_PATTERNS[i].replacement;
+    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].offensive != NULL; i++) {
+        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].offensive;
+        const char *good = FOSSIL_SOAP_SUGGESTIONS[i].replacement;
 
         const char *found = NULL;
         while ((found = custom_strcasestr(result, bad)) != NULL) {
