@@ -537,6 +537,93 @@ namespace fossil {
             }
 
             /**
+             * Converts input into a "silly" string (random case and symbols).
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the silly transformation.
+             */
+            std::string silly(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_silly(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts input into Pig Latin.
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the Pig Latin transformation.
+             */
+            std::string piglatin(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_piglatin(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts input into "leet speak".
+             * 
+             * @param output_size The size of the output buffer.
+             * @return A std::string with the leet speak transformation.
+             */
+            std::string leetspeak(size_t output_size = 256) const {
+                char *output = new char[output_size];
+                int res = fossil_io_cstring_leetspeak(_str, output, output_size);
+                std::string result = (res == 0) ? std::string(output) : "";
+                delete[] output;
+                return result;
+            }
+
+            /**
+             * Converts a string into "mocking SpongeBob" case.
+             * 
+             * @return A CString with the mocking transformation.
+             */
+            CString mocking() const {
+                return CString(fossil_io_cstring_mocking(_str));
+            }
+
+            /**
+             * Applies ROT13 cipher to a string.
+             * 
+             * @return A CString with the ROT13 transformation.
+             */
+            CString rot13() const {
+                return CString(fossil_io_cstring_rot13(_str));
+            }
+
+            /**
+             * Shuffles the characters of a string randomly.
+             * 
+             * @return A CString with the shuffled string.
+             */
+            CString shuffle() const {
+                return CString(fossil_io_cstring_shuffle(_str));
+            }
+
+            /**
+             * Converts a string to UPPER_SNAKE_CASE.
+             * 
+             * @return A CString with the UPPER_SNAKE_CASE transformation.
+             */
+            CString upper_snake() const {
+                return CString(fossil_io_cstring_upper_snake(_str));
+            }
+
+            /**
+             * Generates a "zalgo" glitch text version of a string.
+             * 
+             * @return A CString with the zalgo transformation.
+             */
+            CString zalgo() const {
+                return CString(fossil_io_cstring_zalgo(_str));
+            }
+
+            /**
              * Duplicates the given cstring.
              * 
              * @param str The cstring to be duplicated.
