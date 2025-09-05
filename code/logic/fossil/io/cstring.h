@@ -129,14 +129,6 @@ char* fossil_io_cstring_shuffle(const char *str);
 char* fossil_io_cstring_upper_snake(const char *str);
 
 /**
- * @brief Generates a "zalgo" glitch text version of a string.
- * 
- * @param str Input string.
- * @return Newly allocated transformed string, or NULL on failure.
- */
-char* fossil_io_cstring_zalgo(const char *str);
-
-/**
  * @brief Creates a copy of the given cstring.
  * 
  * @param str The cstring to be copied.
@@ -1099,15 +1091,6 @@ namespace fossil {
              */
             CString upper_snake() const {
                 return CString(fossil_io_cstring_upper_snake(_str));
-            }
-
-            /**
-             * Generates a "zalgo" glitch text version of a string.
-             * 
-             * @return A CString with the zalgo transformation.
-             */
-            CString zalgo() const {
-                return CString(fossil_io_cstring_zalgo(_str));
             }
 
             /**
