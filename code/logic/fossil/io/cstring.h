@@ -40,7 +40,7 @@ typedef struct {
  * @param init The initial value for the cstring.
  * @return A new cstring initialized with the given value.
  */
-cstring fossil_io_cstring_create(const char *init);
+cstring fossil_io_cstring_create(ccstring init);
 
 /**
  * @brief Frees the memory allocated for the given cstring.
@@ -59,7 +59,7 @@ void fossil_io_cstring_free(cstring str);
  * @param saveptr Context pointer across calls.
  * @return Pointer to next token, or NULL if none.
  */
-char* fossil_io_cstring_token(char *str, const char *delim, char **saveptr);
+cstring fossil_io_cstring_token(cstring str, ccstring delim, cstring *saveptr);
 
 /**
  * @brief Case-insensitive substring search.
@@ -69,7 +69,7 @@ char* fossil_io_cstring_token(char *str, const char *delim, char **saveptr);
  * @return Pointer to first occurrence of needle in haystack (case-insensitive),
  *         or NULL if not found.
  */
-const char* fossil_io_cstring_case_search(const char *haystack, const char *needle);
+ccstring fossil_io_cstring_case_search(ccstring haystack, ccstring needle);
 
 /**
  * @brief Case-insensitive string comparison.
@@ -78,7 +78,7 @@ const char* fossil_io_cstring_case_search(const char *haystack, const char *need
  * @param s2 Second string.
  * @return <0 if s1 < s2, 0 if equal, >0 if s1 > s2 (ignoring case).
  */
-int fossil_io_cstring_case_compare(const char *s1, const char *s2);
+int fossil_io_cstring_case_compare(ccstring s1, ccstring s2);
 
 /**
  * @brief Case-insensitive string replace.
@@ -92,9 +92,9 @@ int fossil_io_cstring_case_compare(const char *s1, const char *s2);
  * @return Newly allocated string with replacements applied, or NULL on failure.
  *         Caller must free().
  */
-char* fossil_io_cstring_case_replace(const char *input,
-                                     const char *needle,
-                                     const char *replacement);
+cstring fossil_io_cstring_case_replace(ccstring input,
+                                     ccstring needle,
+                                     ccstring replacement);
 
 /**
  * @brief Converts input into a "silly" string (random case and symbols).
@@ -104,7 +104,7 @@ char* fossil_io_cstring_case_replace(const char *input,
  * @param size    The size of the output buffer.
  * @return        0 on success, non-zero on error (buffer too small).
  */
-int fossil_io_cstring_silly(const char *input, char *output, size_t size);
+int fossil_io_cstring_silly(ccstring input, cstring output, size_t size);
 
 /**
  * @brief Converts input into Pig Latin.
@@ -118,7 +118,7 @@ int fossil_io_cstring_silly(const char *input, char *output, size_t size);
  * @param size    The size of the output buffer.
  * @return        0 on success, non-zero on error.
  */
-int fossil_io_cstring_piglatin(const char *input, char *output, size_t size);
+int fossil_io_cstring_piglatin(ccstring input, cstring output, size_t size);
 
 /**
  * @brief Converts input into "leet speak".
@@ -131,7 +131,7 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size);
  * @param size    The size of the output buffer.
  * @return        0 on success, non-zero on error.
  */
-int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size);
+int fossil_io_cstring_leetspeak(ccstring input, cstring output, size_t size);
 
 // Novelty String Transforms
 
@@ -143,7 +143,7 @@ int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size);
  * @param str Input string.
  * @return Newly allocated transformed string, or NULL on failure.
  */
-char* fossil_io_cstring_mocking(const char *str);
+cstring fossil_io_cstring_mocking(ccstring str);
 
 /**
  * @brief Applies ROT13 cipher to a string.
@@ -153,7 +153,7 @@ char* fossil_io_cstring_mocking(const char *str);
  * @param str Input string.
  * @return Newly allocated transformed string, or NULL on failure.
  */
-char* fossil_io_cstring_rot13(const char *str);
+cstring fossil_io_cstring_rot13(ccstring str);
 
 /**
  * @brief Shuffles the characters of a string randomly.
@@ -163,7 +163,7 @@ char* fossil_io_cstring_rot13(const char *str);
  * @param str Input string.
  * @return Newly allocated shuffled string, or NULL on failure.
  */
-char* fossil_io_cstring_shuffle(const char *str);
+cstring fossil_io_cstring_shuffle(ccstring str);
 
 /**
  * @brief Converts a string to UPPER_SNAKE_CASE.
@@ -173,7 +173,7 @@ char* fossil_io_cstring_shuffle(const char *str);
  * @param str Input string.
  * @return Newly allocated transformed string, or NULL on failure.
  */
-char* fossil_io_cstring_upper_snake(const char *str);
+cstring fossil_io_cstring_upper_snake(ccstring str);
 
 /**
  * @brief Generates a "zalgo" glitch text version of a string.
@@ -181,7 +181,7 @@ char* fossil_io_cstring_upper_snake(const char *str);
  * @param str Input string.
  * @return Newly allocated transformed string, or NULL on failure.
  */
-char* fossil_io_cstring_zalgo(const char *str);
+cstring fossil_io_cstring_zalgo(ccstring str);
 
 /**
  * @brief Creates a copy of the given cstring.
