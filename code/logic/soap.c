@@ -185,7 +185,7 @@ static const char *SOAP_SARCASTIC_PATTERNS[] = {
 };
 
 /** Lookup table for formal phrases */
-static const char *SOAP_FORMAL_PATTERS[] = {
+static const char *SOAP_FORMAL_PATTERNS[] = {
     "Dear Sir or Madam", "To whom it may concern", "Yours sincerely", "Yours faithfully",
     "Best regards", "Respectfully", "I would like to", "I am writing to",
     "Please find attached", "Thank you for your consideration", "I look forward to your response",
