@@ -1,4 +1,4 @@
-/*
+/**
  * -----------------------------------------------------------------------------
  * Project: Fossil Logic
  *
@@ -14,6 +14,7 @@
 #ifndef FOSSIL_IO_SOAP_H
 #define FOSSIL_IO_SOAP_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -106,24 +107,82 @@ int fossil_io_soap_detect_exaggeration(const char *text);
  */
 char *fossil_io_soap_filter_offensive(const char *text);
 
-/**
- * Detects whether the given text contains ragebait phrases.
- *
- * Ragebait phrases are text patterns designed to provoke anger,
- * outrage, or strong emotional reactions in the reader.
- *
- * @param text The input C string to analyze.
- * @return 1 if any ragebait phrase is detected, 0 otherwise.
+/** 
+ * Detects ragebait content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if ragebait patterns are found, 0 otherwise.
  */
 int fossil_io_soap_detect_ragebait(const char *text);
 
-/**
- * @brief Check if input contains clickbait-style language.
- *
- * @param text The input string.
- * @return 1 if clickbait is detected, 0 otherwise.
+/** 
+ * Detects clickbait content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if clickbait patterns are found, 0 otherwise.
  */
 int fossil_io_soap_detect_clickbait(const char *text);
+
+/** 
+ * Detects spam content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if spam patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_spam(const char *text);
+
+/** 
+ * Detects woke-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if woke patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_woke(const char *text);
+
+/** 
+ * Detects propaganda content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if propaganda patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_propaganda(const char *text);
+
+/** 
+ * Detects automated/bot content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if bot patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_bot(const char *text);
+
+/** 
+ * Detects fake news content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if fake news patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_fake_news(const char *text);
+
+/** 
+ * Detects sarcastic tone in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if sarcastic patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_sarcasm(const char *text);
+
+/** 
+ * Detects formal tone in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if formal patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_formal(const char *text);
+
+/** 
+ * Detects "snowflake"-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if snowflake patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_snowflake(const char *text);
+
+/** 
+ * Detects "offensive"-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if offensive patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_offensive(const char *text);
 
 #ifdef __cplusplus
 }
@@ -266,6 +325,26 @@ namespace fossil {
              */
             static bool is_clickbait(const std::string &text) {
                 return fossil_io_soap_detect_clickbait(text.c_str()) != 0;
+            }
+            
+            /**
+             * @brief Detects if a given text contains spammy patterns
+             *
+             * @param text Input string to analyze
+             * @return 1 if spam detected, 0 otherwise
+             */
+            static int is_spam(const std::string &text){
+                return fossil_io_soap_detect_spam(text.c_str()) != 0;
+            }
+            
+            /**
+             * @brief Detects if a given text contains "woke" tone patterns
+             *
+             * @param text Input string to analyze
+             * @return 1 if woke tone detected, 0 otherwise
+             */
+            static int is_woke(const std::string &text){
+                return fossil_io_soap_detect_woke(text.c_str()) != 0;
             }
 
             /**
