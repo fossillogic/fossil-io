@@ -546,28 +546,6 @@ static int soap_detect_patterns(const char *text, const char **patterns) {
     return 0; // No match
 }
 
-int fossil_io_soap_detect_category(const char *text, soap_category_t category) {
-    if (category >= SOAP_CAT_COUNT) return 0;
-    return SOAP_DETECTORS[category].detect_fn(text);
-}
-
-int fossil_io_soap_detect_multiple(const char *text, const soap_category_t *categories, int count, bool *out_matches) {
-    if (!text || !categories || count <= 0) return 0;
-
-    int matches = 0;
-    for (int i = 0; i < count; i++) {
-        int detected = 0;
-        if (categories[i] < SOAP_CAT_COUNT) {
-            detected = SOAP_DETECTORS[categories[i]].detect_fn(text);
-        }
-
-        if (out_matches) out_matches[i] = detected ? true : false;
-        if (detected) matches++;
-    }
-
-    return matches;
-}
-
 /**
  * @brief Sanitize input text by removing or replacing "rot-brain" and meme-based language.
  * @param censor_char Character to use for censored words (e.g., "*" or "#").
