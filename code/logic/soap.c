@@ -30,8 +30,27 @@ typedef enum {
     SOAP_CAT_PROPAGANDA,
     SOAP_CAT_BOT,
     SOAP_CAT_FAKE_NEWS,
-    SOAP_CAT_COUNT   // Sentinel
+    SOAP_CAT_SARCASM,
+    SOAP_CAT_FORMAL,
+    SOAP_CAT_SNOWFLAKE,   // Added missing
+    SOAP_CAT_OFFENSIVE,    // Added missing
+    SOAP_CAT_COUNT         // Sentinel
 } soap_category_t;
+
+// Detector registry
+static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
+    { SOAP_CAT_RAGEBAIT,  "ragebait",  SOAP_RAGEBAIT_PATTERNS,  fossil_io_soap_detect_ragebait },
+    { SOAP_CAT_CLICKBAIT, "clickbait", SOAP_CLICKBAIT_PATTERNS, fossil_io_soap_detect_clickbait },
+    { SOAP_CAT_SPAM,      "spam",      SOAP_SPAM_PATTERNS,      fossil_io_soap_detect_spam },
+    { SOAP_CAT_WOKE,      "woke",      SOAP_WOKE_PATTERNS,      fossil_io_soap_detect_woke },
+    { SOAP_CAT_PROPAGANDA,"propaganda",SOAP_PROPAGANDA_PATTERNS,fossil_io_soap_detect_propaganda },
+    { SOAP_CAT_BOT,       "bot",       SOAP_BOT_PATTERNS,       fossil_io_soap_detect_bot },
+    { SOAP_CAT_FAKE_NEWS, "fake",      SOAP_FAKE_NEWS_PATTERNS, fossil_io_soap_detect_fake_news },
+    { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
+    { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
+    { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
+    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive },
+};
 
 // Detector function type
 typedef int (*soap_detector_fn)(const char *text);
@@ -366,35 +385,6 @@ static const char *EXAGGERATED_WORDS[] = {
     "amazing",
     "phenomenal",
     NULL
-};
-
-// Category enum
-typedef enum {
-    SOAP_CAT_RAGEBAIT,
-    SOAP_CAT_CLICKBAIT,
-    SOAP_CAT_SPAM,
-    SOAP_CAT_WOKE,
-    SOAP_CAT_PROPAGANDA,
-    SOAP_CAT_BOT,
-    SOAP_CAT_FAKE_NEWS,
-    SOAP_CAT_SARCASM,      // New category
-    SOAP_CAT_FORMAL,       // New category
-    SOAP_CAT_COUNT          // Sentinel
-} soap_category_t;
-
-// Detector registry
-static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
-    { SOAP_CAT_RAGEBAIT,  "ragebait",  SOAP_RAGEBAIT_PATTERNS,  fossil_io_soap_detect_ragebait },
-    { SOAP_CAT_CLICKBAIT, "clickbait", SOAP_CLICKBAIT_PATTERNS, fossil_io_soap_detect_clickbait },
-    { SOAP_CAT_SPAM,      "spam",      SOAP_SPAM_PATTERNS,      fossil_io_soap_detect_spam },
-    { SOAP_CAT_WOKE,      "woke",      SOAP_WOKE_PATTERNS,      fossil_io_soap_detect_woke },
-    { SOAP_CAT_PROPAGANDA,"propaganda",SOAP_PROPAGANDA_PATTERNS,fossil_io_soap_detect_propaganda },
-    { SOAP_CAT_BOT,       "bot",       SOAP_BOT_PATTERNS,       fossil_io_soap_detect_bot },
-    { SOAP_CAT_FAKE_NEWS, "fake",      SOAP_FAKE_NEWS_PATTERNS, fossil_io_soap_detect_fake_news },
-    { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
-    { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
-    { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
-    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive },
 };
 
 static char custom_storage[MAX_CUSTOM_FILTERS][64];
