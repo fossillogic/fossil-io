@@ -31,24 +31,6 @@ extern "C" {
 char *fossil_io_soap_sanitize(const char *text);
 
 /**
- * Detect a specific SOAP category in the text.
- * @param text Input text to analyze.
- * @param category SOAP category enum.
- * @return Non-zero if any pattern in the category is found, 0 otherwise.
- */
-int fossil_io_soap_detect_category(const char *text, soap_category_t category);
-
-/**
- * Detect multiple categories in the text.
- * @param text Input text to analyze.
- * @param categories Array of category enums to check.
- * @param count Number of categories in the array.
- * @param out_matches Optional output array (bool[count]) to store matches per category.
- * @return Number of categories matched.
- */
-int fossil_io_soap_detect_multiple(const char *text, const soap_category_t *categories, int count, bool *out_matches);
-
-/**
  * @brief Suggest proper alternatives for rot-brain words or grammar fixes.
  *
  * @param text The input text.
