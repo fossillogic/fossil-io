@@ -986,8 +986,16 @@ cstring fossil_io_cstring_trim_safe(ccstring str, size_t max_len) {
     size_t end = strnlen(copy, max_len);
     while (end > start && isspace((unsigned char)copy[end - 1])) end--;
 
-    copy[end] = '\0';
-    return &copy[start];
+    size_t trimmed_len = end - start;
+    cstring trimmed = (cstring)malloc(trimmed_len + 1);
+    if (!trimmed) {
+        free(copy);
+        return NULL;
+    }
+    memcpy(trimmed, copy + start, trimmed_len);
+    trimmed[trimmed_len] = '\0';
+    free(copy);
+    return trimmed;
 }
 
 cstring *fossil_io_cstring_split_safe(ccstring str, char delimiter, size_t *count, size_t max_len) {
