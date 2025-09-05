@@ -355,6 +355,144 @@ FOSSIL_TEST(c_test_cstring_append) {
     fossil_io_cstring_free(str);
 }
 
+FOSSIL_TEST(c_test_cstring_silly_basic) {
+    char input[] = "Hello World";
+    char output[64];
+    int rc = fossil_io_cstring_silly(input, output, sizeof(output));
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    // Output should have same letters, possibly with random case and ~ symbols
+    ASSUME_ITS_TRUE(strlen(output) >= strlen(input));
+    // Should contain all input letters (case-insensitive)
+    for (size_t i = 0; i < strlen(input); ++i) {
+        if (isalpha(input[i])) {
+            ASSUME_ITS_TRUE(strchr(output, tolower(input[i])) || strchr(output, toupper(input[i])));
+        }
+    }
+}
+
+FOSSIL_TEST(c_test_cstring_silly_buffer_too_small) {
+    char input[] = "Hello";
+    char output[4]; // Too small
+    int rc = fossil_io_cstring_silly(input, output, sizeof(output));
+    ASSUME_ITS_TRUE(rc != 0);
+}
+
+FOSSIL_TEST(c_test_cstring_piglatin_vowel_start) {
+    char input[] = "apple";
+    char output[64];
+    int rc = fossil_io_cstring_piglatin(input, output, sizeof(output));
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_ITS_TRUE(strstr(output, "appleyay") != NULL);
+}
+
+FOSSIL_TEST(c_test_cstring_piglatin_consonant_start) {
+    char input[] = "banana";
+    char output[64];
+    int rc = fossil_io_cstring_piglatin(input, output, sizeof(output));
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_ITS_TRUE(strstr(output, "ananabay") != NULL);
+}
+
+FOSSIL_TEST(c_test_cstring_piglatin_multiple_words) {
+    char input[] = "eat banana";
+    char output[64];
+    int rc = fossil_io_cstring_piglatin(input, output, sizeof(output));
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    ASSUME_ITS_TRUE(strstr(output, "eatyay") != NULL);
+    ASSUME_ITS_TRUE(strstr(output, "ananabay") != NULL);
+}
+
+FOSSIL_TEST(c_test_cstring_piglatin_buffer_too_small) {
+    char input[] = "banana";
+    char output[4]; // Too small
+    int rc = fossil_io_cstring_piglatin(input, output, sizeof(output));
+    ASSUME_ITS_TRUE(rc != 0);
+}
+
+FOSSIL_TEST(c_test_cstring_leetspeak_basic) {
+    char input[] = "Test Aisle";
+    char output[64];
+    int rc = fossil_io_cstring_leetspeak(input, output, sizeof(output));
+    ASSUME_ITS_EQUAL_I32(0, rc);
+    // Should contain mapped chars
+    ASSUME_ITS_TRUE(strchr(output, '7') != NULL); // T->7
+    ASSUME_ITS_TRUE(strchr(output, '4') != NULL); // A->4
+    ASSUME_ITS_TRUE(strchr(output, '1') != NULL); // I->1
+    ASSUME_ITS_TRUE(strchr(output, '5') != NULL); // S->5
+    ASSUME_ITS_TRUE(strchr(output, '3') != NULL); // E->3
+}
+
+FOSSIL_TEST(c_test_cstring_leetspeak_buffer_too_small) {
+    char input[] = "leet";
+    char output[2]; // Too small
+    int rc = fossil_io_cstring_leetspeak(input, output, sizeof(output));
+    ASSUME_ITS_TRUE(rc != 0);
+}
+
+FOSSIL_TEST(c_test_cstring_mocking_basic) {
+    char *result = fossil_io_cstring_mocking("hello world");
+    ASSUME_NOT_CNULL(result);
+    // Should alternate case
+    ASSUME_ITS_EQUAL_CSTR("hElLo wOrLd", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_mocking_empty) {
+    char *result = fossil_io_cstring_mocking("");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_rot13_basic) {
+    char *result = fossil_io_cstring_rot13("hello");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("uryyb", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_rot13_twice_is_original) {
+    char *input = "TestString";
+    char *rot = fossil_io_cstring_rot13(input);
+    char *rot2 = fossil_io_cstring_rot13(rot);
+    ASSUME_NOT_CNULL(rot);
+    ASSUME_NOT_CNULL(rot2);
+    ASSUME_ITS_EQUAL_CSTR(input, rot2);
+    fossil_io_cstring_free(rot);
+    fossil_io_cstring_free(rot2);
+}
+
+FOSSIL_TEST(c_test_cstring_shuffle_basic) {
+    char *input = "abcdef";
+    char *result = fossil_io_cstring_shuffle(input);
+    ASSUME_NOT_CNULL(result);
+    // Should be permutation of input
+    ASSUME_ITS_EQUAL_SIZE(strlen(input), strlen(result));
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_upper_snake_basic) {
+    char *result = fossil_io_cstring_upper_snake("Hello World");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("HELLO_WORLD", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_upper_snake_with_symbols) {
+    char *result = fossil_io_cstring_upper_snake("Hello, World!");
+    ASSUME_NOT_CNULL(result);
+    ASSUME_ITS_EQUAL_CSTR("HELLO,_WORLD!", result);
+    fossil_io_cstring_free(result);
+}
+
+FOSSIL_TEST(c_test_cstring_zalgo_basic) {
+    char *result = fossil_io_cstring_zalgo("hello");
+    ASSUME_NOT_CNULL(result);
+    // Should start with 'h' and contain combining marks
+    ASSUME_ITS_TRUE(result[0] == 'h');
+    fossil_io_cstring_free(result);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -392,6 +530,23 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_normalize_spaces);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_strip_quotes);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_append);
+
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_silly_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_silly_buffer_too_small);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_piglatin_vowel_start);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_piglatin_consonant_start);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_piglatin_multiple_words);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_piglatin_buffer_too_small);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_leetspeak_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_leetspeak_buffer_too_small);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_mocking_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_mocking_empty);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_rot13_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_rot13_twice_is_original);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_shuffle_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_basic);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_upper_snake_with_symbols);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_zalgo_basic);
 
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_write_and_read);

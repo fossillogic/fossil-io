@@ -593,6 +593,61 @@ FOSSIL_TEST(cpp_test_cstring_class_append) {
     ASSUME_ITS_EQUAL_CSTR("Hello, World!", str.str());
 }
 
+FOSSIL_TEST(cpp_test_cstring_class_silly) {
+    fossil::io::CString str("Hello, World!");
+    std::string silly = str.silly();
+    ASSUME_NOT_CNULL(silly.c_str());
+    ASSUME_ITS_TRUE(silly.length() > 0);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_piglatin) {
+    fossil::io::CString str("Hello, World!");
+    std::string pig = str.piglatin();
+    ASSUME_NOT_CNULL(pig.c_str());
+    ASSUME_ITS_TRUE(pig.length() > 0);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_leetspeak) {
+    fossil::io::CString str("Hello, World!");
+    std::string leet = str.leetspeak();
+    ASSUME_NOT_CNULL(leet.c_str());
+    ASSUME_ITS_TRUE(leet.length() > 0);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_mocking) {
+    fossil::io::CString str("Hello, World!");
+    fossil::io::CString mocking = str.mocking();
+    ASSUME_NOT_CNULL(mocking.str());
+    ASSUME_ITS_TRUE(mocking.length() == str.length());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_rot13) {
+    fossil::io::CString str("Hello, World!");
+    fossil::io::CString rot = str.rot13();
+    ASSUME_NOT_CNULL(rot.str());
+    ASSUME_ITS_TRUE(rot.length() == str.length());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_shuffle) {
+    fossil::io::CString str("Hello, World!");
+    fossil::io::CString shuffled = str.shuffle();
+    ASSUME_NOT_CNULL(shuffled.str());
+    ASSUME_ITS_TRUE(shuffled.length() == str.length());
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_upper_snake) {
+    fossil::io::CString str("Hello World Fossil");
+    fossil::io::CString snake = str.upper_snake();
+    ASSUME_NOT_CNULL(snake.str());
+    ASSUME_ITS_TRUE(std::string(snake.str()).find('_') != std::string::npos);
+}
+
+FOSSIL_TEST(cpp_test_cstring_class_zalgo) {
+    fossil::io::CString str("Hello, World!");
+    fossil::io::CString zalgo = str.zalgo();
+    ASSUME_NOT_CNULL(zalgo.str());
+    ASSUME_ITS_TRUE(zalgo.length() >= str.length());
+}
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
@@ -636,6 +691,15 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_multiple_writes);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_empty_read);
+
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_silly);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_piglatin);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_leetspeak);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_mocking);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_rot13);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_shuffle);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_upper_snake);
+    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_zalgo);
 
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_create_and_free);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_copy);
