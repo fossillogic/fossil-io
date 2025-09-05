@@ -97,6 +97,24 @@ cstring fossil_io_cstring_case_replace(ccstring input,
                                      ccstring replacement);
 
 /**
+ * @brief Case-insensitive check if string starts with prefix.
+ *
+ * @param str Input string.
+ * @param prefix Prefix to check.
+ * @return 1 if str starts with prefix (ignoring case), 0 otherwise.
+ */
+int fossil_io_cstring_case_starts_with(ccstring str, ccstring prefix);
+
+/**
+ * @brief Case-insensitive check if string ends with suffix.
+ *
+ * @param str Input string.
+ * @param suffix Suffix to check.
+ * @return 1 if str ends with suffix (ignoring case), 0 otherwise.
+ */
+int fossil_io_cstring_case_ends_with(ccstring str, ccstring suffix);
+
+/**
  * @brief Converts input into a "silly" string (random case and symbols).
  *
  * @param input   The input string.
