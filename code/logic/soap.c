@@ -21,6 +21,13 @@
 
 #define MAX_CUSTOM_FILTERS 64
 
+// Optional: reasoning / TI metadata
+typedef struct {
+    const char *category_name;
+    const char *matched_pattern;
+    int confidence; // 0-100
+} soap_ti_reason_t;
+
 /** Lookup table for rot-brain words and their suggested replacements */
 static const struct {
     const char *bad;
@@ -143,129 +150,165 @@ static const struct {
 };
 
 /** Lookup table for sarcastic phrases */
-static const char *SARCASTIC_PHRASES[] = {
-    "Oh, great",
-    "Yeah, right",
-    "Nice job",
-    "Well done",
-    "Good luck with that",
-    "Sure, why not",
-    "Fantastic",
-    "Brilliant",
-    "Wonderful",
-    "Perfect",
-    "Oh, just what I needed",
-    "Wow, amazing",
-    "How original",
-    "Incredible",
-    "As if that will work",
-    "Sure, that's smart",
-    "Totally believable",
-    "Oh, really?",
-    "You're a genius",
-    "Thanks a lot",
-    "Couldn't be better",
-    "That's exactly what I wanted",
-    "Well, isn't that special",
-    "Lovely",
-    "Just perfect",
-    "What could go wrong?",
-    "Right, because that makes sense",
-    NULL // Sentinel to mark the end
+static const char *SOAP_SARCASTIC_PATTERNS[] = {
+    "Oh, great", "Yeah, right", "Nice job", "Well done", "Good luck with that",
+    "Sure, why not", "Fantastic", "Brilliant", "Wonderful", "Perfect",
+    "Oh, just what I needed", "Wow, amazing", "How original", "Incredible",
+    "As if that will work", "Sure, that's smart", "Totally believable",
+    "Oh, really?", "You're a genius", "Thanks a lot",
+    "Couldn't be better", "That's exactly what I wanted", "Well, isn't that special",
+    "Lovely", "Just perfect", "What could go wrong?", "Right, because that makes sense",
+    "Great idea", "Absolutely flawless", "Marvelous", "Just wonderful", NULL
 };
 
 /** Lookup table for formal phrases */
-static const char *FORMAL_PHRASES[] = {
-    "Dear Sir or Madam",
-    "To whom it may concern",
-    "Yours sincerely",
-    "Yours faithfully",
-    "Best regards",
-    "Respectfully",
-    "I would like to",
-    "I am writing to",
-    "Please find attached",
-    "Thank you for your consideration",
-    "I look forward to your response",
-    "Kindly note",
-    "Please be advised",
-    "It is my pleasure to",
-    "I would appreciate your assistance",
-    "Should you require any further information",
-    "I remain at your disposal",
-    "With kind regards",
-    "Thank you for your attention",
-    "I am writing on behalf of",
-    "Please accept my apologies",
-    "I wish to inform you",
-    "We would be grateful if",
-    "I hope this message finds you well",
-    NULL // Sentinel to mark the end
+static const char *SOAP_FORMAL_PATTERNS[] = {
+    "Dear Sir or Madam", "To whom it may concern", "Yours sincerely", "Yours faithfully",
+    "Best regards", "Respectfully", "I would like to", "I am writing to",
+    "Please find attached", "Thank you for your consideration", "I look forward to your response",
+    "Kindly note", "Please be advised", "It is my pleasure to", "I would appreciate your assistance",
+    "Should you require any further information", "I remain at your disposal", "With kind regards",
+    "Thank you for your attention", "I am writing on behalf of", "Please accept my apologies",
+    "I wish to inform you", "We would be grateful if", "I hope this message finds you well",
+    "I would be obliged if", "Kindly consider", "I trust this finds you well", "Allow me to express",
+    "With utmost respect", "Permit me to", NULL
 };
 
-static const char *CLICKBAIT_PATTERNS[] = {
-    "you won't believe",
-    "shocking",
-    "what happened next",
-    "top [0-9]",
-    "things you didn't know",
-    "one weird trick",
-    "will blow your mind",
-    "can't handle this",
-    "before you die",
-    "this is why",
-    "the reason is shocking",
-    "you need to see",
-    "never guess",
-    "what they found",
-    "will surprise you",
-    "what no one tells you",
-    "you'll never believe",
-    "this changes everything",
-    "x things you should know",
-    "you won't expect",
-    "hidden secret",
-    "finally revealed",
-    "the truth about",
-    "this is insane",
-    "what happens next will amaze you",
+static const char *SOAP_RAGEBAIT_PATTERNS[] = {
+    "you won't believe", "outrageous", "infuriating", "makes me angry",
+    "how dare they", "ridiculous", "unbelievable", "trigger warning",
+    "enraging", "shocking injustice", "furious", "disgusting", "outrage",
+    "unacceptable", "appalling", "scandalous", "outraged", "angry reaction",
+    "horrifying", "outrage alert", "infuriated", "rage induced",
+    "madness", "shocking", "unthinkable", "angry outrage", "outrage fest",
+    "provocative", "furious outrage", "triggered", NULL
+};
+
+static const char *SOAP_CLICKBAIT_PATTERNS[] = {
+    "how to", "top 10", "amazing", "must see", "you won't believe what happened",
+    "life changing", "secret revealed", "uncovered", "incredible", "mind blown",
+    "you won't believe this", "shocking", "insane", "epic", "ultimate guide",
+    "hidden truth", "never knew", "reveal", "best ever", "fantastic",
+    "jaw dropping", "you must see", "exclusive", "surprising", "unreal",
+    "best of", "amazing discovery", "life hack", "can't miss", "insider tips",
     NULL
 };
 
-static const char *RAGEBAIT_PATTERNS[] = {
-    "you won't believe",
-    "infuriating",
-    "makes me angry",
-    "outrageous",
-    "how dare they",
-    "unbelievable",
-    "ridiculous",
-    "trigger warning",
-    "enraging",
-    "shocking injustice",
-    "this will anger you",
-    "prepare to be outraged",
-    "makes no sense",
+static const char *SOAP_SPAM_PATTERNS[] = {
+    "free money", "work from home", "act now", "earn cash fast", "get rich quick",
+    "limited time offer", "buy now", "exclusive deal", "instant results", "100% free",
+    "click here", "apply now", "offer expires", "make money online", "risk free",
+    "guaranteed", "easy income", "double your money", "urgent", "special promotion",
+    "no investment", "limited offer", "win big", "free trial", "claim prize",
+    "extra cash", "instant payout", "hot deal", "bonus", "cash bonus", NULL
+};
+
+static const char *SOAP_WOKE_PATTERNS[] = {
+    "safe space", "microaggression", "check your privilege", "diversity and inclusion",
+    "equity over equality", "social justice", "systemic oppression", "cultural appropriation",
+    "intersectionality", "allyship", "gender equality", "anti-racism", "inclusive language",
+    "oppression", "privilege check", "marginalized voices", "bias awareness", "equity",
+    "discrimination", "social activism", "representation matters", "critical race theory",
+    "minority rights", "empowerment", "identity politics", "decolonize", "bias training",
+    "social equity", "inclusive policy", "identity awareness", NULL
+};
+
+static const char *SOAP_PROPAGANDA_PATTERNS[] = {
+    "state controlled", "enemy of the people", "propaganda", "hidden agenda",
+    "government lies", "manipulated media", "biased reporting", "indoctrination",
+    "fake narrative", "misinformation", "censorship", "manipulative", "brainwashing",
+    "political agenda", "controlled press", "fabricated story", "influenced news",
+    "spinning the facts", "media bias", "deception", "false narrative", "manipulated opinion",
+    "state narrative", "hidden motives", "truth distortion", "media propaganda",
+    "agenda driven", "false headlines", "information control", "media manipulation", NULL
+};
+
+static const char *SOAP_BOT_PATTERNS[] = {
+    "automated message", "generated content", "bot detected", "scripted response",
+    "robot account", "auto-generated", "spam bot", "bot activity", "synthetic post",
+    "automation detected", "fake account", "bot interaction", "robotic reply", "spam account",
+    "automation bot", "ai generated", "bot behavior", "scripted content", "robotic message",
+    "automated post", "fake user", "mass message", "bot network", "automated reply",
+    "auto reply", "bot comment", "robot post", "fake bot", "automated comment", "bot spam", NULL
+};
+
+static const char *SOAP_FAKE_NEWS_PATTERNS[] = {
+    "breaking news", "shocking revelation", "unverified report", "fact check",
+    "false report", "misleading headline", "fabricated story", "hoax", "viral misinformation",
+    "fake article", "rumor", "clickbait news", "unreliable source", "false claim",
+    "bogus report", "made-up story", "fake report", "misinformation campaign",
+    "distorted facts", "conspiracy theory", "falsified news", "untruth", "sensationalized",
+    "fake headline", "misleading article", "deceptive story", "questionable source",
+    "hoax report", "unconfirmed news", "false story", NULL
+};
+
+static const char *SOAP_SNOWFLAKE_PATTERNS[] = {
+    "snowflake",
+    "triggered",
+    "fragile ego",
+    "offended easily",
+    "sensitive snowflake",
+    "microaggression",
+    "safe space",
+    "special snowflake",
+    "delicate",
+    "thin-skinned",
+    "overly sensitive",
+    "crybaby",
+    "tender feelings",
+    "too sensitive",
+    "emotionally fragile",
+    "overreacting",
+    "touchy",
+    "soft-hearted",
+    "extra sensitive",
+    "hyper-sensitive",
+    "prickly",
+    "easily upset",
+    "nervous nellie",
+    "fragile personality",
+    "highly sensitive",
+    "overly emotional",
+    "whiny",
+    "melodramatic",
+    "delicate flower",
+    "fragile soul",
+    NULL
+};
+
+/** Lookup table for offensive content detection */
+static const char *SOAP_OFFENSIVE_PATTERNS[] = {
+    "idiot",
+    "stupid",
+    "dumb",
+    "moron",
+    "fool",
+    "loser",
+    "jerk",
+    "trash",
+    "garbage",
+    "worthless",
+    "pathetic",
+    "ugly",
     "disgusting",
-    "furious",
-    "utterly unacceptable",
-    "outrage",
-    "you won't forgive",
-    "shocking betrayal",
-    "how could they",
-    "beyond belief",
-    "makes my blood boil",
-    "appalling",
-    "you'll be mad",
-    "infuriated by",
-    "outrageously unfair",
+    "nonsense",
+    "ridiculous",
     "absurd",
-    "scandalous",
-    "unacceptable",
-    "utter nonsense",
-    "provoking anger",
-    "makes me furious",
-    NULL // Sentinel
+    "hate",
+    "kill",
+    "die",
+    "sucks",
+    "shut up",
+    "loser",
+    "dunce",
+    "ignorant",
+    "nasty",
+    "offensive",
+    "freak",
+    "creep",
+    "weirdo",
+    "worthless",
+    NULL // Sentinel to mark the end
 };
 
 static const char *EXAGGERATED_WORDS[] = {
@@ -300,6 +343,48 @@ static const char *EXAGGERATED_WORDS[] = {
     "amazing",
     "phenomenal",
     NULL
+};
+
+// Category enum
+typedef enum {
+    SOAP_CAT_RAGEBAIT,
+    SOAP_CAT_CLICKBAIT,
+    SOAP_CAT_SPAM,
+    SOAP_CAT_WOKE,
+    SOAP_CAT_PROPAGANDA,
+    SOAP_CAT_BOT,
+    SOAP_CAT_FAKE_NEWS,
+    SOAP_CAT_SARCASM,
+    SOAP_CAT_FORMAL,
+    SOAP_CAT_SNOWFLAKE,   // Added missing
+    SOAP_CAT_OFFENSIVE,    // Added missing
+    SOAP_CAT_COUNT         // Sentinel
+} soap_category_t;
+
+// Detector function type
+typedef int (*soap_detector_fn)(const char *text);
+
+// Detector registry entry
+typedef struct {
+    soap_category_t category;     // Category
+    const char *name;             // Human-readable name
+    const char **patterns;         // Lookup table of phrases
+    soap_detector_fn detect_fn;     // Optional custom function
+} soap_detector_t;
+
+// Detector registry
+static const soap_detector_t SOAP_DETECTORS[SOAP_CAT_COUNT] = {
+    { SOAP_CAT_RAGEBAIT,  "ragebait",  SOAP_RAGEBAIT_PATTERNS,  fossil_io_soap_detect_ragebait },
+    { SOAP_CAT_CLICKBAIT, "clickbait", SOAP_CLICKBAIT_PATTERNS, fossil_io_soap_detect_clickbait },
+    { SOAP_CAT_SPAM,      "spam",      SOAP_SPAM_PATTERNS,      fossil_io_soap_detect_spam },
+    { SOAP_CAT_WOKE,      "woke",      SOAP_WOKE_PATTERNS,      fossil_io_soap_detect_woke },
+    { SOAP_CAT_PROPAGANDA,"propaganda",SOAP_PROPAGANDA_PATTERNS,fossil_io_soap_detect_propaganda },
+    { SOAP_CAT_BOT,       "bot",       SOAP_BOT_PATTERNS,       fossil_io_soap_detect_bot },
+    { SOAP_CAT_FAKE_NEWS, "fake",      SOAP_FAKE_NEWS_PATTERNS, fossil_io_soap_detect_fake_news },
+    { SOAP_CAT_SARCASM,   "sarcasm",   SOAP_SARCASTIC_PATTERNS, fossil_io_soap_detect_sarcasm },
+    { SOAP_CAT_SNOWFLAKE, "snowflake", SOAP_SNOWFLAKE_PATTERNS, fossil_io_soap_detect_snowflake },
+    { SOAP_CAT_FORMAL,    "formal",    SOAP_FORMAL_PATTERNS,    fossil_io_soap_detect_formal },
+    { SOAP_CAT_OFFENSIVE, "offensive", SOAP_OFFENSIVE_PATTERNS, fossil_io_soap_detect_offensive }
 };
 
 static char custom_storage[MAX_CUSTOM_FILTERS][64];
@@ -450,6 +535,17 @@ static const char *fossil_io_soap_get_suggestion(const char *word) {
     return NULL;
 }
 
+static int soap_detect_patterns(const char *text, const char **patterns) {
+    if (!text || !patterns) return 0;
+
+    for (size_t i = 0; patterns[i] != NULL; i++) {
+        if (custom_strcasestr(text, patterns[i])) {
+            return 1; // Pattern found
+        }
+    }
+    return 0; // No match
+}
+
 /**
  * @brief Sanitize input text by removing or replacing "rot-brain" and meme-based language.
  * @param censor_char Character to use for censored words (e.g., "*" or "#").
@@ -573,19 +669,17 @@ void fossil_io_soap_clear_custom_filters(void) {
 }
 
 const char *fossil_io_soap_detect_tone(const char *text) {
-    for (size_t i = 0; SARCASTIC_PHRASES[i] != NULL; i++) {
-        if (custom_strcasestr(text, SARCASTIC_PHRASES[i])) {
-            return "sarcastic";
+    if (!text) return "unknown";
+
+    // Iterate over all detectors
+    for (size_t i = 0; i < SOAP_CAT_COUNT; i++) {
+        const soap_detector_t *detector = &SOAP_DETECTORS[i];
+        if (detector->detect_fn && detector->detect_fn(text)) {
+            return detector->name; // Return category name
         }
     }
 
-    for (size_t i = 0; FORMAL_PHRASES[i] != NULL; i++) {
-        if (custom_strcasestr(text, FORMAL_PHRASES[i])) {
-            return "formal";
-        }
-    }
-
-    return "casual";
+    return "casual"; // Default tone
 }
 
 int fossil_io_soap_check_grammar(const char *text) {
@@ -671,27 +765,47 @@ char *fossil_io_soap_normalize_slang(const char *text) {
 }
 
 int fossil_io_soap_detect_ragebait(const char *text) {
-    if (!text) return 0;
-
-    for (int i = 0; RAGEBAIT_PATTERNS[i] != NULL; i++) {
-        if (custom_strcasestr(text, RAGEBAIT_PATTERNS[i])) {
-            return 1;
-        }
-    }
-
-    return 0;
+    return soap_detect_patterns(text, SOAP_RAGEBAIT_PATTERNS);
 }
 
 int fossil_io_soap_detect_clickbait(const char *text) {
-    if (!text) return 0;
+    return soap_detect_patterns(text, SOAP_CLICKBAIT_PATTERNS);
+}
 
-    for (int i = 0; CLICKBAIT_PATTERNS[i] != NULL; i++) {
-        if (custom_strcasestr(text, CLICKBAIT_PATTERNS[i])) {
-            return 1;
-        }
-    }
+int fossil_io_soap_detect_spam(const char *text) {
+    return soap_detect_patterns(text, SOAP_SPAM_PATTERNS);
+}
 
-    return 0;
+int fossil_io_soap_detect_woke(const char *text) {
+    return soap_detect_patterns(text, SOAP_WOKE_PATTERNS);
+}
+
+int fossil_io_soap_detect_propaganda(const char *text) {
+    return soap_detect_patterns(text, SOAP_PROPAGANDA_PATTERNS);
+}
+
+int fossil_io_soap_detect_bot(const char *text) {
+    return soap_detect_patterns(text, SOAP_BOT_PATTERNS);
+}
+
+int fossil_io_soap_detect_fake_news(const char *text) {
+    return soap_detect_patterns(text, SOAP_FAKE_NEWS_PATTERNS);
+}
+
+int fossil_io_soap_detect_sarcasm(const char *text) {
+    return soap_detect_patterns(text, SOAP_SARCASTIC_PATTERNS);
+}
+
+int fossil_io_soap_detect_formal(const char *text) {
+    return soap_detect_patterns(text, SOAP_FORMAL_PATTERNS);
+}
+
+int fossil_io_soap_detect_snowflake(const char *text) {
+    return soap_detect_patterns(text, SOAP_SNOWFLAKE_PATTERNS);
+}
+
+int fossil_io_soap_detect_offensive(const char *text) {
+    return soap_detect_patterns(text, SOAP_OFFENSIVE_PATTERNS);
 }
 
 int fossil_io_soap_detect_exaggeration(const char *text) {
