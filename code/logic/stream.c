@@ -17,18 +17,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
+#include <time.h>
 
 #ifdef _WIN32
-    #include <windows.h>
+#include <windows.h>
 #else
-    #include <unistd.h>
-    #ifndef _POSIX_C_SOURCE
-    extern int mkstemp(char *);
-    #endif
-    #include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #endif
+#include <sys/stat.h>
 
 fossil_fstream_t *FOSSIL_STDIN;
 fossil_fstream_t *FOSSIL_STDOUT;
@@ -544,24 +542,25 @@ int32_t fossil_fstream_is_readable(const char *filename) {
 
 fossil_fstream_t fossil_fstream_tempfile(void) {
     fossil_fstream_t temp_stream;
-    char temp_filename[FOSSIL_BUFFER_MEDIUM];
+    char temp_filename[FOSSIL_BUFFER_MEDIUM] = {0};
 
 #ifdef _WIN32
+    // Use GetTempFileName for Windows
     if (GetTempFileNameA(".", "fossil", 0, temp_filename) == 0) {
         fprintf(stderr, "Error: Failed to create temporary file\n");
         return (fossil_fstream_t){NULL, ""};
     }
 #else
-    char template[] = "fossil_tempfile_XXXXXX";
-    int fd = mkstemp(template);
-    if (fd == -1) {
-        fprintf(stderr, "Error: Failed to create temporary file\n");
-        return (fossil_fstream_t){NULL, ""};
-    }
-    close(fd); // Close the file descriptor as it's no longer needed
-    strncpy(temp_filename, template, FOSSIL_BUFFER_MEDIUM);
+    // Use PID + timestamp + random number for POSIX
+    pid_t pid = getpid();
+    time_t t = time(NULL);
+    unsigned int rand_val = (unsigned int)rand();
+    snprintf(temp_filename, FOSSIL_BUFFER_MEDIUM,
+             "/tmp/fossil_tempfile_%d_%ld_%u.tmp",
+             (int)pid, (long)t, rand_val);
 #endif
 
+    // Open the temporary file
     if (fossil_fstream_open(&temp_stream, temp_filename, "wb+") != FOSSIL_ERROR_OK) {
         fprintf(stderr, "Error: Failed to open temporary file - %s\n", temp_filename);
         return (fossil_fstream_t){NULL, ""};

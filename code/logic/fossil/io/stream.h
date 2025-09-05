@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #ifdef __cplusplus
 extern "C" {
