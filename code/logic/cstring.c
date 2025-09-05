@@ -1064,7 +1064,10 @@ cstring fossil_io_cstring_join_safe(ccstring *strings, size_t count, char delimi
     if (!strings || count == 0) return NULL;
     cstring result = fossil_io_cstring_create_safe("", max_len);
     for (size_t i = 0; i < count; i++) {
-        if (i > 0) fossil_io_cstring_append_safe(&result, &delimiter, max_len);
+        if (i > 0) {
+            char delim_str[2] = { delimiter, '\0' };
+            fossil_io_cstring_append_safe(&result, delim_str, max_len);
+        }
         fossil_io_cstring_append_safe(&result, strings[i], max_len);
     }
     return result;
