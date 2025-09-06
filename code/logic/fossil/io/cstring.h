@@ -1104,6 +1104,35 @@ namespace fossil {
             }
 
             /**
+             * @brief Converts a double amount into a formatted money string.
+             *
+             * Example: 1234.56 -> "$1,234.56"
+             *
+             * @param amount Numeric amount to convert.
+             * @return Formatted money string.
+             */
+            static std::string money_to_string(double amount) {
+                char buf[128];
+                if (fossil_io_cstring_money_to_string(amount, buf, sizeof(buf)) != 0) {
+                    return "";
+                }
+                return std::string(buf);
+            }
+    
+            /**
+             * @brief Parses a money string into a numeric double value.
+             *
+             * Example: "$1,234.56" -> 1234.56
+             *
+             * @param input Formatted money string.
+             * @param amount Reference to double to store numeric value.
+             * @return true on success, false on failure.
+             */
+            static bool string_to_money(const std::string &input, double &amount) {
+                return fossil_io_cstring_string_to_money(input.c_str(), &amount) == 0;
+            }
+
+            /**
              * Creates a copy of the given cstring.
              * 
              * @param str The cstring to be copied.
