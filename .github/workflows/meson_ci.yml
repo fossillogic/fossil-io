@@ -85,7 +85,7 @@ jobs:
             -Dwith_test=enabled \
             -Dwarning_level=3 \
             -Dc_args='-D_LIBCPP_HARDENING_MODE=debug' \
-            -Dcxx_args='-D_LIBCPP_HARDENING_MODE=debug'
+            -Dcpp_args='-D_LIBCPP_HARDENING_MODE=debug'
 
       - name: Compile
         run: meson compile -C builddir
