@@ -423,35 +423,21 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
             break;
         }
 
-        if (strcmp(arg, "--color") == 0) {
-            FOSSIL_IO_COLOR_ENABLE = 1;
-            global_flags_processed = 1;
-            break;
-        }
-        else if (strcmp(arg, "--no-color") == 0) {
-            FOSSIL_IO_COLOR_ENABLE = 0;
-            global_flags_processed = 1;
-            break;
-        }
-        else if (strcmp(arg, "--color=auto") == 0) {
-            FOSSIL_IO_COLOR_ENABLE = -1; // let runtime decide
-            global_flags_processed = 1;
-            break;
-        }
-        else if (strncmp(arg, "--color=", 8) == 0) {
-            const char *mode = arg + 8;
-            if (strcmp(mode, "enable") == 0) {
+        if (strncmp(argv[i], "color=", 6) == 0) {
+            if (fossil_io_cstr_compare(argv[i] + 6, "enable") == 0) {
                 FOSSIL_IO_COLOR_ENABLE = 1;
-            } else if (strcmp(mode, "disable") == 0) {
+            } else if (fossil_io_cstr_compare(argv[i] + 6, "disable") == 0) {
                 FOSSIL_IO_COLOR_ENABLE = 0;
-            } else if (strcmp(mode, "auto") == 0) {
-                FOSSIL_IO_COLOR_ENABLE = -1;
+            } else if (fossil_io_cstr_compare(argv[i] + 6, "auto") == 0) {
+                if (isatty(STDOUT_FILENO)) {
+                    FOSSIL_IO_COLOR_ENABLE = 1;
+                } else {
+                    FOSSIL_IO_COLOR_ENABLE = 0;
+                }
             } else {
-                fprintf(stderr, "Unknown --color option: %s\n", mode);
+                fprintf(stderr, "Unknown color option: %s\n", argv[i] + 6);
                 exit(EXIT_FAILURE);
             }
-            global_flags_processed = 1;
-            break;
         }
 
         if (strcmp(arg, "--version") == 0) {
