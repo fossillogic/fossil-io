@@ -282,7 +282,7 @@ FOSSIL_TEST(c_test_io_register_keybinding_with_callback_duplicate) {
 FOSSIL_TEST(c_test_io_get_keybinding_action_not_found) {
     fossil_io_clear_keybindings();
     const char *action = fossil_io_get_keybinding_action(123);
-    ASSUME_CNULL(action);
+    ASSUME_ITS_CNULL(action);
     fossil_io_clear_keybindings();
 }
 
