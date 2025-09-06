@@ -39,17 +39,14 @@ char *fossil_io_soap_sanitize(const char *text);
 char *fossil_io_soap_suggest(const char *text);
 
 /**
- * @brief Clear all custom filters.
- */
-void fossil_io_soap_clear_custom_filters(void);
-
-/**
  * @brief Detect the tone of a sentence.
  *
  * @param text The input text.
  * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
  */
 const char *fossil_io_soap_detect_tone(const char *text);
+
+// grammar functions
 
 /**
  * @brief Analyze sentence structure and flag grammatical inconsistencies.
@@ -58,22 +55,6 @@ const char *fossil_io_soap_detect_tone(const char *text);
  * @return 0 if grammar is clean, non-zero otherwise.
  */
 int fossil_io_soap_check_grammar(const char *text);
-
-/**
- * @brief Normalize all informal or abbreviated expressions.
- *
- * @param text Input string to normalize.
- * @return A newly allocated normalized string (caller must free).
- */
-char *fossil_io_soap_normalize(const char *text);
-
-/**
- * @brief Normalize internet slang or leetspeak in input text.
- *
- * @param text The input string.
- * @return A dynamically allocated cleaned-up version (must be freed).
- */
-char *fossil_io_soap_normalize_slang(const char *text);
 
 /**
  * @brief Apply a grammar correction pass over the input text.
@@ -148,6 +129,13 @@ int fossil_io_soap_detect_snowflake(const char *text);
  */
 int fossil_io_soap_detect_offensive(const char *text);
 
+/** 
+ * Detects "neutral"-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if neutral patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_neutral(const char *text);
+
 // filter functions
 
 /**
@@ -163,6 +151,11 @@ int fossil_io_soap_add_custom_filter(const char *phrase);
  *        Patterns support '*' and '?' wildcards, case-insensitive.
  */
 char *fossil_io_soap_filter(const char *patterns, const char *text);
+
+/**
+ * @brief Clear all custom filters.
+ */
+void fossil_io_soap_clear_custom_filters(void);
 
 #ifdef __cplusplus
 }
@@ -355,14 +348,13 @@ namespace fossil {
             }
 
             /**
-             * @brief Normalize slang and internet abbreviations.
-             * 
-             * @param text The input string.
-             * @return A cleaned version of the input text.
+             * @brief Detects if a given text contains "neutral"-related content
+             *
+             * @param text Input string to analyze
+             * @return true if neutral patterns detected, false otherwise
              */
-            static std::string normalize_slang(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_normalize_slang(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
+            static bool is_neutral(const std::string &text){
+                return fossil_io_soap_detect_neutral(text.c_str()) != 0;
             }
 
             /**

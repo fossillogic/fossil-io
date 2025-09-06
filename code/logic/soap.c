@@ -360,11 +360,17 @@ static const char *SOAP_OFFENSIVE_PATTERNS[] = {
     "douche", "bastard", "maniac", "psycho", "lunatic", "savage", NULL
 };
 
-static const char *EXAGGERATED_WORDS[] = {
-    "literally", "always", "never", "every", "everyone", "nobody", "forever", "insane", "unbelievable", "outrageous",
-    "epic", "mind-blowing", "extremely", "completely", "totally", "absolutely", "massive", "huge", "gigantic", "tremendous",
-    "incredible", "unreal", "astonishing", "stunning", "jaw-dropping", "ridiculous", "crazy", "fantastic", "amazing", "phenomenal",
-    NULL
+/** Lookup table for neutral tone patterns */
+static const char *SOAP_NEUTRAL_PATTERNS[] = {
+    "as expected", "according to plan", "no problem", "all good", "fine", "okay", "normal",
+    "standard procedure", "routine", "average", "typical", "usual", "nothing special",
+    "business as usual", "no issues", "no concerns", "no complaints", "acceptable",
+    "satisfactory", "regular", "ordinary", "unremarkable", "moderate", "fair", "adequate",
+    "sufficient", "reasonable", "not bad", "not great", "so-so", "meh", "neutral",
+    "indifferent", "unbiased", "impartial", "objective", "even-handed", "middle ground",
+    "balanced", "equitable", "nonpartisan", "detached", "reserved", "unemotional",
+    "calm", "steady", "level-headed", "matter-of-fact", "plain", "straightforward",
+    "clear", "direct", "simple", "uncomplicated", NULL
 };
 
 /** Lookup table for words that need to be skipped due to misdetection */
@@ -673,7 +679,7 @@ void fossil_io_soap_clear_custom_filters(void) {
 const char *fossil_io_soap_detect_tone(const char *text) {
     if (!text) return "unknown";
 
-    static char tone_result[128];
+    static char tone_result[256];
     tone_result[0] = '\0';
     int found = 0;
 
@@ -690,11 +696,45 @@ const char *fossil_io_soap_detect_tone(const char *text) {
         {SOAP_SNOWFLAKE_PATTERNS, "snowflake"},
         {SOAP_FORMAL_PATTERNS, "formal"},
         {SOAP_OFFENSIVE_PATTERNS, "offensive"},
+        {SOAP_NEUTRAL_PATTERNS, "neutral"},
         {NULL, NULL}
     };
 
+    // Split text into words for more accurate matching
+    char temp[512];
+    strncpy(temp, text, sizeof(temp) - 1);
+    temp[sizeof(temp) - 1] = '\0';
+
+    char *word = temp;
     for (size_t i = 0; tone_checks[i].patterns != NULL; i++) {
-        if (fossil_io_soap_regex_patterns(text, tone_checks[i].patterns)) {
+        int match = 0;
+        char *ptr = word;
+        while (*ptr) {
+            // Skip leading non-alnum
+            while (*ptr && !isalnum((unsigned char)*ptr)) ptr++;
+            if (!*ptr) break;
+            char *start = ptr;
+            while (*ptr && (isalnum((unsigned char)*ptr) || *ptr == '\'' || *ptr == '-')) ptr++;
+            char saved = *ptr;
+            *ptr = '\0';
+
+            // Normalize leetspeak for each word
+            char norm[64];
+            strncpy(norm, start, sizeof(norm) - 1);
+            norm[sizeof(norm) - 1] = '\0';
+            fossil_io_soap_normalize_leetspeak(norm);
+
+            // Check word and full text for pattern match
+            if (fossil_io_soap_regex_patterns(norm, tone_checks[i].patterns) ||
+                fossil_io_soap_regex_patterns(text, tone_checks[i].patterns)) {
+                match = 1;
+                *ptr = saved;
+                break;
+            }
+            *ptr = saved;
+            if (*ptr) ptr++;
+        }
+        if (match) {
             if (found) strcat(tone_result, ",");
             strcat(tone_result, tone_checks[i].label);
             found = 1;
@@ -727,40 +767,39 @@ int fossil_io_soap_check_grammar(const char *text) {
     return found;
 }
 
-char *fossil_io_soap_normalize(const char *text) {
+char *fossil_io_soap_correct_grammar(const char *text) {
     if (!text) return NULL;
 
-    char *normalized = fossil_io_cstring_dup(text); // Create modifiable copy
-    if (!normalized) return NULL;
+    char *corrected = fossil_io_cstring_dup(text); // Create modifiable copy
+    if (!corrected) return NULL;
 
-    for (size_t i = 0; FOSSIL_SOAP_SUGGESTIONS[i].bad; i++) {
-        const char *bad = FOSSIL_SOAP_SUGGESTIONS[i].bad;
-        const char *fix = FOSSIL_SOAP_SUGGESTIONS[i].suggested;
+    for (size_t i = 0; FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect; i++) {
+        const char *incorrect = FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].incorrect;
+        const char *correct = FOSSIL_SOAP_GRAMMAR_SUGGESTIONS[i].correct;
         const char *ptr;
-        while ((ptr = custom_strcasestr(normalized, bad))) {
+        while ((ptr = custom_strcasestr(corrected, incorrect))) {
             // Check word boundaries
-            size_t prefix_len = ptr - normalized;
-            size_t bad_len = strlen(bad);
-            size_t fix_len = strlen(fix);
-            int before = (ptr == normalized) || !isalnum((unsigned char)ptr[-1]);
-            int after = !isalnum((unsigned char)ptr[bad_len]);
+            size_t prefix_len = ptr - corrected;
+            size_t inc_len = strlen(incorrect);
+            size_t cor_len = strlen(correct);
+            int before = (ptr == corrected) || !isalnum((unsigned char)ptr[-1]);
+            int after = !isalnum((unsigned char)ptr[inc_len]);
             if (!(before && after)) {
-                ptr += bad_len;
+                ptr += inc_len;
                 continue;
             }
-            size_t new_len = strlen(normalized) - bad_len + fix_len + 1;
+            size_t new_len = strlen(corrected) - inc_len + cor_len + 1;
             char *temp = malloc(new_len);
             if (!temp) break;
             snprintf(temp, new_len, "%.*s%s%s",
-                     (int)prefix_len, normalized, fix, ptr + bad_len);
-            free(normalized);
-            normalized = temp;
+                     (int)prefix_len, corrected, correct, ptr + inc_len);
+            free(corrected);
+            corrected = temp;
         }
     }
 
-    return normalized;
+    return corrected;
 }
-
 
 char *fossil_io_soap_normalize_slang(const char *text) {
     if (!text) return NULL;
@@ -849,6 +888,10 @@ int fossil_io_soap_detect_snowflake(const char *text) {
 
 int fossil_io_soap_detect_offensive(const char *text) {
     return soap_detect_patterns(text, SOAP_OFFENSIVE_PATTERNS);
+}
+
+int fossil_io_soap_detect_neutral(const char *text) {
+    return soap_detect_patterns(text, SOAP_NEUTRAL_PATTERNS);
 }
 
 /**
