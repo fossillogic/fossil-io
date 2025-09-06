@@ -223,32 +223,114 @@ FOSSIL_TEST(c_test_io_soap_normalize_slang_basic) {
     free(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_exaggeration_true) {
-    const char *input = "This is literally the most unbelievable thing ever!";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 1);
+// detect cases
+
+FOSSIL_TEST(c_test_io_soap_detect_ragebait_true) {
+    const char *input = "This is outrageous and infuriating!";
+    int result = fossil_io_soap_detect_ragebait(input);
+    ASSUME_ITS_TRUE(result);
 }
 
-FOSSIL_TEST(c_test_io_soap_detect_exaggeration_false) {
-    const char *input = "The weather is mildly unpleasant today.";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_exaggeration(input) == 0);
-}
-
-FOSSIL_TEST(c_test_io_soap_filter_offensive_basic) {
-    const char *input = "You're an idiot.";
-    const char *expected = "You're an misguided.";
-    char *result = fossil_io_soap_filter_offensive(input);
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-    free(result);
+FOSSIL_TEST(c_test_io_soap_detect_ragebait_false) {
+    const char *input = "This is a calm and reasonable statement.";
+    int result = fossil_io_soap_detect_ragebait(input);
+    ASSUME_ITS_FALSE(result);
 }
 
 FOSSIL_TEST(c_test_io_soap_detect_clickbait_true) {
-    const char *input = "You won't believe what happened next!";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 1);
+    const char *input = "Top 10 amazing secrets revealed!";
+    int result = fossil_io_soap_detect_clickbait(input);
+    ASSUME_ITS_TRUE(result);
 }
 
 FOSSIL_TEST(c_test_io_soap_detect_clickbait_false) {
-    const char *input = "Scientists publish new findings in journal.";
-    ASSUME_ITS_TRUE(fossil_io_soap_detect_clickbait(input) == 0);
+    const char *input = "Here is a regular informative article.";
+    int result = fossil_io_soap_detect_clickbait(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_spam_true) {
+    const char *input = "Earn cash fast with this exclusive deal!";
+    int result = fossil_io_soap_detect_spam(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_spam_false) {
+    const char *input = "This is a normal conversation.";
+    int result = fossil_io_soap_detect_spam(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_woke_true) {
+    const char *input = "We need more diversity and inclusion in the workplace.";
+    int result = fossil_io_soap_detect_woke(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_woke_false) {
+    const char *input = "Let's focus on productivity and teamwork.";
+    int result = fossil_io_soap_detect_woke(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_bot_true) {
+    const char *input = "This is an auto-generated reply from a bot.";
+    int result = fossil_io_soap_detect_bot(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_bot_false) {
+    const char *input = "I'm writing this message myself.";
+    int result = fossil_io_soap_detect_bot(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_sarcasm_true) {
+    const char *input = "Oh, great. Just what I needed.";
+    int result = fossil_io_soap_detect_sarcasm(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_sarcasm_false) {
+    const char *input = "Thank you for your help.";
+    int result = fossil_io_soap_detect_sarcasm(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_formal_true) {
+    const char *input = "Dear Sir or Madam, I am writing to request information.";
+    int result = fossil_io_soap_detect_formal(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_formal_false) {
+    const char *input = "Hey, what's up?";
+    int result = fossil_io_soap_detect_formal(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_snowflake_true) {
+    const char *input = "You're such a snowflake, always offended easily.";
+    int result = fossil_io_soap_detect_snowflake(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_snowflake_false) {
+    const char *input = "You are very resilient and strong.";
+    int result = fossil_io_soap_detect_snowflake(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_offensive_true) {
+    const char *input = "You are an idiot and a loser.";
+    int result = fossil_io_soap_detect_offensive(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_offensive_false) {
+    const char *input = "You are a wonderful person.";
+    int result = fossil_io_soap_detect_offensive(input);
+    ASSUME_ITS_FALSE(result);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -279,11 +361,25 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_suggest_with_tabs);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_slang_basic);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_true);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_exaggeration_false);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_filter_offensive_basic);
+    
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_ragebait_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_ragebait_false);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_true);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_clickbait_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_spam_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_spam_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_woke_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_woke_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bot_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_bot_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sarcasm_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_sarcasm_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_formal_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_formal_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_snowflake_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_snowflake_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_offensive_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_offensive_false);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }

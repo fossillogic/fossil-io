@@ -205,22 +205,7 @@ FOSSIL_TEST(cpp_test_io_soap_normalize_slang_basic) {
     ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_exaggeration_true) {
-    std::string exaggerated_input = "This is literally the most unbelievable thing ever!";
-    ASSUME_ITS_TRUE(Soap::is_exaggerated(exaggerated_input));
-}
-
-FOSSIL_TEST(cpp_test_io_soap_detect_exaggeration_false) {
-    std::string input = "The weather is mildly unpleasant today.";
-    ASSUME_ITS_TRUE(!Soap::is_exaggerated(input));
-}
-
-FOSSIL_TEST(cpp_test_io_soap_filter_offensive_basic) {
-    std::string input = "You're an idiot.";
-    std::string expected = "You're an misguided.";
-    std::string result = Soap::filter_offensive(input);
-    ASSUME_ITS_EQUAL_CSTR(expected.c_str(), result.c_str());
-}
+// detect cases
 
 FOSSIL_TEST(cpp_test_io_soap_detect_clickbait_true) {
     std::string input = "You won't believe what happened next!";
@@ -230,6 +215,76 @@ FOSSIL_TEST(cpp_test_io_soap_detect_clickbait_true) {
 FOSSIL_TEST(cpp_test_io_soap_detect_clickbait_false) {
     std::string input = "Scientists publish new findings in journal.";
     ASSUME_ITS_TRUE(!Soap::is_clickbait(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_ragebait_true) {
+    std::string input = "This outrageous policy will destroy everything!";
+    ASSUME_ITS_TRUE(Soap::is_ragebait(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_ragebait_false) {
+    std::string input = "The policy was discussed in parliament.";
+    ASSUME_ITS_TRUE(!Soap::is_ragebait(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_spam_true) {
+    std::string input = "Congratulations! You've won a free iPhone. Click here!";
+    ASSUME_ITS_TRUE(Soap::is_spam(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_spam_false) {
+    std::string input = "Thank you for your purchase.";
+    ASSUME_ITS_TRUE(!Soap::is_spam(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_woke_true) {
+    std::string input = "We need to raise awareness about social justice issues.";
+    ASSUME_ITS_TRUE(Soap::is_woke(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_woke_false) {
+    std::string input = "Let's discuss the quarterly financial report.";
+    ASSUME_ITS_TRUE(!Soap::is_woke(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_bot_true) {
+    std::string input = "Hello, I am an automated assistant. How may I help you?";
+    ASSUME_ITS_TRUE(Soap::is_bot(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_bot_false) {
+    std::string input = "Hey, are you coming to the party tonight?";
+    ASSUME_ITS_TRUE(!Soap::is_bot(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_sarcastic_true) {
+    std::string input = "Oh, fantastic, another bug in production!";
+    ASSUME_ITS_TRUE(Soap::is_sarcastic(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_sarcastic_false) {
+    std::string input = "The deployment was successful.";
+    ASSUME_ITS_TRUE(!Soap::is_sarcastic(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_formal_true) {
+    std::string input = "To whom it may concern, please find attached the requested documents.";
+    ASSUME_ITS_TRUE(Soap::is_formal(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_formal_false) {
+    std::string input = "Hey, check this out!";
+    ASSUME_ITS_TRUE(!Soap::is_formal(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_snowflake_true) {
+    std::string input = "People these days are such snowflakes.";
+    ASSUME_ITS_TRUE(Soap::is_snowflake(input));
+}
+
+FOSSIL_TEST(cpp_test_io_soap_detect_snowflake_false) {
+    std::string input = "The weather is cold and snowy.";
+    ASSUME_ITS_TRUE(!Soap::is_snowflake(input));
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -260,11 +315,23 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_newlines);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_with_tabs);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_normalize_slang_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_exaggeration_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_exaggeration_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_filter_offensive_basic);
+
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_clickbait_true);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_clickbait_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_ragebait_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_ragebait_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_spam_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_spam_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_woke_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_woke_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_bot_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_bot_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_sarcastic_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_sarcastic_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_formal_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_formal_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_snowflake_true);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_snowflake_false);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
