@@ -162,6 +162,88 @@ int fossil_io_cstring_string_to_money(const char *input, double *amount) {
     return 0;
 }
 
+int fossil_io_cstring_money_to_string_currency(double amount, char *output, size_t size, const char *currency) {
+    if (!output || size == 0) return -1;
+    if (!currency) currency = "$";
+
+    amount = round(amount * 100.0) / 100.0; // Round to 2 decimals
+
+    char temp[64];
+    int written = snprintf(temp, sizeof(temp), "%.2f", fabs(amount));
+    if (written < 0 || written >= (int)sizeof(temp)) return -1;
+
+    // Replace decimal point with '.'
+    char *dot = strchr(temp, '.');
+    int int_len = dot ? (int)(dot - temp) : (int)strlen(temp);
+    int commas = (int_len - 1) / 3;
+    int total_len = int_len + commas + (dot ? strlen(dot) : 0);
+
+    if ((size_t)(total_len + strlen(currency) + 2) > size) return -1;
+
+    char formatted[128];
+    int fpos = 0;
+
+    if (amount < 0) formatted[fpos++] = '-';
+    strcpy(&formatted[fpos], currency);
+    fpos += strlen(currency);
+
+    int leading = int_len % 3;
+    if (leading == 0) leading = 3;
+
+    for (int i = 0; i < int_len; i++) {
+        formatted[fpos++] = temp[i];
+        if ((i + 1) % leading == 0 && (i + 1) < int_len) {
+            formatted[fpos++] = ',';
+            leading = 3;
+        }
+    }
+
+    if (dot) {
+        strcpy(&formatted[fpos], dot);
+        fpos += strlen(dot);
+    }
+
+    formatted[fpos] = '\0';
+    strncpy(output, formatted, size - 1);
+    output[size - 1] = '\0';
+
+    return 0;
+}
+
+int fossil_io_cstring_string_to_money_currency(const char *input, double *amount) {
+    if (!input || !amount) return -1;
+
+    char buffer[128];
+    size_t j = 0;
+    int negative = 0;
+
+    while (isspace((unsigned char)*input)) input++;
+
+    if (*input == '(') {
+        negative = 1;
+        input++;
+    }
+
+    if (!isdigit((unsigned char)*input) && *input != '-' && *input != '.') {
+        // Skip currency symbol
+        input++;
+    }
+
+    for (size_t i = 0; input[i] && j < sizeof(buffer) - 1; i++) {
+        if (isdigit((unsigned char)input[i]) || input[i] == '.') {
+            buffer[j++] = input[i];
+        }
+    }
+    buffer[j] = '\0';
+
+    if (j == 0) return -1;
+
+    *amount = atof(buffer);
+    if (negative || strchr(input, '-')) *amount = -*amount;
+
+    return 0;
+}
+
 // ---------------- Tokenizer ----------------
 cstring fossil_io_cstring_token(cstring str, ccstring delim, cstring *saveptr) {
     if (!saveptr || (!str && !*saveptr)) return NULL;
