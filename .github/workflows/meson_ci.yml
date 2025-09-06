@@ -78,7 +78,14 @@ jobs:
           python -m pip install meson==1.8.0 ninja
 
       - name: Configure
-        run: OBJC=clang OBJCXX=clang++ meson setup builddir --fatal-meson-warnings -Dwerror=true -Dwith_test=enabled -Dwarning_level=3
+        run: |
+          OBJC=clang OBJCXX=clang++ meson setup builddir \
+            --fatal-meson-warnings \
+            -Dwerror=true \
+            -Dwith_test=enabled \
+            -Dwarning_level=3 \
+            -Dc_args='-D_LIBCPP_HARDENING_MODE=debug' \
+            -Dcxx_args='-D_LIBCPP_HARDENING_MODE=debug'
 
       - name: Compile
         run: meson compile -C builddir
