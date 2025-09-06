@@ -778,11 +778,11 @@ FOSSIL_TEST(c_test_cstring_number_to_words) {
 FOSSIL_TEST(c_test_cstring_string_to_money) {
     double value;
 
-    ASSUME_ITS_EQUAL_F32(0, fossil_io_cstring_string_to_money("$1,234.56", &value), 0.0);
-    ASSUME_ITS_EQUAL_F32(value, 1234.56, 0.001);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money("$1,234.56", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)1234.56, (double)0.001);
 
-    ASSUME_ITS_EQUAL_F32(0, fossil_io_cstring_string_to_money("-$42.50", &value), 0.0);
-    ASSUME_ITS_EQUAL_F32(value, -42.50, 0.001);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money("-$42.50", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)-42.50, (double)0.001);
 
     // Invalid string
     ASSUME_ITS_TRUE(fossil_io_cstring_string_to_money("foobar", &value) != 0);
@@ -792,14 +792,14 @@ FOSSIL_TEST(c_test_cstring_string_to_money) {
 FOSSIL_TEST(c_test_cstring_string_to_money_currency) {
     double value;
 
-    ASSUME_ITS_EQUAL_F32(0, fossil_io_cstring_string_to_money_currency("$1,234.56", &value), 0.0);
-    ASSUME_ITS_EQUAL_F32(value, 1234.56, 0.001);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("$1,234.56", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)1234.56, (double)0.001);
 
-    ASSUME_ITS_EQUAL_F32(0, fossil_io_cstring_string_to_money_currency("€987.65", &value), 0.0);
-    ASSUME_ITS_EQUAL_F32(value, 987.65, 0.001);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("€987.65", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)987.65, (double)0.001);
 
-    ASSUME_ITS_EQUAL_F32(0, fossil_io_cstring_string_to_money_currency("-$42.50", &value), 0.0);
-    ASSUME_ITS_EQUAL_F32(value, -42.50, 0.001);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("-$42.50", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)-42.50, (double)0.001);
 
     // Invalid format
     ASSUME_ITS_TRUE(fossil_io_cstring_string_to_money_currency("foobar", &value) != 0);
