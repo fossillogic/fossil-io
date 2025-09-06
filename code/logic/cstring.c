@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <ctype.h>    // For toupper, tolower
 #include <time.h>
+#include <math.h>
 
 #ifndef HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen) {
