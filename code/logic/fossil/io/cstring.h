@@ -75,6 +75,32 @@ int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size
 int fossil_io_cstring_string_to_money(ccstring input, double *amount);
 
 /**
+ * @brief Converts a double amount into a formatted money string with optional currency symbol.
+ *
+ * Example: 1234.56 -> "$1,234.56" (USD default)
+ *
+ * @param amount    The numeric amount to convert.
+ * @param output    Buffer to store the formatted string.
+ * @param size      Size of the output buffer.
+ * @param currency  Currency symbol to prepend (e.g., "$", "€", "¥"); NULL defaults to "$".
+ * @return 0 on success, -1 if the buffer is too small or invalid.
+ */
+int fossil_io_cstring_money_to_string_currency(double amount, char *output, size_t size, const char *currency);
+
+/**
+ * @brief Parses a money string into a numeric double value.
+ *
+ * Detects and ignores a currency symbol at the start.
+ *
+ * Example: "$1,234.56" -> 1234.56
+ *
+ * @param input     Input string representing money.
+ * @param amount    Pointer to store the parsed numeric value.
+ * @return 0 on success, -1 on failure (invalid format).
+ */
+int fossil_io_cstring_string_to_money_currency(const char *input, double *amount);
+
+/**
  * @brief Tokenizes a string by delimiters (reentrant version).
  *
  * Similar to strtok_r but with Fossil IO naming.
@@ -1130,6 +1156,36 @@ namespace fossil {
              */
             static bool string_to_money(const std::string &input, double &amount) {
                 return fossil_io_cstring_string_to_money(input.c_str(), &amount) == 0;
+            }
+            
+            /**
+             * @brief Converts a double amount into a formatted money string with optional currency symbol.
+             *
+             * Example: 1234.56 -> "$1,234.56" (USD default)
+             *
+             * @param amount    The numeric amount to convert.
+             * @param output    Buffer to store the formatted string.
+             * @param size      Size of the output buffer.
+             * @param currency  Currency symbol to prepend (e.g., "$", "€", "¥"); NULL defaults to "$".
+             * @return 0 on success, -1 if the buffer is too small or invalid.
+             */
+            static int to_string_currency(double amount, std::string &output, size_t size, const std::string &currency){
+                return fossil_io_cstring_money_to_string_currency(amount, output.c_str(), currency.c_str());
+            }
+            
+            /**
+             * @brief Parses a money string into a numeric double value.
+             *
+             * Detects and ignores a currency symbol at the start.
+             *
+             * Example: "$1,234.56" -> 1234.56
+             *
+             * @param input     Input string representing money.
+             * @param amount    Pointer to store the parsed numeric value.
+             * @return 0 on success, -1 on failure (invalid format).
+             */
+            static int to_money_currency(const std::string &input, double *amount) {
+                return fossil_io_cstring_string_to_money_currency(input.c_str(), amount);
             }
 
             /**
