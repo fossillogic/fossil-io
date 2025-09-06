@@ -49,6 +49,57 @@ cstring fossil_io_cstring_create(ccstring init);
  */
 void fossil_io_cstring_free(cstring str);
 
+// Money String Conversions
+
+/**
+ * @brief Converts a double amount into a formatted money string.
+ *
+ * Example: 1234.56 -> "$1,234.56"
+ *
+ * @param amount    The numeric amount to convert.
+ * @param output    Buffer to store the formatted string.
+ * @param size      Size of the output buffer.
+ * @return 0 on success, -1 if the buffer is too small or invalid.
+ */
+int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size);
+
+/**
+ * @brief Parses a money string into a numeric double value.
+ *
+ * Example: "$1,234.56" -> 1234.56
+ *
+ * @param input     Input string representing money.
+ * @param amount    Pointer to store the parsed numeric value.
+ * @return 0 on success, -1 on failure (invalid format).
+ */
+int fossil_io_cstring_string_to_money(ccstring input, double *amount);
+
+/**
+ * @brief Converts a double amount into a formatted money string with optional currency symbol.
+ *
+ * Example: 1234.56 -> "$1,234.56" (USD default)
+ *
+ * @param amount    The numeric amount to convert.
+ * @param output    Buffer to store the formatted string.
+ * @param size      Size of the output buffer.
+ * @param currency  Currency symbol to prepend (e.g., "$", "€", "¥"); NULL defaults to "$".
+ * @return 0 on success, -1 if the buffer is too small or invalid.
+ */
+int fossil_io_cstring_money_to_string_currency(double amount, char *output, size_t size, const char *currency);
+
+/**
+ * @brief Parses a money string into a numeric double value.
+ *
+ * Detects and ignores a currency symbol at the start.
+ *
+ * Example: "$1,234.56" -> 1234.56
+ *
+ * @param input     Input string representing money.
+ * @param amount    Pointer to store the parsed numeric value.
+ * @return 0 on success, -1 on failure (invalid format).
+ */
+int fossil_io_cstring_string_to_money_currency(const char *input, double *amount);
+
 /**
  * @brief Tokenizes a string by delimiters (reentrant version).
  *
@@ -1076,6 +1127,51 @@ namespace fossil {
                 int result = fossil_io_cstring_number_to_words(num, buffer, sizeof(buffer));
                 if (result != 0) throw std::runtime_error("Buffer too small for English number string");
                 return std::string(buffer);
+            }
+
+            /**
+             * Convert numeric amount to string.
+             * Uses default currency "$".
+             */
+            static std::string money_to_string(double amount) {
+                char buffer[128];
+                if (fossil_io_cstring_money_to_string(amount, buffer, sizeof(buffer)) != 0) {
+                    throw std::runtime_error("Failed to convert amount to string");
+                }
+                return std::string(buffer);
+            }
+
+            /**
+             * Convert numeric amount to string with currency symbol.
+             */
+            static std::string currency_to_string(double amount, const std::string &currency) {
+                char buffer[128];
+                if (fossil_io_cstring_money_to_string_currency(amount, buffer, sizeof(buffer), currency.c_str()) != 0) {
+                    throw std::runtime_error("Failed to convert amount to string with currency");
+                }
+                return std::string(buffer);
+            }
+
+            /**
+             * Convert string to numeric amount.
+             */
+            static double from_money(const std::string &str) {
+                double value = 0.0;
+                if (fossil_io_cstring_string_to_money(str.c_str(), &value) != 0) {
+                    throw std::runtime_error("Failed to parse money string");
+                }
+                return value;
+            }
+
+            /**
+             * Convert string to numeric amount with currency detection.
+             */
+            static double from_currency(const std::string &str) {
+                double value = 0.0;
+                if (fossil_io_cstring_string_to_money_currency(str.c_str(), &value) != 0) {
+                    throw std::runtime_error("Failed to parse money string with currency");
+                }
+                return value;
             }
 
             /**

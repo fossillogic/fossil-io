@@ -25,7 +25,6 @@
 
 // Define the test suite and add test cases
 FOSSIL_SUITE(c_string_suite);
-fossil_fstream_t c_string;
 
 // Setup function for the test suite
 FOSSIL_SETUP(c_string_suite) {
@@ -774,6 +773,37 @@ FOSSIL_TEST(c_test_cstring_number_to_words) {
     ASSUME_ITS_TRUE(fossil_io_cstring_number_to_words(123456789, buffer, 5) != 0);
 }
 
+// Test fossil_io_cstring_string_to_money with tolerance
+FOSSIL_TEST(c_test_cstring_string_to_money) {
+    double value;
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money("$1,234.56", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)1234.56, (double)0.001);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money("-$42.50", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)-42.50, (double)0.001);
+
+    // Invalid string
+    ASSUME_ITS_TRUE(fossil_io_cstring_string_to_money("foobar", &value) != 0);
+}
+
+// Test fossil_io_cstring_string_to_money_currency with tolerance
+FOSSIL_TEST(c_test_cstring_string_to_money_currency) {
+    double value;
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("$1,234.56", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)1234.56, (double)0.001);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("€987.65", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)987.65, (double)0.001);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_cstring_string_to_money_currency("-$42.50", &value));
+    ASSUME_ITS_EQUAL_F64(value, (double)-42.50, (double)0.001);
+
+    // Invalid format
+    ASSUME_ITS_TRUE(fossil_io_cstring_string_to_money_currency("foobar", &value) != 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -855,6 +885,9 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_strip_quotes_safe);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_normalize_spaces_safe);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_index_of_safe);
+    
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_string_to_money);
+    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_string_to_money_currency);
 
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_create_and_free);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_write_and_read);
