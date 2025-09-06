@@ -13,10 +13,11 @@
  */
 #include "fossil/io/cstring.h"
 #include "fossil/io/output.h"
-#include <string.h>   // For strlen, strnlen, strncasecmp
-#include <strings.h>  // For strncasecmp on POSIX
+#include <strings.h>
 #include <stdlib.h>
-#include <ctype.h>    // For toupper, tolower
+#include <string.h>
+#include <locale.h>
+#include <ctype.h>
 #include <time.h>
 #include <math.h>
 
@@ -58,34 +59,43 @@ void fossil_io_cstring_free(cstring str) {
     }
 }
 
-// ----------------------
-// Money String Conversions
-// ----------------------
+// ---------------------------------------
+// Locale-Aware Money String Conversions
+// ---------------------------------------
 
-int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size) {
+int fossil_io_cstring_money_to_string(double amount, char *output, size_t size) {
     if (!output || size == 0) return -1;
 
-    // Round to 2 decimals to avoid floating-point quirks like 1.199999
-    amount = round(amount * 100.0) / 100.0;
+    // Set locale temporarily to the user's default locale
+    char *old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "");
 
-    // Temporary buffer for raw numeric formatting (no commas)
+    amount = round(amount * 100.0) / 100.0; // Round to 2 decimals
+
     char temp[64];
     int written = snprintf(temp, sizeof(temp), "%.2f", fabs(amount));
     if (written < 0 || written >= (int)sizeof(temp)) return -1;
 
-    // Insert commas into the integer part
+    // Determine locale decimal and thousand separators
+    struct lconv *lc = localeconv();
+    char decimal_sep = lc && lc->decimal_point ? lc->decimal_point[0] : '.';
+    char thousand_sep = lc && lc->thousands_sep ? lc->thousands_sep[0] : ',';
+
+    // Replace decimal point with locale decimal separator
     char *dot = strchr(temp, '.');
+    if (dot) *dot = decimal_sep;
+
     int int_len = dot ? (int)(dot - temp) : (int)strlen(temp);
     int commas = (int_len - 1) / 3;
     int total_len = int_len + commas + (dot ? strlen(dot) : 0);
 
-    if ((size_t)(total_len + 3) > size) return -1; // +3 for sign, '$', and '\0'
+    if ((size_t)(total_len + 3) > size) return -1;
 
     char formatted[128];
     int fpos = 0;
 
     if (amount < 0) formatted[fpos++] = '-';
-    formatted[fpos++] = '$';
+    formatted[fpos++] = '$'; // Keep USD-style symbol
 
     int leading = int_len % 3;
     if (leading == 0) leading = 3;
@@ -93,7 +103,7 @@ int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size
     for (int i = 0; i < int_len; i++) {
         formatted[fpos++] = temp[i];
         if ((i + 1) % leading == 0 && (i + 1) < int_len) {
-            formatted[fpos++] = ',';
+            formatted[fpos++] = thousand_sep;
             leading = 3;
         }
     }
@@ -107,10 +117,13 @@ int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size
     strncpy(output, formatted, size - 1);
     output[size - 1] = '\0';
 
+    // Restore previous locale
+    setlocale(LC_NUMERIC, old_locale);
+
     return 0;
 }
 
-int fossil_io_cstring_string_to_money(ccstring input, double *amount) {
+int fossil_io_cstring_string_to_money(const char *input, double *amount) {
     if (!input || !amount) return -1;
 
     char buffer[128];
@@ -120,15 +133,17 @@ int fossil_io_cstring_string_to_money(ccstring input, double *amount) {
     // Skip leading spaces
     while (isspace((unsigned char)*input)) input++;
 
-    // Detect negative in parentheses "(123.45)"
     if (*input == '(') {
         negative = 1;
         input++;
     }
 
-    // Extract only digits, dot, and minus sign
+    struct lconv *lc = localeconv();
+    char decimal_sep = lc && lc->decimal_point ? lc->decimal_point[0] : '.';
+
+    // Copy digits and decimal separator only
     for (size_t i = 0; input[i] && j < sizeof(buffer) - 1; i++) {
-        if (isdigit((unsigned char)input[i]) || input[i] == '.') {
+        if (isdigit((unsigned char)input[i]) || input[i] == decimal_sep) {
             buffer[j++] = input[i];
         }
     }
@@ -136,10 +151,13 @@ int fossil_io_cstring_string_to_money(ccstring input, double *amount) {
 
     if (j == 0) return -1;
 
-    *amount = atof(buffer);
-    if (negative || strstr(input, "-")) {
-        *amount = -*amount;
+    // Replace locale decimal with '.' for atof
+    for (size_t i = 0; i < j; i++) {
+        if (buffer[i] == decimal_sep) buffer[i] = '.';
     }
+
+    *amount = atof(buffer);
+    if (negative || strchr(input, '-')) *amount = -*amount;
 
     return 0;
 }
