@@ -1317,7 +1317,8 @@ cstring fossil_io_cstring_pad_left_safe(ccstring str, size_t total_length, char 
     if (len >= total_length) return fossil_io_cstring_substring_safe(str, 0, total_length, max_len);
 
     cstring result = fossil_io_cstring_create_safe("", max_len);
-    for (size_t i = 0; i < total_length - len; i++) fossil_io_cstring_append_safe(&result, (ccstring)&pad_char, max_len);
+    char pad_str[2] = { pad_char, '\0' };
+    for (size_t i = 0; i < total_length - len; i++) fossil_io_cstring_append_safe(&result, pad_str, max_len);
     fossil_io_cstring_append_safe(&result, str, max_len);
     return result;
 }
@@ -1326,9 +1327,10 @@ cstring fossil_io_cstring_pad_left_safe(ccstring str, size_t total_length, char 
 cstring fossil_io_cstring_pad_right_safe(ccstring str, size_t total_length, char pad_char, size_t max_len) {
     if (!str) return NULL;
     size_t len = strnlen(str, max_len);
-    if (total_length > max_len) total_length = max_len;
     cstring result = fossil_io_cstring_create_safe(str, len);
-    for (size_t i = len; i < total_length; i++) fossil_io_cstring_append_safe(&result, (ccstring)&pad_char, max_len);
+    char pad_str[2] = { pad_char, '\0' };
+    for (size_t i = len; i < total_length; i++) fossil_io_cstring_append_safe(&result, pad_str, max_len);
+    return result;
     return result;
 }
 
