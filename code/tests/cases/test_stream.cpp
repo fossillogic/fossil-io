@@ -216,7 +216,7 @@ FOSSIL_TEST(cpp_test_stream_remove_file) {
 
     // Remove the file
     int32_t remove_result = fossil_fstream_remove(filename);
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_IO, remove_result);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, remove_result);
 
     // Check if the file does not exist
     ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_FILE_NOT_FOUND, fossil_fstream_file_exists(filename));

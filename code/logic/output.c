@@ -212,13 +212,27 @@ void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str)
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
-        // Apply color and attribute logic (same as the print version)
-        fossil_io_print_with_attributes(sanitized_str);
-
-        // Write the sanitized string to the stream
-        fputs(sanitized_str, stream->file);
+        // Remove attribute/color escape codes for file output
+        const char *current_pos = sanitized_str;
+        const char *start = NULL;
+        const char *end = NULL;
+        while ((start = strchr(current_pos, '{')) != NULL) {
+            // Write text before '{' to the file
+            fwrite(current_pos, 1, start - current_pos, stream->file);
+            end = strchr(start, '}');
+            if (end) {
+                // Skip the attribute section
+                current_pos = end + 1;
+            } else {
+                // No matching '}', write the rest and break
+                fputs(start, stream->file);
+                break;
+            }
+        }
+        // Write remaining text after last '}'
+        fputs(current_pos, stream->file);
     } else {
-        fputs("cnullptr\n", stderr);
+        //fputs("cnullptr\n", stderr);
     }
 }
 

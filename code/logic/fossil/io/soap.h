@@ -39,25 +39,14 @@ char *fossil_io_soap_sanitize(const char *text);
 char *fossil_io_soap_suggest(const char *text);
 
 /**
- * @brief Add a custom word or phrase to the filter.
- *
- * @param phrase The phrase to add.
- * @return 0 on success, nonzero on failure.
- */
-int fossil_io_soap_add_custom_filter(const char *phrase);
-
-/**
- * @brief Clear all custom filters.
- */
-void fossil_io_soap_clear_custom_filters(void);
-
-/**
  * @brief Detect the tone of a sentence.
  *
  * @param text The input text.
  * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
  */
 const char *fossil_io_soap_detect_tone(const char *text);
+
+// grammar functions
 
 /**
  * @brief Analyze sentence structure and flag grammatical inconsistencies.
@@ -68,22 +57,6 @@ const char *fossil_io_soap_detect_tone(const char *text);
 int fossil_io_soap_check_grammar(const char *text);
 
 /**
- * @brief Normalize all informal or abbreviated expressions.
- *
- * @param text Input string to normalize.
- * @return A newly allocated normalized string (caller must free).
- */
-char *fossil_io_soap_normalize(const char *text);
-
-/**
- * @brief Normalize internet slang or leetspeak in input text.
- *
- * @param text The input string.
- * @return A dynamically allocated cleaned-up version (must be freed).
- */
-char *fossil_io_soap_normalize_slang(const char *text);
-
-/**
  * @brief Apply a grammar correction pass over the input text.
  *
  * @param text The input text.
@@ -91,21 +64,7 @@ char *fossil_io_soap_normalize_slang(const char *text);
  */
 char *fossil_io_soap_correct_grammar(const char *text);
 
-/**
- * @brief Detect exaggeration or hyperbolic language in a sentence.
- *
- * @param text The input string.
- * @return 1 if exaggeration detected, 0 otherwise.
- */
-int fossil_io_soap_detect_exaggeration(const char *text);
-
-/**
- * @brief Replace offensive language with neutral alternatives.
- *
- * @param text The input string.
- * @return A dynamically allocated sanitized string (must be freed).
- */
-char *fossil_io_soap_filter_offensive(const char *text);
+// detect functions
 
 /** 
  * Detects ragebait content in the given text.
@@ -136,25 +95,11 @@ int fossil_io_soap_detect_spam(const char *text);
 int fossil_io_soap_detect_woke(const char *text);
 
 /** 
- * Detects propaganda content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if propaganda patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_propaganda(const char *text);
-
-/** 
  * Detects automated/bot content in the given text.
  * @param text Input string to analyze.
  * @return Non-zero if bot patterns are found, 0 otherwise.
  */
 int fossil_io_soap_detect_bot(const char *text);
-
-/** 
- * Detects fake news content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if fake news patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_fake_news(const char *text);
 
 /** 
  * Detects sarcastic tone in the given text.
@@ -183,6 +128,34 @@ int fossil_io_soap_detect_snowflake(const char *text);
  * @return Non-zero if offensive patterns are found, 0 otherwise.
  */
 int fossil_io_soap_detect_offensive(const char *text);
+
+/** 
+ * Detects "neutral"-related content in the given text.
+ * @param text Input string to analyze.
+ * @return Non-zero if neutral patterns are found, 0 otherwise.
+ */
+int fossil_io_soap_detect_neutral(const char *text);
+
+// filter functions
+
+/**
+ * @brief Add a custom word or phrase to the filter.
+ *
+ * @param phrase The phrase to add.
+ * @return 0 on success, nonzero on failure.
+ */
+int fossil_io_soap_add_custom_filter(const char *phrase);
+
+/**
+ * @brief Filter text by replacing words/phrases matching any pattern (comma-separated) with '*'.
+ *        Patterns support '*' and '?' wildcards, case-insensitive.
+ */
+char *fossil_io_soap_filter(const char *patterns, const char *text);
+
+/**
+ * @brief Clear all custom filters.
+ */
+void fossil_io_soap_clear_custom_filters(void);
 
 #ifdef __cplusplus
 }
@@ -295,26 +268,13 @@ namespace fossil {
             }
 
             /**
-             * @brief Check if the input contains exaggerated or hyperbolic language.
-             * 
-             * @param text The input string.
-             * @return true if exaggerated, false otherwise.
-             */
-            static bool is_exaggerated(const std::string &text) {
-                return fossil_io_soap_detect_exaggeration(text.c_str()) != 0;
-            }
-
-            /**
              * Detects whether the given text contains ragebait phrases.
              *
-             * Ragebait phrases are text patterns designed to provoke anger,
-             * outrage, or strong emotional reactions in the reader.
-             *
-             * @param text The input C string to analyze.
-             * @return 1 if any ragebait phrase is detected, 0 otherwise.
+             * @param text The input C++ string to analyze.
+             * @return true if any ragebait phrase is detected, false otherwise.
              */
-            static int is_ragebait(const std::string &text) {
-                return fossil_io_soap_detect_ragebait(text.c_str());
+            static bool is_ragebait(const std::string &text) {
+                return fossil_io_soap_detect_ragebait(text.c_str()) != 0;
             }
 
             /**
@@ -331,9 +291,9 @@ namespace fossil {
              * @brief Detects if a given text contains spammy patterns
              *
              * @param text Input string to analyze
-             * @return 1 if spam detected, 0 otherwise
+             * @return true if spam detected, false otherwise
              */
-            static int is_spam(const std::string &text){
+            static bool is_spam(const std::string &text){
                 return fossil_io_soap_detect_spam(text.c_str()) != 0;
             }
             
@@ -341,21 +301,60 @@ namespace fossil {
              * @brief Detects if a given text contains "woke" tone patterns
              *
              * @param text Input string to analyze
-             * @return 1 if woke tone detected, 0 otherwise
+             * @return true if woke tone detected, false otherwise
              */
-            static int is_woke(const std::string &text){
+            static bool is_woke(const std::string &text){
                 return fossil_io_soap_detect_woke(text.c_str()) != 0;
             }
 
             /**
-             * @brief Normalize slang and internet abbreviations.
-             * 
-             * @param text The input string.
-             * @return A cleaned version of the input text.
+             * @brief Detects if a given text contains automated/bot patterns
+             *
+             * @param text Input string to analyze
+             * @return true if bot patterns detected, false otherwise
              */
-            static std::string normalize_slang(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_normalize_slang(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
+            static bool is_bot(const std::string &text){
+                return fossil_io_soap_detect_bot(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains sarcastic tone
+             *
+             * @param text Input string to analyze
+             * @return true if sarcasm detected, false otherwise
+             */
+            static bool is_sarcastic(const std::string &text){
+                return fossil_io_soap_detect_sarcasm(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains formal tone
+             *
+             * @param text Input string to analyze
+             * @return true if formal tone detected, false otherwise
+             */
+            static bool is_formal(const std::string &text){
+                return fossil_io_soap_detect_formal(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains "snowflake"-related content
+             *
+             * @param text Input string to analyze
+             * @return true if snowflake patterns detected, false otherwise
+             */
+            static bool is_snowflake(const std::string &text){
+                return fossil_io_soap_detect_snowflake(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains "neutral"-related content
+             *
+             * @param text Input string to analyze
+             * @return true if neutral patterns detected, false otherwise
+             */
+            static bool is_neutral(const std::string &text){
+                return fossil_io_soap_detect_neutral(text.c_str()) != 0;
             }
 
             /**
@@ -370,13 +369,15 @@ namespace fossil {
             }
 
             /**
-             * @brief Replace offensive language with neutral alternatives.
-             * 
+             * @brief Filter text by replacing words/phrases matching any pattern (comma-separated) with '*'.
+             *        Patterns support '*' and '?' wildcards, case-insensitive.
+             *
+             * @param patterns Comma-separated patterns to filter (supports '*' and '?' wildcards).
              * @param text The input string.
-             * @return A sanitized version with offensive terms filtered out.
+             * @return A sanitized version with filtered terms replaced by '*'.
              */
-            static std::string filter_offensive(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_filter_offensive(text.c_str()), free);
+            static std::string filter(const std::string &patterns, const std::string &text) {
+                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_filter(patterns.c_str(), text.c_str()), free);
                 return ptr ? std::string(ptr.get()) : std::string{};
             }
         };
