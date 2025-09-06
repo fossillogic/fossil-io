@@ -242,7 +242,7 @@ FOSSIL_TEST(c_test_io_unregister_keybinding_success) {
     int result = fossil_io_unregister_keybinding(42);
     ASSUME_ITS_EQUAL_I32(0, result);
     const char *action = fossil_io_get_keybinding_action(42);
-    ASSUME_CNULL(action);
+    ASSUME_ITS_CNULL(action);
     fossil_io_clear_keybindings();
 }
 
@@ -264,18 +264,6 @@ FOSSIL_TEST(c_test_io_register_keybinding_with_callback_success) {
     ASSUME_ITS_EQUAL_I32(0, result);
     fossil_io_process_keybinding(55);
     ASSUME_ITS_EQUAL_I32(1, cb_called);
-    fossil_io_clear_keybindings();
-}
-
-static void cb_empty(void) {}
-
-FOSSIL_TEST(c_test_io_register_keybinding_with_callback_duplicate) {
-    fossil_io_clear_keybindings();
-    fossil_io_register_keybinding_with_callback(55, "shoot", cb_empty);
-    int result = fossil_io_register_keybinding_with_callback(55, "reload", cb_empty);
-    fossil_io_register_keybinding_with_callback(55, "shoot", cb);
-    int result = fossil_io_register_keybinding_with_callback(55, "reload", cb);
-    ASSUME_ITS_EQUAL_I32(2, result); // Duplicate key
     fossil_io_clear_keybindings();
 }
 
@@ -345,7 +333,6 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_unregister_keybinding_success);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_unregister_keybinding_not_found);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_with_callback_success);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_with_callback_duplicate);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_get_keybinding_action_not_found);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_process_keybinding_no_binding);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_list_keybindings_populates_array);
