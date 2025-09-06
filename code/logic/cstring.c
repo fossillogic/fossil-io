@@ -57,6 +57,68 @@ void fossil_io_cstring_free(cstring str) {
     }
 }
 
+// ----------------------
+// Money String Conversions
+// ----------------------
+
+int fossil_io_cstring_money_to_string(double amount, char *output, size_t size) {
+    if (!output || size == 0) return -1;
+
+    // Temporary buffer for raw formatting (no commas yet)
+    char temp[64];
+    int written = snprintf(temp, sizeof(temp), "%.2f", amount);
+    if (written < 0 || written >= (int)sizeof(temp)) return -1;
+
+    // Insert commas into the integer part
+    char *dot = strchr(temp, '.');
+    int int_len = dot ? (int)(dot - temp) : (int)strlen(temp);
+    int commas = (int_len - 1) / 3;
+    int total_len = int_len + commas + (dot ? strlen(dot) : 0);
+
+    if ((size_t)(total_len + 2) > size) return -1; // +2 for '$' and '\0'
+
+    char formatted[64];
+    int fpos = 0;
+    int leading = int_len % 3;
+    if (leading == 0) leading = 3;
+
+    formatted[fpos++] = '$';
+    for (int i = 0; i < int_len; i++) {
+        formatted[fpos++] = temp[i];
+        if ((i + 1) % leading == 0 && (i + 1) < int_len) {
+            formatted[fpos++] = ',';
+            leading = 3; // reset after first group
+        }
+    }
+
+    if (dot) {
+        strcpy(&formatted[fpos], dot); // copy decimal part
+        fpos += strlen(dot);
+    }
+    formatted[fpos] = '\0';
+
+    strncpy(output, formatted, size - 1);
+    output[size - 1] = '\0';
+    return 0;
+}
+
+int fossil_io_cstring_string_to_money(const char *input, double *amount) {
+    if (!input || !amount) return -1;
+
+    char buffer[64];
+    size_t j = 0;
+    for (size_t i = 0; input[i] && j < sizeof(buffer) - 1; i++) {
+        if (isdigit((unsigned char)input[i]) || input[i] == '.' || input[i] == '-') {
+            buffer[j++] = input[i];
+        }
+    }
+    buffer[j] = '\0';
+
+    if (j == 0) return -1;
+    *amount = atof(buffer);
+    return 0;
+}
+
 // ---------------- Tokenizer ----------------
 cstring fossil_io_cstring_token(cstring str, ccstring delim, cstring *saveptr) {
     if (!saveptr || (!str && !*saveptr)) return NULL;
