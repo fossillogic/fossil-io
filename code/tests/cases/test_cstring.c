@@ -25,7 +25,6 @@
 
 // Define the test suite and add test cases
 FOSSIL_SUITE(c_string_suite);
-fossil_fstream_t c_string;
 
 // Setup function for the test suite
 FOSSIL_SETUP(c_string_suite) {
