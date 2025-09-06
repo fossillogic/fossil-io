@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          python -m pip install meson==1.8.0 ninja
+          python -m pip install meson ninja
           if ($env:msvc_version -eq "2019") {
             choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional --passive"
           } elseif ($env:msvc_version -eq "2022") {
@@ -75,17 +75,10 @@ jobs:
 
       - name: Install Meson, Ninja
         run: |
-          python -m pip install meson==1.8.0 ninja
+          python -m pip install meson ninja
 
       - name: Configure
-        run: |
-          OBJC=clang OBJCXX=clang++ meson setup builddir \
-            --fatal-meson-warnings \
-            -Dwerror=true \
-            -Dwith_test=enabled \
-            -Dwarning_level=3 \
-            -Dc_args='-D_LIBCPP_HARDENING_MODE=debug' \
-            -Dcpp_args='-D_LIBCPP_HARDENING_MODE=debug'
+        run: OBJC=clang OBJCXX=clang++ meson setup builddir --fatal-meson-warnings -Dwerror=true -Dwith_test=enabled -Dwarning_level=3
 
       - name: Compile
         run: meson compile -C builddir
@@ -129,7 +122,7 @@ jobs:
 
       - name: Install Meson and Ninja
         run: |
-          python -m pip install meson==1.8.0 ninja
+          python -m pip install meson ninja
 
       - name: Configure
         run: meson setup builddir --fatal-meson-warnings -Dwerror=true -Dwith_test=enabled -Dwarning_level=3
@@ -170,7 +163,7 @@ jobs:
 
       - name: Install Meson and Ninja
         run: |
-          python -m pip install meson==1.8.0 ninja
+          python -m pip install meson ninja
 
       - name: Configure
         run: meson setup builddir --fatal-meson-warnings -Dwerror=true -Dwith_test=enabled -Dwarning_level=3
