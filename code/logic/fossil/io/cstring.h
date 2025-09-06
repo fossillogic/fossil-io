@@ -49,6 +49,31 @@ cstring fossil_io_cstring_create(ccstring init);
  */
 void fossil_io_cstring_free(cstring str);
 
+// Money String Conversions
+
+/**
+ * @brief Converts a double amount into a formatted money string.
+ *
+ * Example: 1234.56 -> "$1,234.56"
+ *
+ * @param amount    The numeric amount to convert.
+ * @param output    Buffer to store the formatted string.
+ * @param size      Size of the output buffer.
+ * @return 0 on success, -1 if the buffer is too small or invalid.
+ */
+int fossil_io_cstring_money_to_string(double amount, cstring output, size_t size);
+
+/**
+ * @brief Parses a money string into a numeric double value.
+ *
+ * Example: "$1,234.56" -> 1234.56
+ *
+ * @param input     Input string representing money.
+ * @param amount    Pointer to store the parsed numeric value.
+ * @return 0 on success, -1 on failure (invalid format).
+ */
+int fossil_io_cstring_string_to_money(ccstring input, double *amount);
+
 /**
  * @brief Tokenizes a string by delimiters (reentrant version).
  *
