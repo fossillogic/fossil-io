@@ -397,6 +397,96 @@ FOSSIL_TEST(cpp_test_io_getc) {
     fclose(input_stream.file);
 }
 
+FOSSIL_TEST(cpp_test_io_register_keybinding_success) {
+    fossil::io::Input::clear_keybindings();
+    int result = fossil::io::Input::register_keybinding(65, "actionA");
+    ASSUME_ITS_EQUAL_I32(0, result);
+    std::string action = fossil::io::Input::get_keybinding_action(65);
+    ASSUME_ITS_EQUAL_CSTR("actionA", action.c_str());
+}
+
+FOSSIL_TEST(cpp_test_io_register_keybinding_duplicate) {
+    fossil::io::Input::clear_keybindings();
+    fossil::io::Input::register_keybinding(66, "actionB");
+    int result = fossil::io::Input::register_keybinding(66, "actionB2");
+    ASSUME_ITS_FALSE(result == 0); // Should fail or overwrite depending on implementation
+}
+
+FOSSIL_TEST(cpp_test_io_register_keybinding_callback_success) {
+    fossil::io::Input::clear_keybindings();
+    static bool called = false;
+    auto cb = []() { called = true; };
+    int result = fossil::io::Input::register_keybinding_callback(67, "actionC", cb);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    fossil::io::Input::process_keybinding(67);
+    ASSUME_ITS_TRUE(called);
+}
+
+FOSSIL_TEST(cpp_test_io_unregister_keybinding_success) {
+    fossil::io::Input::clear_keybindings();
+    fossil::io::Input::register_keybinding(68, "actionD");
+    int result = fossil::io::Input::unregister_keybinding(68);
+    ASSUME_ITS_EQUAL_I32(0, result);
+    std::string action = fossil::io::Input::get_keybinding_action(68);
+    ASSUME_ITS_EQUAL_CSTR("", action.c_str());
+}
+
+FOSSIL_TEST(cpp_test_io_unregister_keybinding_not_found) {
+    fossil::io::Input::clear_keybindings();
+    int result = fossil::io::Input::unregister_keybinding(69);
+    ASSUME_ITS_FALSE(result == 0);
+}
+
+FOSSIL_TEST(cpp_test_io_process_keybinding_triggered) {
+    fossil::io::Input::clear_keybindings();
+    fossil::io::Input::register_keybinding(70, "actionE");
+    int result = fossil::io::Input::process_keybinding(70);
+    ASSUME_ITS_EQUAL_I32(1, result);
+}
+
+FOSSIL_TEST(cpp_test_io_process_keybinding_not_found) {
+    fossil::io::Input::clear_keybindings();
+    int result = fossil::io::Input::process_keybinding(71);
+    ASSUME_ITS_EQUAL_I32(0, result);
+}
+
+FOSSIL_TEST(cpp_test_io_get_keybinding_action_found) {
+    fossil::io::Input::clear_keybindings();
+    fossil::io::Input::register_keybinding(72, "actionF");
+    std::string action = fossil::io::Input::get_keybinding_action(72);
+    ASSUME_ITS_EQUAL_CSTR("actionF", action.c_str());
+}
+
+FOSSIL_TEST(cpp_test_io_get_keybinding_action_not_found) {
+    fossil::io::Input::clear_keybindings();
+    std::string action = fossil::io::Input::get_keybinding_action(73);
+    ASSUME_ITS_EQUAL_CSTR("", action.c_str());
+}
+
+FOSSIL_TEST(cpp_test_io_list_keybindings) {
+    fossil::io::Input::clear_keybindings();
+    fossil::io::Input::register_keybinding(74, "actionG");
+    fossil::io::Input::register_keybinding(75, "actionH");
+    auto bindings = fossil::io::Input::list_keybindings();
+    ASSUME_ITS_TRUE(bindings.size() >= 2);
+    bool foundG = false, foundH = false;
+    for (const auto &pair : bindings) {
+        if (pair.first == 74 && pair.second == "actionG") foundG = true;
+        if (pair.first == 75 && pair.second == "actionH") foundH = true;
+    }
+    ASSUME_ITS_TRUE(foundG && foundH);
+}
+
+FOSSIL_TEST(cpp_test_io_clear_keybindings) {
+    fossil::io::Input::register_keybinding(76, "actionI");
+    fossil::io::Input::register_keybinding(77, "actionJ");
+    fossil::io::Input::clear_keybindings();
+    auto bindings = fossil::io::Input::list_keybindings();
+    ASSUME_ITS_EQUAL_I32(0, (int)bindings.size());
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * *
+// * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -432,6 +522,18 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_empty);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_whitespace_only);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_getc);
+
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_success);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_duplicate);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_callback_success);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_unregister_keybinding_success);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_unregister_keybinding_not_found);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_process_keybinding_triggered);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_process_keybinding_not_found);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_get_keybinding_action_found);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_get_keybinding_action_not_found);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_list_keybindings);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_clear_keybindings);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }
