@@ -13,6 +13,7 @@
  */
 #include "fossil/io/parser.h"
 #include "fossil/io/output.h"
+#include "fossil/io/cstring.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -204,6 +205,7 @@ void show_help(const char *command_name, const fossil_io_parser_palette_t *palet
             fossil_io_printf("{cyan}  --version: Display the version of the application.{reset}\n");
             fossil_io_printf("{cyan}  --dry-run: Simulate the operation without making changes.{reset}\n");
             fossil_io_printf("{cyan}  --verbose: Provide detailed output during execution.{reset}\n");
+            fossil_io_printf("{cyan}  --color=[enable|disable|auto]: Control colored output (default: auto).{reset}\n");
             return;
         }
         command = command->next;
@@ -424,11 +426,11 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
         }
 
         if (strncmp(argv[i], "color=", 6) == 0) {
-            if (fossil_io_cstr_compare(argv[i] + 6, "enable") == 0) {
+            if (fossil_io_cstring_compare(argv[i] + 6, "enable") == 0) {
                 FOSSIL_IO_COLOR_ENABLE = 1;
-            } else if (fossil_io_cstr_compare(argv[i] + 6, "disable") == 0) {
+            } else if (fossil_io_cstring_compare(argv[i] + 6, "disable") == 0) {
                 FOSSIL_IO_COLOR_ENABLE = 0;
-            } else if (fossil_io_cstr_compare(argv[i] + 6, "auto") == 0) {
+            } else if (fossil_io_cstring_compare(argv[i] + 6, "auto") == 0) {
                 if (isatty(STDOUT_FILENO)) {
                     FOSSIL_IO_COLOR_ENABLE = 1;
                 } else {
