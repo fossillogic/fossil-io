@@ -375,12 +375,15 @@ static const char *SOAP_NEUTRAL_PATTERNS[] = {
 
 /** Lookup table for hype phrases */
 static const char *SOAP_HYPE_PATTERNS[] = {
-    "game-changing", "revolutionary", "cutting-edge", "disruptive", "never before seen",
-    "unprecedented", "the ultimate", "next-level", "life-changing", "epic", "legendary",
-    "the best ever", "mind-blowing", "world-class", "exclusive", "groundbreaking", "innovative",
-    "unparalleled", "must-have", "hot new", "phenomenal", "incredible", "jaw-dropping",
-    "guaranteed", "proven results", "miracle", "unstoppable", "the future of", "beyond belief",
-    NULL
+    "game-changing","revolutionary","cutting-edge","disruptive","never before seen",
+    "unprecedented","the ultimate","next-level","life-changing","epic","legendary",
+    "the best ever","mind-blowing","world-class","exclusive","groundbreaking","innovative",
+    "unparalleled","must-have","hot new","phenomenal","incredible","jaw-dropping",
+    "guaranteed","proven results","miracle","unstoppable","the future of","beyond belief",
+    "state-of-the-art","amazing","once in a lifetime","extraordinary","unbeatable","elite",
+    "remarkable","top-tier","exceptional","stellar","premium","best-in-class","outstanding",
+    "next big thing","ultimate solution","transformative","game-changer","reimagined","breakthrough",
+    "trailblazing","legendary product","redefining","NULL"
 };
 
 /** Political */
@@ -390,7 +393,11 @@ static const char *SOAP_POLITICAL_PATTERNS[] = {
     "big government","free market","personal freedom","authoritarian","totalitarian","censorship",
     "political correctness","cancel culture","big brother","elitist","grassroots movement",
     "identity politics","partisan","special interests","lobbyist","corrupt politicians","vote rigging",
-    "rigged system","polarized nation",NULL };
+    "rigged system","polarized nation","propaganda","electoral fraud","media bias","government overreach",
+    "legislation","policy reform","constitutional","impeachment","regulatory capture","voter suppression",
+    "political scandal","public office","government shutdown","state control","national security",
+    "campaign finance","party platform","NULL"
+};
 
 /** Conspiracy */
 static const char *SOAP_CONSPIRACY_PATTERNS[] = {
@@ -400,17 +407,24 @@ static const char *SOAP_CONSPIRACY_PATTERNS[] = {
     "government lies","deep underground base","suppressed technology","mass surveillance",
     "thought police","fabricated by the media","controlled opposition","secret labs",
     "fake moon landing","reptilian","massive hoax","in on it","they control everything",
-    "behind closed doors",NULL };
+    "behind closed doors","manipulation","hidden agenda","classified files","covert operations",
+    "black ops","unexplained phenomena","shadowy figures","secret programs","disinformation",
+    "conspiratorial","hidden messages","mind games","secret experiments","underground network",
+    "NULL"
+};
 
 /** Marketing */
 static const char *SOAP_MARKETING_PATTERNS[] = {
     "limited time offer","act now","don’t miss out","guaranteed results","risk free",
     "sign up today","exclusive deal","free trial","buy one get one","special promotion",
     "limited stock","save big","lowest price ever","best deal","offer ends soon",
-    "only for today","unlock savings","no obligation","instant access",
-    "money back guarantee","redeem now","hot deal","flash sale","discounted rate",
-    "claim your spot","exclusive offer","limited edition","join thousands",
-    "be the first","special savings",NULL };
+    "only for today","unlock savings","no obligation","instant access","money back guarantee",
+    "redeem now","hot deal","flash sale","discounted rate","claim your spot","exclusive offer",
+    "limited edition","join thousands","be the first","special savings","new arrival",
+    "get yours now","best value","exclusive bonus","early bird","special launch","today only",
+    "final chance","bonus included","premium package","offer valid","special offer","don’t wait",
+    "hurry up","exclusive access","deal of the day","NULL"
+};
 
 /** Technobabble */
 static const char *SOAP_TECHNOBABBLE_PATTERNS[] = {
@@ -420,16 +434,21 @@ static const char *SOAP_TECHNOBABBLE_PATTERNS[] = {
     "turnkey solution","innovative ecosystem","frictionless","low-hanging fruit",
     "mission critical","digital transformation","smart disruption","empower users",
     "end-to-end","future-proof","holistic approach","thought leadership","revolutionize",
-    "strategic alignment","game-changer","intelligent automation",NULL };
+    "strategic alignment","game-changer","intelligent automation","data-driven","disruptive innovation",
+    "scalable architecture","AI-driven","cloud-first","next-generation","hyper convergence",
+    "machine intelligence","tech stack","real-time analytics","dynamic workflow","intelligent design",
+    "agile methodology","NULL"
+};
 
 /** Lookup table for low-quality signals */
 static const char *SOAP_QUALITY_PATTERNS[] = {
-    "just saying", "you know", "like literally", "basically", "whatever", "stuff and things",
-    "random nonsense", "blah blah", "and so on", "thingy", "meh", "idk", "not sure", "somehow",
-    "something like that", "kind of", "sort of", "whatever works", "in a way", "obviously",
-    "clearly", "everyone knows", "trust me", "believe me", "it is what it is", "that kind of thing",
-    "doesn’t matter", "whatever you think",
-    NULL
+    "just saying","you know","like literally","basically","whatever","stuff and things",
+    "random nonsense","blah blah","and so on","thingy","meh","idk","not sure","somehow",
+    "something like that","kind of","sort of","whatever works","in a way","obviously",
+    "clearly","everyone knows","trust me","believe me","it is what it is","that kind of thing",
+    "doesn’t matter","whatever you think","unimportant","insignificant","minor detail",
+    "whatever floats your boat","trivial","meaningless","small stuff","irrelevant",
+    "empty words","hollow statement","noise","filler","pointless","NULL"
 };
 
 /** Lookup table for words that need to be skipped due to misdetection */
