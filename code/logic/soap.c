@@ -375,35 +375,11 @@ static const char *SOAP_NEUTRAL_PATTERNS[] = {
 
 /** Lookup table for hype phrases */
 static const char *SOAP_HYPE_PATTERNS[] = {
-    "game-changing",
-    "revolutionary",
-    "cutting-edge",
-    "disruptive",
-    "never before seen",
-    "unprecedented",
-    "the ultimate",
-    "next-level",
-    "life-changing",
-    "epic",
-    "legendary",
-    "the best ever",
-    "mind-blowing",
-    "world-class",
-    "exclusive",
-    "groundbreaking",
-    "innovative",
-    "unparalleled",
-    "must-have",
-    "hot new",
-    "phenomenal",
-    "incredible",
-    "jaw-dropping",
-    "guaranteed",
-    "proven results",
-    "miracle",
-    "unstoppable",
-    "the future of",
-    "beyond belief",
+    "game-changing", "revolutionary", "cutting-edge", "disruptive", "never before seen",
+    "unprecedented", "the ultimate", "next-level", "life-changing", "epic", "legendary",
+    "the best ever", "mind-blowing", "world-class", "exclusive", "groundbreaking", "innovative",
+    "unparalleled", "must-have", "hot new", "phenomenal", "incredible", "jaw-dropping",
+    "guaranteed", "proven results", "miracle", "unstoppable", "the future of", "beyond belief",
     NULL
 };
 
@@ -414,19 +390,47 @@ static const char *SOAP_RAGEBAIT_PATTERNS[] = {
     "explosive reaction","incendiary","infuriates everyone","can you believe","furious debate",
     "offensive","disgraceful","insulting","pure rage","this will shock you","how dare they",
     "people are upset","rage-inducing","anger everywhere","enraging","red flag","total meltdown",
-    "outraged comments","shocking offense",NULL };
+    "outraged comments","shocking offense",NULL
+};
 
 /** Political */
-static const char *SOAP_POLITICAL_PATTERNS[] = { "left-wing","right-wing","liberal agenda","conservative values","fake news media","mainstream media","deep state","radical","extremist","social justice warrior","tax and spend","big government","free market","personal freedom","authoritarian","totalitarian","censorship","political correctness","cancel culture","big brother","elitist","grassroots movement","identity politics","partisan","special interests","lobbyist","corrupt politicians","vote rigging","rigged system","polarized nation",NULL };
+static const char *SOAP_POLITICAL_PATTERNS[] = { 
+    "left-wing","right-wing","liberal agenda","conservative values","fake news media",
+    "mainstream media","deep state","radical","extremist","social justice warrior","tax and spend",
+    "big government","free market","personal freedom","authoritarian","totalitarian","censorship",
+    "political correctness","cancel culture","big brother","elitist","grassroots movement",
+    "identity politics","partisan","special interests","lobbyist","corrupt politicians","vote rigging",
+    "rigged system","polarized nation",NULL };
 
 /** Conspiracy */
-static const char *SOAP_CONSPIRACY_PATTERNS[] = { "they don’t want you to know","hidden truth","cover up","shadow government","mind control","secret society","illuminati","new world order","false flag","plandemic","chemtrails","crisis actors","fabricated evidence","hollow earth","flat earth","alien cover-up","government lies","deep underground base","suppressed technology","mass surveillance","thought police","fabricated by the media","controlled opposition","secret labs","fake moon landing","reptilian","massive hoax","in on it","they control everything","behind closed doors",NULL };
+static const char *SOAP_CONSPIRACY_PATTERNS[] = {
+    "they don’t want you to know","hidden truth","cover up","shadow government","mind control",
+    "secret society","illuminati","new world order","false flag","plandemic","chemtrails",
+    "crisis actors","fabricated evidence","hollow earth","flat earth","alien cover-up",
+    "government lies","deep underground base","suppressed technology","mass surveillance",
+    "thought police","fabricated by the media","controlled opposition","secret labs",
+    "fake moon landing","reptilian","massive hoax","in on it","they control everything",
+    "behind closed doors",NULL };
 
 /** Marketing */
-static const char *SOAP_MARKETING_PATTERNS[] = { "limited time offer","act now","don’t miss out","guaranteed results","risk free","sign up today","exclusive deal","free trial","buy one get one","special promotion","limited stock","save big","lowest price ever","best deal","offer ends soon","only for today","unlock savings","no obligation","instant access","money back guarantee","redeem now","hot deal","flash sale","discounted rate","claim your spot","exclusive offer","limited edition","join thousands","be the first","special savings",NULL };
+static const char *SOAP_MARKETING_PATTERNS[] = {
+    "limited time offer","act now","don’t miss out","guaranteed results","risk free",
+    "sign up today","exclusive deal","free trial","buy one get one","special promotion",
+    "limited stock","save big","lowest price ever","best deal","offer ends soon",
+    "only for today","unlock savings","no obligation","instant access",
+    "money back guarantee","redeem now","hot deal","flash sale","discounted rate",
+    "claim your spot","exclusive offer","limited edition","join thousands",
+    "be the first","special savings",NULL };
 
 /** Technobabble */
-static const char *SOAP_TECHNOBABBLE_PATTERNS[] = { "synergy","blockchain-enabled","AI-powered","machine learning solution","next-gen","hyper scalable","paradigm shift","deep tech","seamless integration","big data","cloud-native","cutting-edge platform","quantum leap","value proposition","turnkey solution","innovative ecosystem","frictionless","low-hanging fruit","mission critical","digital transformation","smart disruption","empower users","end-to-end","future-proof","holistic approach","thought leadership","revolutionize","strategic alignment","game-changer","intelligent automation",NULL };
+static const char *SOAP_TECHNOBABBLE_PATTERNS[] = {
+    "synergy","blockchain-enabled","AI-powered","machine learning solution",
+    "next-gen","hyper scalable","paradigm shift","deep tech","seamless integration",
+    "big data","cloud-native","cutting-edge platform","quantum leap","value proposition",
+    "turnkey solution","innovative ecosystem","frictionless","low-hanging fruit",
+    "mission critical","digital transformation","smart disruption","empower users",
+    "end-to-end","future-proof","holistic approach","thought leadership","revolutionize",
+    "strategic alignment","game-changer","intelligent automation",NULL };
 
 /** Lookup table for low-quality signals */
 static const char *SOAP_QUALITY_PATTERNS[] = {
