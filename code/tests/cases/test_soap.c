@@ -151,6 +151,84 @@ FOSSIL_TEST(c_test_io_soap_detect_offensive_false) {
     ASSUME_ITS_FALSE(result);
 }
 
+// --- HYPE detection ---
+FOSSIL_TEST(c_test_io_soap_detect_hype_true) {
+    const char *input = "This is the ultimate revolutionary game-changing breakthrough!";
+    int result = fossil_io_soap_detect_hype(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_hype_false) {
+    const char *input = "This is a normal system update with minor improvements.";
+    int result = fossil_io_soap_detect_hype(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+// --- QUALITY detection ---
+FOSSIL_TEST(c_test_io_soap_detect_quality_true) {
+    const char *input = "Everyone knows this method is reliable and clearly follows strict methodology.";
+    int result = fossil_io_soap_detect_quality(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_quality_false) {
+    const char *input = "Wow, this is amazing and unbelievable!";
+    int result = fossil_io_soap_detect_quality(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+// --- POLITICAL detection ---
+FOSSIL_TEST(c_test_io_soap_detect_political_true) {
+    const char *input = "The government overreach and big government policies affect personal freedom.";
+    int result = fossil_io_soap_detect_political(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_political_false) {
+    const char *input = "I enjoy going on long hikes in the mountains and reading books.";
+    int result = fossil_io_soap_detect_political(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+// --- CONSPIRACY detection ---
+FOSSIL_TEST(c_test_io_soap_detect_conspiracy_true) {
+    const char *input = "Hidden truth and secret societies control world events.";
+    int result = fossil_io_soap_detect_conspiracy(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_conspiracy_false) {
+    const char *input = "Astronomers study the moon landing and other space phenomena.";
+    int result = fossil_io_soap_detect_conspiracy(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+// --- MARKETING detection ---
+FOSSIL_TEST(c_test_io_soap_detect_marketing_true) {
+    const char *input = "Sign up today for our exclusive limited-time offer!";
+    int result = fossil_io_soap_detect_marketing(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_marketing_false) {
+    const char *input = "This is a technical description of a microcontroller circuit.";
+    int result = fossil_io_soap_detect_marketing(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+// --- TECHNOBABBLE detection ---
+FOSSIL_TEST(c_test_io_soap_detect_technobabble_true) {
+    const char *input = "Our cloud-native AI-powered platform enables seamless integration and next-gen innovation.";
+    int result = fossil_io_soap_detect_technobabble(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_soap_detect_technobabble_false) {
+    const char *input = "The client connects to the server via a standard HTTPS request.";
+    int result = fossil_io_soap_detect_technobabble(input);
+    ASSUME_ITS_FALSE(result);
+}
+
 // filter cases
 
 FOSSIL_TEST(c_test_io_soap_add_custom_filter) {
@@ -326,6 +404,18 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_snowflake_false);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_offensive_true);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_offensive_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_hype_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_hype_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_quality_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_quality_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_political_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_political_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_conspiracy_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_conspiracy_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_marketing_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_marketing_false);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_technobabble_true);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_technobabble_false);
 
     // filter tests
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_add_custom_filter);

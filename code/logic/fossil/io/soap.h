@@ -136,6 +136,54 @@ int fossil_io_soap_detect_offensive(const char *text);
  */
 int fossil_io_soap_detect_neutral(const char *text);
 
+/**
+ * @brief Detect hype-related phrases in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if hype phrases are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_hype(const char *text);
+
+/**
+ * @brief Detect quality-related phrases in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if quality phrases are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_quality(const char *text);
+
+/**
+ * @brief Detect political content in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if political patterns are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_political(const char *text);
+
+/**
+ * @brief Detect conspiracy-related content in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if conspiracy patterns are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_conspiracy(const char *text);
+
+/**
+ * @brief Detect marketing/jargon-heavy content in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if marketing patterns are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_marketing(const char *text);
+
+/**
+ * @brief Detect technobabble or meaningless jargon in text.
+ *
+ * @param text Input text to scan.
+ * @return Non-zero if technobabble patterns are detected, 0 otherwise.
+ */
+int fossil_io_soap_detect_technobabble(const char *text);
+
 // filter functions
 
 /**
@@ -355,6 +403,66 @@ namespace fossil {
              */
             static bool is_neutral(const std::string &text){
                 return fossil_io_soap_detect_neutral(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains hype-related content.
+             *
+             * @param text Input string to analyze
+             * @return true if hype detected, false otherwise
+             */
+            static bool is_hype(const std::string &text) {
+                return fossil_io_soap_detect_hype(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains high-quality phrasing.
+             *
+             * @param text Input string to analyze
+             * @return true if quality phrasing detected, false otherwise
+             */
+            static bool is_quality(const std::string &text) {
+                return fossil_io_soap_detect_quality(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains political content.
+             *
+             * @param text Input string to analyze
+             * @return true if political content detected, false otherwise
+             */
+            static bool is_political(const std::string &text) {
+                return fossil_io_soap_detect_political(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains conspiracy-related content.
+             *
+             * @param text Input string to analyze
+             * @return true if conspiracy content detected, false otherwise
+             */
+            static bool is_conspiracy(const std::string &text) {
+                return fossil_io_soap_detect_conspiracy(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains marketing/jargon-heavy content.
+             *
+             * @param text Input string to analyze
+             * @return true if marketing jargon detected, false otherwise
+             */
+            static bool is_marketing(const std::string &text) {
+                return fossil_io_soap_detect_marketing(text.c_str()) != 0;
+            }
+
+            /**
+             * @brief Detects if a given text contains technobabble or meaningless jargon.
+             *
+             * @param text Input string to analyze
+             * @return true if technobabble detected, false otherwise
+             */
+            static bool is_technobabble(const std::string &text) {
+                return fossil_io_soap_detect_technobabble(text.c_str()) != 0;
             }
 
             /**

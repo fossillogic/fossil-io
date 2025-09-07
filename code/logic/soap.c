@@ -373,6 +373,84 @@ static const char *SOAP_NEUTRAL_PATTERNS[] = {
     "clear", "direct", "simple", "uncomplicated", NULL
 };
 
+/** Lookup table for hype phrases */
+static const char *SOAP_HYPE_PATTERNS[] = {
+    "game-changing","revolutionary","cutting-edge","disruptive","never before seen",
+    "unprecedented","the ultimate","next-level","life-changing","epic","legendary",
+    "the best ever","mind-blowing","world-class","exclusive","groundbreaking","innovative",
+    "unparalleled","must-have","hot new","phenomenal","incredible","jaw-dropping",
+    "guaranteed","proven results","miracle","unstoppable","the future of","beyond belief",
+    "state-of-the-art","amazing","once in a lifetime","extraordinary","unbeatable","elite",
+    "remarkable","top-tier","exceptional","stellar","premium","best-in-class","outstanding",
+    "next big thing","ultimate solution","transformative","game-changer","reimagined","breakthrough",
+    "trailblazing","legendary product","redefining","NULL"
+};
+
+/** Political */
+static const char *SOAP_POLITICAL_PATTERNS[] = { 
+    "left-wing","right-wing","liberal agenda","conservative values","fake news media",
+    "mainstream media","deep state","radical","extremist","social justice warrior","tax and spend",
+    "big government","free market","personal freedom","authoritarian","totalitarian","censorship",
+    "political correctness","cancel culture","big brother","elitist","grassroots movement",
+    "identity politics","partisan","special interests","lobbyist","corrupt politicians","vote rigging",
+    "rigged system","polarized nation","propaganda","electoral fraud","media bias","government overreach",
+    "legislation","policy reform","constitutional","impeachment","regulatory capture","voter suppression",
+    "political scandal","public office","government shutdown","state control","national security",
+    "campaign finance","party platform","NULL"
+};
+
+/** Conspiracy */
+static const char *SOAP_CONSPIRACY_PATTERNS[] = {
+    "they don’t want you to know","hidden truth","cover up","shadow government","mind control",
+    "secret society","illuminati","new world order","false flag","plandemic","chemtrails",
+    "crisis actors","fabricated evidence","hollow earth","flat earth","alien cover-up",
+    "government lies","deep underground base","suppressed technology","mass surveillance",
+    "thought police","fabricated by the media","controlled opposition","secret labs",
+    "fake moon landing","reptilian","massive hoax","in on it","they control everything",
+    "behind closed doors","manipulation","hidden agenda","classified files","covert operations",
+    "black ops","unexplained phenomena","shadowy figures","secret programs","disinformation",
+    "conspiratorial","hidden messages","mind games","secret experiments","underground network",
+    "NULL"
+};
+
+/** Marketing */
+static const char *SOAP_MARKETING_PATTERNS[] = {
+    "limited time offer","act now","don’t miss out","guaranteed results","risk free",
+    "sign up today","exclusive deal","free trial","buy one get one","special promotion",
+    "limited stock","save big","lowest price ever","best deal","offer ends soon",
+    "only for today","unlock savings","no obligation","instant access","money back guarantee",
+    "redeem now","hot deal","flash sale","discounted rate","claim your spot","exclusive offer",
+    "limited edition","join thousands","be the first","special savings","new arrival",
+    "get yours now","best value","exclusive bonus","early bird","special launch","today only",
+    "final chance","bonus included","premium package","offer valid","special offer","don’t wait",
+    "hurry up","exclusive access","deal of the day","NULL"
+};
+
+/** Technobabble */
+static const char *SOAP_TECHNOBABBLE_PATTERNS[] = {
+    "synergy","blockchain-enabled","AI-powered","machine learning solution",
+    "next-gen","hyper scalable","paradigm shift","deep tech","seamless integration",
+    "big data","cloud-native","cutting-edge platform","quantum leap","value proposition",
+    "turnkey solution","innovative ecosystem","frictionless","low-hanging fruit",
+    "mission critical","digital transformation","smart disruption","empower users",
+    "end-to-end","future-proof","holistic approach","thought leadership","revolutionize",
+    "strategic alignment","game-changer","intelligent automation","data-driven","disruptive innovation",
+    "scalable architecture","AI-driven","cloud-first","next-generation","hyper convergence",
+    "machine intelligence","tech stack","real-time analytics","dynamic workflow","intelligent design",
+    "agile methodology","NULL"
+};
+
+/** Lookup table for low-quality signals */
+static const char *SOAP_QUALITY_PATTERNS[] = {
+    "just saying","you know","like literally","basically","whatever","stuff and things",
+    "random nonsense","blah blah","and so on","thingy","meh","idk","not sure","somehow",
+    "something like that","kind of","sort of","whatever works","in a way","obviously",
+    "clearly","everyone knows","trust me","believe me","it is what it is","that kind of thing",
+    "doesn’t matter","whatever you think","unimportant","insignificant","minor detail",
+    "whatever floats your boat","trivial","meaningless","small stuff","irrelevant",
+    "empty words","hollow statement","noise","filler","pointless","NULL"
+};
+
 /** Lookup table for words that need to be skipped due to misdetection */
 static const char *SKIP_WORDS[] = {
     "limit", "size", "width", "height", "length", "depth", "volume", "capacity", "weight",
@@ -691,13 +769,19 @@ const char *fossil_io_soap_detect_tone(const char *text) {
         {SOAP_CLICKBAIT_PATTERNS, "clickbait"},
         {SOAP_SPAM_PATTERNS, "spam"},
         {SOAP_WOKE_PATTERNS, "woke"},
-        {SOAP_BOT_PATTERNS, "bot"},
-        {SOAP_SARCASTIC_PATTERNS, "sarcastic"},
-        {SOAP_SNOWFLAKE_PATTERNS, "snowflake"},
-        {SOAP_FORMAL_PATTERNS, "formal"},
-        {SOAP_OFFENSIVE_PATTERNS, "offensive"},
-        {SOAP_NEUTRAL_PATTERNS, "neutral"},
-        {NULL, NULL}
+        {SOAP_BOT_PATTERNS,           "bot"},
+        {SOAP_SARCASTIC_PATTERNS,     "sarcastic"},
+        {SOAP_SNOWFLAKE_PATTERNS,     "snowflake"},
+        {SOAP_FORMAL_PATTERNS,        "formal"},
+        {SOAP_OFFENSIVE_PATTERNS,     "offensive"},
+        {SOAP_NEUTRAL_PATTERNS,       "neutral"},
+        { SOAP_QUALITY_PATTERNS,      "quality"     },
+        { SOAP_HYPE_PATTERNS,         "hype"        },
+        { SOAP_POLITICAL_PATTERNS,    "political"   },
+        { SOAP_CONSPIRACY_PATTERNS,   "conspiracy"  },
+        { SOAP_MARKETING_PATTERNS,    "marketing"   },
+        { SOAP_TECHNOBABBLE_PATTERNS, "technobabble"},
+        { NULL,                       NULL          }
     };
 
     // Split text into words for more accurate matching
@@ -892,6 +976,30 @@ int fossil_io_soap_detect_offensive(const char *text) {
 
 int fossil_io_soap_detect_neutral(const char *text) {
     return soap_detect_patterns(text, SOAP_NEUTRAL_PATTERNS);
+}
+
+int fossil_io_soap_detect_hype(const char *text) {
+    return soap_detect_patterns(text, SOAP_HYPE_PATTERNS);
+}
+
+int fossil_io_soap_detect_quality(const char *text) {
+    return soap_detect_patterns(text, SOAP_QUALITY_PATTERNS);
+}
+
+int fossil_io_soap_detect_political(const char *text) {
+    return soap_detect_patterns(text, SOAP_POLITICAL_PATTERNS);
+}
+
+int fossil_io_soap_detect_conspiracy(const char *text) {
+    return soap_detect_patterns(text, SOAP_CONSPIRACY_PATTERNS);
+}
+
+int fossil_io_soap_detect_marketing(const char *text) {
+    return soap_detect_patterns(text, SOAP_MARKETING_PATTERNS);
+}
+
+int fossil_io_soap_detect_technobabble(const char *text) {
+    return soap_detect_patterns(text, SOAP_TECHNOBABBLE_PATTERNS);
 }
 
 /**
