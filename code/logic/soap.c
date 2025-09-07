@@ -772,7 +772,7 @@ const char *fossil_io_soap_detect_tone(const char *text) {
         { SOAP_CONSPIRACY_PATTERNS,   "conspiracy"  },
         { SOAP_MARKETING_PATTERNS,    "marketing"   },
         { SOAP_TECHNOBABBLE_PATTERNS, "technobabble"},
-        { NULL,                       NULL          } // Sentinel
+        { NULL,                       NULL          }
     };
 
     // Split text into words for more accurate matching
