@@ -383,16 +383,6 @@ static const char *SOAP_HYPE_PATTERNS[] = {
     NULL
 };
 
-/** Ragebait */
-static const char *SOAP_RAGEBAIT_PATTERNS[] = {
-    "you won't believe","outrageous","infuriating","this will make you mad","people are furious",
-    "sparking outrage","triggered","controversial","furious backlash","enraged","angry mob",
-    "explosive reaction","incendiary","infuriates everyone","can you believe","furious debate",
-    "offensive","disgraceful","insulting","pure rage","this will shock you","how dare they",
-    "people are upset","rage-inducing","anger everywhere","enraging","red flag","total meltdown",
-    "outraged comments","shocking offense",NULL
-};
-
 /** Political */
 static const char *SOAP_POLITICAL_PATTERNS[] = { 
     "left-wing","right-wing","liberal agenda","conservative values","fake news media",
