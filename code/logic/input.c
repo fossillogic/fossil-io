@@ -30,6 +30,31 @@
 #include <unistd.h>
 #endif
 
+/* ============================================================
+ * Bitmask flags for detection
+ * ============================================================ */
+#define FOSSIL_SAN_OK        0x00
+#define FOSSIL_SAN_MODIFIED  0x01
+#define FOSSIL_SAN_SCRIPT    0x02
+#define FOSSIL_SAN_SQL       0x04
+#define FOSSIL_SAN_SHELL     0x08
+#define FOSSIL_SAN_BASE64    0x10
+#define FOSSIL_SAN_PATH      0x20
+#define FOSSIL_SAN_BOT       0x40
+#define FOSSIL_SAN_SPAM      0x80
+
+/* ============================================================
+ * Context enum — what’s allowed depends on usage
+ * ============================================================ */
+typedef enum {
+    FOSSIL_CTX_GENERIC = 0,  /* balanced approach (default) */
+    FOSSIL_CTX_HTML,         /* for rendering in HTML */
+    FOSSIL_CTX_SQL,          /* for SQL queries (still use params!) */
+    FOSSIL_CTX_SHELL,        /* for shell commands */
+    FOSSIL_CTX_FILENAME      /* for filenames */
+} fossil_context_t;
+
+
 // Function to trim leading and trailing spaces from a string
 void fossil_io_trim(char *str) {
     if (str == NULL) return;
@@ -131,33 +156,88 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_fstream_t *input
     return buf;
 }
 
-char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code) {
-    if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer, stream, or error code.\n");
-        return NULL;
+/* --- sanitizer --- */
+int fossil_io_validate_sanitize_string_ctx(const char *input,
+                                           char *output,
+                                           size_t output_size,
+                                           fossil_context_t ctx) {
+    if (!input || !output || output_size == 0) {
+        if (output && output_size > 0) output[0] = '\0';
+        return FOSSIL_SAN_MODIFIED;
     }
 
-    // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream->file) == NULL) {
-        if (feof(input_stream->file)) {
-            *error_code = EOF;
-            return NULL; // End of file reached
+    size_t in_len = strnlen(input, 4096); /* cap scanning to 4k */
+    size_t out_i = 0;
+    int flags = FOSSIL_SAN_OK;
+
+    /* Context-specific allowed char filter */
+    int (*is_allowed)(char) = is_allowed_generic;
+    switch (ctx) {
+        case FOSSIL_CTX_HTML:     is_allowed = is_allowed_html; break;
+        case FOSSIL_CTX_SQL:      is_allowed = is_allowed_sql; break;
+        case FOSSIL_CTX_SHELL:    is_allowed = is_allowed_shell; break;
+        case FOSSIL_CTX_FILENAME: is_allowed = is_allowed_filename; break;
+        default:                  is_allowed = is_allowed_generic; break;
+    }
+
+    /* Suspicious patterns */
+    const char *script_patterns[] = {
+        "<script", "javascript:", "onerror=", "onload=", "onclick=", "eval(", NULL
+    };
+    const char *sql_patterns[] = {
+        "select ", "insert ", "update ", "delete ", "drop ", "union ",
+        "--", ";--", "/*", "*/", "0x", NULL
+    };
+    const char *shell_patterns[] = {
+        "curl ", "wget ", "rm -rf", "powershell", "cmd.exe",
+        "exec(", "system(", "|", "&&", "||", NULL
+    };
+    const char *bot_patterns[] = {
+        "bot", "crawler", "spider", "curl/", "python-requests", "scrapy", NULL
+    };
+    const char *spam_patterns[] = {
+        "viagra", "free money", "winner", "prize", "click here",
+        "http://", "https://", "meta refresh", NULL
+    };
+    const char *path_patterns[] = {
+        "../", "..\\", "/etc/passwd", "C:\\", NULL
+    };
+
+    /* Scan categories */
+    for (const char **p = script_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_SCRIPT;
+
+    for (const char **p = sql_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_SQL;
+
+    for (const char **p = shell_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_SHELL;
+
+    for (const char **p = bot_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_BOT;
+
+    for (const char **p = spam_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_SPAM;
+
+    for (const char **p = path_patterns; *p; ++p)
+        if (strncase_contains(input, *p, in_len)) flags |= FOSSIL_SAN_PATH;
+
+    if (long_base64_run(input, in_len, 80))
+        flags |= FOSSIL_SAN_BASE64;
+
+    /* Sanitization pass */
+    for (size_t i = 0; i < in_len && out_i < output_size - 1; i++) {
+        char c = input[i];
+        if (is_allowed(c)) {
+            output[out_i++] = c;
+        } else {
+            output[out_i++] = '_'; /* neutralize */
+            flags |= FOSSIL_SAN_MODIFIED;
         }
-        *error_code = ferror(input_stream->file);
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
-        return NULL;
     }
+    output[out_i] = '\0';
 
-    // Ensure the string is null-terminated
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len - 1] == '\n') {
-        buf[len - 1] = '\0'; // Remove the newline character
-    }
-
-    // Trim any leading or trailing whitespace
-    fossil_io_trim(buf);
-
-    return buf;
+    return flags == 0 ? FOSSIL_SAN_OK : flags;
 }
 
 int fossil_io_scanf(const char *format, ...) {
@@ -208,6 +288,150 @@ char *fossil_io_gets_utf8(char *buf, size_t size, fossil_fstream_t *input_stream
     fossil_io_trim(buf);
 
     return buf;
+}
+
+int fossil_io_validate_is_suspicious_user(const char *input) {
+    if (input == NULL) return 0;
+
+    size_t len = strlen(input);
+    if (len == 0) return 0;
+
+    // 1. Too long or too short
+    if (len < 3 || len > 32) return 1;
+
+    // 2. Check digit runs
+    int digit_run = 0, max_digit_run = 0, digit_count = 0, alpha_count = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (isdigit((unsigned char)input[i])) {
+            digit_run++;
+            digit_count++;
+            if (digit_run > max_digit_run) max_digit_run = digit_run;
+        } else {
+            digit_run = 0;
+            if (isalpha((unsigned char)input[i])) alpha_count++;
+        }
+    }
+    if (max_digit_run >= 5) return 1;                  // suspicious long digit tail
+    if ((float)digit_count / len > 0.5) return 1;      // mostly digits
+
+    // 3. Suspicious keywords
+    const char *bad_keywords[] = {"bot", "test", "fake", "spam", "zzz", "null", "admin"};
+    size_t nkeys = sizeof(bad_keywords) / sizeof(bad_keywords[0]);
+    for (size_t i = 0; i < nkeys; i++) {
+        if (strcasestr(input, bad_keywords[i]) != NULL) {
+            return 1;
+        }
+    }
+
+    // 4. Very high entropy (simple Shannon estimate)
+    int freq[256] = {0};
+    for (size_t i = 0; i < len; i++) freq[(unsigned char)input[i]]++;
+    double entropy = 0.0;
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            double p = (double)freq[i] / len;
+            entropy -= p * log2(p);
+        }
+    }
+    if (entropy > 4.5) return 1; // suspiciously random-like
+
+    return 0; // not flagged
+}
+
+int fossil_io_validate_is_disposable_email(const char *input) {
+    if (input == NULL) return 0;
+    const char *at = strchr(input, '@');
+    if (at == NULL) return 0;
+
+    const char *disposable_domains[] = {
+        "mailinator.com", "10minutemail.com", "guerrillamail.com",
+        "tempmail.com", "trashmail.com", "yopmail.com"
+    };
+    size_t ndomains = sizeof(disposable_domains) / sizeof(disposable_domains[0]);
+
+    for (size_t i = 0; i < ndomains; i++) {
+        if (strcasecmp(at + 1, disposable_domains[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int fossil_io_validate_is_suspicious_bot(const char *input) {
+    if (input == NULL) return 0;
+
+    const char *bot_signatures[] = {
+        "bot", "crawl", "spider", "scrape", "httpclient", "libwww",
+        "wget", "curl", "python-requests", "java", "go-http-client"
+    };
+    size_t nsignatures = sizeof(bot_signatures) / sizeof(bot_signatures[0]);
+
+    for (size_t i = 0; i < nsignatures; i++) {
+        if (strcasestr(input, bot_signatures[i]) != NULL) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int fossil_io_validate_is_weak_password(const char *password,
+                                        const char *username,
+                                        const char *email) {
+    if (password == NULL) return 1;
+
+    size_t len = strlen(password);
+
+    // 1. Length check
+    if (len < 8 || len > 64) {
+        return 1; // too short or unreasonably long
+    }
+
+    // 2. Check character diversity
+    int has_lower = 0, has_upper = 0, has_digit = 0, has_symbol = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (islower((unsigned char)password[i])) has_lower = 1;
+        else if (isupper((unsigned char)password[i])) has_upper = 1;
+        else if (isdigit((unsigned char)password[i])) has_digit = 1;
+        else has_symbol = 1;
+    }
+    int diversity = has_lower + has_upper + has_digit + has_symbol;
+    if (diversity < 3) {
+        return 1; // not diverse enough
+    }
+
+    // 3. Common weak passwords
+    const char *weak_list[] = {
+        "password", "123456", "123456789", "qwerty", "abc123",
+        "letmein", "111111", "123123", "iloveyou", "admin"
+    };
+    size_t weak_count = sizeof(weak_list) / sizeof(weak_list[0]);
+    for (size_t i = 0; i < weak_count; i++) {
+        if (strcasecmp(password, weak_list[i]) == 0) {
+            return 1;
+        }
+    }
+
+    // 4. Sequential/repetitive patterns
+    int seq_inc = 1, seq_dec = 1, same = 1;
+    for (size_t i = 1; i < len; i++) {
+        if (password[i] != password[i - 1]) same = 0;
+        if ((unsigned char)password[i] != (unsigned char)password[i - 1] + 1) seq_inc = 0;
+        if ((unsigned char)password[i] != (unsigned char)password[i - 1] - 1) seq_dec = 0;
+    }
+    if (same || seq_inc || seq_dec) {
+        return 1;
+    }
+
+    // 5. Prevent reuse of username or email as password
+    if (username && *username && strcasecmp(password, username) == 0) {
+        return 1;
+    }
+    if (email && *email && strcasecmp(password, email) == 0) {
+        return 1;
+    }
+
+    return 0; // password passed basic strength checks
 }
 
 int fossil_io_validate_is_int(const char *input, int *output) {
@@ -295,16 +519,77 @@ int fossil_io_validate_is_length(const char *input, size_t max_length) {
     return strlen(input) <= max_length;
 }
 
-int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size) {
-    if (input == NULL || output == NULL || output_size == 0) {
-        return 0;
+/* ============================================================
+ * Helpers
+ * ============================================================ */
+
+static inline int is_allowed_generic(char c) {
+    if (isalnum((unsigned char)c)) return 1;
+    switch (c) {
+        case ' ': case '_': case '-': case '.': case ',': case ':':
+        case '/': case '\\': case '@': case '+': case '=': case '#':
+        case '%': case '(': case ')': case '[': case ']':
+            return 1;
+        default:
+            return 0;
     }
-
-    // Copy the input string to the output buffer
-    strncpy(output, input, output_size);
-
-    return 1;
 }
+
+/* Allowed chars for specific contexts */
+static inline int is_allowed_html(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='-' || c=='_' || c=='.' || c==',' );
+}
+
+static inline int is_allowed_sql(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' );
+}
+
+static inline int is_allowed_shell(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' || c=='.' || c=='/' );
+}
+
+static inline int is_allowed_filename(char c) {
+    return (isalnum((unsigned char)c) || c=='_' || c=='-' || c=='.');
+}
+
+/* Base64 heuristic */
+static int long_base64_run(const char *s, size_t len, size_t threshold) {
+    size_t run = 0;
+    for (size_t i = 0; i < len; ++i) {
+        unsigned char c = (unsigned char)s[i];
+        if ((c >= 'A' && c <= 'Z') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') ||
+            c == '+' || c == '/' || c == '=') {
+            run++;
+            if (run >= threshold) return 1;
+        } else {
+            run = 0;
+        }
+    }
+    return 0;
+}
+
+/* Case-insensitive contains */
+static int strncase_contains(const char *haystack, const char *needle, size_t len) {
+    size_t nlen = strlen(needle);
+    if (nlen == 0 || nlen > len) return 0;
+    for (size_t i = 0; i + nlen <= len; i++) {
+        size_t j;
+        for (j = 0; j < nlen; j++) {
+            char a = haystack[i+j];
+            char b = needle[j];
+            if (tolower((unsigned char)a) != tolower((unsigned char)b)) break;
+        }
+        if (j == nlen) return 1;
+    }
+    return 0;
+}
+
+/* ============================================================
+ * Sanitizer with bitmask + context
+ * ============================================================ */
+z
 
 int fossil_io_gets(char *buffer, size_t size) {
     if (fgets(buffer, size, stdin) == NULL) {
