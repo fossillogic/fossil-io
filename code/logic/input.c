@@ -252,7 +252,7 @@ int fossil_io_validate_sanitize_string_ctx(const char *input,
         return FOSSIL_SAN_MODIFIED;
     }
 
-    size_t in_len = strnlen(input, 4096); /* cap scanning to 4k */
+    size_t in_len = fossil_io_cstring_length_safe(input, 4096); /* cap scanning to 4k */
     size_t out_i = 0;
     int flags = FOSSIL_SAN_OK;
 
@@ -385,7 +385,7 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
     // 1. Too long or too short
     if (len < 3 || len > 32) return 1;
 
-    // 2. Check digit runs
+    // 2. Count digits, letters, and digit runs
     int digit_run = 0, max_digit_run = 0, digit_count = 0, alpha_count = 0;
     for (size_t i = 0; i < len; i++) {
         if (isdigit((unsigned char)input[i])) {
@@ -397,10 +397,13 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
             if (isalpha((unsigned char)input[i])) alpha_count++;
         }
     }
+
+    // 3. Check for long digit runs or too few letters
     if (max_digit_run >= 5) return 1;                  // suspicious long digit tail
     if ((float)digit_count / len > 0.5) return 1;      // mostly digits
+    if ((float)alpha_count / len < 0.3) return 1;      // too few letters
 
-    // 3. Suspicious keywords
+    // 4. Suspicious keywords
     const char *bad_keywords[] = {"bot", "test", "fake", "spam", "zzz", "null", "admin"};
     size_t nkeys = sizeof(bad_keywords) / sizeof(bad_keywords[0]);
     for (size_t i = 0; i < nkeys; i++) {
@@ -409,7 +412,7 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
         }
     }
 
-    // 4. Very high entropy (simple Shannon estimate)
+    // 5. Very high entropy (simple Shannon estimate)
     int freq[256] = {0};
     for (size_t i = 0; i < len; i++) freq[(unsigned char)input[i]]++;
     double entropy = 0.0;
