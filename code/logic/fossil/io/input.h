@@ -170,7 +170,7 @@ int fossil_io_validate_is_disposable_email(const char *input);
  *  - Contains suspicious words like "bot", "test", "fake"
  *  - Looks like random noise (entropy check)
  */
-int fossil_io_validate_is_suspicious_user(const char *input)
+int fossil_io_validate_is_suspicious_user(const char *input);
 
 /**
  * @brief Validate and sanitize a string according to a specified context.
