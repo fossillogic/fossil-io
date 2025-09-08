@@ -82,6 +82,35 @@ static int long_base64_run(const char *s, size_t len, size_t threshold) {
     return 0;
 }
 
+char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code) {
+    if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL) {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer, stream, or error code.\n");
+        return NULL;
+    }
+
+    // Use fgets to get the input from the stream
+    if (fgets(buf, size, input_stream->file) == NULL) {
+        if (feof(input_stream->file)) {
+            *error_code = EOF;
+            return NULL; // End of file reached
+        }
+        *error_code = ferror(input_stream->file);
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
+        return NULL;
+    }
+
+    // Ensure the string is null-terminated
+    size_t len = strlen(buf);
+    if (len > 0 && buf[len - 1] == '\n') {
+        buf[len - 1] = '\0'; // Remove the newline character
+    }
+
+    // Trim any leading or trailing whitespace
+    fossil_io_trim(buf);
+
+    return buf;
+}
+
 /* Case-insensitive contains */
 static int strncase_contains(const char *haystack, const char *needle, size_t len) {
     size_t nlen = strlen(needle);
