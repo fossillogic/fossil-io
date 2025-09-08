@@ -43,17 +43,6 @@
 #define FOSSIL_SAN_BOT       0x40
 #define FOSSIL_SAN_SPAM      0x80
 
-/* ============================================================
- * Context enum — what’s allowed depends on usage
- * ============================================================ */
-typedef enum {
-    FOSSIL_CTX_GENERIC = 0,  /* balanced approach (default) */
-    FOSSIL_CTX_HTML,         /* for rendering in HTML */
-    FOSSIL_CTX_SQL,          /* for SQL queries (still use params!) */
-    FOSSIL_CTX_SHELL,        /* for shell commands */
-    FOSSIL_CTX_FILENAME      /* for filenames */
-} fossil_context_t;
-
 
 // Function to trim leading and trailing spaces from a string
 void fossil_io_trim(char *str) {
