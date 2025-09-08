@@ -17,6 +17,15 @@
 #include <stdarg.h>
 #include "stream.h"
 
+/* Contexts */
+typedef enum {
+    FOSSIL_CTX_GENERIC,
+    FOSSIL_CTX_HTML,
+    FOSSIL_CTX_SQL,
+    FOSSIL_CTX_SHELL,
+    FOSSIL_CTX_FILENAME
+} fossil_context_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -134,14 +143,68 @@ int fossil_io_validate_is_email(const char *input);
 int fossil_io_validate_is_length(const char *input, size_t max_length);
 
 /**
- * @brief Sanitizes the input string and stores the sanitized result in the output buffer.
- * 
- * @param input The input string to sanitize.
- * @param output The buffer where the sanitized string will be stored.
- * @param output_size The size of the output buffer.
- * @return A fossil_io_validate_error_t indicating the result of the sanitization process.
+ * Check if password is weak or bad.
+ *
+ * Returns:
+ *   1 if password is weak/bad
+ *   0 if password passes the basic checks
  */
-int fossil_io_validate_sanitize_string(const char *input, char *output, size_t output_size);
+int fossil_io_validate_is_weak_password(const char *password,
+                                        const char *username,
+                                        const char *email);
+
+/**
+ * Check if a user-agent string looks like a bot/crawler
+ */
+int fossil_io_validate_is_suspicious_bot(const char *input);
+
+/**
+ * Check if an email belongs to a disposable / suspicious domain
+ */
+int fossil_io_validate_is_disposable_email(const char *input);
+
+/**
+ * Check if a string looks like a bot-style username:
+ *  - Too many digits in a row
+ *  - High ratio of digits to letters
+ *  - Contains suspicious words like "bot", "test", "fake"
+ *  - Looks like random noise (entropy check)
+ */
+int fossil_io_validate_is_suspicious_user(const char *input)
+
+/**
+ * @brief Validate and sanitize a string according to a specified context.
+ *
+ * This function scans the input string for suspicious content (scripts, SQL injection,
+ * shell commands, bots, spam, path traversal, or long base64 blobs) and performs
+ * context-aware sanitization by replacing disallowed characters with underscores.
+ * It also returns a bitmask indicating the types of issues detected.
+ *
+ * @param input         The input string to be validated and sanitized. Must not be NULL.
+ * @param output        The buffer to receive the sanitized string. Must not be NULL.
+ * @param output_size   The size of the output buffer. Must be greater than 0.
+ * @param ctx           The context in which the string will be used, which determines
+ *                      the allowed character set and stricter rules for certain contexts.
+ *
+ * @return Bitmask of flags indicating results:
+ *         - FOSSIL_SAN_OK        (0x00): No issues detected; string is clean.
+ *         - FOSSIL_SAN_MODIFIED  (0x01): Input was modified during sanitization.
+ *         - FOSSIL_SAN_SCRIPT    (0x02): Script or JavaScript patterns detected.
+ *         - FOSSIL_SAN_SQL       (0x04): SQL injection patterns detected.
+ *         - FOSSIL_SAN_SHELL     (0x08): Shell or command execution patterns detected.
+ *         - FOSSIL_SAN_BASE64    (0x10): Suspiciously long base64 sequences detected.
+ *         - FOSSIL_SAN_PATH      (0x20): Path traversal or filesystem patterns detected.
+ *         - FOSSIL_SAN_BOT       (0x40): Bot or automated agent patterns detected.
+ *         - FOSSIL_SAN_SPAM      (0x80): Spam or suspicious marketing content detected.
+ *
+ * @note The sanitized output is always null-terminated and will not exceed
+ *       output_size bytes. The function uses heuristics and is not a substitute
+ *       for context-specific escaping or prepared statements in SQL/HTML.
+ */
+int fossil_io_validate_sanitize_string_ctx(const char *input,
+                                           char *output,
+                                           size_t output_size,
+                                           fossil_context_t ctx);
 
 /**
  * Displays a menu of choices and returns the selected choice.
@@ -425,15 +488,53 @@ namespace fossil {
             }
 
             /**
-             * @brief Sanitizes the input string and stores the sanitized result in the output buffer.
-             * 
-             * @param input The input string to sanitize.
-             * @param output The buffer where the sanitized string will be stored.
-             * @param output_size The size of the output buffer.
-             * @return A fossil_io_validate_error_t indicating the result of the sanitization process.
+             * Check if password is weak or bad.
+             * Returns true if weak/bad, false otherwise.
              */
-            static int validate_sanitize_string(const char *input, char *output, size_t output_size) {
-                return fossil_io_validate_sanitize_string(input, output, output_size);
+            static bool is_weak_password(const std::string &password,
+                                       const std::string &username = "",
+                                       const std::string &email = "") {
+                return fossil_io_validate_is_weak_password(
+                    password.c_str(),
+                    username.empty() ? nullptr : username.c_str(),
+                    email.empty() ? nullptr : email.c_str()) != 0;
+            }
+        
+            /**
+             * Check if a user-agent string looks like a bot/crawler
+             */
+            static bool is_suspicious_bot(const std::string &userAgent) {
+                return fossil_io_validate_is_suspicious_bot(userAgent.c_str()) != 0;
+            }
+        
+            /**
+             * Check if an email belongs to a disposable / suspicious domain
+             */
+            static bool is_disposable_email(const std::string &email) {
+                return fossil_io_validate_is_disposable_email(email.c_str()) != 0;
+            }
+        
+            /**
+             * Check if a string looks like a bot-style username
+             */
+            static bool is_suspicious_user(const std::string &username) {
+                return fossil_io_validate_is_suspicious_user(username.c_str()) != 0;
+            }
+        
+            /**
+             * Sanitize a string according to context.
+             * Returns the bitmask flags from the sanitizer.
+             */
+            static int validate_sanitize_string(std::string &input, fossil_context_t ctx) {
+                std::vector<char> buffer(input.size() + 1);
+                int flags = fossil_io_validate_sanitize_string_ctx(
+                    input.c_str(),
+                    buffer.data(),
+                    buffer.size(),
+                    ctx
+                );
+                input.assign(buffer.data());
+                return flags;
             }
 
             /**
