@@ -39,6 +39,28 @@ extern "C" {
 int fossil_io_getc(fossil_fstream_t *input_stream);
 
 /**
+ * @brief Trim leading and trailing whitespace from a string in place.
+ *
+ * This function removes all whitespace characters (spaces, tabs, newlines, etc.)
+ * from the beginning and end of the input string. The trimming is done **in place**,
+ * modifying the original string, and the result is always null-terminated.
+ *
+ * @param str Pointer to the null-terminated string to be trimmed.
+ *            Must not be NULL. If the string is empty or contains only whitespace,
+ *            it will be converted to an empty string ("").
+ *
+ * @note This function does not allocate memory; it simply shifts characters within
+ *       the existing string buffer. The caller is responsible for ensuring that
+ *       the buffer is writable and large enough to hold the original string.
+ *
+ * @example
+ * char s[] = "   hello world  \n";
+ * fossil_io_trim(s);
+ * // s now contains "hello world"
+ */
+void fossil_io_trim(char *str);
+
+/**
  * Reads a line from the input stream and stores it into the buffer pointed to by 'buf'.
  * 
  * @param buf           Pointer to the buffer where the line will be stored.
@@ -337,6 +359,30 @@ namespace fossil {
              */
             static int getc(fossil_fstream_t *input_stream) {
                 return fossil_io_getc(input_stream);
+            }
+
+            /**
+             * @brief Trim leading and trailing whitespace from a string in place.
+             *
+             * This function removes all whitespace characters (spaces, tabs, newlines, etc.)
+             * from the beginning and end of the input string. The trimming is done **in place**,
+             * modifying the original string, and the result is always null-terminated.
+             *
+             * @param str Pointer to the null-terminated string to be trimmed.
+             *            Must not be NULL. If the string is empty or contains only whitespace,
+             *            it will be converted to an empty string ("").
+             *
+             * @note This function does not allocate memory; it simply shifts characters within
+             *       the existing string buffer. The caller is responsible for ensuring that
+             *       the buffer is writable and large enough to hold the original string.
+             *
+             * @example
+             * char s[] = "   hello world  \n";
+             * fossil_io_trim(s);
+             * // s now contains "hello world"
+             */
+            static void trim(char *str) {
+                fossil_io_trim(str);
             }
 
             /**
