@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <math.h>
 
 #ifdef __WIN32
 #include <windows.h>
@@ -307,7 +308,7 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
     const char *bad_keywords[] = {"bot", "test", "fake", "spam", "zzz", "null", "admin"};
     size_t nkeys = sizeof(bad_keywords) / sizeof(bad_keywords[0]);
     for (size_t i = 0; i < nkeys; i++) {
-        if (strcasestr(input, bad_keywords[i]) != NULL) {
+        if (fossil_io_cstring_case_search(input, bad_keywords[i]) != NULL) {
             return 1;
         }
     }
@@ -339,7 +340,7 @@ int fossil_io_validate_is_disposable_email(const char *input) {
     size_t ndomains = sizeof(disposable_domains) / sizeof(disposable_domains[0]);
 
     for (size_t i = 0; i < ndomains; i++) {
-        if (strcasecmp(at + 1, disposable_domains[i]) == 0) {
+        if (fossil_io_cstring_case_compare(at + 1, disposable_domains[i]) == 0) {
             return 1;
         }
     }
@@ -356,7 +357,7 @@ int fossil_io_validate_is_suspicious_bot(const char *input) {
     size_t nsignatures = sizeof(bot_signatures) / sizeof(bot_signatures[0]);
 
     for (size_t i = 0; i < nsignatures; i++) {
-        if (strcasestr(input, bot_signatures[i]) != NULL) {
+        if (fossil_io_cstring_case_search(input, bot_signatures[i]) != NULL) {
             return 1;
         }
     }
@@ -396,7 +397,7 @@ int fossil_io_validate_is_weak_password(const char *password,
     };
     size_t weak_count = sizeof(weak_list) / sizeof(weak_list[0]);
     for (size_t i = 0; i < weak_count; i++) {
-        if (strcasecmp(password, weak_list[i]) == 0) {
+        if (fossil_io_cstring_case_compare(password, weak_list[i]) == 0) {
             return 1;
         }
     }
@@ -413,10 +414,10 @@ int fossil_io_validate_is_weak_password(const char *password,
     }
 
     // 5. Prevent reuse of username or email as password
-    if (username && *username && strcasecmp(password, username) == 0) {
+    if (username && *username && fossil_io_cstring_case_compare(password, username) == 0) {
         return 1;
     }
-    if (email && *email && strcasecmp(password, email) == 0) {
+    if (email && *email && fossil_io_cstring_case_compare(password, email) == 0) {
         return 1;
     }
 
