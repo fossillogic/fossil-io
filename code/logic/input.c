@@ -32,6 +32,73 @@
 #endif
 
 /* ============================================================
+ * Helpers
+ * ============================================================ */
+
+static inline int is_allowed_generic(char c) {
+    if (isalnum((unsigned char)c)) return 1;
+    switch (c) {
+        case ' ': case '_': case '-': case '.': case ',': case ':':
+        case '/': case '\\': case '@': case '+': case '=': case '#':
+        case '%': case '(': case ')': case '[': case ']':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+/* Allowed chars for specific contexts */
+static inline int is_allowed_html(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='-' || c=='_' || c=='.' || c==',' );
+}
+
+static inline int is_allowed_sql(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' );
+}
+
+static inline int is_allowed_shell(char c) {
+    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' || c=='.' || c=='/' );
+}
+
+static inline int is_allowed_filename(char c) {
+    return (isalnum((unsigned char)c) || c=='_' || c=='-' || c=='.');
+}
+
+/* Base64 heuristic */
+static int long_base64_run(const char *s, size_t len, size_t threshold) {
+    size_t run = 0;
+    for (size_t i = 0; i < len; ++i) {
+        unsigned char c = (unsigned char)s[i];
+        if ((c >= 'A' && c <= 'Z') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') ||
+            c == '+' || c == '/' || c == '=') {
+            run++;
+            if (run >= threshold) return 1;
+        } else {
+            run = 0;
+        }
+    }
+    return 0;
+}
+
+/* Case-insensitive contains */
+static int strncase_contains(const char *haystack, const char *needle, size_t len) {
+    size_t nlen = strlen(needle);
+    if (nlen == 0 || nlen > len) return 0;
+    for (size_t i = 0; i + nlen <= len; i++) {
+        size_t j;
+        for (j = 0; j < nlen; j++) {
+            char a = haystack[i+j];
+            char b = needle[j];
+            if (tolower((unsigned char)a) != tolower((unsigned char)b)) break;
+        }
+        if (j == nlen) return 1;
+    }
+    return 0;
+}
+
+/* ============================================================
  * Bitmask flags for detection
  * ============================================================ */
 #define FOSSIL_SAN_OK        0x00
@@ -510,76 +577,8 @@ int fossil_io_validate_is_length(const char *input, size_t max_length) {
 }
 
 /* ============================================================
- * Helpers
- * ============================================================ */
-
-static inline int is_allowed_generic(char c) {
-    if (isalnum((unsigned char)c)) return 1;
-    switch (c) {
-        case ' ': case '_': case '-': case '.': case ',': case ':':
-        case '/': case '\\': case '@': case '+': case '=': case '#':
-        case '%': case '(': case ')': case '[': case ']':
-            return 1;
-        default:
-            return 0;
-    }
-}
-
-/* Allowed chars for specific contexts */
-static inline int is_allowed_html(char c) {
-    return (isalnum((unsigned char)c) || c==' ' || c=='-' || c=='_' || c=='.' || c==',' );
-}
-
-static inline int is_allowed_sql(char c) {
-    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' );
-}
-
-static inline int is_allowed_shell(char c) {
-    return (isalnum((unsigned char)c) || c==' ' || c=='_' || c=='-' || c=='.' || c=='/' );
-}
-
-static inline int is_allowed_filename(char c) {
-    return (isalnum((unsigned char)c) || c=='_' || c=='-' || c=='.');
-}
-
-/* Base64 heuristic */
-static int long_base64_run(const char *s, size_t len, size_t threshold) {
-    size_t run = 0;
-    for (size_t i = 0; i < len; ++i) {
-        unsigned char c = (unsigned char)s[i];
-        if ((c >= 'A' && c <= 'Z') ||
-            (c >= 'a' && c <= 'z') ||
-            (c >= '0' && c <= '9') ||
-            c == '+' || c == '/' || c == '=') {
-            run++;
-            if (run >= threshold) return 1;
-        } else {
-            run = 0;
-        }
-    }
-    return 0;
-}
-
-/* Case-insensitive contains */
-static int strncase_contains(const char *haystack, const char *needle, size_t len) {
-    size_t nlen = strlen(needle);
-    if (nlen == 0 || nlen > len) return 0;
-    for (size_t i = 0; i + nlen <= len; i++) {
-        size_t j;
-        for (j = 0; j < nlen; j++) {
-            char a = haystack[i+j];
-            char b = needle[j];
-            if (tolower((unsigned char)a) != tolower((unsigned char)b)) break;
-        }
-        if (j == nlen) return 1;
-    }
-    return 0;
-}
-
-/* ============================================================
  * Sanitizer with bitmask + context
  * ============================================================ */
-z
 
 int fossil_io_gets(char *buffer, size_t size) {
     if (fgets(buffer, size, stdin) == NULL) {
