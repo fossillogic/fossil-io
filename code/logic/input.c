@@ -243,7 +243,7 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_fstream_t *input
 }
 
 /* --- sanitizer --- */
-int fossil_io_validate_sanitize_string_ctx(const char *input,
+int fossil_io_validate_sanitize_string(const char *input,
                                            char *output,
                                            size_t output_size,
                                            fossil_context_t ctx) {
@@ -268,25 +268,51 @@ int fossil_io_validate_sanitize_string_ctx(const char *input,
 
     /* Suspicious patterns */
     const char *script_patterns[] = {
-        "<script", "javascript:", "onerror=", "onload=", "onclick=", "eval(", NULL
+        "<script", "javascript:", "onerror=", "onload=", "onclick=",
+        "eval(", "document.cookie", "alert(", "src=", "iframe", "onmouseover=",
+        "onfocus=", "onblur=", "onchange=", "oninput=", "onreset=", "onsubmit=",
+        "onselect=", "onkeydown=", "onkeyup=", "onkeypress=", "onmousedown=",
+        "onmouseup=", "onmousemove=", "onmouseenter=", "onmouseleave=", "onwheel=",
+        "oncontextmenu=", "oncopy=", "oncut=", "onpaste=", "location.href",
+        "window.open", "window.location", NULL
     };
     const char *sql_patterns[] = {
         "select ", "insert ", "update ", "delete ", "drop ", "union ",
-        "--", ";--", "/*", "*/", "0x", NULL
+        "--", ";--", "/*", "*/", "0x", "xp_", "exec ", "sp_", "information_schema",
+        "truncate ", "alter ", "create ", "rename ", "grant ", "revoke ", "cast(",
+        "convert(", "declare ", "fetch ", "open ", "close ", "rollback ", "commit ",
+        "savepoint ", "release ", "begin ", "end ", NULL
     };
     const char *shell_patterns[] = {
         "curl ", "wget ", "rm -rf", "powershell", "cmd.exe",
-        "exec(", "system(", "|", "&&", "||", NULL
+        "exec(", "system(", "|", "&&", "||", "bash", "sh", "zsh", "fish", "scp ",
+        "ssh ", "ftp ", "tftp ", "nc ", "netcat ", "nmap ", "chmod ", "chown ",
+        "sudo ", "kill ", "pkill ", "ps ", "ls ", "cat ", "dd ", "mkfs ", "mount ",
+        "umount ", "service ", "systemctl ", "init ", "reboot ", "shutdown ",
+        "start ", "stop ", "restart ", NULL
     };
     const char *bot_patterns[] = {
-        "bot", "crawler", "spider", "curl/", "python-requests", "scrapy", NULL
+        "bot", "crawler", "spider", "curl/", "python-requests", "scrapy", "httpclient",
+        "libwww", "wget", "java", "go-http-client", "phantomjs", "selenium", "headless",
+        "robot", "checker", "monitor", "scan", "probe", "harvest", "grabber", "fetcher",
+        "indexer", "parser", "api-client", "node-fetch", "axios", NULL
     };
     const char *spam_patterns[] = {
         "viagra", "free money", "winner", "prize", "click here",
-        "http://", "https://", "meta refresh", NULL
+        "http://", "https://", "meta refresh", "casino", "loan", "credit", "bitcoin",
+        "crypto", "forex", "investment", "guaranteed", "risk-free", "unsubscribe",
+        "buy now", "limited offer", "act now", "earn cash", "work from home", "miracle",
+        "weight loss", "no prescription", "cheap", "discount", "deal", "promo", "bonus",
+        "gift", "exclusive", "urgent", "clearance", "bargain", "order now", "trial",
+        "winner!", "congratulations", "selected", "luxury", "get rich", "easy money",
+        NULL
     };
     const char *path_patterns[] = {
-        "../", "..\\", "/etc/passwd", "C:\\", NULL
+        "../", "..\\", "/etc/passwd", "C:\\", "/proc/self/environ", "/proc/version",
+        "/proc/cpuinfo", "/proc/meminfo", "/boot.ini", "/windows/", "/winnt/", "/system32/",
+        "/sys/", "/dev/", "/bin/", "/sbin/", "/usr/", "/var/", "/tmp/", "/root/", "/home/",
+        "/Users/", "/Documents/", "/AppData/", "/Local/", "/Roaming/", "/Program Files/",
+        "/ProgramData/", "/Desktop/", "/Downloads/", NULL
     };
 
     /* Scan categories */
@@ -385,26 +411,45 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
     // 1. Too long or too short
     if (len < 3 || len > 32) return 1;
 
-    // 2. Count digits, letters, and digit runs
+    // 2. Count digits, letters, digit runs, and symbol runs
     int digit_run = 0, max_digit_run = 0, digit_count = 0, alpha_count = 0;
+    int symbol_run = 0, max_symbol_run = 0, symbol_count = 0;
     for (size_t i = 0; i < len; i++) {
         if (isdigit((unsigned char)input[i])) {
             digit_run++;
             digit_count++;
             if (digit_run > max_digit_run) max_digit_run = digit_run;
-        } else {
+            symbol_run = 0;
+        } else if (isalpha((unsigned char)input[i])) {
+            alpha_count++;
             digit_run = 0;
-            if (isalpha((unsigned char)input[i])) alpha_count++;
+            symbol_run = 0;
+        } else {
+            symbol_run++;
+            symbol_count++;
+            digit_run = 0;
+            if (symbol_run > max_symbol_run) max_symbol_run = symbol_run;
         }
     }
 
-    // 3. Check for long digit runs or too few letters
+    // 3. Check for long digit/symbol runs or too few letters
     if (max_digit_run >= 5) return 1;                  // suspicious long digit tail
+    if (max_symbol_run >= 4) return 1;                 // suspicious long symbol run
     if ((float)digit_count / len > 0.5) return 1;      // mostly digits
     if ((float)alpha_count / len < 0.3) return 1;      // too few letters
+    if ((float)symbol_count / len > 0.3) return 1;     // too many symbols
 
-    // 4. Suspicious keywords
-    const char *bad_keywords[] = {"bot", "test", "fake", "spam", "zzz", "null", "admin"};
+    // 4. Suspicious keywords and patterns
+    const char *bad_keywords[] = {
+        "bot", "test", "fake", "spam", "zzz", "null", "admin",
+        "user", "guest", "demo", "temp", "unknown", "default", "root",
+        "system", "anonymous", "trial", "sample", "password", "qwerty",
+        "abc123", "123456", "login", "register", "support", "contact",
+        "info", "webmaster", "help", "service", "account", "manager",
+        "api", "sys", "operator", "mod", "moderator", "superuser",
+        "owner", "master", "testuser", "tester", "dev", "developer",
+        "backup", "restore", "error", "fail", "invalid", "void"
+    };
     size_t nkeys = sizeof(bad_keywords) / sizeof(bad_keywords[0]);
     for (size_t i = 0; i < nkeys; i++) {
         if (fossil_io_cstring_case_search(input, bad_keywords[i]) != NULL) {
@@ -412,7 +457,26 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
         }
     }
 
-    // 5. Very high entropy (simple Shannon estimate)
+    // 5. Common suspicious patterns (repetitive, alternating, keyboard walks)
+    int repetitive = 1, alternating = 1;
+    for (size_t i = 1; i < len; i++) {
+        if (input[i] != input[i - 1]) repetitive = 0;
+        if (i > 1 && input[i] != input[i - 2]) alternating = 0;
+    }
+    if (repetitive || alternating) return 1;
+
+    // 6. Keyboard walk detection (e.g., "qwerty", "asdf", "zxcv")
+    const char *keyboard_walks[] = {
+        "qwerty", "asdf", "zxcv", "12345", "67890", "poiuy", "lkjhg", "mnbvc"
+    };
+    size_t nwalks = sizeof(keyboard_walks) / sizeof(keyboard_walks[0]);
+    for (size_t i = 0; i < nwalks; i++) {
+        if (fossil_io_cstring_case_search(input, keyboard_walks[i]) != NULL) {
+            return 1;
+        }
+    }
+
+    // 7. Very high entropy (simple Shannon estimate)
     int freq[256] = {0};
     for (size_t i = 0; i < len; i++) freq[(unsigned char)input[i]]++;
     double entropy = 0.0;
@@ -423,6 +487,16 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
         }
     }
     if (entropy > 4.5) return 1; // suspiciously random-like
+
+    // 8. Looks like an email or URL
+    if (strchr(input, '@') || fossil_io_cstring_case_search(input, "http") != NULL) return 1;
+
+    // 9. Looks like a UUID or hex string
+    int hex_count = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (isxdigit((unsigned char)input[i])) hex_count++;
+    }
+    if (hex_count == len && len >= 16) return 1;
 
     return 0; // not flagged
 }

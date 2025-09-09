@@ -223,7 +223,7 @@ int fossil_io_validate_is_suspicious_user(const char *input);
  *       output_size bytes. The function uses heuristics and is not a substitute
  *       for context-specific escaping or prepared statements in SQL/HTML.
  */
-int fossil_io_validate_sanitize_string_ctx(const char *input,
+int fossil_io_validate_sanitize_string(const char *input,
                                            char *output,
                                            size_t output_size,
                                            fossil_context_t ctx);
@@ -573,7 +573,7 @@ namespace fossil {
              */
             static int validate_sanitize_string(std::string &input, fossil_context_t ctx) {
                 std::vector<char> buffer(input.size() + 1);
-                int flags = fossil_io_validate_sanitize_string_ctx(
+                int flags = fossil_io_validate_sanitize_string(
                     input.c_str(),
                     buffer.data(),
                     buffer.size(),
