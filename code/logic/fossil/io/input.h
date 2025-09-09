@@ -26,6 +26,17 @@ typedef enum {
     FOSSIL_CTX_FILENAME
 } fossil_context_t;
 
+/* Bitmask flags for string sanitization results */
+#define FOSSIL_SAN_OK        0x00  /* No issues detected; string is clean */
+#define FOSSIL_SAN_MODIFIED  0x01  /* Input was modified during sanitization */
+#define FOSSIL_SAN_SCRIPT    0x02  /* Script or JavaScript patterns detected */
+#define FOSSIL_SAN_SQL       0x04  /* SQL injection patterns detected */
+#define FOSSIL_SAN_SHELL     0x08  /* Shell or command execution patterns detected */
+#define FOSSIL_SAN_BASE64    0x10  /* Suspiciously long base64 sequences detected */
+#define FOSSIL_SAN_PATH      0x20  /* Path traversal or filesystem patterns detected */
+#define FOSSIL_SAN_BOT       0x40  /* Bot or automated agent patterns detected */
+#define FOSSIL_SAN_SPAM      0x80  /* Spam or suspicious marketing content detected */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

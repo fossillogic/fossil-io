@@ -127,20 +127,6 @@ static int strncase_contains(const char *haystack, const char *needle, size_t le
     return 0;
 }
 
-/* ============================================================
- * Bitmask flags for detection
- * ============================================================ */
-#define FOSSIL_SAN_OK        0x00
-#define FOSSIL_SAN_MODIFIED  0x01
-#define FOSSIL_SAN_SCRIPT    0x02
-#define FOSSIL_SAN_SQL       0x04
-#define FOSSIL_SAN_SHELL     0x08
-#define FOSSIL_SAN_BASE64    0x10
-#define FOSSIL_SAN_PATH      0x20
-#define FOSSIL_SAN_BOT       0x40
-#define FOSSIL_SAN_SPAM      0x80
-
-
 // Function to trim leading and trailing spaces from a string
 void fossil_io_trim(char *str) {
     if (str == NULL) return;
