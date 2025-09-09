@@ -492,7 +492,7 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
     if (strchr(input, '@') || fossil_io_cstring_case_search(input, "http") != NULL) return 1;
 
     // 9. Looks like a UUID or hex string
-    int hex_count = 0;
+    size_t hex_count = 0;
     for (size_t i = 0; i < len; i++) {
         if (isxdigit((unsigned char)input[i])) hex_count++;
     }
