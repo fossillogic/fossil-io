@@ -172,7 +172,7 @@ FOSSIL_TEST(c_test_io_soap_detect_quality_true) {
 }
 
 FOSSIL_TEST(c_test_io_soap_detect_quality_false) {
-    const char *input = "Wow, this is amazing!";
+    const char *input = "This method is reliable and follows strict methodology.";
     int result = fossil_io_soap_detect_quality(input);
     ASSUME_ITS_FALSE(result);
 }
