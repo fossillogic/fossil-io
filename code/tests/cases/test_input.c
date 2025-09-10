@@ -43,6 +43,60 @@ FOSSIL_TEARDOWN(c_input_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
+FOSSIL_TEST(c_test_io_trim_leading_and_trailing_spaces) {
+    char s[] = "   hello world   ";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("hello world", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_leading_tabs_and_newlines) {
+    char s[] = "\t\n\r  hello world\n\t\r";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("hello world", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_only_leading_whitespace) {
+    char s[] = "   hello";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("hello", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_only_trailing_whitespace) {
+    char s[] = "hello   \n";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("hello", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_no_whitespace) {
+    char s[] = "helloworld";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("helloworld", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_all_whitespace) {
+    char s[] = "   \t\n\r  ";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_empty_string) {
+    char s[] = "";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_whitespace_only_newline) {
+    char s[] = "\n";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("", s);
+}
+
+FOSSIL_TEST(c_test_io_trim_whitespace_middle_preserved) {
+    char s[] = "  hello   world  ";
+    fossil_io_trim(s);
+    ASSUME_ITS_EQUAL_CSTR("hello   world", s);
+}
+
 FOSSIL_TEST(c_test_io_gets_from_stream) {
     const char *input_data = "test input\n";
     fossil_fstream_t input_stream = {tmpfile(), "tempfile"};
@@ -372,11 +426,326 @@ FOSSIL_TEST(c_test_io_validate_is_suspicious_user_entropy) {
     ASSUME_ITS_TRUE(result);
 }
 
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script_case_variants) {
+    const char *inputs[] = {
+        "<SCRIPT>alert('xss')</SCRIPT>",
+        "<ScRiPt>alert('xss')</ScRiPt>",
+        "<script type='text/javascript'>alert('xss')</script>",
+        "<script src='evil.js'></script>",
+        "<script>alert('xss')",
+        " <script >alert('xss')</script > ",
+        "text<script>alert('xss')</script>text"
+    };
+    char output[128];
+    for (size_t i = 0; i < sizeof(inputs)/sizeof(inputs[0]); i++) {
+        int flags = fossil_io_validate_sanitize_string(inputs[i], output, sizeof(output), FOSSIL_CTX_HTML);
+        ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+        ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+    }
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script_embedded) {
+    const char *input = "normal text <script>alert('xss')</script> more text";
+    char output[128];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script_incomplete_tag) {
+    const char *input = "<script>alert('xss')";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script_with_event_handler) {
+    const char *input = "<div onclick=\"evil()\">Click me</div>";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script_javascript_url) {
+    const char *input = "<a href=\"javascript:alert('xss')\">link</a>";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_lowercase) {
+    const char *input = "select * from users where name='admin';";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_mixed_case) {
+    const char *input = "SeLeCt * FrOm users WHERE name='admin' --";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_union) {
+    const char *input = "UNION SELECT password FROM users";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_comment) {
+    const char *input = "DROP TABLE users; --";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_hex) {
+    const char *input = "SELECT * FROM users WHERE id=0x1234";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_no_keywords) {
+    const char *input = "username123";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_SAN_OK, flags);
+    ASSUME_ITS_EQUAL_CSTR(input, output);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_tricky_pattern) {
+    const char *input = "SELECTnameFROMusers";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    // Should not match since no space after SELECT
+    ASSUME_ITS_EQUAL_I32(FOSSIL_SAN_OK, flags);
+    ASSUME_ITS_EQUAL_CSTR(input, output);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql_multiple_keywords) {
+    const char *input = "SELECT * FROM users; DROP TABLE users;";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_empty_string) {
+    const char *ua = "";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_null) {
+    const char *ua = NULL;
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_partial_keyword) {
+    const char *ua = "Mozilla/5.0 (compatible; botman/1.0)";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_TRUE(result); // "bot" substring triggers detection
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_case_insensitive) {
+    const char *ua = "Mozilla/5.0 (compatible; CRAWLER/1.0)";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_TRUE(result); // "crawl" substring triggers detection
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_multiple_signatures) {
+    const char *ua = "curl/7.68.0 python-requests/2.25.1";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_TRUE(result); // both "curl" and "python-requests" trigger detection
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_legit_browser_with_bot_word) {
+    const char *ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/90.0 botnet";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_TRUE(result); // "bot" substring triggers detection
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_non_bot_keywords) {
+    const char *ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_too_short) {
+    const char *password = "abc12";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Too short
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_too_long) {
+    char password[80];
+    memset(password, 'a', sizeof(password) - 1);
+    password[sizeof(password) - 1] = '\0';
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Too long
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_low_diversity) {
+    const char *password = "aaaaaaaa";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Not diverse
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_common_pattern) {
+    const char *password = "12345678";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Common weak password
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_sequential_inc) {
+    const char *password = "abcdefghi";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Sequential increasing
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_sequential_dec) {
+    const char *password = "987654321";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Sequential decreasing
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_same_as_username) {
+    const char *password = "user";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Same as username
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_same_as_email) {
+    const char *password = "user@example.com";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // Same as email
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_null_password) {
+    const char *password = NULL;
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result); // NULL password
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_minimum_valid) {
+    const char *password = "Abc123!@";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_FALSE(result); // Minimum valid, diverse
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_missing_at) {
+    const char *input = "testgmail.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_missing_domain_dot) {
+    const char *input = "test@gmailcom";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_empty_string) {
+    const char *input = "";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_null_input) {
+    const char *input = NULL;
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_valid_yahoo) {
+    const char *input = "user@yahoo.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_valid_outlook) {
+    const char *input = "person@outlook.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_valid_hotmail) {
+    const char *input = "someone@hotmail.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_valid_icloud) {
+    const char *input = "apple@icloud.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_invalid_subdomain) {
+    const char *input = "test@mail.gmail.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_invalid_no_local_part) {
+    const char *input = "@gmail.com";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_email_invalid_no_domain) {
+    const char *input = "test@";
+    int result = fossil_io_validate_is_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_input_tests) {
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_leading_and_trailing_spaces);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_leading_tabs_and_newlines);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_only_leading_whitespace);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_only_trailing_whitespace);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_no_whitespace);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_all_whitespace);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_empty_string);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_whitespace_only_newline);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_trim_whitespace_middle_preserved);
+
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_from_stream);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_from_stream_no_offensive);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_gets_from_stream_with_punctuation);
@@ -407,11 +776,58 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_clean);
+
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_many_digits);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_high_digit_ratio);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_contains_test);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_contains_fake);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_entropy);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script_case_variants);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script_embedded);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script_incomplete_tag);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script_with_event_handler);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script_javascript_url);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_lowercase);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_mixed_case);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_union);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_comment);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_hex);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_no_keywords);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_tricky_pattern);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql_multiple_keywords);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_empty_string);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_null);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_partial_keyword);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_case_insensitive);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_multiple_signatures);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_legit_browser_with_bot_word);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_non_bot_keywords);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_too_short);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_too_long);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_low_diversity);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_common_pattern);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_sequential_inc);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_sequential_dec);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_same_as_username);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_same_as_email);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_null_password);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_minimum_valid);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_missing_at);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_missing_domain_dot);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_empty_string);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_null_input);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_valid_yahoo);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_valid_outlook);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_valid_hotmail);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_valid_icloud);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_invalid_subdomain);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_invalid_no_local_part);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_email_invalid_no_domain);
 
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_success);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_duplicate);
