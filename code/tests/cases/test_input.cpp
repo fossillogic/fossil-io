@@ -485,6 +485,84 @@ FOSSIL_TEST(cpp_test_io_clear_keybindings) {
     ASSUME_ITS_EQUAL_I32(0, (int)bindings.size());
 }
 
+FOSSIL_TEST(cpp_test_io_validate_is_weak_password_simple) {
+    std::string password = "123456";
+    bool result = fossil::io::Input::is_weak_password(password);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_weak_password_with_username) {
+    std::string password = "username123";
+    std::string username = "username";
+    bool result = fossil::io::Input::is_weak_password(password, username);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_weak_password_with_email) {
+    std::string password = "emailpassword";
+    std::string email = "user@email.com";
+    bool result = fossil::io::Input::is_weak_password(password, "", email);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_weak_password_strong) {
+    std::string password = "Str0ng!Passw0rd#2024";
+    bool result = fossil::io::Input::is_weak_password(password);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_suspicious_bot_known_bot) {
+    std::string userAgent = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+    bool result = fossil::io::Input::is_suspicious_bot(userAgent);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_suspicious_bot_normal_browser) {
+    std::string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0";
+    bool result = fossil::io::Input::is_suspicious_bot(userAgent);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_disposable_email_true) {
+    std::string email = "user@mailinator.com";
+    bool result = fossil::io::Input::is_disposable_email(email);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_disposable_email_false) {
+    std::string email = "user@icloud.com";
+    bool result = fossil::io::Input::is_disposable_email(email);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_suspicious_user_true) {
+    std::string username = "bot_user_123";
+    bool result = fossil::io::Input::is_suspicious_user(username);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_is_suspicious_user_false) {
+    std::string username = "johnsmith";
+    bool result = fossil::io::Input::is_suspicious_user(username);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_sanitize_string_basic) {
+    std::string input = "Hello <script>alert('x')</script>!";
+    fossil_context_t ctx = FOSSIL_CTX_HTML;
+    int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
+    ASSUME_ITS_TRUE(flags != 0);
+    ASSUME_ITS_FALSE(input.find("<script>") != std::string::npos);
+}
+
+FOSSIL_TEST(cpp_test_io_validate_sanitize_string_noop) {
+    std::string input = "SafeString123";
+    fossil_context_t ctx = FOSSIL_CTX_NONE;
+    int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
+    ASSUME_ITS_EQUAL_I32(0, flags);
+    ASSUME_ITS_EQUAL_CSTR("SafeString123", input.c_str());
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -513,7 +591,6 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_invalid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_invalid);
-
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_ex);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_validate_input_buffer_valid);
@@ -522,7 +599,18 @@ FOSSIL_TEST_GROUP(cpp_input_tests) {
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_empty);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_whitespace_only);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_getc);
-
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_simple);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_with_username);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_with_email);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_strong);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_bot_known_bot);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_bot_normal_browser);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_disposable_email_true);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_disposable_email_false);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_user_true);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_user_false);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string_basic);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string_noop);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_success);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_duplicate);
     FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_register_keybinding_callback_success);

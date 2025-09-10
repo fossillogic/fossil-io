@@ -266,6 +266,112 @@ FOSSIL_TEST(c_test_io_clear_keybindings_removes_all) {
     ASSUME_ITS_EQUAL_I32(0, (int)count);
 }
 
+FOSSIL_TEST(c_test_io_validate_is_weak_password_bad) {
+    const char *password = "password123";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_weak_password_good) {
+    const char *password = "S3cure!Passw0rd";
+    const char *username = "user";
+    const char *email = "user@example.com";
+    int result = fossil_io_validate_is_weak_password(password, username, email);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_true) {
+    const char *ua = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_bot_false) {
+    const char *ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
+    int result = fossil_io_validate_is_suspicious_bot(ua);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_disposable_email_true) {
+    const char *input = "user@mailinator.com";
+    int result = fossil_io_validate_is_disposable_email(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_disposable_email_false) {
+    const char *input = "user@gmail.com";
+    int result = fossil_io_validate_is_disposable_email(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_true) {
+    const char *input = "bot123456";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_false) {
+    const char *input = "john_doe";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_FALSE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_script) {
+    const char *input = "<script>alert('xss')</script>";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SCRIPT);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_sql) {
+    const char *input = "SELECT * FROM users WHERE name='admin' --";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_SQL);
+    ASSUME_ITS_TRUE(flags & FOSSIL_SAN_MODIFIED);
+}
+
+FOSSIL_TEST(c_test_io_validate_sanitize_string_clean) {
+    const char *input = "SafeString123";
+    char output[64];
+    int flags = fossil_io_validate_sanitize_string(input, output, sizeof(output), FOSSIL_CTX_GENERIC);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_SAN_OK, flags);
+    ASSUME_ITS_EQUAL_CSTR(input, output);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_many_digits) {
+    const char *input = "user1234567890";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_high_digit_ratio) {
+    const char *input = "a1b2c3d4e5f6g7h8i9j0";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_contains_test) {
+    const char *input = "testuser";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_contains_fake) {
+    const char *input = "fakeaccount";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
+FOSSIL_TEST(c_test_io_validate_is_suspicious_user_entropy) {
+    const char *input = "x7q9z2w8v5r1t3y6u0";
+    int result = fossil_io_validate_is_suspicious_user(input);
+    ASSUME_ITS_TRUE(result);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -289,6 +395,23 @@ FOSSIL_TEST_GROUP(c_input_tests) {
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_valid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_length_invalid);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_getc);
+
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_bad);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_weak_password_good);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_true);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_bot_false);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_disposable_email_true);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_disposable_email_false);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_true);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_false);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_script);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_sql);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_sanitize_string_clean);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_many_digits);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_high_digit_ratio);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_contains_test);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_contains_fake);
+    FOSSIL_TEST_ADD(c_input_suite, c_test_io_validate_is_suspicious_user_entropy);
 
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_success);
     FOSSIL_TEST_ADD(c_input_suite, c_test_io_register_keybinding_duplicate);
