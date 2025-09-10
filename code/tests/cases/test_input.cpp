@@ -549,7 +549,7 @@ FOSSIL_TEST(cpp_test_io_validate_is_suspicious_user_false) {
 
 FOSSIL_TEST(cpp_test_io_validate_sanitize_string_basic) {
     std::string input = "Hello <script>alert('x')</script>!";
-    fossil_context_t ctx = FOSSIL_SANITIZE_HTML;
+    fossil_context_t ctx = FOSSIL_CTX_HTML;
     int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
     ASSUME_ITS_TRUE(flags != 0);
     ASSUME_ITS_FALSE(input.find("<script>") != std::string::npos);
@@ -557,7 +557,7 @@ FOSSIL_TEST(cpp_test_io_validate_sanitize_string_basic) {
 
 FOSSIL_TEST(cpp_test_io_validate_sanitize_string_noop) {
     std::string input = "SafeString123";
-    fossil_context_t ctx = FOSSIL_SANITIZE_NONE;
+    fossil_context_t ctx = FOSSIL_CTX_NONE;
     int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
     ASSUME_ITS_EQUAL_I32(0, flags);
     ASSUME_ITS_EQUAL_CSTR("SafeString123", input.c_str());
