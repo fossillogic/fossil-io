@@ -638,13 +638,15 @@ int fossil_io_validate_is_email(const char *input) {
 
     // Check for the presence of an '@' character
     const char *at = strchr(input, '@');
-    if (at == NULL) {
+    if (at == NULL || at == input) {
+        // No '@' or no local part before '@'
         return 0;
     }
 
     // Check for the presence of a '.' character after the '@' character
     const char *dot = strchr(at, '.');
-    if (dot == NULL) {
+    if (dot == NULL || dot == at + 1) {
+        // No '.' after '@' or nothing between '@' and '.'
         return 0;
     }
 
