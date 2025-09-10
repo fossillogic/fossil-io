@@ -23,7 +23,8 @@ typedef enum {
     FOSSIL_CTX_HTML,
     FOSSIL_CTX_SQL,
     FOSSIL_CTX_SHELL,
-    FOSSIL_CTX_FILENAME
+    FOSSIL_CTX_FILENAME,
+    FOSSIL_CTX_NONE
 } fossil_context_t;
 
 /* Bitmask flags for string sanitization results */
