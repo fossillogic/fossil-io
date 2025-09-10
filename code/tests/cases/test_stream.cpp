@@ -223,7 +223,7 @@ FOSSIL_TEST(cpp_test_stream_remove_file) {
 
     // Try removing again, should return FOSSIL_ERROR_FILE_NOT_FOUND
     int32_t remove_again_result = fossil_fstream_remove(filename);
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_IO, remove_again_result);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_FILE_NOT_FOUND, remove_again_result);
 
     // Try removing with NULL, should return FOSSIL_ERROR_CNULL_POINTER
     int32_t remove_null_result = fossil_fstream_remove(NULL);

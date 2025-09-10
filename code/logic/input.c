@@ -324,16 +324,25 @@ int fossil_io_validate_sanitize_string(const char *input,
         flags |= FOSSIL_SAN_BASE64;
 
     /* Sanitization pass */
+    int modified = 0;
     for (size_t i = 0; i < in_len && out_i < output_size - 1; i++) {
         char c = input[i];
         if (is_allowed(c)) {
             output[out_i++] = c;
         } else {
             output[out_i++] = '_'; /* neutralize */
-            flags |= FOSSIL_SAN_MODIFIED;
+            modified = 1;
         }
     }
     output[out_i] = '\0';
+
+    /* Edge case: SQL context, but input contains SQL keywords with only allowed chars */
+    if ((ctx == FOSSIL_CTX_SQL) && (flags & FOSSIL_SAN_SQL) && !modified) {
+        /* Force MODIFIED if SQL pattern detected but no chars were replaced */
+        flags |= FOSSIL_SAN_MODIFIED;
+    } else if (modified) {
+        flags |= FOSSIL_SAN_MODIFIED;
+    }
 
     return flags == 0 ? FOSSIL_SAN_OK : flags;
 }
@@ -638,13 +647,15 @@ int fossil_io_validate_is_email(const char *input) {
 
     // Check for the presence of an '@' character
     const char *at = strchr(input, '@');
-    if (at == NULL) {
+    if (at == NULL || at == input) {
+        // No '@' or no local part before '@'
         return 0;
     }
 
     // Check for the presence of a '.' character after the '@' character
     const char *dot = strchr(at, '.');
-    if (dot == NULL) {
+    if (dot == NULL || dot == at + 1) {
+        // No '.' after '@' or nothing between '@' and '.'
         return 0;
     }
 
