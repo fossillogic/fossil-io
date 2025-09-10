@@ -421,7 +421,8 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
     // 3. Check for long digit/symbol runs or too few letters
     if (max_digit_run >= 5) return 1;                  // suspicious long digit tail
     if (max_symbol_run >= 4) return 1;                 // suspicious long symbol run
-    if ((float)digit_count / len > 0.5) return 1;      // mostly digits
+    if (digit_count >= 8) return 1;                    // many digits (new: covers user1234567890)
+    if ((float)digit_count / len > 0.45) return 1;     // high digit ratio (new: covers a1b2c3d4e5f6g7h8i9j0)
     if ((float)alpha_count / len < 0.3) return 1;      // too few letters
     if ((float)symbol_count / len > 0.3) return 1;     // too many symbols
 
@@ -472,7 +473,7 @@ int fossil_io_validate_is_suspicious_user(const char *input) {
             entropy -= p * log2(p);
         }
     }
-    if (entropy > 4.5) return 1; // suspiciously random-like
+    if (entropy > 4.2) return 1; // slightly lower threshold for suspicious randomness
 
     // 8. Looks like an email or URL
     if (strchr(input, '@') || fossil_io_cstring_case_search(input, "http") != NULL) return 1;
