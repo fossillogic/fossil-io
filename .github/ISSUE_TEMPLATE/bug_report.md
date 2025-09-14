@@ -25,4 +25,8 @@ labels: bug
 - Version/Commit: [e.g. v1.2.3 or commit SHA]
 
 ## Additional Context
+<<<<<<< HEAD
 <!-- Any other info that might help us debug. -->
+=======
+<!-- Any other info that might help us debug. -->
+>>>>>>> 8fa1a3c6925c6eca33bb790e3bd44098e27e32bb

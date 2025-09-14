@@ -18,4 +18,8 @@ labels: enhancement
 <!-- If you considered other approaches, mention them here. -->
 
 ## Additional Context
+<<<<<<< HEAD
 <!-- Optional: Extra information, diagrams, or references. -->
+=======
+<!-- Optional: Extra information, diagrams, or references. -->
+>>>>>>> 8fa1a3c6925c6eca33bb790e3bd44098e27e32bb
