@@ -95,7 +95,7 @@ jobs:
 
       - name: Install Meson
         run: |
-          python -m pip install meson==1.8.0 ninja
+          python -m pip install meson ninja
 
       - name: Configure the Project
         run: |
@@ -104,3 +104,7 @@ jobs:
       - name: Build the Project
         run: |
           meson compile -C builddir
+
+      - name: Test the Project
+        run: |
+          meson test -C builddir -v --test-args='show --mode tree --verbose ci --result fail'
