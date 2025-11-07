@@ -31,55 +31,129 @@
 extern "C" {
 #endif
 
-// ===============================
-// Error Codes
-// ===============================
-typedef enum {
-    FOSSIL_IO_ARCHIVE_OK = 0,
-    FOSSIL_IO_ARCHIVE_ERR_OPEN,
-    FOSSIL_IO_ARCHIVE_ERR_READ,
-    FOSSIL_IO_ARCHIVE_ERR_WRITE,
-    FOSSIL_IO_ARCHIVE_ERR_FORMAT,
-    FOSSIL_IO_ARCHIVE_ERR_MEMORY,
-    FOSSIL_IO_ARCHIVE_ERR_UNSUPPORTED,
-} fossil_io_archive_error_t;
+// ======================================================
+// Fossil IO — Archive Sub-Library
+// ======================================================
 
-// ===============================
-// Archive Handle
-// ===============================
+/**
+ * Supported archive types.
+ */
+typedef enum fossil_io_archive_type {
+    FOSSIL_IO_ARCHIVE_UNKNOWN = 0,
+    FOSSIL_IO_ARCHIVE_ZIP,
+    FOSSIL_IO_ARCHIVE_TAR,
+    FOSSIL_IO_ARCHIVE_TARGZ,
+    FOSSIL_IO_ARCHIVE_RAR,
+    FOSSIL_IO_ARCHIVE_7Z,
+    FOSSIL_IO_ARCHIVE_ALL // wildcard for detection
+} fossil_io_archive_type_t;
+
+/**
+ * Opaque archive handle.
+ */
 typedef struct fossil_io_archive fossil_io_archive_t;
 
-// ===============================
-// File Info
-// ===============================
-typedef struct {
-    char *name;         // File path inside archive
-    size_t size;        // Uncompressed size
-    uint32_t crc32;     // CRC32 checksum
-    bool is_dir;        // Directory flag
-} fossil_io_archive_file_t;
+/**
+ * File entry inside an archive.
+ */
+typedef struct fossil_io_archive_entry {
+    char *name;              // Path/name inside archive
+    size_t size;             // Size of the file
+    bool is_directory;       // True if directory
+    uint64_t modified_time;  // Epoch timestamp
+} fossil_io_archive_entry_t;
 
-// ===============================
-// Archive Operations
-// ===============================
+// ======================================================
+// Initialization & Cleanup
+// ======================================================
 
-// Open archive for reading or writing
-fossil_io_archive_t* fossil_io_archive_open(const char *path, const char *mode, fossil_io_archive_error_t *err);
+/**
+ * Initialize an archive handle.
+ */
+fossil_io_archive_t* fossil_io_archive_open(const char *path, fossil_io_archive_type_t type);
 
-// Close archive
+/**
+ * Close and free an archive handle.
+ */
 void fossil_io_archive_close(fossil_io_archive_t *archive);
 
-// List files
-fossil_io_archive_file_t* fossil_io_archive_list(fossil_io_archive_t *archive, size_t *count, fossil_io_archive_error_t *err);
+// ======================================================
+// Archive Inspection
+// ======================================================
 
-// Extract a file
-fossil_io_archive_error_t fossil_io_archive_extract(fossil_io_archive_t *archive, const char *filename, const char *dest_path);
+/**
+ * Get archive type (auto-detect if unknown)
+ */
+fossil_io_archive_type_t fossil_io_archive_get_type(const char *path);
 
-// Add a file to archive
-fossil_io_archive_error_t fossil_io_archive_add(fossil_io_archive_t *archive, const char *filename, const void *data, size_t size);
+/**
+ * List all entries in the archive.
+ * Returns number of entries, or -1 on error.
+ * Caller must free entries array using fossil_io_archive_free_entries().
+ */
+ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_entry_t **entries);
 
-// Remove a file from archive (optional, may not be supported in all formats)
-fossil_io_archive_error_t fossil_io_archive_remove(fossil_io_archive_t *archive, const char *filename);
+/**
+ * Free memory allocated for entries.
+ */
+void fossil_io_archive_free_entries(fossil_io_archive_entry_t *entries, size_t count);
+
+// ======================================================
+// Extraction
+// ======================================================
+
+/**
+ * Extract a single file to the specified path.
+ */
+bool fossil_io_archive_extract_file(fossil_io_archive_t *archive, const char *entry_name, const char *dest_path);
+
+/**
+ * Extract all files in the archive to the specified directory.
+ */
+bool fossil_io_archive_extract_all(fossil_io_archive_t *archive, const char *dest_dir);
+
+// ======================================================
+// Creation / Modification
+// ======================================================
+
+/**
+ * Create a new archive at path with the given type.
+ */
+fossil_io_archive_t* fossil_io_archive_create(const char *path, fossil_io_archive_type_t type);
+
+/**
+ * Add a file from disk to the archive.
+ */
+bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_path, const char *archive_path);
+
+/**
+ * Add a directory recursively to the archive.
+ */
+bool fossil_io_archive_add_directory(fossil_io_archive_t *archive, const char *src_dir, const char *archive_dir);
+
+/**
+ * Remove a file from the archive.
+ */
+bool fossil_io_archive_remove(fossil_io_archive_t *archive, const char *entry_name);
+
+// ======================================================
+// Utility / Info
+// ======================================================
+
+/**
+ * Check if an entry exists in the archive.
+ */
+bool fossil_io_archive_exists(fossil_io_archive_t *archive, const char *entry_name);
+
+/**
+ * Get the size of an entry in bytes.
+ */
+ssize_t fossil_io_archive_entry_size(fossil_io_archive_t *archive, const char *entry_name);
+
+/**
+ * Print archive contents to stdout.
+ */
+void fossil_io_archive_print(fossil_io_archive_t *archive);
 
 #ifdef __cplusplus
 }
