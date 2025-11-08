@@ -368,41 +368,61 @@ FOSSIL_TEST(c_test_archive_create_null_params) {
     ASSUME_ITS_CNULL(archive);
 }
 
+// ======================================================
 // Test archive inspection functions
+// ======================================================
 FOSSIL_TEST(c_test_archive_get_stats) {
     const char *archive_path = "test_stats.zip";
-    fossil_io_archive_stats_t stats;
-    
+    fossil_io_archive_stats_t stats = {0}; // always zero-init
+
     // Create archive and add test files
-    fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
+    fossil_io_archive_t *archive = fossil_io_archive_create(
+        archive_path,
+        FOSSIL_IO_ARCHIVE_ZIP,
+        FOSSIL_IO_COMPRESSION_NORMAL
+    );
     ASSUME_NOT_CNULL(archive);
-    
+
     // Create temporary test files
     const char *test_file1 = "temp_test_file1.txt";
     const char *test_file2 = "temp_test_file2.txt";
     const char *content1 = "Test content 1";
     const char *content2 = "Test content 2 is longer";
-    
-    fossil_fstream_t temp_stream;
+
+    fossil_fstream_t temp_stream = {0}; // safety init
+
+    // Write first test file
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&temp_stream, test_file1, "w"));
-    fossil_fstream_write(&temp_stream, content1, strlen(content1), 1);
+    ASSUME_ITS_EQUAL_SIZE(strlen(content1),
+        fossil_fstream_write(&temp_stream, content1, strlen(content1), 1));
     fossil_fstream_close(&temp_stream);
-    
+
+    // Write second test file
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&temp_stream, test_file2, "w"));
-    fossil_fstream_write(&temp_stream, content2, strlen(content2), 1);
+    ASSUME_ITS_EQUAL_SIZE(strlen(content2),
+        fossil_fstream_write(&temp_stream, content2, strlen(content2), 1));
     fossil_fstream_close(&temp_stream);
-    
-    // Add files to archive
+
+    // Add files to archive (ensure no duplicates)
     ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file1, "test1.txt"));
     ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file2, "test2.txt"));
-    
-    // Get stats
+
+    // Request stats
     ASSUME_ITS_TRUE(fossil_io_archive_get_stats(archive, &stats));
+
+    // Validate archive stats
     ASSUME_ITS_EQUAL_SIZE(2, stats.total_entries);
     ASSUME_ITS_EQUAL_SIZE(strlen(content1) + strlen(content2), stats.total_size);
     ASSUME_ITS_TRUE(stats.compression_ratio >= 0.0 && stats.compression_ratio <= 1.0);
-    
+
+    // Cleanup — always close archive before removing files on macOS
     fossil_io_archive_close(archive);
+
+    // Small delay can help with file sync issues on macOS file systems
+    #ifdef __APPLE__
+    usleep(10000); // 10 ms
+    #endif
+
     fossil_fstream_remove(test_file1);
     fossil_fstream_remove(test_file2);
     fossil_fstream_remove(archive_path);
