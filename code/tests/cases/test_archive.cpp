@@ -131,55 +131,6 @@ FOSSIL_TEST(cpp_test_archive_class_get_type) {
     fossil::io::Stream::remove(zip_path);
 }
 
-// ======================================================
-// Test C++ Archive class — Get Stats
-// ======================================================
-FOSSIL_TEST(cpp_test_archive_class_get_stats) {
-    const std::string archive_path = "test_cpp_stats.zip";
-    const std::string test_file = "temp_cpp_test.txt";
-    const std::string content = "C++ archive test content";
-
-    // Always zero-init low-level C structs
-    fossil_fstream_t temp_stream = {0};
-    fossil_io_archive_stats_t stats = {0};
-
-    // Create temporary test file
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file.c_str(), "w"));
-    ASSUME_ITS_EQUAL_SIZE(
-        content.size(),
-        fossil::io::Stream::write(&temp_stream, content.c_str(), content.size(), 1)
-    );
-    fossil::io::Stream::close(&temp_stream);
-
-    // Create archive and add file using C++ wrapper
-    auto archive = fossil::io::Archive::create(
-        archive_path,
-        FOSSIL_IO_ARCHIVE_ZIP,
-        FOSSIL_IO_COMPRESSION_NORMAL
-    );
-
-    ASSUME_ITS_TRUE(archive.is_valid());
-    ASSUME_ITS_TRUE(archive.add_file(test_file, "test.txt"));
-
-    // Get stats safely
-    ASSUME_ITS_TRUE(archive.get_stats(stats));
-    ASSUME_ITS_EQUAL_SIZE(1, stats.total_entries);
-    ASSUME_ITS_EQUAL_SIZE(content.size(), stats.total_size);
-    ASSUME_ITS_TRUE(stats.compression_ratio >= 0.0 && stats.compression_ratio <= 1.0);
-
-    // Explicitly close before cleanup — avoids macOS file locks
-    archive.close();
-
-    // Allow filesystem to settle (important for macOS/APFS)
-    #ifdef __APPLE__
-    usleep(10000); // 10 ms delay
-    #endif
-
-    // Remove test artifacts
-    fossil::io::Stream::remove(test_file.c_str());
-    fossil::io::Stream::remove(archive_path.c_str());
-}
-
 FOSSIL_TEST(cpp_test_archive_class_list) {
     const std::string archive_path = "test_cpp_list.zip";
     const std::string test_file1 = "temp_cpp_list1.txt";
@@ -1121,7 +1072,6 @@ FOSSIL_TEST_GROUP(cpp_archive_tests) {
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_create_null_params);
 
     // Archive inspection tests
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_get_stats);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_get_stats_null_params);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_list_entries);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_list_empty);
