@@ -398,7 +398,7 @@ FOSSIL_TEST(c_test_archive_get_stats) {
     
     // Get stats
     ASSUME_ITS_TRUE(fossil_io_archive_get_stats(archive, &stats));
-    ASSUME_ITS_TRUE(stats.total_entries >= 2); // Archive may include directory entries or metadata
+    ASSUME_ITS_EQUAL_SIZE(2, stats.total_entries);
     ASSUME_ITS_EQUAL_SIZE(strlen(content1) + strlen(content2), stats.total_size);
     ASSUME_ITS_TRUE(stats.compression_ratio >= 0.0 && stats.compression_ratio <= 1.0);
     
@@ -500,11 +500,6 @@ FOSSIL_TEST(c_test_archive_extract_file) {
     const char *extracted_file = "temp_extracted.txt";
     const char *test_content = "Extract test content";
     
-    // Clean up any existing files first
-    fossil_fstream_remove(test_file);
-    fossil_fstream_remove(extracted_file);
-    fossil_fstream_remove(archive_path);
-    
     // Create source file
     fossil_fstream_t temp_stream;
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&temp_stream, test_file, "w"));
@@ -518,22 +513,13 @@ FOSSIL_TEST(c_test_archive_extract_file) {
     fossil_io_archive_close(archive);
     
     // Reopen for reading and extract
-    archive = fossil_io_archive_open(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NORMAL);
+    archive = fossil_io_archive_open(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
     ASSUME_NOT_CNULL(archive);
-    
-    // Check if the file exists in the archive before extracting
-    if (fossil_io_archive_exists(archive, "source.txt")) {
-        bool extract_result = fossil_io_archive_extract_file(archive, "source.txt", extracted_file);
-        if (!extract_result) {
-            // If extraction fails, just verify the archive was created properly
-            ASSUME_ITS_TRUE(fossil_io_archive_exists(archive, "source.txt"));
-        } else {
-            // Verify file was extracted
-            ASSUME_ITS_TRUE(fossil_fstream_file_exists(extracted_file) == FOSSIL_ERROR_OK);
-        }
-    }
-    
+    ASSUME_ITS_TRUE(fossil_io_archive_extract_file(archive, "source.txt", extracted_file));
     fossil_io_archive_close(archive);
+    
+    // Verify file was extracted
+    ASSUME_ITS_TRUE(fossil_fstream_file_exists(extracted_file) == FOSSIL_ERROR_OK);
     
     // Cleanup
     fossil_fstream_remove(test_file);
