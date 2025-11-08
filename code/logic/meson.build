@@ -4,7 +4,16 @@ add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'c')
 add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'cpp')
 
 fossil_io_lib = library('fossil_io',
-    files('parser.c', 'input.c', 'output.c', 'error.c', 'soap.c', 'stream.c', 'cstring.c'),
+    files(
+        'parser.c',
+        'archive.c',
+        'input.c',
+        'output.c',
+        'error.c',
+        'soap.c',
+        'stream.c',
+        'cstring.c'
+    ),
     install: true,
     dependencies: [cc.find_library('m', required: false)],
     include_directories: dir)

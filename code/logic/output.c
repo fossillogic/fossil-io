@@ -96,7 +96,7 @@ void fossil_io_apply_color(const char *color) {
         printf(FOSSIL_IO_COLOR_BRIGHT_CYAN);
     } else if (strcmp(color, "bright_white") == 0) {
         printf(FOSSIL_IO_COLOR_BRIGHT_WHITE);
-    } else {
+    } else if (strcmp(color, "reset") == 0) {
         printf(FOSSIL_IO_COLOR_RESET); // Reset to default if color not recognized
     }
 }
@@ -119,6 +119,8 @@ void fossil_io_apply_attribute(const char *attribute) {
         printf(FOSSIL_IO_ATTR_ITALIC);
     } else if (strcmp(attribute, "strikethrough") == 0) {
         printf(FOSSIL_IO_ATTR_STRIKETHROUGH);
+    } else if (strcmp(attribute, "reset") == 0) {
+        printf(FOSSIL_IO_ATTR_NORMAL); // Reset to normal if attribute not recognized
     }
 }
 

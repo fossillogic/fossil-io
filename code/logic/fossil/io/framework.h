@@ -29,6 +29,7 @@
 #include "output.h"
 #include "input.h"
 #include "error.h"
+#include "archive.h"
 #include "cstring.h"
 #include "stream.h"
 #include "soap.h"
