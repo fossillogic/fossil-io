@@ -388,5 +388,6 @@ FOSSIL_TEST_GROUP(cpp_archive_tests) {
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_entry_size);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_print);
 
+    // Register the test suite
     FOSSIL_TEST_REGISTER(cpp_archive_suite);
 }

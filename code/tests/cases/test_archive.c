@@ -387,6 +387,7 @@ FOSSIL_TEST(c_test_archive_print) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_archive_tests) {
+    // Add all the archive test cases to the test suite
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_open_and_close);
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_create);
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_get_type);
@@ -400,5 +401,6 @@ FOSSIL_TEST_GROUP(c_archive_tests) {
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_entry_size);
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_print);
 
+    // Register the test suite
     FOSSIL_TEST_REGISTER(c_archive_suite);
 }
