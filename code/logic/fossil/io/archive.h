@@ -562,7 +562,7 @@ namespace fossil {
              * @note The file must exist and be readable for detection to work
              * @see fossil_io_archive_get_type()
              */
-            fossil_io_archive_type_t getType(const std::string& path) const {
+            fossil_io_archive_type_t get_type(const std::string& path) const {
                 return fossil_io_archive_get_type(path.c_str());
             }
             
@@ -581,7 +581,7 @@ namespace fossil {
              * @note Statistics reflect the current state at the time of the call
              * @see fossil_io_archive_stats_t, fossil_io_archive_get_stats()
              */
-            bool getStats(fossil_io_archive_stats_t& stats) const {
+            bool get_stats(fossil_io_archive_stats_t& stats) const {
                 return fossil_io_archive_get_stats(handle, &stats);
             }
             
@@ -620,16 +620,16 @@ namespace fossil {
              * preserves file attributes when possible and automatically creates parent
              * directories as needed for the destination path.
              * 
-             * @param entryName The path/name of the file within the archive to extract
-             * @param destPath The destination file system path for the extracted file
+             * @param entry_name The path/name of the file within the archive to extract
+             * @param dest_path The destination file system path for the extracted file
              * @return True if extraction completed successfully, false on error
              * 
-             * @note Existing files at destPath will be overwritten without warning
+             * @note Existing files at dest_path will be overwritten without warning
              * @note File permissions and timestamps are preserved when supported
              * @see fossil_io_archive_extract_file()
              */
-            bool extractFile(const std::string& entryName, const std::string& destPath) const {
-                return fossil_io_archive_extract_file(handle, entryName.c_str(), destPath.c_str());
+            bool extract_file(const std::string& entry_name, const std::string& dest_path) const {
+                return fossil_io_archive_extract_file(handle, entry_name.c_str(), dest_path.c_str());
             }
             
             /**
@@ -640,7 +640,7 @@ namespace fossil {
              * structure as stored in the archive and processes all files while
              * preserving attributes, permissions, and timestamps when possible.
              * 
-             * @param destDir The destination directory for extracting all archive contents
+             * @param dest_dir The destination directory for extracting all archive contents
              * @return True if all files were extracted successfully, false on any error
              * 
              * @note The destination directory will be created if it doesn't exist
@@ -648,8 +648,8 @@ namespace fossil {
              * @note The operation stops immediately on the first error encountered
              * @see fossil_io_archive_extract_all()
              */
-            bool extractAll(const std::string& destDir) const {
-                return fossil_io_archive_extract_all(handle, destDir.c_str());
+            bool extract_all(const std::string& dest_dir) const {
+                return fossil_io_archive_extract_all(handle, dest_dir.c_str());
             }
             
             /**
@@ -660,8 +660,8 @@ namespace fossil {
              * the archive's compression settings and metadata such as timestamps and
              * permissions are preserved in the archive entry.
              * 
-             * @param srcPath The source file path on the local file system
-             * @param archivePath The path name to use for this file inside the archive
+             * @param src_dir The source file path on the local file system
+             * @param archive_path The path name to use for this file inside the archive
              * @return True if the file was successfully added, false on error
              * 
              * @note The source file must exist and be readable
@@ -669,8 +669,8 @@ namespace fossil {
              * @note The archive must be opened in write or append mode
              * @see fossil_io_archive_add_file()
              */
-            bool addFile(const std::string& srcPath, const std::string& archivePath) const {
-                return fossil_io_archive_add_file(handle, srcPath.c_str(), archivePath.c_str());
+            bool add_file(const std::string& src_dir, const std::string& archive_path) const {
+                return fossil_io_archive_add_file(handle, src_dir.c_str(), archive_path.c_str());
             }
             
             /**
@@ -681,8 +681,8 @@ namespace fossil {
              * The operation processes all nested files and creates appropriate directory
              * entries within the archive to maintain the original hierarchy.
              * 
-             * @param srcDir The source directory path on the local file system
-             * @param archiveDir The base directory path to use inside the archive
+             * @param src_dir The source directory path on the local file system
+             * @param archive_dir The base directory path to use inside the archive
              * @return True if all files were successfully added, false on any error
              * 
              * @note Symbolic links are followed and their targets are archived
@@ -690,8 +690,8 @@ namespace fossil {
              * @note The operation stops on the first error encountered
              * @see fossil_io_archive_add_directory()
              */
-            bool addDirectory(const std::string& srcDir, const std::string& archiveDir) const {
-                return fossil_io_archive_add_directory(handle, srcDir.c_str(), archiveDir.c_str());
+            bool add_directory(const std::string& src_dir, const std::string& archive_dir) const {
+                return fossil_io_archive_add_directory(handle, src_dir.c_str(), archive_dir.c_str());
             }
             
             /**
@@ -702,7 +702,7 @@ namespace fossil {
              * on the archive format's capabilities. Some formats may require complete
              * reconstruction of the archive file for this operation.
              * 
-             * @param entryName The path/name of the entry to remove from the archive
+             * @param entry_name The path/name of the entry to remove from the archive
              * @return True if the entry was successfully removed, false on error
              * 
              * @note The archive must be opened in write or append mode
@@ -710,8 +710,8 @@ namespace fossil {
              * @note Attempting to remove non-existent entries returns false
              * @see fossil_io_archive_remove()
              */
-            bool remove(const std::string& entryName) const {
-                return fossil_io_archive_remove(handle, entryName.c_str());
+            bool remove(const std::string& entry_name) const {
+                return fossil_io_archive_remove(handle, entry_name.c_str());
             }
             
             /**
@@ -722,7 +722,7 @@ namespace fossil {
              * is efficient as it only searches metadata without reading or extracting
              * any file content from the archive.
              * 
-             * @param entryName The path/name to search for within the archive
+             * @param entry_name The path/name to search for within the archive
              * @return True if the entry exists, false if not found or on error
              * 
              * @note The search is case-sensitive and uses exact string matching
@@ -730,8 +730,8 @@ namespace fossil {
              * @note The archive must be in a readable state
              * @see fossil_io_archive_exists()
              */
-            bool exists(const std::string& entryName) const {
-                return fossil_io_archive_exists(handle, entryName.c_str());
+            bool exists(const std::string& entry_name) const {
+                return fossil_io_archive_exists(handle, entry_name.c_str());
             }
             
             /**
@@ -742,7 +742,7 @@ namespace fossil {
              * extracting or decompressing the file, making it efficient for size
              * calculations and storage planning.
              * 
-             * @param entryName The path/name of the entry to query for size information
+             * @param entry_name The path/name of the entry to query for size information
              * @return The uncompressed size in bytes, or -1 on error or if not found
              * 
              * @note Returns original file size, not the compressed size in the archive
@@ -750,8 +750,8 @@ namespace fossil {
              * @note The archive must be in a readable state
              * @see fossil_io_archive_entry_size()
              */
-            ssize_t entrySize(const std::string& entryName) const {
-                return fossil_io_archive_entry_size(handle, entryName.c_str());
+            ssize_t entry_size(const std::string& entry_name) const {
+                return fossil_io_archive_entry_size(handle, entry_name.c_str());
             }
             
             /**
@@ -785,7 +785,7 @@ namespace fossil {
              * @note This check should be performed before any archive operations
              * @note Invalid archives should not be used for any operations
              */
-            bool isValid() const {
+            bool is_valid() const {
                 return handle != nullptr;
             }
         };
