@@ -101,6 +101,15 @@ static bool fossil_io_create_directories(const char *path) {
         }
     }
     
+    // Create the final directory if it doesn't end with a separator
+    if (strlen(path_copy) > 0) {
+#ifdef _WIN32
+        CreateDirectoryA(path_copy, NULL);
+#else
+        mkdir(path_copy, 0755);
+#endif
+    }
+    
     free(path_copy);
     return true;
 }
