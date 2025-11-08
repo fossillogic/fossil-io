@@ -66,8 +66,6 @@ int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
 
 // Function to apply color
 void fossil_io_apply_color(const char *color) {
-    if (!FOSSIL_IO_COLOR_ENABLE || !color) return;
-    
     if (strcmp(color, "red") == 0) {
         printf(FOSSIL_IO_COLOR_RED);
     } else if (strcmp(color, "green") == 0) {
@@ -98,15 +96,13 @@ void fossil_io_apply_color(const char *color) {
         printf(FOSSIL_IO_COLOR_BRIGHT_CYAN);
     } else if (strcmp(color, "bright_white") == 0) {
         printf(FOSSIL_IO_COLOR_BRIGHT_WHITE);
-    } else {
+    } else if (strcmp(color, "reset") == 0) {
         printf(FOSSIL_IO_COLOR_RESET); // Reset to default if color not recognized
     }
 }
 
 // Function to apply text attributes (e.g., bold, underline)
 void fossil_io_apply_attribute(const char *attribute) {
-    if (!attribute) return;
-    
     if (strcmp(attribute, "bold") == 0) {
         printf(FOSSIL_IO_ATTR_BOLD);
     } else if (strcmp(attribute, "underline") == 0) {
@@ -123,35 +119,35 @@ void fossil_io_apply_attribute(const char *attribute) {
         printf(FOSSIL_IO_ATTR_ITALIC);
     } else if (strcmp(attribute, "strikethrough") == 0) {
         printf(FOSSIL_IO_ATTR_STRIKETHROUGH);
+    } else if (strcmp(attribute, "reset") == 0) {
+        printf(FOSSIL_IO_ATTR_NORMAL); // Reset to normal if attribute not recognized
     }
 }
 
 // Function to handle named positions (like top, bottom, left, right)
 void fossil_io_apply_position(const char *pos) {
-    if (!pos) return;
-    
     if (strcmp(pos, "top") == 0) {
         printf("\033[1;1H"); // Move to top
     } else if (strcmp(pos, "bottom") == 0) {
-        printf("\033[999;1H"); // Move cursor to bottom-left (reduced from 1000)
+        printf("\033[1000;1H"); // Move cursor to bottom-left
     } else if (strcmp(pos, "left") == 0) {
         printf("\033[1;1H"); // Move to top-left (as a general left start)
     } else if (strcmp(pos, "right") == 0) {
-        printf("\033[1;999H"); // Move to top-right (reduced from 1000)
+        printf("\033[1;1000H"); // Move to top-right
     } else if (strcmp(pos, "center") == 0) {
         printf("\033[25;40H"); // Approximate center for 80x50 terminal
     } else if (strcmp(pos, "top-left") == 0) {
         printf("\033[1;1H");
     } else if (strcmp(pos, "top-right") == 0) {
-        printf("\033[1;999H");
+        printf("\033[1;1000H");
     } else if (strcmp(pos, "bottom-left") == 0) {
-        printf("\033[999;1H");
+        printf("\033[1000;1H");
     } else if (strcmp(pos, "bottom-right") == 0) {
-        printf("\033[999;999H");
+        printf("\033[1000;1000H");
     } else if (strcmp(pos, "middle-left") == 0) {
         printf("\033[25;1H"); // Mid vertical, far left
     } else if (strcmp(pos, "middle-right") == 0) {
-        printf("\033[25;999H"); // Mid vertical, far right
+        printf("\033[25;1000H"); // Mid vertical, far right
     } else {
         fprintf(stderr, "Unknown position: %s\n", pos);
     }
@@ -170,46 +166,41 @@ void fossil_io_print_with_attributes(const char *str) {
 
     while ((start = strchr(current_pos, '{')) != NULL) {
         // Output text before '{'
-        size_t len = start - current_pos;
-        if (len > 0) {
-            fwrite(current_pos, 1, len, stdout);
-        }
+        fwrite(current_pos, 1, start - current_pos, stdout);
 
         // Find the matching '}'
         end = strchr(start, '}');
         if (end) {
             // Extract attributes inside '{}'
             size_t length = end - start - 1;
-            if (length > 0 && length < 256) { // Reasonable size limit
-                char attributes[257];
-                strncpy(attributes, start + 1, length);
-                attributes[length] = '\0';
+            char attributes[length + 1];
+            strncpy(attributes, start + 1, length);
+            attributes[length] = '\0';
 
-                // Split by comma to separate color, attribute, or position
-                char *color = NULL;
-                char *attribute = NULL;
-                char *pos = NULL;
-                char *comma_pos = strchr(attributes, ',');
-                if (comma_pos) {
-                    *comma_pos = '\0';  // Null-terminate the first part
-                    color = attributes; // Color or position part
-                    attribute = comma_pos + 1; // Attribute part
-                } else {
-                    color = attributes; // Only one part (could be color, attribute, or position)
+            // Split by comma to separate color, attribute, or position
+            char *color = NULL;
+            char *attribute = NULL;
+            char *pos = NULL;
+            char *comma_pos = strchr(attributes, ',');
+            if (comma_pos) {
+                *comma_pos = '\0';  // Null-terminate the first part
+                color = attributes; // Color or position part
+                attribute = comma_pos + 1; // Attribute part
+            } else {
+                color = attributes; // Only one part (could be color, attribute, or position)
+            }
+
+            // Handle positions (like {pos:name})
+            if (strstr(color, "pos:") == color) {
+                pos = color + 4; // Skip the "pos:" prefix
+                fossil_io_apply_position(pos);
+            } else {
+                // Apply color and/or attribute based on flags
+                if (FOSSIL_IO_COLOR_ENABLE && color) {
+                    fossil_io_apply_color(color);
                 }
-
-                // Handle positions (like {pos:name})
-                if (color && strncmp(color, "pos:", 4) == 0) {
-                    pos = color + 4; // Skip the "pos:" prefix
-                    fossil_io_apply_position(pos);
-                } else {
-                    // Apply color and/or attribute based on flags
-                    if (FOSSIL_IO_COLOR_ENABLE && color) {
-                        fossil_io_apply_color(color);
-                    }
-                    if (attribute) {
-                        fossil_io_apply_attribute(attribute);
-                    }
+                if (attribute) {
+                    fossil_io_apply_attribute(attribute);
                 }
             }
 
@@ -223,17 +214,15 @@ void fossil_io_print_with_attributes(const char *str) {
     }
 
     // Output remaining text after last '}'
-    if (current_pos && *current_pos) {
-        fputs(current_pos, stdout);
-    }
+    fputs(current_pos, stdout);
     fflush(stdout);
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
 void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str) {
-    if (str != NULL && stream != NULL && stream->file != NULL) {
+    if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str) - 1);
+        strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
         // Remove attribute/color escape codes for file output
@@ -242,10 +231,7 @@ void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str)
         const char *end = NULL;
         while ((start = strchr(current_pos, '{')) != NULL) {
             // Write text before '{' to the file
-            size_t len = start - current_pos;
-            if (len > 0) {
-                fwrite(current_pos, 1, len, stream->file);
-            }
+            fwrite(current_pos, 1, start - current_pos, stream->file);
             end = strchr(start, '}');
             if (end) {
                 // Skip the attribute section
@@ -257,9 +243,9 @@ void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str)
             }
         }
         // Write remaining text after last '}'
-        if (current_pos && *current_pos) {
-            fputs(current_pos, stream->file);
-        }
+        fputs(current_pos, stream->file);
+    } else {
+        //fputs("cnullptr\n", stderr);
     }
 }
 
@@ -271,7 +257,7 @@ void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str)
 void fossil_io_puts(const char *str) {
     if (str != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str) - 1);
+        strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
         
         // Print the sanitized string with attributes
@@ -288,28 +274,24 @@ void fossil_io_putchar(char c) {
 
 // Function to print sanitized formatted output with attributes
 void fossil_io_printf(const char *format, ...) {
-    if (!format) return;
-    
     va_list args;
     va_start(args, format);
 
     // Create a buffer to hold the formatted string
     char buffer[FOSSIL_IO_BUFFER_SIZE];
-    int result = vsnprintf(buffer, sizeof(buffer), format, args);
-    
-    if (result > 0 && result < (int)sizeof(buffer)) {
-        // Print the sanitized output with attributes
-        fossil_io_print_with_attributes(buffer);
-    }
+    vsnprintf(buffer, sizeof(buffer), format, args);
+
+    // Print the sanitized output with attributes
+    fossil_io_print_with_attributes(buffer);
 
     va_end(args);
 }
 
 // Function to print a sanitized string to a specific file stream
 void fossil_io_fputs(fossil_fstream_t *stream, const char *str) {
-    if (str != NULL && stream != NULL && stream->file != NULL) {
+    if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str) - 1);
+        strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
         // Apply color/attributes and sanitize the string before printing
@@ -321,19 +303,15 @@ void fossil_io_fputs(fossil_fstream_t *stream, const char *str) {
 
 // Function to print a sanitized formatted string to a specific file stream
 void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...) {
-    if (!format || !stream || !stream->file) return;
-    
     va_list args;
     va_start(args, format);
 
     // Create a buffer to hold the formatted string
     char buffer[FOSSIL_IO_BUFFER_SIZE];
-    int result = vsnprintf(buffer, sizeof(buffer), format, args);
+    vsnprintf(buffer, sizeof(buffer), format, args);
 
-    if (result > 0 && result < (int)sizeof(buffer)) {
-        // Print the sanitized formatted string with attributes to the specified stream
-        fossil_io_fprint_with_attributes(stream, buffer);
-    }
+    // Print the sanitized formatted string with attributes to the specified stream
+    fossil_io_fprint_with_attributes(stream, buffer);
 
     va_end(args);
 }
