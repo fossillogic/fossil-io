@@ -23,9 +23,9 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/archive.h"
+#include "fossil/io/cstring.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 #include <stddef.h>
 
@@ -111,24 +111,90 @@ static bool fossil_io_create_directories(const char *path) {
 fossil_io_archive_type_t fossil_io_archive_get_type(const char *path) {
     if (!path) return FOSSIL_IO_ARCHIVE_UNKNOWN;
     
+    const char *ext = strrchr(path, '.');
+    if (ext) {
+        ext++; // Skip the dot
+        
+        // Check for compound tar formats first
+        const char *prev_ext = ext;
+        while (prev_ext > path && *(prev_ext - 1) != '.') prev_ext--;
+        if (prev_ext > path) prev_ext--;
+        
+        // Check compound extensions
+        if (strstr(path, ".tar.gz") || strstr(path, ".tgz")) {
+            return FOSSIL_IO_ARCHIVE_TARGZ;
+        }
+        if (strstr(path, ".tar.bz2") || strstr(path, ".tbz2")) {
+            return FOSSIL_IO_ARCHIVE_TARBZ2;
+        }
+        if (strstr(path, ".tar.xz") || strstr(path, ".txz")) {
+            return FOSSIL_IO_ARCHIVE_TARXZ;
+        }
+        if (strstr(path, ".tar.lz4")) {
+            return FOSSIL_IO_ARCHIVE_TARLZ4;
+        }
+        if (strstr(path, ".tar.zst")) {
+            return FOSSIL_IO_ARCHIVE_TARZST;
+        }
+        
+        // Single extensions
+        if (fossil_io_cstring_icmp(ext, "zip") == 0) {
+            return FOSSIL_IO_ARCHIVE_ZIP;
+        }
+        if (fossil_io_cstring_icmp(ext, "tar") == 0) {
+            return FOSSIL_IO_ARCHIVE_TAR;
+        }
+        if (fossil_io_cstring_icmp(ext, "rar") == 0) {
+            return FOSSIL_IO_ARCHIVE_RAR; // Will check version in magic bytes
+        }
+        if (fossil_io_cstring_icmp(ext, "7z") == 0) {
+            return FOSSIL_IO_ARCHIVE_7Z;
+        }
+        if (fossil_io_cstring_icmp(ext, "cab") == 0) {
+            return FOSSIL_IO_ARCHIVE_CAB;
+        }
+        if (fossil_io_cstring_icmp(ext, "ace") == 0) {
+            return FOSSIL_IO_ARCHIVE_ACE;
+        }
+        if (fossil_io_cstring_icmp(ext, "iso") == 0) {
+            return FOSSIL_IO_ARCHIVE_ISO;
+        }
+        if (fossil_io_cstring_icmp(ext, "bz2") == 0) {
+            return FOSSIL_IO_ARCHIVE_BZ2;
+        }
+        if (fossil_io_cstring_icmp(ext, "gz") == 0) {
+            return FOSSIL_IO_ARCHIVE_GZ;
+        }
+        if (fossil_io_cstring_icmp(ext, "xz") == 0) {
+            return FOSSIL_IO_ARCHIVE_XZ;
+        }
+        if (fossil_io_cstring_icmp(ext, "lz4") == 0) {
+            return FOSSIL_IO_ARCHIVE_LZ4;
+        }
+        if (fossil_io_cstring_icmp(ext, "zst") == 0 || fossil_io_cstring_icmp(ext, "zstd") == 0) {
+            return FOSSIL_IO_ARCHIVE_ZSTD;
+        }
+    }
+    
+    // If extension-based detection fails, try magic byte detection
     fossil_fstream_t stream;
     if (fossil_fstream_open(&stream, path, "rb") != 0) {
         return FOSSIL_IO_ARCHIVE_UNKNOWN;
     }
     
-    unsigned char header[16];
+    unsigned char header[512]; // Increased buffer for TAR magic at offset 257
     size_t read = fossil_fstream_read(&stream, header, 1, sizeof(header));
     fossil_fstream_close(&stream);
     
     if (read < 4) return FOSSIL_IO_ARCHIVE_UNKNOWN;
     
-    // ZIP signature
+    // ZIP signature (PK)
     if (header[0] == 0x50 && header[1] == 0x4B) {
         return FOSSIL_IO_ARCHIVE_ZIP;
     }
     
-    // TAR (check for ustar)
-    if (read >= 8 && memcmp(header, "ustar", 5) == 0) {
+    // TAR (check for ustar magic at offset 257)
+    if (read >= 265 && memcmp(header + 257, "ustar", 5) == 0) {
         return FOSSIL_IO_ARCHIVE_TAR;
     }
     
@@ -142,14 +208,48 @@ fossil_io_archive_type_t fossil_io_archive_get_type(const char *path) {
         return FOSSIL_IO_ARCHIVE_BZ2;
     }
     
+    // XZ
+    if (read >= 6 && memcmp(header, "\xFD" "7zXZ\x00", 6) == 0) {
+        return FOSSIL_IO_ARCHIVE_XZ;
+    }
+    
+    // LZ4
+    if (read >= 4 && memcmp(header, "\x04\"M\x18", 4) == 0) {
+        return FOSSIL_IO_ARCHIVE_LZ4;
+    }
+    
+    // ZSTD
+    if (read >= 4 && memcmp(header, "\x28\xB5\x2F\xFD", 4) == 0) {
+        return FOSSIL_IO_ARCHIVE_ZSTD;
+    }
+    
     // 7Z
     if (read >= 6 && memcmp(header, "7z\xBC\xAF\x27\x1C", 6) == 0) {
         return FOSSIL_IO_ARCHIVE_7Z;
     }
     
-    // RAR
+    // RAR (distinguish between RAR and RAR5)
     if (read >= 7 && memcmp(header, "Rar!\x1A\x07", 6) == 0) {
         return header[6] == 0x00 ? FOSSIL_IO_ARCHIVE_RAR : FOSSIL_IO_ARCHIVE_RAR5;
+    }
+    
+    // CAB
+    if (read >= 4 && memcmp(header, "MSCF", 4) == 0) {
+        return FOSSIL_IO_ARCHIVE_CAB;
+    }
+    
+    // ACE
+    if (read >= 7 && memcmp(header, "**ACE**", 7) == 0) {
+        return FOSSIL_IO_ARCHIVE_ACE;
+    }
+    
+    // ISO (CD001 signature can appear at different offsets)
+    if (read >= 5) {
+        for (size_t i = 0; i <= read - 5; i++) {
+            if (memcmp(header + i, "CD001", 5) == 0) {
+                return FOSSIL_IO_ARCHIVE_ISO;
+            }
+        }
     }
     
     return FOSSIL_IO_ARCHIVE_UNKNOWN;
@@ -248,24 +348,58 @@ ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_e
         return 0;
     }
     
-    fossil_io_archive_entry_t *entry_copy = malloc(sizeof(fossil_io_archive_entry_t) * archive->entry_count);
+    // Count unique entries first
+    size_t unique_count = 0;
+    for (size_t i = 0; i < archive->entry_count; i++) {
+        bool is_duplicate = false;
+        for (size_t j = 0; j < i; j++) {
+            if (archive->entries[i].name && archive->entries[j].name &&
+                strcmp(archive->entries[i].name, archive->entries[j].name) == 0) {
+                is_duplicate = true;
+                break;
+            }
+        }
+        if (!is_duplicate) {
+            unique_count++;
+        }
+    }
+    
+    if (unique_count == 0) {
+        *entries = NULL;
+        return 0;
+    }
+    
+    fossil_io_archive_entry_t *entry_copy = malloc(sizeof(fossil_io_archive_entry_t) * unique_count);
     if (!entry_copy) return -1;
     
+    size_t copy_index = 0;
     for (size_t i = 0; i < archive->entry_count; i++) {
-        entry_copy[i] = archive->entries[i];
-        entry_copy[i].name = fossil_io_archive_strdup(archive->entries[i].name);
-        if (!entry_copy[i].name) {
-            // Cleanup on failure
-            for (size_t j = 0; j < i; j++) {
-                free(entry_copy[j].name);
+        bool is_duplicate = false;
+        for (size_t j = 0; j < i; j++) {
+            if (archive->entries[i].name && archive->entries[j].name &&
+                strcmp(archive->entries[i].name, archive->entries[j].name) == 0) {
+                is_duplicate = true;
+                break;
             }
-            free(entry_copy);
-            return -1;
+        }
+        
+        if (!is_duplicate) {
+            entry_copy[copy_index] = archive->entries[i];
+            entry_copy[copy_index].name = fossil_io_archive_strdup(archive->entries[i].name);
+            if (!entry_copy[copy_index].name) {
+                // Cleanup on failure
+                for (size_t k = 0; k < copy_index; k++) {
+                    free(entry_copy[k].name);
+                }
+                free(entry_copy);
+                return -1;
+            }
+            copy_index++;
         }
     }
     
     *entries = entry_copy;
-    return archive->entry_count;
+    return unique_count;
 }
 
 void fossil_io_archive_free_entries(fossil_io_archive_entry_t *entries, size_t count) {
