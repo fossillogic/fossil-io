@@ -329,34 +329,48 @@ fossil_io_archive_t* fossil_io_archive_create(const char *path, fossil_io_archiv
 // ======================================================
 
 bool fossil_io_archive_get_stats(fossil_io_archive_t *archive, fossil_io_archive_stats_t *stats) {
-    if (!archive || !stats) return false;
-    
+    if (!archive || !stats) 
+        return false;
+
+    if (!archive->entries || archive->entry_count == 0) {
+        // Handle empty archive safely
+        stats->total_entries = 0;
+        stats->total_size = 0;
+        stats->compressed_size = 0;
+        stats->compression_ratio = 0.0;
+        return true;
+    }
+
     stats->total_entries = 0;
     stats->total_size = 0;
     stats->compressed_size = 0;
 
+    // Optional: track seen entry names or IDs to avoid duplicates
+    // (requires unique identifier or path)
     for (size_t i = 0; i < archive->entry_count; i++) {
-        const fossil_io_archive_entry_t *entry = &archive->entries[i];
-        bool duplicate = false;
+        fossil_io_archive_entry_t *entry = &archive->entries[i];
 
-        // Check if we've seen this entry name before
+        if (!entry || !entry->name) 
+            continue; // skip invalid entries safely
+
+        // Skip duplicates by comparing with previous entries
+        bool duplicate = false;
         for (size_t j = 0; j < i; j++) {
-            if (strcmp(archive->entries[j].name, entry->name) == 0) {
+            if (archive->entries[j].name && strcmp(entry->name, archive->entries[j].name) == 0) {
                 duplicate = true;
                 break;
             }
         }
-
-        if (duplicate) continue;
+        if (duplicate)
+            continue;
 
         stats->total_entries++;
         stats->total_size += entry->size;
         stats->compressed_size += entry->compressed_size;
     }
 
-    stats->compression_ratio = 
-        stats->total_size > 0 ? 
-        (double)stats->compressed_size / stats->total_size : 0.0;
+    stats->compression_ratio = stats->total_size > 0 ?
+        (double)stats->compressed_size / (double)stats->total_size : 0.0;
 
     return true;
 }
