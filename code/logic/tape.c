@@ -28,6 +28,7 @@
 #include <sys/types.h> // for ssize_t
 #include <inttypes.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #ifndef FOSSIL_IO_TAPE_INTERNAL_ERROR_LEN
 #define FOSSIL_IO_TAPE_INTERNAL_ERROR_LEN 256
