@@ -66,6 +66,165 @@ static char* fossil_io_archive_strdup(const char *s) {
     return copy;
 }
 
+// Helper function for ZIP format entry removal
+static bool fossil_io_archive_rewrite_zip(fossil_io_archive_t *archive, const char *removed_entry) {
+    // ZIP format requires:
+    // 1. Read all file entries except the removed one
+    // 2. Rebuild central directory with updated offsets
+    // 3. Write new end of central directory record
+    
+    char temp_path[1024];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
+    
+    FILE *old_file = fopen(archive->path, "rb");
+    FILE *new_file = fopen(temp_path, "wb");
+    
+    if (!old_file || !new_file) {
+        if (old_file) fclose(old_file);
+        if (new_file) fclose(new_file);
+        return false;
+    }
+    
+    // Mock ZIP rewrite: copy all data except removed entry
+    // In real implementation, would parse ZIP structure and rebuild
+    bool success = true;
+    
+    // Copy remaining entries (simplified mock implementation)
+    for (size_t i = 0; i < archive->entry_count; i++) {
+        // Write entry data and update central directory
+        // This is where real ZIP parsing and reconstruction would happen
+    }
+    
+    fclose(old_file);
+    fclose(new_file);
+    
+    if (success) {
+        // Replace original with temporary file
+        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
+            return true;
+        }
+    }
+    
+    // Cleanup on failure
+    remove(temp_path);
+    return false;
+}
+
+// Helper function for TAR format entry removal
+static bool fossil_io_archive_rewrite_tar(fossil_io_archive_t *archive, const char *removed_entry) {
+    // TAR format requires complete reconstruction:
+    // 1. Create new archive with all entries except removed one
+    // 2. Copy file data for remaining entries
+    // 3. Write TAR end-of-archive markers
+    
+    char temp_path[1024];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
+    
+    // Create temporary archive with remaining entries
+    fossil_io_archive_t *temp_archive = fossil_io_archive_create(temp_path, archive->type, FOSSIL_IO_COMPRESSION_NORMAL);
+    if (!temp_archive) {
+        return false;
+    }
+    
+    bool success = true;
+    
+    // Add all entries except the removed one
+    for (size_t i = 0; i < archive->entry_count; i++) {
+        const fossil_io_archive_entry_t *entry = &archive->entries[i];
+        
+        if (entry->name && strcmp(entry->name, removed_entry) != 0) {
+            // In real implementation, extract from original and add to new archive
+            // For now, simulate the process
+            if (entry->is_directory) {
+                // Would call fossil_io_archive_add_directory with actual source
+            } else {
+                // Would extract file and re-add it
+                // For mock: create temporary file and add it
+                char temp_file[1024];
+                snprintf(temp_file, sizeof(temp_file), "/tmp/fossil_temp_%zu", i);
+                
+                FILE *tf = fopen(temp_file, "wb");
+                if (tf) {
+                    // Write mock content
+                    fwrite("restored content", 1, 16, tf);
+                    fclose(tf);
+                    
+                    if (!fossil_io_archive_add_file(temp_archive, temp_file, entry->name)) {
+                        success = false;
+                    }
+                    remove(temp_file);
+                } else {
+                    success = false;
+                }
+            }
+        }
+        
+        if (!success) break;
+    }
+    
+    fossil_io_archive_close(temp_archive);
+    
+    if (success) {
+        // Replace original with reconstructed archive
+        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
+            return true;
+        }
+    }
+    
+    // Cleanup on failure
+    remove(temp_path);
+    return false;
+}
+
+// Generic rewrite function for other formats
+static bool fossil_io_archive_rewrite_generic(fossil_io_archive_t *archive) {
+    // Generic approach: rebuild archive from scratch with remaining entries
+    char temp_path[1024];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
+    
+    // Create new archive with same type
+    fossil_io_archive_t *temp_archive = fossil_io_archive_create(temp_path, archive->type, FOSSIL_IO_COMPRESSION_NORMAL);
+    if (!temp_archive) {
+        return false;
+    }
+    
+    // Add all current entries to new archive
+    bool success = true;
+    for (size_t i = 0; i < archive->entry_count && success; i++) {
+        const fossil_io_archive_entry_t *entry = &archive->entries[i];
+        
+        if (entry->is_directory) {
+            // Mock directory addition
+            success = true; // Would implement actual directory addition
+        } else {
+            // Mock file addition
+            char temp_file[1024];
+            snprintf(temp_file, sizeof(temp_file), "/tmp/fossil_generic_%zu", i);
+            
+            FILE *tf = fopen(temp_file, "wb");
+            if (tf) {
+                fwrite("generic content", 1, 15, tf);
+                fclose(tf);
+                success = fossil_io_archive_add_file(temp_archive, temp_file, entry->name);
+                remove(temp_file);
+            } else {
+                success = false;
+            }
+        }
+    }
+    
+    fossil_io_archive_close(temp_archive);
+    
+    if (success) {
+        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
+            return true;
+        }
+    }
+    
+    remove(temp_path);
+    return false;
+}
+
 // ======================================================
 // Initialization & Cleanup
 // ======================================================
@@ -2232,192 +2391,6 @@ bool fossil_io_archive_remove(fossil_io_archive_t *archive, const char *entry_na
     }
     
     return true;
-}
-
-// Helper function for ZIP format entry removal
-static bool fossil_io_archive_rewrite_zip(fossil_io_archive_t *archive, const char *removed_entry) {
-    // ZIP format requires:
-    // 1. Read all file entries except the removed one
-    // 2. Rebuild central directory with updated offsets
-    // 3. Write new end of central directory record
-    
-    char temp_path[1024];
-    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
-    
-    FILE *old_file = fopen(archive->path, "rb");
-    FILE *new_file = fopen(temp_path, "wb");
-    
-    if (!old_file || !new_file) {
-        if (old_file) fclose(old_file);
-        if (new_file) fclose(new_file);
-        return false;
-    }
-    
-    // Mock ZIP rewrite: copy all data except removed entry
-    // In real implementation, would parse ZIP structure and rebuild
-    bool success = true;
-    
-    // Copy remaining entries (simplified mock implementation)
-    for (size_t i = 0; i < archive->entry_count; i++) {
-        // Write entry data and update central directory
-        // This is where real ZIP parsing and reconstruction would happen
-    }
-    
-    fclose(old_file);
-    fclose(new_file);
-    
-    if (success) {
-        // Replace original with temporary file
-        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
-            return true;
-        }
-    }
-    
-    // Cleanup on failure
-    remove(temp_path);
-    return false;
-}
-
-// Helper function for TAR format entry removal
-static bool fossil_io_archive_rewrite_tar(fossil_io_archive_t *archive, const char *removed_entry) {
-    // TAR format requires complete reconstruction:
-    // 1. Create new archive with all entries except removed one
-    // 2. Copy file data for remaining entries
-    // 3. Write TAR end-of-archive markers
-    
-    char temp_path[1024];
-    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
-    
-    // Create temporary archive with remaining entries
-    fossil_io_archive_t *temp_archive = fossil_io_archive_create(temp_path, archive->type, FOSSIL_IO_COMPRESSION_NORMAL);
-    if (!temp_archive) {
-        return false;
-    }
-    
-    bool success = true;
-    
-    // Add all entries except the removed one
-    for (size_t i = 0; i < archive->entry_count; i++) {
-        const fossil_io_archive_entry_t *entry = &archive->entries[i];
-        
-        if (entry->name && strcmp(entry->name, removed_entry) != 0) {
-            // In real implementation, extract from original and add to new archive
-            // For now, simulate the process
-            if (entry->is_directory) {
-                // Would call fossil_io_archive_add_directory with actual source
-            } else {
-                // Would extract file and re-add it
-                // For mock: create temporary file and add it
-                char temp_file[1024];
-                snprintf(temp_file, sizeof(temp_file), "/tmp/fossil_temp_%zu", i);
-                
-                FILE *tf = fopen(temp_file, "wb");
-                if (tf) {
-                    // Write mock content
-                    fwrite("restored content", 1, 16, tf);
-                    fclose(tf);
-                    
-                    if (!fossil_io_archive_add_file(temp_archive, temp_file, entry->name)) {
-                        success = false;
-                    }
-                    remove(temp_file);
-                } else {
-                    success = false;
-                }
-            }
-        }
-        
-        if (!success) break;
-    }
-    
-    fossil_io_archive_close(temp_archive);
-    
-    if (success) {
-        // Replace original with reconstructed archive
-        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
-            return true;
-        }
-    }
-    
-    // Cleanup on failure
-    remove(temp_path);
-    return false;
-}
-
-// Generic rewrite function for other formats
-static bool fossil_io_archive_rewrite_generic(fossil_io_archive_t *archive) {
-    // Generic approach: rebuild archive from scratch with remaining entries
-    char temp_path[1024];
-    snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
-    
-    // Create new archive with same type
-    fossil_io_archive_t *temp_archive = fossil_io_archive_create(temp_path, archive->type, FOSSIL_IO_COMPRESSION_NORMAL);
-    if (!temp_archive) {
-        return false;
-    }
-    
-    // Add all current entries to new archive
-    bool success = true;
-    for (size_t i = 0; i < archive->entry_count && success; i++) {
-        const fossil_io_archive_entry_t *entry = &archive->entries[i];
-        
-        if (entry->is_directory) {
-            // Mock directory addition
-            success = true; // Would implement actual directory addition
-        } else {
-            // Mock file addition
-            char temp_file[1024];
-            snprintf(temp_file, sizeof(temp_file), "/tmp/fossil_generic_%zu", i);
-            
-            FILE *tf = fopen(temp_file, "wb");
-            if (tf) {
-                fwrite("generic content", 1, 15, tf);
-                fclose(tf);
-                success = fossil_io_archive_add_file(temp_archive, temp_file, entry->name);
-                remove(temp_file);
-            } else {
-                success = false;
-            }
-        }
-    }
-    
-    fossil_io_archive_close(temp_archive);
-    
-    if (success) {
-        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
-            return true;
-        }
-    }
-    
-    remove(temp_path);
-    return false;
-}
-
-bool fossil_io_archive_exists(fossil_io_archive_t *archive, const char *entry_name) {
-    if (!archive || !entry_name) {
-        return false;
-    }
-
-    // Ensure we have entries loaded
-    fossil_io_archive_entry_t *entries = NULL;
-    ssize_t entry_count = fossil_io_archive_list(archive, &entries);
-    if (entry_count < 0) {
-        return false;
-    }
-
-    // Search for the entry
-    bool found = false;
-    for (ssize_t i = 0; i < entry_count; i++) {
-        if (entries[i].name && strcmp(entries[i].name, entry_name) == 0) {
-            found = true;
-            break;
-        }
-    }
-
-    // Clean up the entries list
-    fossil_io_archive_free_entries(entries, (size_t)entry_count);
-
-    return found;
 }
 
 ssize_t fossil_io_archive_entry_size(fossil_io_archive_t *archive, const char *entry_name) {
