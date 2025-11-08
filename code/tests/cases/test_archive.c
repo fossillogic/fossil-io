@@ -591,7 +591,6 @@ FOSSIL_TEST(c_test_archive_add_file) {
 FOSSIL_TEST(c_test_archive_add_directory) {
     const char *archive_path = "test_add_dir.zip";
     const char *test_dir = "temp_test_dir";
-    const char *test_file = "temp_test_dir/test.txt";
     
     // Create test directory and file (simplified - just test the API)
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
