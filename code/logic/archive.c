@@ -576,24 +576,36 @@ bool fossil_io_archive_remove(fossil_io_archive_t *archive, const char *entry_na
 // ======================================================
 
 void fossil_io_archive_print(fossil_io_archive_t *archive) {
-    if (!archive) return;
+    if (!archive) {
+        fossil_io_printf("Archive: (null)\n");
+        return;
+    }
+    
+    // Safely handle null path
+    const char *path = archive->path ? archive->path : "(null)";
     
     fossil_io_printf("{cyan}Archive:{reset} %s {yellow}(Type: %d, Entries: %zu){reset}\n", 
-           archive->path, archive->type, archive->entry_count);
+           path, archive->type, archive->entry_count);
     fossil_io_printf("{bold}%-40s %10s %10s %s{reset}\n", "Name", "Size", "Compressed", "Directory");
     fossil_io_printf("{dim}%-40s %10s %10s %s{reset}\n", "----", "----", "----------", "---------");
     
-    for (size_t i = 0; i < archive->entry_count; i++) {
-        fossil_io_archive_entry_t *entry = &archive->entries[i];
-        if (entry->is_directory) {
-            fossil_io_printf("{blue}%-40s{reset} {dim}%10s %10s{reset} {green}Yes{reset}\n", 
-                   entry->name ? entry->name : "(null)",
-                   "-", "-");
-        } else {
-            fossil_io_printf("{white}%-40s{reset} {cyan}%10zu{reset} {magenta}%10zu{reset} {red}No{reset}\n", 
-                   entry->name ? entry->name : "(null)",
-                   entry->size,
-                   entry->compressed_size);
+    // Check if entries exist and count is valid
+    if (archive->entries && archive->entry_count > 0) {
+        for (size_t i = 0; i < archive->entry_count; i++) {
+            fossil_io_archive_entry_t *entry = &archive->entries[i];
+            
+            // Safely handle null entry name
+            const char *entry_name = (entry && entry->name) ? entry->name : "(null)";
+            
+            if (entry && entry->is_directory) {
+                fossil_io_printf("{blue}%-40s{reset} {dim}%10s %10s{reset} {green}Yes{reset}\n", 
+                       entry_name, "-", "-");
+            } else if (entry) {
+                fossil_io_printf("{white}%-40s{reset} {cyan}%10zu{reset} {magenta}%10zu{reset} {red}No{reset}\n", 
+                       entry_name, entry->size, entry->compressed_size);
+            }
         }
+    } else {
+        fossil_io_printf("{dim}(no entries){reset}\n");
     }
 }
