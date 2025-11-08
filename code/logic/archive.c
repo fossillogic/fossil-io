@@ -578,14 +578,14 @@ bool fossil_io_archive_remove(fossil_io_archive_t *archive, const char *entry_na
 void fossil_io_archive_print(fossil_io_archive_t *archive) {
     if (!archive) return;
     
-    printf("Archive: %s (Type: %d, Entries: %zu)\n", 
+    fossil_io_printf("{cyan,bold}Archive:{reset} %s {yellow}(Type: %d, Entries: %zu){reset}\n", 
            archive->path, archive->type, archive->entry_count);
-    printf("%-40s %10s %10s %s\n", "Name", "Size", "Compressed", "Directory");
-    printf("%-40s %10s %10s %s\n", "----", "----", "----------", "---------");
+    fossil_io_printf("{green,bold}%-40s %10s %10s %s{reset}\n", "Name", "Size", "Compressed", "Directory");
+    fossil_io_printf("{green}%-40s %10s %10s %s{reset}\n", "----", "----", "----------", "---------");
     
     for (size_t i = 0; i < archive->entry_count; i++) {
         fossil_io_archive_entry_t *entry = &archive->entries[i];
-        printf("%-40s %10zu %10zu %s\n", 
+        fossil_io_printf("{white}%-40s{reset} {magenta}%10zu{reset} {blue}%10zu{reset} {red}%s{reset}\n", 
                entry->name ? entry->name : "(null)",
                entry->size,
                entry->compressed_size,
