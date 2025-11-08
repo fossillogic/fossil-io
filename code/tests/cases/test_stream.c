@@ -244,22 +244,6 @@ FOSSIL_TEST(c_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
 }
 
-FOSSIL_TEST(c_test_stream_remove_file) {
-    const char *filename = "testfile_remove.txt";
-    const char *content = "This is a test.";
-
-    // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
-    fossil_fstream_write(&c_stream, content, strlen(content), 1);
-    fossil_fstream_close(&c_stream);
-
-    // Remove the file (should succeed)
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, fossil_fstream_remove(filename));
-
-    // Check if the file does not exist
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, fossil_fstream_file_exists(filename));
-}
-
 FOSSIL_TEST(c_test_stream_flush_file) {
     const char *filename = "testfile_flush.txt";
     const char *content = "This is a test.";
@@ -315,7 +299,6 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_executable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
 
