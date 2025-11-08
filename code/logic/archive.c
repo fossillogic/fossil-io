@@ -111,12 +111,14 @@ static bool fossil_io_create_directories(const char *path) {
 fossil_io_archive_type_t fossil_io_archive_get_type(const char *path) {
     if (!path) return FOSSIL_IO_ARCHIVE_UNKNOWN;
     
-    FILE *file = fopen(path, "rb");
-    if (!file) return FOSSIL_IO_ARCHIVE_UNKNOWN;
+    fossil_fstream_t stream;
+    if (fossil_fstream_open(&stream, path, "rb") != 0) {
+        return FOSSIL_IO_ARCHIVE_UNKNOWN;
+    }
     
     unsigned char header[16];
-    size_t read = fread(header, 1, sizeof(header), file);
-    fclose(file);
+    size_t read = fossil_fstream_read(&stream, header, 1, sizeof(header));
+    fossil_fstream_close(&stream);
     
     if (read < 4) return FOSSIL_IO_ARCHIVE_UNKNOWN;
     
@@ -309,13 +311,19 @@ bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_pa
     if (!archive || !src_path || !archive_path) return false;
     if (!(archive->mode & (FOSSIL_IO_ARCHIVE_WRITE | FOSSIL_IO_ARCHIVE_APPEND))) return false;
     
-    FILE *file = fopen(src_path, "rb");
-    if (!file) return false;
+    fossil_fstream_t stream;
+    if (fossil_fstream_open(&stream, src_path, "rb") != 0) {
+        return false;
+    }
     
     // Get file size
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fclose(file);
+    if (fossil_fstream_seek(&stream, 0, SEEK_END) != 0) {
+        fossil_fstream_close(&stream);
+        return false;
+    }
+    
+    int32_t file_size = fossil_fstream_tell(&stream);
+    fossil_fstream_close(&stream);
     
     if (file_size < 0) return false;
     
