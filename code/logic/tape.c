@@ -24,6 +24,7 @@
  */
 #include "fossil/io/tape.h"
 #include "fossil/io/output.h"
+#include "fossil/io/cstring.h"
 #include <errno.h>
 #include <sys/types.h> // for ssize_t
 #include <inttypes.h>
@@ -102,7 +103,7 @@ fossil_io_tape_t *fossil_io_tape_open(const fossil_io_tape_config_t *cfg) {
     t->cfg.verify_checksum = cfg->verify_checksum;
 
     // duplicate device_path string
-    t->cfg.device_path = strdup(cfg->device_path);
+    t->cfg.device_path = fossil_io_cstring_dup(cfg->device_path);
     t->fp = fp;
     t->current_pos = 0;
     t->eot = false;
