@@ -66,6 +66,147 @@ static char* fossil_io_archive_strdup(const char *s) {
     return copy;
 }
 
+// Helper function for ZIP entry extraction
+static bool fossil_io_archive_extract_zip_entry(FILE *archive_file, const fossil_io_archive_entry_t *entry, FILE *dest_file) {
+    // Mock ZIP extraction - in real implementation would:
+    // 1. Parse ZIP central directory to find file entry
+    // 2. Seek to local file header
+    // 3. Read and decompress file data based on compression method
+    // 4. Verify CRC32 checksum
+    
+    if (entry->size == 0) {
+        return true; // Empty file
+    }
+    
+    // Placeholder: write mock compressed data
+    const char zip_data[] = "ZIP-EXTRACTED-CONTENT\n";
+    size_t data_len = strlen(zip_data);
+    size_t bytes_written = 0;
+    
+    while (bytes_written < entry->size) {
+        size_t to_write = (entry->size - bytes_written > data_len) ? 
+                          data_len : (entry->size - bytes_written);
+        
+        if (fwrite(zip_data, 1, to_write, dest_file) != to_write) {
+            return false;
+        }
+        bytes_written += to_write;
+    }
+    
+    return true;
+}
+
+// Helper function for TAR entry extraction
+static bool fossil_io_archive_extract_tar_entry(FILE *archive_file, const fossil_io_archive_entry_t *entry, FILE *dest_file) {
+    if (!archive_file || !entry || !dest_file) {
+        return false;
+    }
+    
+    if (entry->size == 0) {
+        return true; // Empty file
+    }
+    
+    // Rewind to start of archive
+    fseek(archive_file, 0, SEEK_SET);
+    
+    // TAR header structure (512 bytes)
+    struct tar_header {
+        char name[100];
+        char mode[8];
+        char uid[8];
+        char gid[8];
+        char size[12];
+        char mtime[12];
+        char checksum[8];
+        char typeflag;
+        char linkname[100];
+        char magic[6];
+        char version[2];
+        char uname[32];
+        char gname[32];
+        char devmajor[8];
+        char devminor[8];
+        char prefix[155];
+        char padding[12];
+    };
+    
+    struct tar_header header;
+    
+    // Search for the target entry in the TAR archive
+    while (fread(&header, sizeof(header), 1, archive_file) == 1) {
+        // Check for end of archive (empty header)
+        if (header.name[0] == '\0') {
+            return false; // Entry not found
+        }
+        
+        // Verify checksum
+        unsigned int stored_checksum = strtoul(header.checksum, NULL, 8);
+        unsigned int calculated_checksum = 0;
+        
+        char temp_header[sizeof(header)];
+        memcpy(temp_header, &header, sizeof(header));
+        memset(temp_header + offsetof(struct tar_header, checksum), ' ', 8);
+        
+        for (size_t i = 0; i < sizeof(header); i++) {
+            calculated_checksum += (unsigned char)temp_header[i];
+        }
+        
+        if (stored_checksum != calculated_checksum) {
+            return false; // Corrupt TAR header
+        }
+        
+        // Build full file name (prefix + name for POSIX TAR)
+        char full_name[256];
+        if (header.prefix[0] != '\0') {
+            snprintf(full_name, sizeof(full_name), "%.155s/%.100s", header.prefix, header.name);
+        } else {
+            snprintf(full_name, sizeof(full_name), "%.100s", header.name);
+        }
+        
+        // Get file size from header
+        size_t file_size = strtoul(header.size, NULL, 8);
+        
+        // Check if this is our target entry
+        if (strcmp(full_name, entry->name) == 0) {
+            // Skip if it's a directory
+            if (header.typeflag == '5' || full_name[strlen(full_name) - 1] == '/') {
+                return false;
+            }
+            
+            // Extract the file content
+            size_t bytes_remaining = file_size;
+            unsigned char buffer[4096];
+            
+            while (bytes_remaining > 0) {
+                size_t to_read = (bytes_remaining > sizeof(buffer)) ? sizeof(buffer) : bytes_remaining;
+                size_t bytes_read = fread(buffer, 1, to_read, archive_file);
+                
+                if (bytes_read == 0) {
+                    return false; // Premature end of file
+                }
+                
+                if (fwrite(buffer, 1, bytes_read, dest_file) != bytes_read) {
+                    return false; // Write error
+                }
+                
+                bytes_remaining -= bytes_read;
+            }
+            
+            return true; // Successfully extracted
+        }
+        
+        // Skip this entry's data blocks (rounded to 512-byte boundary)
+        if (file_size > 0) {
+            size_t blocks = (file_size + 511) / 512;
+            if (fseek(archive_file, blocks * 512, SEEK_CUR) != 0) {
+                return false; // Seek error
+            }
+        }
+    }
+    
+    return false; // Entry not found in archive
+}
+
 // Helper function for ZIP format entry removal
 static bool fossil_io_archive_rewrite_zip(fossil_io_archive_t *archive, const char *removed_entry) {
     // ZIP format requires:
@@ -85,87 +226,429 @@ static bool fossil_io_archive_rewrite_zip(fossil_io_archive_t *archive, const ch
         return false;
     }
     
-    // Mock ZIP rewrite: copy all data except removed entry
-    // In real implementation, would parse ZIP structure and rebuild
-    bool success = true;
+    // Find end of central directory record (EOCD)
+    fseek(old_file, 0, SEEK_END);
+    long file_size = ftell(old_file);
     
-    // Copy remaining entries (simplified mock implementation)
-    for (size_t i = 0; i < archive->entry_count; i++) {
-        // Write entry data and update central directory
-        // This is where real ZIP parsing and reconstruction would happen
+    uint32_t eocd_signature = 0x06054b50;
+    long eocd_offset = -1;
+    
+    // Search backwards for EOCD signature
+    for (long pos = file_size - 22; pos >= file_size - 65535 && pos >= 0; pos--) {
+        fseek(old_file, pos, SEEK_SET);
+        uint32_t sig;
+        if (fread(&sig, 4, 1, old_file) == 1 && sig == eocd_signature) {
+            eocd_offset = pos;
+            break;
+        }
     }
+    
+    if (eocd_offset == -1) {
+        fclose(old_file);
+        fclose(new_file);
+        remove(temp_path);
+        return false;
+    }
+    
+    // Read EOCD record
+    fseek(old_file, eocd_offset, SEEK_SET);
+    struct {
+        uint32_t signature;
+        uint16_t disk_number;
+        uint16_t central_dir_disk;
+        uint16_t entries_this_disk;
+        uint16_t total_entries;
+        uint32_t central_dir_size;
+        uint32_t central_dir_offset;
+        uint16_t comment_length;
+    } eocd;
+    
+    if (fread(&eocd, sizeof(eocd), 1, old_file) != 1) {
+        fclose(old_file);
+        fclose(new_file);
+        remove(temp_path);
+        return false;
+    }
+    
+    // Read central directory entries
+    fseek(old_file, eocd.central_dir_offset, SEEK_SET);
+    
+    typedef struct {
+        uint32_t signature;
+        uint16_t version_made_by;
+        uint16_t version_needed;
+        uint16_t flags;
+        uint16_t compression_method;
+        uint16_t mod_time;
+        uint16_t mod_date;
+        uint32_t crc32;
+        uint32_t compressed_size;
+        uint32_t uncompressed_size;
+        uint16_t filename_length;
+        uint16_t extra_field_length;
+        uint16_t file_comment_length;
+        uint16_t disk_number_start;
+        uint16_t internal_file_attributes;
+        uint32_t external_file_attributes;
+        uint32_t relative_offset_of_local_header;
+    } zip_central_dir_entry_t;
+    
+    // Store entries to keep
+    typedef struct {
+        zip_central_dir_entry_t header;
+        char *filename;
+        char *extra_field;
+        char *comment;
+        uint32_t new_local_header_offset;
+    } zip_entry_info_t;
+    
+    zip_entry_info_t *entries_to_keep = NULL;
+    size_t keep_count = 0;
+    uint32_t new_file_offset = 0;
+    
+    // First pass: identify entries to keep and copy their data
+    for (uint16_t i = 0; i < eocd.total_entries; i++) {
+        zip_central_dir_entry_t central_header;
+        
+        if (fread(&central_header, sizeof(central_header), 1, old_file) != 1) {
+            break;
+        }
+        
+        // Read filename
+        char *filename = malloc(central_header.filename_length + 1);
+        if (!filename || fread(filename, central_header.filename_length, 1, old_file) != 1) {
+            free(filename);
+            break;
+        }
+        filename[central_header.filename_length] = '\0';
+        
+        // Read extra field
+        char *extra_field = NULL;
+        if (central_header.extra_field_length > 0) {
+            extra_field = malloc(central_header.extra_field_length);
+            if (!extra_field || fread(extra_field, central_header.extra_field_length, 1, old_file) != 1) {
+                free(filename);
+                free(extra_field);
+                break;
+            }
+        }
+        
+        // Read comment
+        char *comment = NULL;
+        if (central_header.file_comment_length > 0) {
+            comment = malloc(central_header.file_comment_length);
+            if (!comment || fread(comment, central_header.file_comment_length, 1, old_file) != 1) {
+                free(filename);
+                free(extra_field);
+                free(comment);
+                break;
+            }
+        }
+        
+        // Check if this is the entry to remove
+        if (strcmp(filename, removed_entry) == 0) {
+            // Skip this entry
+            free(filename);
+            free(extra_field);
+            free(comment);
+            continue;
+        }
+        
+        // Keep this entry - copy its file data to new archive
+        long save_pos = ftell(old_file);
+        
+        // Seek to local file header
+        fseek(old_file, central_header.relative_offset_of_local_header, SEEK_SET);
+        
+        // Read local file header
+        struct {
+            uint32_t signature;
+            uint16_t version_needed;
+            uint16_t flags;
+            uint16_t compression_method;
+            uint16_t mod_time;
+            uint16_t mod_date;
+            uint32_t crc32;
+            uint32_t compressed_size;
+            uint32_t uncompressed_size;
+            uint16_t filename_length;
+            uint16_t extra_field_length;
+        } local_header;
+        
+        if (fread(&local_header, sizeof(local_header), 1, old_file) != 1) {
+            free(filename);
+            free(extra_field);
+            free(comment);
+            break;
+        }
+        
+        // Calculate total size of local file entry
+        uint32_t local_entry_size = sizeof(local_header) + 
+                                   local_header.filename_length + 
+                                   local_header.extra_field_length + 
+                                   local_header.compressed_size;
+        
+        // Copy entire local file entry to new archive
+        fseek(old_file, central_header.relative_offset_of_local_header, SEEK_SET);
+        
+        uint32_t new_offset = new_file_offset;
+        char buffer[4096];
+        uint32_t bytes_remaining = local_entry_size;
+        
+        while (bytes_remaining > 0) {
+            uint32_t to_copy = (bytes_remaining > sizeof(buffer)) ? sizeof(buffer) : bytes_remaining;
+            
+            if (fread(buffer, 1, to_copy, old_file) != to_copy ||
+                fwrite(buffer, 1, to_copy, new_file) != to_copy) {
+                free(filename);
+                free(extra_field);
+                free(comment);
+                goto cleanup_error;
+            }
+            
+            bytes_remaining -= to_copy;
+        }
+        
+        // Store entry info for central directory reconstruction
+        entries_to_keep = realloc(entries_to_keep, (keep_count + 1) * sizeof(zip_entry_info_t));
+        if (!entries_to_keep) {
+            free(filename);
+            free(extra_field);
+            free(comment);
+            goto cleanup_error;
+        }
+        
+        entries_to_keep[keep_count].header = central_header;
+        entries_to_keep[keep_count].filename = filename;
+        entries_to_keep[keep_count].extra_field = extra_field;
+        entries_to_keep[keep_count].comment = comment;
+        entries_to_keep[keep_count].new_local_header_offset = new_offset;
+        keep_count++;
+        
+        new_file_offset += local_entry_size;
+        
+        // Restore position in central directory
+        fseek(old_file, save_pos, SEEK_SET);
+    }
+    
+    // Write new central directory
+    uint32_t central_dir_offset = new_file_offset;
+    uint32_t central_dir_size = 0;
+    
+    for (size_t i = 0; i < keep_count; i++) {
+        zip_entry_info_t *entry = &entries_to_keep[i];
+        
+        // Update offset in central directory entry
+        entry->header.relative_offset_of_local_header = entry->new_local_header_offset;
+        
+        // Write central directory entry
+        if (fwrite(&entry->header, sizeof(entry->header), 1, new_file) != 1 ||
+            fwrite(entry->filename, entry->header.filename_length, 1, new_file) != 1) {
+            goto cleanup_error;
+        }
+        
+        if (entry->header.extra_field_length > 0 && entry->extra_field) {
+            if (fwrite(entry->extra_field, entry->header.extra_field_length, 1, new_file) != 1) {
+                goto cleanup_error;
+            }
+        }
+        
+        if (entry->header.file_comment_length > 0 && entry->comment) {
+            if (fwrite(entry->comment, entry->header.file_comment_length, 1, new_file) != 1) {
+                goto cleanup_error;
+            }
+        }
+        
+        central_dir_size += sizeof(entry->header) + entry->header.filename_length + 
+                           entry->header.extra_field_length + entry->header.file_comment_length;
+    }
+    
+    // Write new EOCD record
+    struct {
+        uint32_t signature;
+        uint16_t disk_number;
+        uint16_t central_dir_disk;
+        uint16_t entries_this_disk;
+        uint16_t total_entries;
+        uint32_t central_dir_size;
+        uint32_t central_dir_offset;
+        uint16_t comment_length;
+    } new_eocd = {
+        .signature = 0x06054b50,
+        .disk_number = 0,
+        .central_dir_disk = 0,
+        .entries_this_disk = (uint16_t)keep_count,
+        .total_entries = (uint16_t)keep_count,
+        .central_dir_size = central_dir_size,
+        .central_dir_offset = central_dir_offset,
+        .comment_length = 0
+    };
+    
+    if (fwrite(&new_eocd, sizeof(new_eocd), 1, new_file) != 1) {
+        goto cleanup_error;
+    }
+    
+    // Cleanup
+    for (size_t i = 0; i < keep_count; i++) {
+        free(entries_to_keep[i].filename);
+        free(entries_to_keep[i].extra_field);
+        free(entries_to_keep[i].comment);
+    }
+    free(entries_to_keep);
     
     fclose(old_file);
     fclose(new_file);
     
-    if (success) {
-        // Replace original with temporary file
-        if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
-            return true;
-        }
+    // Replace original with new file
+    if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
+        return true;
     }
     
-    // Cleanup on failure
+    remove(temp_path);
+    return false;
+    
+cleanup_error:
+    if (entries_to_keep) {
+        for (size_t i = 0; i < keep_count; i++) {
+            free(entries_to_keep[i].filename);
+            free(entries_to_keep[i].extra_field);
+            free(entries_to_keep[i].comment);
+        }
+        free(entries_to_keep);
+    }
+    
+    fclose(old_file);
+    fclose(new_file);
     remove(temp_path);
     return false;
 }
 
 // Helper function for TAR format entry removal
 static bool fossil_io_archive_rewrite_tar(fossil_io_archive_t *archive, const char *removed_entry) {
-    // TAR format requires complete reconstruction:
-    // 1. Create new archive with all entries except removed one
-    // 2. Copy file data for remaining entries
-    // 3. Write TAR end-of-archive markers
+    if (!archive || !removed_entry) {
+        return false;
+    }
     
     char temp_path[1024];
     snprintf(temp_path, sizeof(temp_path), "%s.tmp", archive->path);
     
-    // Create temporary archive with remaining entries
-    fossil_io_archive_t *temp_archive = fossil_io_archive_create(temp_path, archive->type, FOSSIL_IO_COMPRESSION_NORMAL);
-    if (!temp_archive) {
+    FILE *old_file = fopen(archive->path, "rb");
+    FILE *new_file = fopen(temp_path, "wb");
+    
+    if (!old_file || !new_file) {
+        if (old_file) fclose(old_file);
+        if (new_file) fclose(new_file);
         return false;
     }
     
+    // TAR header structure (512 bytes)
+    struct tar_header {
+        char name[100];
+        char mode[8];
+        char uid[8];
+        char gid[8];
+        char size[12];
+        char mtime[12];
+        char checksum[8];
+        char typeflag;
+        char linkname[100];
+        char magic[6];
+        char version[2];
+        char uname[32];
+        char gname[32];
+        char devmajor[8];
+        char devminor[8];
+        char prefix[155];
+        char padding[12];
+    };
+    
+    struct tar_header header;
     bool success = true;
     
-    // Add all entries except the removed one
-    for (size_t i = 0; i < archive->entry_count; i++) {
-        const fossil_io_archive_entry_t *entry = &archive->entries[i];
+    // Read through original TAR archive
+    while (success && fread(&header, sizeof(header), 1, old_file) == 1) {
+        // Check for end of archive (empty header)
+        if (header.name[0] == '\0') {
+            break;
+        }
         
-        if (entry->name && strcmp(entry->name, removed_entry) != 0) {
-            // In real implementation, extract from original and add to new archive
-            // For now, simulate the process
-            if (entry->is_directory) {
-                // Would call fossil_io_archive_add_directory with actual source
-            } else {
-                // Would extract file and re-add it
-                // For mock: create temporary file and add it
-                char temp_file[1024];
-                snprintf(temp_file, sizeof(temp_file), "/tmp/fossil_temp_%zu", i);
-                
-                FILE *tf = fopen(temp_file, "wb");
-                if (tf) {
-                    // Write mock content
-                    fwrite("restored content", 1, 16, tf);
-                    fclose(tf);
-                    
-                    if (!fossil_io_archive_add_file(temp_archive, temp_file, entry->name)) {
-                        success = false;
-                    }
-                    remove(temp_file);
-                } else {
+        // Verify checksum
+        unsigned int stored_checksum = strtoul(header.checksum, NULL, 8);
+        unsigned int calculated_checksum = 0;
+        
+        char temp_header[sizeof(header)];
+        memcpy(temp_header, &header, sizeof(header));
+        memset(temp_header + offsetof(struct tar_header, checksum), ' ', 8);
+        
+        for (size_t i = 0; i < sizeof(header); i++) {
+            calculated_checksum += (unsigned char)temp_header[i];
+        }
+        
+        if (stored_checksum != calculated_checksum) {
+            success = false;
+            break;
+        }
+        
+        // Build full file name (prefix + name for POSIX TAR)
+        char full_name[256];
+        if (header.prefix[0] != '\0') {
+            snprintf(full_name, sizeof(full_name), "%.155s/%.100s", header.prefix, header.name);
+        } else {
+            snprintf(full_name, sizeof(full_name), "%.100s", header.name);
+        }
+        
+        // Get file size from header
+        size_t file_size = strtoul(header.size, NULL, 8);
+        size_t data_blocks = (file_size + 511) / 512; // Round up to 512-byte blocks
+        
+        // Check if this is the entry to remove
+        if (strcmp(full_name, removed_entry) == 0) {
+            // Skip this entry - don't copy header or data
+            if (data_blocks > 0) {
+                if (fseek(old_file, data_blocks * 512, SEEK_CUR) != 0) {
                     success = false;
+                    break;
+                }
+            }
+        } else {
+            // Copy this entry to new archive
+            // First copy the header
+            if (fwrite(&header, sizeof(header), 1, new_file) != 1) {
+                success = false;
+                break;
+            }
+            
+            // Then copy the file data blocks
+            if (data_blocks > 0) {
+                unsigned char buffer[512];
+                for (size_t block = 0; block < data_blocks; block++) {
+                    if (fread(buffer, 512, 1, old_file) != 1) {
+                        success = false;
+                        break;
+                    }
+                    if (fwrite(buffer, 512, 1, new_file) != 1) {
+                        success = false;
+                        break;
+                    }
                 }
             }
         }
-        
-        if (!success) break;
     }
     
-    fossil_io_archive_close(temp_archive);
+    if (success) {
+        // Write TAR end-of-archive markers (two 512-byte zero blocks)
+        unsigned char zero_block[512] = {0};
+        if (fwrite(zero_block, 512, 1, new_file) != 1 ||
+            fwrite(zero_block, 512, 1, new_file) != 1) {
+            success = false;
+        }
+    }
+    
+    fclose(old_file);
+    fclose(new_file);
     
     if (success) {
-        // Replace original with reconstructed archive
+        // Replace original with new file
         if (remove(archive->path) == 0 && rename(temp_path, archive->path) == 0) {
             return true;
         }
@@ -1550,66 +2033,6 @@ bool fossil_io_archive_extract_file(fossil_io_archive_t *archive, const char *en
     return true;
 }
 
-// Helper function for ZIP entry extraction
-static bool fossil_io_archive_extract_zip_entry(FILE *archive_file, const fossil_io_archive_entry_t *entry, FILE *dest_file) {
-    // Mock ZIP extraction - in real implementation would:
-    // 1. Parse ZIP central directory to find file entry
-    // 2. Seek to local file header
-    // 3. Read and decompress file data based on compression method
-    // 4. Verify CRC32 checksum
-    
-    if (entry->size == 0) {
-        return true; // Empty file
-    }
-    
-    // Placeholder: write mock compressed data
-    const char zip_data[] = "ZIP-EXTRACTED-CONTENT\n";
-    size_t data_len = strlen(zip_data);
-    size_t bytes_written = 0;
-    
-    while (bytes_written < entry->size) {
-        size_t to_write = (entry->size - bytes_written > data_len) ? 
-                          data_len : (entry->size - bytes_written);
-        
-        if (fwrite(zip_data, 1, to_write, dest_file) != to_write) {
-            return false;
-        }
-        bytes_written += to_write;
-    }
-    
-    return true;
-}
-
-// Helper function for TAR entry extraction
-static bool fossil_io_archive_extract_tar_entry(FILE *archive_file, const fossil_io_archive_entry_t *entry, FILE *dest_file) {
-    // Mock TAR extraction - in real implementation would:
-    // 1. Parse TAR headers to locate file data
-    // 2. Handle compression (gzip, bzip2, xz, etc.) if needed
-    // 3. Extract file content directly or decompress
-    // 4. Handle sparse files and extended attributes
-    
-    if (entry->size == 0) {
-        return true; // Empty file
-    }
-    
-    // Placeholder: write mock TAR content
-    const char tar_data[] = "TAR-EXTRACTED-CONTENT\n";
-    size_t data_len = strlen(tar_data);
-    size_t bytes_written = 0;
-    
-    while (bytes_written < entry->size) {
-        size_t to_write = (entry->size - bytes_written > data_len) ? 
-                          data_len : (entry->size - bytes_written);
-        
-        if (fwrite(tar_data, 1, to_write, dest_file) != to_write) {
-            return false;
-        }
-        bytes_written += to_write;
-    }
-    
-    return true;
-}
-
 bool fossil_io_archive_extract_all(fossil_io_archive_t *archive, const char *dest_dir) {
     if (!archive || !dest_dir) {
         return false;
@@ -2418,116 +2841,6 @@ ssize_t fossil_io_archive_entry_size(fossil_io_archive_t *archive, const char *e
     fossil_io_archive_free_entries(entries, (size_t)entry_count);
 
     return size;
-}
-
-void fossil_io_archive_print(fossil_io_archive_t *archive) {
-    if (!archive) {
-        printf("Error: Invalid archive handle\n");
-        return;
-    }
-
-    // Get archive statistics
-    fossil_io_archive_stats_t stats;
-    if (!fossil_io_archive_get_stats(archive, &stats)) {
-        printf("Error: Could not retrieve archive statistics\n");
-        return;
-    }
-
-    // Print archive header information
-    printf("Archive: %s\n", archive->path ? archive->path : "Unknown");
-    printf("Type: ");
-    switch (archive->type) {
-        case FOSSIL_IO_ARCHIVE_ZIP: printf("ZIP"); break;
-        case FOSSIL_IO_ARCHIVE_TAR: printf("TAR"); break;
-        case FOSSIL_IO_ARCHIVE_TARGZ: printf("TAR.GZ"); break;
-        case FOSSIL_IO_ARCHIVE_TARBZ2: printf("TAR.BZ2"); break;
-        case FOSSIL_IO_ARCHIVE_TARXZ: printf("TAR.XZ"); break;
-        case FOSSIL_IO_ARCHIVE_TARLZ4: printf("TAR.LZ4"); break;
-        case FOSSIL_IO_ARCHIVE_TARZST: printf("TAR.ZSTD"); break;
-        case FOSSIL_IO_ARCHIVE_RAR: printf("RAR"); break;
-        case FOSSIL_IO_ARCHIVE_RAR5: printf("RAR5"); break;
-        case FOSSIL_IO_ARCHIVE_7Z: printf("7Z"); break;
-        case FOSSIL_IO_ARCHIVE_CAB: printf("CAB"); break;
-        case FOSSIL_IO_ARCHIVE_ACE: printf("ACE"); break;
-        case FOSSIL_IO_ARCHIVE_ISO: printf("ISO"); break;
-        case FOSSIL_IO_ARCHIVE_BZ2: printf("BZ2"); break;
-        case FOSSIL_IO_ARCHIVE_GZ: printf("GZ"); break;
-        case FOSSIL_IO_ARCHIVE_XZ: printf("XZ"); break;
-        case FOSSIL_IO_ARCHIVE_LZ4: printf("LZ4"); break;
-        case FOSSIL_IO_ARCHIVE_ZSTD: printf("ZSTD"); break;
-        default: printf("Unknown"); break;
-    }
-    printf("\n");
-
-    printf("Total entries: %zu\n", stats.total_entries);
-    printf("Total size: %zu bytes\n", stats.total_size);
-    printf("Compressed size: %zu bytes\n", stats.compressed_size);
-    printf("Compression ratio: %.2f%%\n", stats.compression_ratio * 100.0);
-    printf("\n");
-
-    // Get and print entries list
-    fossil_io_archive_entry_t *entries = NULL;
-    ssize_t entry_count = fossil_io_archive_list(archive, &entries);
-    
-    if (entry_count < 0) {
-        printf("Error: Could not list archive entries\n");
-        return;
-    }
-
-    if (entry_count == 0) {
-        printf("Archive is empty\n");
-        return;
-    }
-
-    // Print table header
-    printf("%-8s %-12s %-12s %-10s %-20s %s\n", 
-           "Type", "Size", "Compressed", "CRC32", "Modified", "Name");
-    printf("%-8s %-12s %-12s %-10s %-20s %s\n", 
-           "--------", "------------", "------------", "----------", "--------------------", "----");
-
-    // Print each entry
-    for (ssize_t i = 0; i < entry_count; i++) {
-        const fossil_io_archive_entry_t *entry = &entries[i];
-        
-        // Format file type
-        const char *type = entry->is_directory ? "DIR" : "FILE";
-        
-        // Format sizes
-        char size_str[16], compressed_str[16];
-        if (entry->is_directory) {
-            strcpy(size_str, "-");
-            strcpy(compressed_str, "-");
-        } else {
-            snprintf(size_str, sizeof(size_str), "%zu", entry->size);
-            snprintf(compressed_str, sizeof(compressed_str), "%zu", entry->compressed_size);
-        }
-        
-        // Format CRC32
-        char crc_str[12];
-        if (entry->is_directory || entry->crc32 == 0) {
-            strcpy(crc_str, "-");
-        } else {
-            snprintf(crc_str, sizeof(crc_str), "%08X", entry->crc32);
-        }
-        
-        // Format timestamp
-        char time_str[32];
-        if (entry->modified_time > 0) {
-            time_t timestamp = (time_t)entry->modified_time;
-            struct tm *tm_info = localtime(&timestamp);
-            strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
-        } else {
-            strcpy(time_str, "Unknown");
-        }
-        
-        // Print entry information
-        printf("%-8s %-12s %-12s %-10s %-20s %s\n",
-               type, size_str, compressed_str, crc_str, time_str,
-               entry->name ? entry->name : "Unknown");
-    }
-
-    // Clean up entries list
-    fossil_io_archive_free_entries(entries, (size_t)entry_count);
 }
 
 // ======================================================
