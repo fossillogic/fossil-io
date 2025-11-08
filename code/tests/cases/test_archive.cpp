@@ -1037,7 +1037,7 @@ FOSSIL_TEST_GROUP(cpp_archive_tests) {
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_move_constructor);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_move_assignment);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_get_type);
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_get_stats);
+    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_get_type);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_list);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_extract_file);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_extract_all);
