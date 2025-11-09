@@ -92,8 +92,8 @@ FOSSIL_TEST(cpp_parse_command) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "test_arg", "ta", FOSSIL_IO_PARSER_STRING, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Argument should be added successfully");
 
-    char *argv[] = {"program", "test_command", "test_arg", "test_value"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "test_arg", "test_value"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
 
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Argument value should be set");
     parser.free(palette);
@@ -294,8 +294,8 @@ FOSSIL_TEST(cpp_duplicate_argument_short_name) {
 
 FOSSIL_TEST(cpp_parse_null_palette) {
     fossil::io::Parser parser;
-    char *argv[] = {"program", "test_command"};
-    parser.parse(NULL, 2, argv);
+    const char *argv[] = {"program", "test_command"};
+    parser.parse(NULL, 2, const_cast<char**>(argv));
     FOSSIL_TEST_ASSUME(true, "Parse with NULL palette completed without crashing");
 } // end case
 
@@ -312,8 +312,8 @@ FOSSIL_TEST(cpp_parse_zero_argc) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
-    char *argv[] = {"program"};
-    parser.parse(palette, 1, argv);
+    const char *argv[] = {"program"};
+    parser.parse(palette, 1, const_cast<char**>(argv));
     FOSSIL_TEST_ASSUME(true, "Parse with zero argc handled gracefully");
     parser.free(palette);
 } // end case
@@ -325,8 +325,8 @@ FOSSIL_TEST(cpp_parse_help_flag) {
     fossil_io_parser_command_t *command = parser.add_command(palette, "test_command", "tc", "Test Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Command should be added successfully");
     
-    char *argv[] = {"program", "--help"};
-    parser.parse(palette, 2, argv);
+    const char *argv[] = {"program", "--help"};
+    parser.parse(palette, 2, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Help flag parsed without crashing");
     parser.free(palette);
@@ -337,8 +337,8 @@ FOSSIL_TEST(cpp_parse_version_flag) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    char *argv[] = {"program", "--version"};
-    parser.parse(palette, 2, argv);
+    const char *argv[] = {"program", "--version"};
+    parser.parse(palette, 2, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Version flag parsed without crashing");
     parser.free(palette);
@@ -349,8 +349,8 @@ FOSSIL_TEST(cpp_parse_dry_run_flag) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    char *argv[] = {"program", "--dry-run", "test_command"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "--dry-run", "test_command"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(FOSSIL_CLI_TOGGLE_DRY_RUN == 1, "Dry-run flag should be set");
     parser.free(palette);
@@ -361,8 +361,8 @@ FOSSIL_TEST(cpp_parse_verbose_flag) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    char *argv[] = {"program", "--verbose", "test_command"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "--verbose", "test_command"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(FOSSIL_CLI_TOGGLE_VERBOSE == 1, "Verbose flag should be set");
     parser.free(palette);
@@ -375,8 +375,8 @@ FOSSIL_TEST(cpp_parse_unknown_command) {
     fossil_io_parser_command_t *command = parser.add_command(palette, "valid_command", "vc", "Valid Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Valid command should be added successfully");
     
-    char *argv[] = {"program", "unknown_command"};
-    parser.parse(palette, 2, argv);
+    const char *argv[] = {"program", "unknown_command"};
+    parser.parse(palette, 2, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Unknown command handled gracefully");
     parser.free(palette);
@@ -389,11 +389,11 @@ FOSSIL_TEST(cpp_argument_with_combo_options) {
     fossil_io_parser_command_t *command = parser.add_command(palette, "test_command", "tc", "Test Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Command should be added successfully");
     
-    char *combo_options[] = {"option1", "option2", "option3"};
-    fossil_io_parser_argument_t *argument = parser.add_argument(command, "combo_arg", "ca", FOSSIL_IO_PARSER_STRING, combo_options, 3);
+    const char *combo_options[] = {"option1", "option2", "option3"};
+    fossil_io_parser_argument_t *argument = parser.add_argument(command, "combo_arg", "ca", FOSSIL_IO_PARSER_STRING, const_cast<char**>(combo_options), 3);
     
     FOSSIL_TEST_ASSUME(argument != NULL, "Argument with combo options should be added");
-    FOSSIL_TEST_ASSUME(argument->combo_options == combo_options, "Combo options should be set correctly");
+    FOSSIL_TEST_ASSUME(argument->combo_options == const_cast<char**>(combo_options), "Combo options should be set correctly");
     FOSSIL_TEST_ASSUME(argument->combo_count == 3, "Combo count should be 3");
     
     parser.free(palette);
@@ -436,8 +436,8 @@ FOSSIL_TEST(cpp_parse_bool_argument_true) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "bool_arg", "ba", FOSSIL_IO_PARSER_BOOL, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Boolean argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "bool_arg", "true"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "bool_arg", "true"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Boolean argument value should be set");
     FOSSIL_TEST_ASSUME(*(int*)command->arguments->value == 1, "Boolean argument should be true");
@@ -454,8 +454,8 @@ FOSSIL_TEST(cpp_parse_bool_argument_false) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "bool_arg", "ba", FOSSIL_IO_PARSER_BOOL, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Boolean argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "bool_arg", "false"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "bool_arg", "false"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Boolean argument value should be set");
     FOSSIL_TEST_ASSUME(*(int*)command->arguments->value == 0, "Boolean argument should be false");
@@ -472,8 +472,8 @@ FOSSIL_TEST(cpp_parse_int_argument) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "int_arg", "ia", FOSSIL_IO_PARSER_INT, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Integer argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "int_arg", "42"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "int_arg", "42"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Integer argument value should be set");
     FOSSIL_TEST_ASSUME(*(int*)command->arguments->value == 42, "Integer argument should be 42");
@@ -490,8 +490,8 @@ FOSSIL_TEST(cpp_parse_uint_argument) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "uint_arg", "ua", FOSSIL_IO_PARSER_UINT, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Unsigned integer argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "uint_arg", "100"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "uint_arg", "100"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Unsigned integer argument value should be set");
     FOSSIL_TEST_ASSUME(*(unsigned int*)command->arguments->value == 100, "Unsigned integer argument should be 100");
@@ -508,8 +508,8 @@ FOSSIL_TEST(cpp_parse_float_argument) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "float_arg", "fa", FOSSIL_IO_PARSER_FLOAT, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Float argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "float_arg", "3.14"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "float_arg", "3.14"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Float argument value should be set");
     FOSSIL_TEST_ASSUME(fabs(*(float*)command->arguments->value - 3.14f) < 0.001f, "Float argument should be approximately 3.14");
@@ -526,8 +526,8 @@ FOSSIL_TEST(cpp_parse_hex_argument) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "hex_arg", "ha", FOSSIL_IO_PARSER_HEX, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Hex argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "hex_arg", "0xFF"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "hex_arg", "0xFF"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Hex argument value should be set");
     FOSSIL_TEST_ASSUME(*(unsigned int*)command->arguments->value == 255, "Hex argument should be 255 (0xFF)");
@@ -544,8 +544,8 @@ FOSSIL_TEST(cpp_parse_oct_argument) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "oct_arg", "oa", FOSSIL_IO_PARSER_OCT, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Octal argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "oct_arg", "0777"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "oct_arg", "0777"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Octal argument value should be set");
     FOSSIL_TEST_ASSUME(*(unsigned int*)command->arguments->value == 511, "Octal argument should be 511 (0777)");
@@ -560,8 +560,8 @@ FOSSIL_TEST(cpp_parse_help_with_specificpp_command) {
     fossil_io_parser_command_t *command = parser.add_command(palette, "test_command", "tc", "Test Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Command should be added successfully");
     
-    char *argv[] = {"program", "--help", "test_command"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "--help", "test_command"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Help with specific command parsed without crashing");
     parser.free(palette);
@@ -572,8 +572,8 @@ FOSSIL_TEST(cpp_parse_color_enable) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    char *argv[] = {"program", "color=enable"};
-    parser.parse(palette, 2, argv);
+    const char *argv[] = {"program", "color=enable"};
+    parser.parse(palette, 2, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(FOSSIL_IO_COLOR_ENABLE == 1, "Color should be enabled");
     parser.free(palette);
@@ -584,8 +584,8 @@ FOSSIL_TEST(cpp_parse_color_disable) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    char *argv[] = {"program", "color=disable"};
-    parser.parse(palette, 2, argv);
+    const char *argv[] = {"program", "color=disable"};
+    parser.parse(palette, 2, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(FOSSIL_IO_COLOR_ENABLE == 0, "Color should be disabled");
     parser.free(palette);
@@ -650,8 +650,8 @@ FOSSIL_TEST(cpp_parse_missing_bool_value) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "bool_arg", "ba", FOSSIL_IO_PARSER_BOOL, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Boolean argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "bool_arg"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "test_command", "bool_arg"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Missing boolean value handled gracefully");
     parser.free(palette);
@@ -666,8 +666,8 @@ FOSSIL_TEST(cpp_parse_missing_string_value) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "string_arg", "sa", FOSSIL_IO_PARSER_STRING, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "String argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "string_arg"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "test_command", "string_arg"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Missing string value handled gracefully");
     parser.free(palette);
@@ -682,8 +682,8 @@ FOSSIL_TEST(cpp_parse_missing_int_value) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "int_arg", "ia", FOSSIL_IO_PARSER_INT, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Integer argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "int_arg"};
-    parser.parse(palette, 3, argv);
+    const char *argv[] = {"program", "test_command", "int_arg"};
+    parser.parse(palette, 3, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(true, "Missing integer value handled gracefully");
     parser.free(palette);
@@ -698,8 +698,8 @@ FOSSIL_TEST(cpp_parse_bool_yes_no) {
     fossil_io_parser_argument_t *argument = parser.add_argument(command, "bool_arg", "ba", FOSSIL_IO_PARSER_BOOL, NULL, 0);
     FOSSIL_TEST_ASSUME(argument != NULL, "Boolean argument should be added successfully");
     
-    char *argv[] = {"program", "test_command", "bool_arg", "yes"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "test_command", "bool_arg", "yes"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(command->arguments->value != NULL, "Boolean argument value should be set");
     FOSSIL_TEST_ASSUME(*(int*)command->arguments->value == 1, "Boolean argument should be true for 'yes'");
@@ -718,8 +718,8 @@ FOSSIL_TEST(cpp_parse_combined_flags) {
     fossil_io_parser_command_t *command = parser.add_command(palette, "test_command", "tc", "Test Command Description");
     FOSSIL_TEST_ASSUME(command != NULL, "Command should be added successfully");
     
-    char *argv[] = {"program", "--dry-run", "--verbose", "test_command"};
-    parser.parse(palette, 4, argv);
+    const char *argv[] = {"program", "--dry-run", "--verbose", "test_command"};
+    parser.parse(palette, 4, const_cast<char**>(argv));
     
     FOSSIL_TEST_ASSUME(FOSSIL_CLI_TOGGLE_DRY_RUN == 1, "Dry-run flag should be set");
     FOSSIL_TEST_ASSUME(FOSSIL_CLI_TOGGLE_VERBOSE == 1, "Verbose flag should be set");
