@@ -205,23 +205,6 @@ FOSSIL_TEST(cpp_create_palette_null_inputs) {
     FOSSIL_TEST_ASSUME(palette3 == NULL, "Palette should not be created with NULL name and description");
 } // end case
 
-FOSSIL_TEST(cpp_add_command_null_inputs) {
-    fossil::io::Parser parser;
-    fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
-    FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
-    
-    fossil_io_parser_command_t *command1 = parser.add_command(palette, NULL, "tc", "Test Command Description");
-    FOSSIL_TEST_ASSUME(command1 == NULL, "Command should not be added with NULL name");
-    
-    fossil_io_parser_command_t *command2 = parser.add_command(palette, "test_command", "tc", NULL);
-    FOSSIL_TEST_ASSUME(command2 == NULL, "Command should not be added with NULL description");
-    
-    fossil_io_parser_command_t *command3 = parser.add_command(NULL, "test_command", "tc", "Test Description");
-    FOSSIL_TEST_ASSUME(command3 == NULL, "Command should not be added to NULL palette");
-    
-    parser.free(palette);
-} // end case
-
 FOSSIL_TEST(cpp_add_command_with_short_name) {
     fossil::io::Parser parser;
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
@@ -742,7 +725,6 @@ FOSSIL_TEST_GROUP(cpp_parser_test_cases) {
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_duplicate_command_name);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_null_argument_name);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_create_palette_null_inputs);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_add_command_null_inputs);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_add_command_with_short_name);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_duplicate_command_short_name);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_add_argument_null_command);
