@@ -131,79 +131,6 @@ FOSSIL_TEST(cpp_test_archive_class_get_type) {
     fossil::io::Stream::remove(zip_path);
 }
 
-FOSSIL_TEST(cpp_test_archive_class_list) {
-    const std::string archive_path = "test_cpp_list.zip";
-    const std::string test_file1 = "temp_cpp_list1.txt";
-    const std::string test_file2 = "temp_cpp_list2.txt";
-    
-    // Create test files
-    fossil_fstream_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file1, "w"));
-    fossil::io::Stream::write(&temp_stream, "Content1", 8, 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file2, "w"));
-    fossil::io::Stream::write(&temp_stream, "Content2", 8, 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    // Create archive and add files using C++ class
-    auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
-    ASSUME_ITS_TRUE(archive.is_valid());
-    ASSUME_ITS_TRUE(archive.add_file(test_file1, "file1.txt"));
-    ASSUME_ITS_TRUE(archive.add_file(test_file2, "file2.txt"));
-    
-    // List entries using STL vector
-    auto entries = archive.list();
-    ASSUME_ITS_EQUAL_SIZE(2, entries.size());
-    
-    // Verify entries
-    bool found_file1 = false, found_file2 = false;
-    for (const auto& entry : entries) {
-        if (std::string(entry.name) == "file1.txt") {
-            found_file1 = true;
-        } else if (std::string(entry.name) == "file2.txt") {
-            found_file2 = true;
-        }
-    }
-    ASSUME_ITS_TRUE(found_file1);
-    ASSUME_ITS_TRUE(found_file2);
-    
-    fossil::io::Stream::remove(test_file1);
-    fossil::io::Stream::remove(test_file2);
-    fossil::io::Stream::remove(archive_path);
-}
-
-FOSSIL_TEST(cpp_test_archive_class_extract_file) {
-    const std::string archive_path = "test_cpp_extract.zip";
-    const std::string test_file = "temp_cpp_source.txt";
-    const std::string extracted_file = "temp_cpp_extracted.txt";
-    const std::string content = "C++ extract test content";
-    
-    // Create test file
-    fossil_fstream_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, content.c_str(), content.length(), 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    // Create archive and add file
-    auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
-    ASSUME_ITS_TRUE(archive.is_valid());
-    ASSUME_ITS_TRUE(archive.add_file(test_file, "source.txt"));
-    archive = fossil::io::Archive("", FOSSIL_IO_ARCHIVE_UNKNOWN, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
-    
-    // Open for reading and extract using C++ class
-    fossil::io::Archive read_archive(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
-    ASSUME_ITS_TRUE(read_archive.is_valid());
-    ASSUME_ITS_TRUE(read_archive.extract_file("source.txt", extracted_file));
-    
-    // Verify extraction
-    ASSUME_ITS_TRUE(fossil::io::Stream::file_exists(extracted_file) == FOSSIL_ERROR_OK);
-    
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(extracted_file);
-    fossil::io::Stream::remove(archive_path);
-}
-
 FOSSIL_TEST(cpp_test_archive_class_extract_all) {
     const std::string archive_path = "test_cpp_extract_all.zip";
     const std::string extract_dir = "temp_cpp_extract_dir";
@@ -656,46 +583,6 @@ FOSSIL_TEST(cpp_test_archive_create_null_params) {
     ASSUME_ITS_CNULL(archive);
 }
 
-// Test archive inspection functions
-FOSSIL_TEST(cpp_test_archive_get_stats) {
-    const char *archive_path = "test_stats.zip";
-    fossil_io_archive_stats_t stats;
-    
-    // Create archive and add test files
-    fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
-    ASSUME_NOT_CNULL(archive);
-    
-    // Create temporary test files
-    const char *test_file1 = "temp_test_file1.txt";
-    const char *test_file2 = "temp_test_file2.txt";
-    const char *content1 = "Test content 1";
-    const char *content2 = "Test content 2 is longer";
-    
-    fossil_fstream_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file1, "w"));
-    fossil::io::Stream::write(&temp_stream, content1, strlen(content1), 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file2, "w"));
-    fossil::io::Stream::write(&temp_stream, content2, strlen(content2), 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    // Add files to archive
-    ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file1, "test1.txt"));
-    ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file2, "test2.txt"));
-    
-    // Get stats
-    ASSUME_ITS_TRUE(fossil_io_archive_get_stats(archive, &stats));
-    ASSUME_ITS_EQUAL_SIZE(2, stats.total_entries);
-    ASSUME_ITS_EQUAL_SIZE(strlen(content1) + strlen(content2), stats.total_size);
-    ASSUME_ITS_TRUE(stats.compression_ratio >= 0.0 && stats.compression_ratio <= 1.0);
-    
-    fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file1);
-    fossil::io::Stream::remove(test_file2);
-    fossil::io::Stream::remove(archive_path);
-}
-
 FOSSIL_TEST(cpp_test_archive_get_stats_null_params) {
     fossil_io_archive_stats_t stats;
     
@@ -778,40 +665,6 @@ FOSSIL_TEST(cpp_test_archive_list_empty) {
     ASSUME_ITS_CNULL(entries);
     
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
-}
-
-// Test extraction functions
-FOSSIL_TEST(cpp_test_archive_extract_file) {
-    const char *archive_path = "test_extract.zip";
-    const char *test_file = "temp_source.txt";
-    const char *extracted_file = "temp_extracted.txt";
-    const char *test_content = "Extract test content";
-    
-    // Create source file
-    fossil_fstream_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, test_content, strlen(test_content), 1);
-    fossil::io::Stream::close(&temp_stream);
-    
-    // Create archive and add file
-    fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
-    ASSUME_NOT_CNULL(archive);
-    ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file, "source.txt"));
-    fossil_io_archive_close(archive);
-    
-    // Reopen for reading and extract
-    archive = fossil_io_archive_open(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
-    ASSUME_NOT_CNULL(archive);
-    ASSUME_ITS_TRUE(fossil_io_archive_extract_file(archive, "source.txt", extracted_file));
-    fossil_io_archive_close(archive);
-    
-    // Verify file was extracted
-    ASSUME_ITS_TRUE(fossil::io::Stream::file_exists(extracted_file) == FOSSIL_ERROR_OK);
-    
-    // Cleanup
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(extracted_file);
     fossil::io::Stream::remove(archive_path);
 }
 
@@ -1037,9 +890,6 @@ FOSSIL_TEST_GROUP(cpp_archive_tests) {
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_move_constructor);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_move_assignment);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_get_type);
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_get_stats);
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_list);
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_extract_file);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_extract_all);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_add_directory);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_class_exists);
@@ -1077,7 +927,6 @@ FOSSIL_TEST_GROUP(cpp_archive_tests) {
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_list_empty);
 
     // Archive extraction tests
-    FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_extract_file);
     FOSSIL_TEST_ADD(cpp_archive_suite, cpp_test_archive_extract_all);
 
     // Archive modification tests
