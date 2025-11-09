@@ -210,13 +210,13 @@ FOSSIL_TEST(cpp_add_command_null_inputs) {
     fossil_io_parser_palette_t *palette = parser.create_palette("test_palette", "Test Description");
     FOSSIL_TEST_ASSUME(palette != NULL, "Palette should be created successfully");
     
-    fossil_io_parser_command_t *command1 = fossil_io_parser_add_command(palette, NULL, "tc", "Test Command Description");
+    fossil_io_parser_command_t *command1 = parser.add_command(palette, NULL, "tc", "Test Command Description");
     FOSSIL_TEST_ASSUME(command1 == NULL, "Command should not be added with NULL name");
     
-    fossil_io_parser_command_t *command2 = fossil_io_parser_add_command(palette, "test_command", "tc", NULL);
+    fossil_io_parser_command_t *command2 = parser.add_command(palette, "test_command", "tc", NULL);
     FOSSIL_TEST_ASSUME(command2 == NULL, "Command should not be added with NULL description");
     
-    fossil_io_parser_command_t *command3 = fossil_io_parser_add_command(NULL, "test_command", "tc", "Test Description");
+    fossil_io_parser_command_t *command3 = parser.add_command(NULL, "test_command", "tc", "Test Description");
     FOSSIL_TEST_ASSUME(command3 == NULL, "Command should not be added to NULL palette");
     
     parser.free(palette);

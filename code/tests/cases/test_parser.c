@@ -14,6 +14,7 @@
  */
 #include <fossil/pizza/framework.h>
 #include <fossil/io/framework.h>
+#include <math.h>
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
