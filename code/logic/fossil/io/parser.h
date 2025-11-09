@@ -36,7 +36,10 @@ typedef enum {
     FOSSIL_IO_PARSER_BOOL,    // Boolean (enable/disable)
     FOSSIL_IO_PARSER_STRING,  // String argument
     FOSSIL_IO_PARSER_INT,     // Integer argument
+    FOSSIL_IO_PARSER_UINT,    // Unsigned integer argument
     FOSSIL_IO_PARSER_FLOAT,   // Floating-point argument
+    FOSSIL_IO_PARSER_HEX,     // Hexadecimal argument
+    FOSSIL_IO_PARSER_OCT,     // Octal argument
     FOSSIL_IO_PARSER_DATE,    // Date argument
     FOSSIL_IO_PARSER_ARRAY,   // Array of values
     FOSSIL_IO_PARSER_FEATURE, // Feature flag
@@ -46,6 +49,7 @@ typedef enum {
 // Structure to represent each argument in the command
 typedef struct fossil_io_parser_argument_s {
     char *name;                                   // Argument name
+    char *short_name;                             // Short argument name (e.g., -v for --verbose)
     fossil_io_parser_arg_type_t type;         // Argument type
     char *value;                                  // Parsed value
     char **combo_options;                         // Valid options for COMBO type
@@ -56,6 +60,7 @@ typedef struct fossil_io_parser_argument_s {
 // Structure for a command
 typedef struct fossil_io_parser_command_s {
     char *name;                                  // Command name
+    char *short_name;                            // Short command name
     char *description;                           // Command description
     fossil_io_parser_argument_t *arguments;  // List of arguments
     struct fossil_io_parser_command_s *prev; // Previous command in the list
@@ -97,22 +102,24 @@ fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, co
  *
  * @param palette The parser palette to which the command will be added.
  * @param command_name The name of the command.
+ * @param short_name The short name of the command (can be NULL).
  * @param description A description of the command.
  * @return A pointer to the newly added command.
  */
-fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description);
+fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *short_name, const char *description);
 
 /**
  * @brief Adds an argument to a command.
  *
  * @param command The command to which the argument will be added.
  * @param arg_name The name of the argument.
+ * @param short_name The short name of the argument (can be NULL).
  * @param arg_type The type of the argument.
  * @param combo_options (Optional) Array of valid options for COMBO type.
  * @param combo_count (Optional) Number of options for COMBO type.
  * @return A pointer to the newly added argument.
  */
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count);
+fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, const char *short_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count);
 
 /**
  * @brief Parses the command-line arguments using the parser palette.
@@ -132,6 +139,7 @@ void fossil_io_parser_free(fossil_io_parser_palette_t *palette);
 
 #ifdef __cplusplus
 }
+#include <string>
 
 /**
  * C++ wrapper for the Parser API.
@@ -163,11 +171,12 @@ namespace fossil {
              *
              * @param palette The parser palette to which the command will be added.
              * @param command_name The name of the command.
+             * @param short_name The short name of the command (can be NULL).
              * @param description A description of the command.
              * @return A pointer to the newly added command.
              */
-            static fossil_io_parser_command_t *add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description) {
-                return fossil_io_parser_add_command(palette, command_name, description);
+            static fossil_io_parser_command_t *add_command(fossil_io_parser_palette_t *palette, const std::string& command_name, const std::string& short_name, const std::string& description) {
+                return fossil_io_parser_add_command(palette, command_name.c_str(), short_name.empty() ? nullptr : short_name.c_str(), description.c_str());
             }
 
             /**
@@ -175,13 +184,14 @@ namespace fossil {
              *
              * @param command The command to which the argument will be added.
              * @param arg_name The name of the argument.
+             * @param short_name The short name of the argument (can be NULL).
              * @param arg_type The type of the argument.
              * @param combo_options (Optional) Array of valid options for COMBO type.
              * @param combo_count (Optional) Number of options for COMBO type.
              * @return A pointer to the newly added argument.
              */
-            static fossil_io_parser_argument_t *add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
-                return fossil_io_parser_add_argument(command, arg_name, arg_type, combo_options, combo_count);
+            static fossil_io_parser_argument_t *add_argument(fossil_io_parser_command_t *command, const std::string& arg_name, const std::string& short_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
+                return fossil_io_parser_add_argument(command, arg_name.c_str(), short_name.empty() ? nullptr : short_name.c_str(), arg_type, combo_options, combo_count);
             }
 
             /**

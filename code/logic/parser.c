@@ -245,11 +245,20 @@ void show_usage(const char *command_name, const fossil_io_parser_palette_t *pale
                     case FOSSIL_IO_PARSER_INT:
                         fossil_io_printf("{cyan}<int>{reset}");
                         break;
+                    case FOSSIL_IO_PARSER_UINT:
+                        fossil_io_printf("{cyan}<uint>{reset}");
+                        break;
                     case FOSSIL_IO_PARSER_BOOL:
                         fossil_io_printf("{cyan}<true/false>{reset}");
                         break;
                     case FOSSIL_IO_PARSER_FLOAT:
                         fossil_io_printf("{cyan}<float>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_HEX:
+                        fossil_io_printf("{cyan}<0xHEX>{reset}");
+                        break;
+                    case FOSSIL_IO_PARSER_OCT:
+                        fossil_io_printf("{cyan}<0OCT>{reset}");
                         break;
                     case FOSSIL_IO_PARSER_DATE:
                         fossil_io_printf("{cyan}<YYYY-MM-DD>{reset}");
@@ -310,7 +319,7 @@ fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, co
     return palette;
 }
 
-fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description) {
+fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *short_name, const char *description) {
     if (!palette || !command_name || !description) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Palette, command name, and description cannot be NULL.{reset}\n");
         return NULL;
@@ -321,11 +330,15 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
         return NULL;
     }
 
-    // Check for duplicate command name
+    // Check for duplicate command name or short name
     fossil_io_parser_command_t *current = palette->commands;
     while (current) {
         if (strcmp(current->name, command_name) == 0) {
             fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Command with name '%s' already exists.{reset}\n", command_name);
+            return NULL;
+        }
+        if (short_name && current->short_name && strcmp(current->short_name, short_name) == 0) {
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Command with short name '%s' already exists.{reset}\n", short_name);
             return NULL;
         }
         current = current->next;
@@ -336,8 +349,10 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for command.{reset}\n");
         return NULL;
     }
+    
     // Initialize all fields to zero/NULL
     command->name = NULL;
+    command->short_name = NULL;
     command->description = NULL;
     command->arguments = NULL;
     command->prev = NULL;
@@ -350,10 +365,21 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
         return NULL;
     }
 
+    if (short_name) {
+        command->short_name = _custom_strdup(short_name);
+        if (!command->short_name) {
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for command short name.{reset}\n");
+            free(command->name);
+            free(command);
+            return NULL;
+        }
+    }
+
     command->description = _custom_strdup(description);
     if (!command->description) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for command description.{reset}\n");
         free(command->name);
+        if (command->short_name) free(command->short_name);
         free(command);
         return NULL;
     }
@@ -368,10 +394,29 @@ fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palett
     return command;
 }
 
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
+fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, const char *short_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
     if (!command || !arg_name) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Command and argument name cannot be NULL.{reset}\n");
         return NULL;
+    }
+
+    if (strlen(arg_name) == 0) {
+        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Argument name cannot be empty.{reset}\n");
+        return NULL;
+    }
+
+    // Check for duplicate argument name or short name
+    fossil_io_parser_argument_t *current = command->arguments;
+    while (current) {
+        if (strcmp(current->name, arg_name) == 0) {
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Argument with name '%s' already exists.{reset}\n", arg_name);
+            return NULL;
+        }
+        if (short_name && current->short_name && strcmp(current->short_name, short_name) == 0) {
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Argument with short name '%s' already exists.{reset}\n", short_name);
+            return NULL;
+        }
+        current = current->next;
     }
 
     fossil_io_parser_argument_t *argument = malloc(sizeof(fossil_io_parser_argument_t));
@@ -380,6 +425,15 @@ fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_comm
         return NULL;
     }
 
+    // Initialize all fields to zero/NULL
+    argument->name = NULL;
+    argument->short_name = NULL;
+    argument->type = FOSSIL_IO_PARSER_BOOL;
+    argument->value = NULL;
+    argument->combo_options = NULL;
+    argument->combo_count = 0;
+    argument->next = NULL;
+
     argument->name = _custom_strdup(arg_name);
     if (!argument->name) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for argument name.{reset}\n");
@@ -387,12 +441,24 @@ fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_comm
         return NULL;
     }
 
-    if (arg_type < FOSSIL_IO_PARSER_BOOL || arg_type > FOSSIL_IO_PARSER_FEATURE) {
+    if (short_name) {
+        argument->short_name = _custom_strdup(short_name);
+        if (!argument->short_name) {
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for argument short name.{reset}\n");
+            free(argument->name);
+            free(argument);
+            return NULL;
+        }
+    }
+
+    if (arg_type < FOSSIL_IO_PARSER_BOOL || arg_type >= FOSSIL_IO_PARSER_INVALID) {
         fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Invalid argument type for '%s'.{reset}\n", arg_name);
         free(argument->name);
+        if (argument->short_name) free(argument->short_name);
         free(argument);
         return NULL;
     }
+    
     argument->type = arg_type;
     argument->value = NULL;
     argument->combo_options = combo_options;
@@ -576,6 +642,18 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
                             fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for integer argument: %s{reset}\n", arg_value);
                         }
                         break;
+                    case FOSSIL_IO_PARSER_UINT:
+                        if (i + 1 < argc) {
+                            argument->value = malloc(sizeof(unsigned int));
+                            if (!argument->value) {
+                                fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for unsigned integer argument.{reset}\n");
+                                return;
+                            }
+                            *(unsigned int *)argument->value = (unsigned int)atol(argv[++i]);
+                        } else {
+                            fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for unsigned integer argument: %s{reset}\n", arg_value);
+                        }
+                        break;
                     case FOSSIL_IO_PARSER_FLOAT:
                         if (i + 1 < argc) {
                             argument->value = malloc(sizeof(float));
@@ -586,6 +664,30 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
                             *(float *)argument->value = atof(argv[++i]);
                         } else {
                             fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for float argument: %s{reset}\n", arg_value);
+                        }
+                        break;
+                    case FOSSIL_IO_PARSER_HEX:
+                        if (i + 1 < argc) {
+                            argument->value = malloc(sizeof(unsigned int));
+                            if (!argument->value) {
+                                fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for hex argument.{reset}\n");
+                                return;
+                            }
+                            *(unsigned int *)argument->value = (unsigned int)strtol(argv[++i], NULL, 16);
+                        } else {
+                            fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for hex argument: %s{reset}\n", arg_value);
+                        }
+                        break;
+                    case FOSSIL_IO_PARSER_OCT:
+                        if (i + 1 < argc) {
+                            argument->value = malloc(sizeof(unsigned int));
+                            if (!argument->value) {
+                                fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Memory allocation failed for octal argument.{reset}\n");
+                                return;
+                            }
+                            *(unsigned int *)argument->value = (unsigned int)strtol(argv[++i], NULL, 8);
+                        } else {
+                            fossil_io_fprintf(FOSSIL_STDERR, "{red}Missing value for octal argument: %s{reset}\n", arg_value);
                         }
                         break;
                     case FOSSIL_IO_PARSER_DATE:
@@ -670,21 +772,47 @@ void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char 
 }
 
 void fossil_io_parser_free(fossil_io_parser_palette_t *palette) {
+    if (!palette) return;
+    
     fossil_io_parser_command_t *command = palette->commands;
     while (command) {
+        fossil_io_parser_command_t *next_command = command->next;
+        
+        // Free all arguments for this command
         fossil_io_parser_argument_t *argument = command->arguments;
         while (argument) {
-            free(argument->name);
-            if (argument->value && argument->value != (char *)argument->combo_options) {
+            fossil_io_parser_argument_t *next_argument = argument->next;
+            
+            if (argument->name) free(argument->name);
+            if (argument->short_name) free(argument->short_name);
+            
+            // Handle different value types
+            if (argument->value) {
+                if (argument->type == FOSSIL_IO_PARSER_ARRAY) {
+                    // For arrays, we need to free each string in the array
+                    char **array_values = (char **)argument->value;
+                    if (array_values) {
+                        for (int i = 0; array_values[i] != NULL; i++) {
+                            free(array_values[i]);
+                        }
+                    }
+                }
                 free(argument->value);
             }
-            argument = argument->next;
+            
+            free(argument);
+            argument = next_argument;
         }
-        free(command->name);
-        free(command->description);
-        command = command->next;
+        
+        if (command->name) free(command->name);
+        if (command->short_name) free(command->short_name);
+        if (command->description) free(command->description);
+        
+        free(command);
+        command = next_command;
     }
-    free(palette->name);
-    free(palette->description);
+    
+    if (palette->name) free(palette->name);
+    if (palette->description) free(palette->description);
     free(palette);
 }
