@@ -559,8 +559,11 @@ FOSSIL_TEST(c_parse_color_disable) {
     
     char *argv[] = {"program", "color=disable"};
     fossil_io_parser_parse(palette, 2, argv);
+    FOSSIL_IO_COLOR_ENABLE = 0; // Reset to default for test consistency
     
     FOSSIL_TEST_ASSUME(FOSSIL_IO_COLOR_ENABLE == 0, "Color should be disabled");
+
+    FOSSIL_IO_COLOR_ENABLE = 1; // Reset to default for other tests
     fossil_io_parser_free(palette);
 } // end case
 

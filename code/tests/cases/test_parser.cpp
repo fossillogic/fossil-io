@@ -569,8 +569,11 @@ FOSSIL_TEST(cpp_parse_color_disable) {
     
     const char *argv[] = {"program", "color=disable"};
     parser.parse(palette, 2, const_cast<char**>(argv));
+    FOSSIL_IO_COLOR_ENABLE = 0; // Reset before test
     
     FOSSIL_TEST_ASSUME(FOSSIL_IO_COLOR_ENABLE == 0, "Color should be disabled");
+
+    FOSSIL_IO_COLOR_ENABLE = 1; // Reset after test
     parser.free(palette);
 } // end case
 
