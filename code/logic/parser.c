@@ -43,7 +43,9 @@ char *FOSSIL_CLI_TOOL_VERSION = "1.0.0";
 #ifdef _WIN32
 #include <io.h>
 #define isatty _isatty
+#ifndef STDOUT_FILENO
 #define STDOUT_FILENO _fileno(stdout)
+#endif
 #else
 #include <unistd.h>
 #endif
