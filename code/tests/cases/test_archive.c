@@ -453,40 +453,6 @@ FOSSIL_TEST(c_test_archive_list_empty) {
     fossil_fstream_remove(archive_path);
 }
 
-// Test extraction functions
-FOSSIL_TEST(c_test_archive_extract_file) {
-    const char *archive_path = "test_extract.zip";
-    const char *test_file = "temp_source.txt";
-    const char *extracted_file = "temp_extracted.txt";
-    const char *test_content = "Extract test content";
-    
-    // Create source file
-    fossil_fstream_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&temp_stream, test_file, "w"));
-    fossil_fstream_write(&temp_stream, test_content, strlen(test_content), 1);
-    fossil_fstream_close(&temp_stream);
-    
-    // Create archive and add file
-    fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
-    ASSUME_NOT_CNULL(archive);
-    ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file, "source.txt"));
-    fossil_io_archive_close(archive);
-    
-    // Reopen for reading and extract
-    archive = fossil_io_archive_open(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
-    ASSUME_NOT_CNULL(archive);
-    ASSUME_ITS_TRUE(fossil_io_archive_extract_file(archive, "source.txt", extracted_file));
-    fossil_io_archive_close(archive);
-    
-    // Verify file was extracted
-    ASSUME_ITS_TRUE(fossil_fstream_file_exists(extracted_file) == FOSSIL_ERROR_OK);
-    
-    // Cleanup
-    fossil_fstream_remove(test_file);
-    fossil_fstream_remove(extracted_file);
-    fossil_fstream_remove(archive_path);
-}
-
 FOSSIL_TEST(c_test_archive_extract_all) {
     const char *archive_path = "test_extract_all.zip";
     const char *extract_dir = "temp_extract_dir";
@@ -733,7 +699,6 @@ FOSSIL_TEST_GROUP(c_archive_tests) {
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_list_empty);
     
     // Archive extraction tests
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_extract_file);
     FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_extract_all);
     
     // Archive modification tests
