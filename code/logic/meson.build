@@ -10,7 +10,7 @@ fossil_io_lib = library('fossil_io',
         'output.c',
         'error.c',
         'soap.c',
-        'stream.c',
+        'file.c',
         'dir.c',
         'cstring.c'
     ),

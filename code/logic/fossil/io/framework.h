@@ -31,7 +31,7 @@
 #include "error.h"
 #include "archive.h"
 #include "cstring.h"
-#include "stream.h"
+#include "file.h"
 #include "soap.h"
 #include "dir.h"
 
