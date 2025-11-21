@@ -33,7 +33,7 @@
 #include "cstring.h"
 #include "stream.h"
 #include "soap.h"
-#include "parser.h"
+#include "dir.h"
 
 enum {
     FOSSIL_IO_SUCCESS = 0,
