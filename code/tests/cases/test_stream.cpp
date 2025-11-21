@@ -36,7 +36,7 @@
 
 // Define the test suite and add test cases
 FOSSIL_SUITE(cpp_stream_suite);
-fossil_fstream_t cpp_stream;
+fossil_io_file_t cpp_stream;
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_stream_suite) {
@@ -58,27 +58,27 @@ FOSSIL_TEARDOWN(cpp_stream_suite) {
 
 FOSSIL_TEST(cpp_test_stream_tempfile_creation) {
     // Create a temporary file
-    fossil_fstream_t temp_stream = fossil_fstream_tempfile();
+    fossil_io_file_t temp_stream = fossil_io_file_tempfile();
 
     // Check if the temporary file is open
-    ASSUME_ITS_TRUE(fossil_fstream_is_open(&temp_stream));
+    ASSUME_ITS_TRUE(fossil_io_file_is_open(&temp_stream));
 
     // Close the temporary file
-    fossil_fstream_close(&temp_stream);
+    fossil_io_file_close(&temp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_tempfile_cleanup) {
     // Create a temporary file
-    fossil_fstream_t temp_stream = fossil_fstream_tempfile();
+    fossil_io_file_t temp_stream = fossil_io_file_tempfile();
 
     // Get the temporary file name
     const char *temp_filename = temp_stream.filename;
 
     // Close the temporary file
-    fossil_fstream_close(&temp_stream);
+    fossil_io_file_close(&temp_stream);
 
     // Verify the temporary file is deleted
-    ASSUME_NOT_EQUAL_I32(0, fossil_fstream_file_exists(temp_filename));
+    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_let_write_and_read_file) {
@@ -86,23 +86,23 @@ FOSSIL_TEST(cpp_test_stream_let_write_and_read_file) {
     const char *content = "This is a test.";
 
     // Write data to the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
+    fossil_io_file_close(&cpp_stream);
 
     // Read data from the file
     char buffer[1024];
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
-    fossil_fstream_read(&cpp_stream, buffer, sizeof(buffer), 1);
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "r"));
+    fossil_io_file_read(&cpp_stream, buffer, sizeof(buffer), 1);
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_let_open_and_close_file) {
     const char *filename = "testfile.txt";
 
     // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_multiple_files) {
@@ -110,12 +110,12 @@ FOSSIL_TEST(cpp_test_stream_multiple_files) {
     const char *filename2 = "testfile2.txt";
 
     // Open the first file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename1, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename1, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Open the second file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename2, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename2, "w"));
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_seek_and_tell) {
@@ -123,82 +123,82 @@ FOSSIL_TEST(cpp_test_stream_seek_and_tell) {
     const char *content = "This is a test.";
 
     // Write data to the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
+    fossil_io_file_close(&cpp_stream);
 
     // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "r"));
 
     // Seek to the end of the file
-    fossil_fstream_seek(&cpp_stream, 0, SEEK_END);
+    fossil_io_file_seek(&cpp_stream, 0, SEEK_END);
 
     // Get the current position
-    long position = fossil_fstream_tell(&cpp_stream);
+    long position = fossil_io_file_tell(&cpp_stream);
 
     ASSUME_ITS_TRUE(position > 0);
 
     // Close the file
-    fossil_fstream_close(&cpp_stream);
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_get_type) {
     const char *filename = "testfile_type.txt";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Check the file type
-    ASSUME_ITS_EQUAL_I32(2, fossil_fstream_get_type(filename));  // Regular file
+    ASSUME_ITS_EQUAL_I32(2, fossil_io_file_get_type(filename));  // Regular file
 }
 
 FOSSIL_TEST(cpp_test_stream_is_readable) {
     const char *filename = "testfile_readable.txt";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Check if the file is readable
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_readable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_readable(filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_is_writable) {
     const char *filename = "testfile_writable.txt";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Check if the file is writable
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_writable(filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_is_executable) {
     const char *filename = "testfile_executable.txt";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Check if the file is executable
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_is_executable(filename));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_is_executable(filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_set_permissions) {
     const char *filename = "testfile_permissions.txt";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Set file permissions
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_permissions(filename, 0644));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_set_permissions(filename, 0644));
 
     // Check if the file is readable and writable
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_readable(filename));
-    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_is_writable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_readable(filename));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_writable(filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_get_permissions) {
@@ -206,14 +206,14 @@ FOSSIL_TEST(cpp_test_stream_get_permissions) {
     int32_t mode;
 
     // // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_close(&cpp_stream);
 
     // Set file permissions
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_permissions(filename, 0644));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_set_permissions(filename, 0644));
 
     // Get file permissions
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_get_permissions(filename, &mode));
 }
 
 FOSSIL_TEST(cpp_test_stream_remove_file) {
@@ -221,23 +221,23 @@ FOSSIL_TEST(cpp_test_stream_remove_file) {
     const char *content = "This is a test.";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
+    fossil_io_file_close(&cpp_stream);
 
     // Remove the file
-    int32_t remove_result = fossil_fstream_remove(filename);
+    int32_t remove_result = fossil_io_file_remove(filename);
     ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, remove_result);
 
     // Check if the file does not exist
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, fossil_fstream_file_exists(filename));
+    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, fossil_io_file_file_exists(filename));
 
     // Try removing again, should return FOSSIL_ERROR_FILE_NOT_FOUND
-    int32_t remove_again_result = fossil_fstream_remove(filename);
+    int32_t remove_again_result = fossil_io_file_remove(filename);
     ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_FILE_NOT_FOUND, remove_again_result);
 
     // Try removing with NULL, should return FOSSIL_ERROR_CNULL_POINTER
-    int32_t remove_null_result = fossil_fstream_remove(NULL);
+    int32_t remove_null_result = fossil_io_file_remove(NULL);
     ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_CNULL_POINTER, remove_null_result);
 }
 
@@ -246,12 +246,12 @@ FOSSIL_TEST(cpp_test_stream_flush_file) {
     const char *content = "This is a test.";
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
 
     // Flush the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_flush(&cpp_stream));
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_flush(&cpp_stream));
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_setpos_and_getpos) {
@@ -260,27 +260,27 @@ FOSSIL_TEST(cpp_test_stream_setpos_and_getpos) {
     int32_t pos;
 
     // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
-    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
-    fossil_fstream_close(&cpp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
+    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
+    fossil_io_file_close(&cpp_stream);
 
     // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "r"));
 
     // Set the file position
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_setpos(&cpp_stream, 5));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_setpos(&cpp_stream, 5));
 
     // Get the file position
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_getpos(&cpp_stream, &pos));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_getpos(&cpp_stream, &pos));
     ASSUME_ITS_EQUAL_I32(5, pos);
 
     // Close the file
-    fossil_fstream_close(&cpp_stream);
+    fossil_io_file_close(&cpp_stream);
 }
 
 FOSSIL_TEST(cpp_test_stream_class_tempfile_creation) {
     // Create a temporary file using the class method
-    fossil_fstream_t temp_stream = fossil::io::Stream::tempfile();
+    fossil_io_file_t temp_stream = fossil::io::Stream::tempfile();
 
     // Check if the temporary file is open
     ASSUME_ITS_TRUE(fossil::io::Stream::is_open(&temp_stream));
@@ -291,7 +291,7 @@ FOSSIL_TEST(cpp_test_stream_class_tempfile_creation) {
 
 FOSSIL_TEST(cpp_test_stream_class_tempfile_cleanup) {
     // Create a temporary file using the class method
-    fossil_fstream_t temp_stream = fossil::io::Stream::tempfile();
+    fossil_io_file_t temp_stream = fossil::io::Stream::tempfile();
 
     // Get the temporary file name
     const char *temp_filename = temp_stream.filename;

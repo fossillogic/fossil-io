@@ -93,7 +93,7 @@ static int long_base64_run(const char *s, size_t len, size_t threshold) {
     return 0;
 }
 
-char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_fstream_t *input_stream, int *error_code) {
+char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_file_t *input_stream, int *error_code) {
     if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer, stream, or error code.\n");
         return NULL;
@@ -197,7 +197,7 @@ void fossil_io_show_progress(int progress) {
     fflush(stdout);
 }
 
-int fossil_io_getc(fossil_fstream_t *input_stream) {
+int fossil_io_getc(fossil_io_file_t *input_stream) {
     if (input_stream == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid input stream.\n");
         return EOF;
@@ -212,7 +212,7 @@ int fossil_io_getc(fossil_fstream_t *input_stream) {
 }
 
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
-char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_fstream_t *input_stream) {
+char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_file_t *input_stream) {
     if (buf == NULL || size == 0 || input_stream == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid buffer or stream.\n");
         return NULL;
@@ -366,7 +366,7 @@ int fossil_io_scanf(const char *format, ...) {
     return result;
 }
 
-int fossil_io_fscanf(fossil_fstream_t *input_stream, const char *format, ...) {
+int fossil_io_fscanf(fossil_io_file_t *input_stream, const char *format, ...) {
     va_list args;
     va_start(args, format);
     int result = vfscanf(input_stream->file, format, args);
@@ -382,7 +382,7 @@ int fossil_io_validate_input_buffer(const char *buf, size_t size) {
     return 1;
 }
 
-char *fossil_io_gets_utf8(char *buf, size_t size, fossil_fstream_t *input_stream) {
+char *fossil_io_gets_utf8(char *buf, size_t size, fossil_io_file_t *input_stream) {
     if (!fossil_io_validate_input_buffer(buf, size)) {
         return NULL;
     }

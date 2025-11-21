@@ -56,7 +56,7 @@ FOSSIL_TEARDOWN(objcpp_input_suite) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "test_input_stream");
 
@@ -75,7 +75,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_no_offensive) {
     char expected[] = "This is a clean sentence.";
     char buffer[256];
 
-    fossil_fstream_t stream;
+    fossil_io_file_t stream;
     stream.file = tmpfile();
     strcpy(stream.filename, "clean_sentence_stream");
 
@@ -92,7 +92,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_with_punctuation) {
     char expected[] = "This is a test with punctuation, and special characters!";
     char buffer[256];
 
-    fossil_fstream_t stream;
+    fossil_io_file_t stream;
     stream.file = tmpfile();
     strcpy(stream.filename, "punctuation_stream");
 
@@ -106,7 +106,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_with_punctuation) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_empty_input) {
     const char *input_data = "\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "empty_input_stream");
 
@@ -122,7 +122,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_empty_input) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_only_whitespace) {
     const char *input_data = "   \n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "whitespace_stream");
 
@@ -138,7 +138,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_only_whitespace) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_long_input) {
     const char *input_data = "This is a very long input string that exceeds the buffer size\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "long_input_stream");
 
@@ -154,7 +154,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_long_input) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_ex) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "stream_ex");
 
@@ -171,7 +171,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_ex) {
 
 FOSSIL_TEST(objcpp_test_io_gets_utf8) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "utf8_stream");
 
@@ -187,7 +187,7 @@ FOSSIL_TEST(objcpp_test_io_gets_utf8) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_class) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "class_stream");
 
@@ -203,7 +203,7 @@ FOSSIL_TEST(objcpp_test_io_gets_from_stream_class) {
 
 FOSSIL_TEST(objcpp_test_io_gets_from_stream_ex_class) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "class_stream_ex");
 
@@ -227,7 +227,7 @@ FOSSIL_TEST(objcpp_test_io_validate_input_buffer_class) {
 
 FOSSIL_TEST(objcpp_test_io_gets_utf8_class) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "utf8_class_stream");
 
@@ -301,7 +301,7 @@ FOSSIL_TEST(objcpp_test_io_validate_is_length_invalid) {
 
 FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream) {
     const char *input_data = "input data\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "input_stream");
 
@@ -317,7 +317,7 @@ FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream) {
 
 FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream_ex) {
     const char *input_data = "input data\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "input_stream_ex");
 
@@ -348,7 +348,7 @@ FOSSIL_TEST(objcpp_test_io_input_class_validate_input_buffer_invalid) {
 
 FOSSIL_TEST(objcpp_test_io_input_class_gets_utf8_valid) {
     const char *input_data = "utf8 valid input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "utf8_valid_stream");
 
@@ -364,7 +364,7 @@ FOSSIL_TEST(objcpp_test_io_input_class_gets_utf8_valid) {
 
 FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream_empty) {
     const char *input_data = "\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "empty_stream");
 
@@ -380,7 +380,7 @@ FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream_empty) {
 
 FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream_whitespace_only) {
     const char *input_data = "   \n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "whitespace_stream");
 
@@ -396,7 +396,7 @@ FOSSIL_TEST(objcpp_test_io_input_class_gets_from_stream_whitespace_only) {
 
 FOSSIL_TEST(objcpp_test_io_getc) {
     const char *input_data = "test input\n";
-    fossil_fstream_t input_stream;
+    fossil_io_file_t input_stream;
     input_stream.file = tmpfile();
     strcpy(input_stream.filename, "getc_stream");
 

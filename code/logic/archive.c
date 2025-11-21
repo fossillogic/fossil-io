@@ -187,14 +187,14 @@ fossil_io_archive_type_t fossil_io_archive_get_type(const char *path) {
     }
     
     // If extension-based detection fails, try magic byte detection
-    fossil_fstream_t stream;
-    if (fossil_fstream_open(&stream, path, "rb") != 0) {
+    fossil_io_file_t stream;
+    if (fossil_io_file_open(&stream, path, "rb") != 0) {
         return FOSSIL_IO_ARCHIVE_UNKNOWN;
     }
     
     unsigned char header[512]; // Increased buffer for TAR magic at offset 257
-    size_t read = fossil_fstream_read(&stream, header, 1, sizeof(header));
-    fossil_fstream_close(&stream);
+    size_t read = fossil_io_file_read(&stream, header, 1, sizeof(header));
+    fossil_io_file_close(&stream);
     
     if (read < 4) return FOSSIL_IO_ARCHIVE_UNKNOWN;
     
@@ -455,19 +455,19 @@ bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_pa
     if (!archive || !src_path || !archive_path) return false;
     if (!(archive->mode & (FOSSIL_IO_ARCHIVE_WRITE | FOSSIL_IO_ARCHIVE_APPEND))) return false;
     
-    fossil_fstream_t stream;
-    if (fossil_fstream_open(&stream, src_path, "rb") != 0) {
+    fossil_io_file_t stream;
+    if (fossil_io_file_open(&stream, src_path, "rb") != 0) {
         return false;
     }
     
     // Get file size
-    if (fossil_fstream_seek(&stream, 0, SEEK_END) != 0) {
-        fossil_fstream_close(&stream);
+    if (fossil_io_file_seek(&stream, 0, SEEK_END) != 0) {
+        fossil_io_file_close(&stream);
         return false;
     }
     
-    int32_t file_size = fossil_fstream_tell(&stream);
-    fossil_fstream_close(&stream);
+    int32_t file_size = fossil_io_file_tell(&stream);
+    fossil_io_file_close(&stream);
     
     if (file_size < 0) return false;
     

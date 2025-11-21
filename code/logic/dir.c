@@ -28,12 +28,16 @@
 
 #include <time.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
   #include <windows.h>
   #include <sys/stat.h>
   #include <direct.h>
+  #ifndef PATH_MAX
+    #define PATH_MAX MAX_PATH
+  #endif
   #define PATHSEP '\\'
   #define PATHSEP_STR "\\"
   #define mkdir_native(p,mode) _mkdir(p)
@@ -46,6 +50,9 @@
   #include <dirent.h>
   #include <limits.h>
   #include <fcntl.h>
+  #ifndef PATH_MAX
+    #define PATH_MAX 4096
+  #endif
   #define PATHSEP '/'
   #define PATHSEP_STR "/"
   #define mkdir_native(p,mode) mkdir((p),(mode))
@@ -179,7 +186,7 @@ int32_t fossil_io_dir_create(const char *path){
             if (!fossil_io_dir_exists(tmp)){
                 int rc;
 #ifdef _WIN32
-                rc = mkdir_native(tmp);
+                rc = mkdir_native(tmp, 0);
 #else
                 rc = mkdir_native(tmp, 0755);
 #endif
@@ -195,7 +202,7 @@ int32_t fossil_io_dir_create(const char *path){
     // final create if not exists
     if (!fossil_io_dir_exists(path)){
 #ifdef _WIN32
-        if (mkdir_native(path) != 0 && errno != EEXIST) return -1;
+        if (mkdir_native(path, 0) != 0 && errno != EEXIST) return -1;
 #else
         if (mkdir_native(path, 0755) != 0 && errno != EEXIST) return -1;
 #endif

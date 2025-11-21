@@ -36,7 +36,7 @@
 
 // Define the test suite and add test cases
 FOSSIL_SUITE(objcpp_string_suite);
-fossil_fstream_t objcpp_string;
+fossil_io_file_t objcpp_string;
 
 // Setup function for the test suite
 FOSSIL_SETUP(objcpp_string_suite) {

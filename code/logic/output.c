@@ -219,7 +219,7 @@ void fossil_io_print_with_attributes(const char *str) {
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
-void fossil_io_fprint_with_attributes(fossil_fstream_t *stream, const char *str) {
+void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str) {
     if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
@@ -288,7 +288,7 @@ void fossil_io_printf(const char *format, ...) {
 }
 
 // Function to print a sanitized string to a specific file stream
-void fossil_io_fputs(fossil_fstream_t *stream, const char *str) {
+void fossil_io_fputs(fossil_io_file_t *stream, const char *str) {
     if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
@@ -302,7 +302,7 @@ void fossil_io_fputs(fossil_fstream_t *stream, const char *str) {
 }
 
 // Function to print a sanitized formatted string to a specific file stream
-void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...) {
+void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...) {
     va_list args;
     va_start(args, format);
 

@@ -22,8 +22,8 @@
  * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#ifndef FOSSIL_IO_STREAM_H
-#define FOSSIL_IO_STREAM_H
+#ifndef FOSSIL_IO_FILE_H
+#define FOSSIL_IO_FILE_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -41,11 +41,11 @@ extern "C" {
 typedef struct {
     FILE *file;         // Pointer to the FILE structure for the stream
     char filename[500]; // Array to store the filename
-} fossil_fstream_t;
+} fossil_io_file_t;
 
-extern fossil_fstream_t *FOSSIL_STDIN;
-extern fossil_fstream_t *FOSSIL_STDOUT;
-extern fossil_fstream_t *FOSSIL_STDERR;
+extern fossil_io_file_t *FOSSIL_STDIN;
+extern fossil_io_file_t *FOSSIL_STDOUT;
+extern fossil_io_file_t *FOSSIL_STDERR;
 
 #define FOSSIL_STDIN  (FOSSIL_STDIN)
 #define FOSSIL_STDOUT (FOSSIL_STDOUT)
@@ -56,126 +56,126 @@ extern fossil_fstream_t *FOSSIL_STDERR;
  *
  * This function reopens a stream with a new file.
  *
- * @param stream   Pointer to the fossil_fstream_t structure to reopen.
+ * @param stream   Pointer to the fossil_io_file_t structure to reopen.
  * @param filename The name of the file to reopen.
  * @param mode     The mode in which to reopen the file.
  * @param file     Pointer to the FILE structure to reopen.
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file);
+int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file);
 
 /**
  * Open a stream for file operations.
  *
  * This function opens a file stream, allowing read or write operations on the specified file.
  *
- * @param stream   Pointer to the fossil_fstream_t structure to store the opened stream.
+ * @param stream   Pointer to the fossil_io_file_t structure to store the opened stream.
  * @param filename The name of the file to be opened.
  * @param mode     The mode in which to open the file (e.g., "r" for read, "w" for write).
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, const char *mode);
+int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, const char *mode);
 
 /**
  * Close an open stream.
  *
  * This function closes a previously opened stream, releasing associated resources.
  *
- * @param stream Pointer to the fossil_fstream_t structure to be closed.
+ * @param stream Pointer to the fossil_io_file_t structure to be closed.
  */
-void fossil_fstream_close(fossil_fstream_t *stream);
+void fossil_io_file_close(fossil_io_file_t *stream);
 
 /**
  * Redirect a stream to /dev/null.
  *
  * This function redirects the given stream to /dev/null, effectively discarding any data written to it.
  *
- * @param stream Pointer to the fossil_fstream_t structure to redirect.
+ * @param stream Pointer to the fossil_io_file_t structure to redirect.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_redirect_to_devnull(fossil_fstream_t *stream);
+int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream);
 
 /**
  * Check if a stream is open.
  *
  * This function checks if a stream is open.
  *
- * @param stream Pointer to the fossil_fstream_t structure to check.
+ * @param stream Pointer to the fossil_io_file_t structure to check.
  * @return       1 if the stream is open, 0 if not.
  */
-int32_t fossil_fstream_is_open(const fossil_fstream_t *stream);
+int32_t fossil_io_file_is_open(const fossil_io_file_t *stream);
 
 /**
  * Read data from an open stream.
  *
  * This function reads data from an open stream into a buffer.
  *
- * @param stream Pointer to the fossil_fstream_t structure from which to read.
+ * @param stream Pointer to the fossil_io_file_t structure from which to read.
  * @param buffer Pointer to the buffer to store the read data.
  * @param size   Size of each element to be read.
  * @param count  Number of elements to read.
  * @return       The total number of elements successfully read.
  */
-size_t fossil_fstream_read(fossil_fstream_t *stream, void *buffer, size_t size, size_t count);
+size_t fossil_io_file_read(fossil_io_file_t *stream, void *buffer, size_t size, size_t count);
 
 /**
  * Write data to an open stream.
  *
  * This function writes data from a buffer to an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to which to write.
+ * @param stream Pointer to the fossil_io_file_t structure to which to write.
  * @param buffer Pointer to the buffer containing the data to be written.
  * @param size   Size of each element to be written.
  * @param count  Number of elements to write.
  * @return       The total number of elements successfully written.
  */
-size_t fossil_fstream_write(fossil_fstream_t *stream, const void *buffer, size_t size, size_t count);
+size_t fossil_io_file_write(fossil_io_file_t *stream, const void *buffer, size_t size, size_t count);
 
 /**
  * Append data to the end of an open stream.
  *
  * This function appends data from a buffer to the end of an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to which to append.
+ * @param stream Pointer to the fossil_io_file_t structure to which to append.
  * @param buffer Pointer to the buffer containing the data to be appended.
  * @param size   Size of each element to be appended.
  * @param count  Number of elements to append.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_append(fossil_fstream_t *stream, const void *buffer, size_t size, int32_t count);
+int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count);
 
 /**
  * Seek to a specified position in an open stream.
  *
  * This function moves the file pointer associated with the stream to a new position.
  *
- * @param stream Pointer to the fossil_fstream_t structure to seek.
+ * @param stream Pointer to the fossil_io_file_t structure to seek.
  * @param offset The offset from the specified origin.
  * @param origin The starting position for the offset (SEEK_SET, SEEK_CUR, SEEK_END).
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_seek(fossil_fstream_t *stream, int64_t offset, int32_t origin);
+int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t origin);
 
 /**
  * Get the current position of the file pointer in an open stream.
  *
  * This function retrieves the current position of the file pointer in an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+ * @param stream Pointer to the fossil_io_file_t structure to get the position of.
  * @return       The current position of the file pointer.
  */
-int32_t fossil_fstream_tell(fossil_fstream_t *stream);
+int32_t fossil_io_file_tell(fossil_io_file_t *stream);
 
 /**
  * Save an open stream to a new file.
  *
  * This function saves the contents of an open stream to a new file.
  *
- * @param stream       Pointer to the fossil_fstream_t structure to be saved.
+ * @param stream       Pointer to the fossil_io_file_t structure to be saved.
  * @param new_filename The name of the new file to save to.
  * @return             0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename);
+int32_t fossil_io_file_save(fossil_io_file_t *stream, const char *new_filename);
 
 /**
  * Copy a file from the source to the destination.
@@ -186,7 +186,7 @@ int32_t fossil_fstream_save(fossil_fstream_t *stream, const char *new_filename);
  * @param destination_filename The name of the destination file.
  * @return                     0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_copy(const char *source_filename, const char *destination_filename);
+int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename);
 
 /**
  * Remove a file stream.
@@ -196,7 +196,7 @@ int32_t fossil_fstream_copy(const char *source_filename, const char *destination
  * @param filename The name of the file to remove.
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_remove(const char *filename);
+int32_t fossil_io_file_remove(const char *filename);
 
 /**
  * Rename a file or directory.
@@ -207,38 +207,38 @@ int32_t fossil_fstream_remove(const char *filename);
  * @param new_filename The new name to assign to the file or directory.
  * @return             0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_rename(const char *old_filename, const char *new_filename);
+int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename);
 
 /**
  * Flush the contents of an open stream.
  *
  * This function flushes the contents of an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to flush.
+ * @param stream Pointer to the fossil_io_file_t structure to flush.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_flush(fossil_fstream_t *stream);
+int32_t fossil_io_file_flush(fossil_io_file_t *stream);
 
 /**
  * Seek to the beginning of an open stream.
  *
  * This function moves the file pointer associated with the stream to the beginning.
  *
- * @param stream Pointer to the fossil_fstream_t structure to seek.
+ * @param stream Pointer to the fossil_io_file_t structure to seek.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_setpos(fossil_fstream_t *stream, int32_t pos);
+int32_t fossil_io_file_setpos(fossil_io_file_t *stream, int32_t pos);
 
 /**
  * Get the current position of the file pointer in an open stream.
  *
  * This function retrieves the current position of the file pointer in an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+ * @param stream Pointer to the fossil_io_file_t structure to get the position of.
  * @param pos    Pointer to store the current position of the file pointer.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos);
+int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int32_t *pos);
 
 /**
  * Rotate a file stream.
@@ -249,7 +249,7 @@ int32_t fossil_fstream_getpos(fossil_fstream_t *stream, int32_t *pos);
  * @param n        The number of rotations to perform.
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_rotate(const char *filename, int32_t n);
+int32_t fossil_io_file_rotate(const char *filename, int32_t n);
 
 /**
  * Create a backup of a file with a specified backup suffix.
@@ -260,7 +260,7 @@ int32_t fossil_fstream_rotate(const char *filename, int32_t n);
  * @param backup_suffix The suffix to be appended to the backup file.
  * @return              0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix);
+int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix);
 
 /**
  * Check if a file exists.
@@ -270,17 +270,17 @@ int32_t fossil_fstream_backup(const char *filename, const char *backup_suffix);
  * @param filename The name of the file to check for existence.
  * @return         1 if the file exists, 0 if not.
  */
-int32_t fossil_fstream_file_exists(const char *filename);
+int32_t fossil_io_file_file_exists(const char *filename);
 
 /**
  * Get the size of an open stream.
  *
  * This function retrieves the size of an open stream.
  *
- * @param stream Pointer to the fossil_fstream_t structure to get the size of.
+ * @param stream Pointer to the fossil_io_file_t structure to get the size of.
  * @return       The size of the open stream.
  */
-int32_t fossil_fstream_get_size(fossil_fstream_t *stream);
+int32_t fossil_io_file_get_size(fossil_io_file_t *stream);
 
 /**
  * Delete a file.
@@ -290,7 +290,7 @@ int32_t fossil_fstream_get_size(fossil_fstream_t *stream);
  * @param filename The name of the file to be deleted.
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_delete(const char *filename);
+int32_t fossil_io_file_delete(const char *filename);
 
 /**
  * Get the type of a file stream.
@@ -300,7 +300,7 @@ int32_t fossil_fstream_delete(const char *filename);
  * @param filename The name of the file to get the type of.
  * @return         The type of the file stream.
  */
-int fossil_fstream_get_type(const char *filename);
+int fossil_io_file_get_type(const char *filename);
 
 /**
  * Create a temporary file.
@@ -309,7 +309,7 @@ int fossil_fstream_get_type(const char *filename);
  *
  * @return A pointer to the name of the temporary file, or NULL on failure.
  */
-fossil_fstream_t fossil_fstream_tempfile(void);
+fossil_io_file_t fossil_io_file_tempfile(void);
 
 /**
  * Check if a file is readable.
@@ -319,7 +319,7 @@ fossil_fstream_t fossil_fstream_tempfile(void);
  * @param filename The name of the file to check.
  * @return         1 if readable, 0 otherwise.
  */
-int32_t fossil_fstream_is_readable(const char *filename);
+int32_t fossil_io_file_is_readable(const char *filename);
 
 /**
  * Check if a file is writable.
@@ -329,7 +329,7 @@ int32_t fossil_fstream_is_readable(const char *filename);
  * @param filename The name of the file to check.
  * @return         1 if writable, 0 otherwise.
  */
-int32_t fossil_fstream_is_writable(const char *filename);
+int32_t fossil_io_file_is_writable(const char *filename);
 
 /**
  * Check if a file is executable.
@@ -339,7 +339,7 @@ int32_t fossil_fstream_is_writable(const char *filename);
  * @param filename The name of the file to check.
  * @return         1 if executable, 0 otherwise.
  */
-int32_t fossil_fstream_is_executable(const char *filename);
+int32_t fossil_io_file_is_executable(const char *filename);
 
 /**
  * Set file permissions.
@@ -350,7 +350,7 @@ int32_t fossil_fstream_is_executable(const char *filename);
  * @param mode     The permissions to set (POSIX: chmod-style).
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
+int32_t fossil_io_file_set_permissions(const char *filename, int32_t mode);
 
 /**
  * Get file permissions.
@@ -361,17 +361,17 @@ int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
  * @param mode     Pointer to store the retrieved permissions (POSIX style).
  * @return         0 on success, non-zero on failure.
  */
-int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode);
+int32_t fossil_io_file_get_permissions(const char *filename, int32_t *mode);
 
 /**
  * @brief Rewinds the file stream to the beginning.
  *
- * Resets the position of the file pointer in the given `fossil_fstream_t`
+ * Resets the position of the file pointer in the given `fossil_io_file_t`
  * structure to the beginning of the file, if the stream and file are valid.
  *
- * @param stream Pointer to a `fossil_fstream_t` structure representing the file stream.
+ * @param stream Pointer to a `fossil_io_file_t` structure representing the file stream.
  */
-void fossil_fstream_rewind(fossil_fstream_t *stream);
+void fossil_io_file_rewind(fossil_io_file_t *stream);
 
 #ifdef __cplusplus
 }
@@ -397,14 +397,14 @@ namespace fossil {
              *
              * This function reopens a stream with a new file.
              *
-             * @param stream   Pointer to the fossil_fstream_t structure to reopen.
+             * @param stream   Pointer to the fossil_io_file_t structure to reopen.
              * @param filename The name of the file to reopen.
              * @param mode     The mode in which to reopen the file.
              * @param file     Pointer to the FILE structure to reopen.
              * @return         0 on success, non-zero on failure.
              */
-            static int32_t freopen(fossil_fstream_t *stream, const char *filename, const char *mode, FILE *file) {
-                return fossil_fstream_freopen(stream, filename, mode, file);
+            static int32_t freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file) {
+                return fossil_io_file_freopen(stream, filename, mode, file);
             }
 
             /**
@@ -412,14 +412,14 @@ namespace fossil {
              *
              * This function reopens a stream with a new file.
              *
-             * @param stream   Pointer to the fossil_fstream_t structure to reopen.
+             * @param stream   Pointer to the fossil_io_file_t structure to reopen.
              * @param filename The name of the file to reopen.
              * @param mode     The mode in which to reopen the file.
              * @param file     Pointer to the FILE structure to reopen.
              * @return         0 on success, non-zero on failure.
              */
-            static int32_t freopen(fossil_fstream_t *stream, const std::string &filename, const std::string &mode, FILE *file) {
-                return fossil_fstream_freopen(stream, filename.c_str(), mode.c_str(), file);
+            static int32_t freopen(fossil_io_file_t *stream, const std::string &filename, const std::string &mode, FILE *file) {
+                return fossil_io_file_freopen(stream, filename.c_str(), mode.c_str(), file);
             }
 
             /**
@@ -427,13 +427,13 @@ namespace fossil {
              *
              * This function opens a file stream, allowing read or write operations on the specified file.
              *
-             * @param stream   Pointer to the fossil_fstream_t structure to store the opened stream.
+             * @param stream   Pointer to the fossil_io_file_t structure to store the opened stream.
              * @param filename The name of the file to be opened.
              * @param mode     The mode in which to open the file (e.g., "r" for read, "w" for write).
              * @return         0 on success, non-zero on failure.
              */
-            static int32_t open(fossil_fstream_t *stream, const char *filename, const char *mode) {
-                return fossil_fstream_open(stream, filename, mode);
+            static int32_t open(fossil_io_file_t *stream, const char *filename, const char *mode) {
+                return fossil_io_file_open(stream, filename, mode);
             }
 
             /**
@@ -441,13 +441,13 @@ namespace fossil {
              *
              * This function opens a file stream, allowing read or write operations on the specified file.
              *
-             * @param stream   Pointer to the fossil_fstream_t structure to store the opened stream.
+             * @param stream   Pointer to the fossil_io_file_t structure to store the opened stream.
              * @param filename The name of the file to be opened.
              * @param mode     The mode in which to open the file (e.g., "r" for read, "w" for write).
              * @return         0 on success, non-zero on failure.
              */
-            static int32_t open(fossil_fstream_t *stream, const std::string &filename, const std::string &mode) {
-                return fossil_fstream_open(stream, filename.c_str(), mode.c_str());
+            static int32_t open(fossil_io_file_t *stream, const std::string &filename, const std::string &mode) {
+                return fossil_io_file_open(stream, filename.c_str(), mode.c_str());
             }
 
             /**
@@ -455,10 +455,10 @@ namespace fossil {
              *
              * This function closes a previously opened stream, releasing associated resources.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to be closed.
+             * @param stream Pointer to the fossil_io_file_t structure to be closed.
              */
-            static void close(fossil_fstream_t *stream) {
-                fossil_fstream_close(stream);
+            static void close(fossil_io_file_t *stream) {
+                fossil_io_file_close(stream);
             }
 
             /**
@@ -466,11 +466,11 @@ namespace fossil {
              *
              * This function redirects the given stream to /dev/null, effectively discarding any data written to it.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to redirect.
+             * @param stream Pointer to the fossil_io_file_t structure to redirect.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t redirect_to_devnull(fossil_fstream_t *stream) {
-                return fossil_fstream_redirect_to_devnull(stream);
+            static int32_t redirect_to_devnull(fossil_io_file_t *stream) {
+                return fossil_io_file_redirect_to_devnull(stream);
             }
 
             /**
@@ -478,11 +478,11 @@ namespace fossil {
              *
              * This function checks if a stream is open.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to check.
+             * @param stream Pointer to the fossil_io_file_t structure to check.
              * @return       1 if the stream is open, 0 if not.
              */
-            static int32_t is_open(const fossil_fstream_t *stream) {
-                return fossil_fstream_is_open(stream);
+            static int32_t is_open(const fossil_io_file_t *stream) {
+                return fossil_io_file_is_open(stream);
             }
 
             /**
@@ -490,14 +490,14 @@ namespace fossil {
              *
              * This function reads data from an open stream into a buffer.
              *
-             * @param stream Pointer to the fossil_fstream_t structure from which to read.
+             * @param stream Pointer to the fossil_io_file_t structure from which to read.
              * @param buffer Pointer to the buffer to store the read data.
              * @param size   Size of each element to be read.
              * @param count  Number of elements to read.
              * @return       The total number of elements successfully read.
              */
-            static size_t read(fossil_fstream_t *stream, void *buffer, size_t size, size_t count) {
-                return fossil_fstream_read(stream, buffer, size, count);
+            static size_t read(fossil_io_file_t *stream, void *buffer, size_t size, size_t count) {
+                return fossil_io_file_read(stream, buffer, size, count);
             }
 
             /**
@@ -505,14 +505,14 @@ namespace fossil {
              *
              * This function writes data from a buffer to an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to which to write.
+             * @param stream Pointer to the fossil_io_file_t structure to which to write.
              * @param buffer Pointer to the buffer containing the data to be written.
              * @param size   Size of each element to be written.
              * @param count  Number of elements to write.
              * @return       The total number of elements successfully written.
              */
-            static size_t write(fossil_fstream_t *stream, const void *buffer, size_t size, size_t count) {
-                return fossil_fstream_write(stream, buffer, size, count);
+            static size_t write(fossil_io_file_t *stream, const void *buffer, size_t size, size_t count) {
+                return fossil_io_file_write(stream, buffer, size, count);
             }
 
             /**
@@ -520,14 +520,14 @@ namespace fossil {
              *
              * This function appends data from a buffer to the end of an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to which to append.
+             * @param stream Pointer to the fossil_io_file_t structure to which to append.
              * @param buffer Pointer to the buffer containing the data to be appended.
              * @param size   Size of each element to be appended.
              * @param count  Number of elements to append.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t append(fossil_fstream_t *stream, const void *buffer, size_t size, int32_t count) {
-                return fossil_fstream_append(stream, buffer, size, count);
+            static int32_t append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count) {
+                return fossil_io_file_append(stream, buffer, size, count);
             }
 
             /**
@@ -535,13 +535,13 @@ namespace fossil {
              *
              * This function moves the file pointer associated with the stream to a new position.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to seek.
+             * @param stream Pointer to the fossil_io_file_t structure to seek.
              * @param offset The offset from the specified origin.
              * @param origin The starting position for the offset (SEEK_SET, SEEK_CUR, SEEK_END).
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t seek(fossil_fstream_t *stream, int64_t offset, int32_t origin) {
-                return fossil_fstream_seek(stream, offset, origin);
+            static int32_t seek(fossil_io_file_t *stream, int64_t offset, int32_t origin) {
+                return fossil_io_file_seek(stream, offset, origin);
             }
 
             /**
@@ -549,11 +549,11 @@ namespace fossil {
              *
              * This function retrieves the current position of the file pointer in an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+             * @param stream Pointer to the fossil_io_file_t structure to get the position of.
              * @return       The current position of the file pointer.
              */
-            static int32_t tell(fossil_fstream_t *stream) {
-                return fossil_fstream_tell(stream);
+            static int32_t tell(fossil_io_file_t *stream) {
+                return fossil_io_file_tell(stream);
             }
 
             /**
@@ -561,12 +561,12 @@ namespace fossil {
              *
              * This function saves the contents of an open stream to a new file.
              *
-             * @param stream       Pointer to the fossil_fstream_t structure to be saved.
+             * @param stream       Pointer to the fossil_io_file_t structure to be saved.
              * @param new_filename The name of the new file to save to.
              * @return             0 on success, non-zero on failure.
              */
-            static int32_t save(fossil_fstream_t *stream, const char *new_filename) {
-                return fossil_fstream_save(stream, new_filename);
+            static int32_t save(fossil_io_file_t *stream, const char *new_filename) {
+                return fossil_io_file_save(stream, new_filename);
             }
 
             /**
@@ -574,12 +574,12 @@ namespace fossil {
              *
              * This function saves the contents of an open stream to a new file.
              *
-             * @param stream       Pointer to the fossil_fstream_t structure to be saved.
+             * @param stream       Pointer to the fossil_io_file_t structure to be saved.
              * @param new_filename The name of the new file to save to.
              * @return             0 on success, non-zero on failure.
              */
-            static int32_t save(fossil_fstream_t *stream, const std::string &new_filename) {
-                return fossil_fstream_save(stream, new_filename.c_str());
+            static int32_t save(fossil_io_file_t *stream, const std::string &new_filename) {
+                return fossil_io_file_save(stream, new_filename.c_str());
             }
 
             /**
@@ -592,7 +592,7 @@ namespace fossil {
              * @return                     0 on success, non-zero on failure.
              */
             static int32_t copy(const char *source_filename, const char *destination_filename) {
-                return fossil_fstream_copy(source_filename, destination_filename);
+                return fossil_io_file_copy(source_filename, destination_filename);
             }
 
             /**
@@ -605,7 +605,7 @@ namespace fossil {
              * @return                     0 on success, non-zero on failure.
              */
             static int32_t copy(const std::string &source_filename, const std::string &destination_filename) {
-                return fossil_fstream_copy(source_filename.c_str(), destination_filename.c_str());
+                return fossil_io_file_copy(source_filename.c_str(), destination_filename.c_str());
             }
 
             /**
@@ -617,7 +617,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t remove(const char *filename) {
-                return fossil_fstream_remove(filename);
+                return fossil_io_file_remove(filename);
             }
 
             /**
@@ -629,7 +629,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t remove(const std::string &filename) {
-                return fossil_fstream_remove(filename.c_str());
+                return fossil_io_file_remove(filename.c_str());
             }
 
             /**
@@ -642,7 +642,7 @@ namespace fossil {
              * @return             0 on success, non-zero on failure.
              */
             static int32_t rename(const char *old_filename, const char *new_filename) {
-                return fossil_fstream_rename(old_filename, new_filename);
+                return fossil_io_file_rename(old_filename, new_filename);
             }
 
             /**
@@ -655,7 +655,7 @@ namespace fossil {
              * @return             0 on success, non-zero on failure.
              */
             static int32_t rename(const std::string &old_filename, const std::string &new_filename) {
-                return fossil_fstream_rename(old_filename.c_str(), new_filename.c_str());
+                return fossil_io_file_rename(old_filename.c_str(), new_filename.c_str());
             }
 
             /**
@@ -663,11 +663,11 @@ namespace fossil {
              *
              * This function flushes the contents of an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to flush.
+             * @param stream Pointer to the fossil_io_file_t structure to flush.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t flush(fossil_fstream_t *stream) {
-                return fossil_fstream_flush(stream);
+            static int32_t flush(fossil_io_file_t *stream) {
+                return fossil_io_file_flush(stream);
             }
 
             /**
@@ -675,11 +675,11 @@ namespace fossil {
              *
              * This function moves the file pointer associated with the stream to the beginning.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to seek.
+             * @param stream Pointer to the fossil_io_file_t structure to seek.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t setpos(fossil_fstream_t *stream, int32_t pos) {
-                return fossil_fstream_setpos(stream, pos);
+            static int32_t setpos(fossil_io_file_t *stream, int32_t pos) {
+                return fossil_io_file_setpos(stream, pos);
             }
 
             /**
@@ -687,12 +687,12 @@ namespace fossil {
              *
              * This function retrieves the current position of the file pointer in an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to get the position of.
+             * @param stream Pointer to the fossil_io_file_t structure to get the position of.
              * @param pos    Pointer to store the current position of the file pointer.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t getpos(fossil_fstream_t *stream, int32_t *pos) {
-                return fossil_fstream_getpos(stream, pos);
+            static int32_t getpos(fossil_io_file_t *stream, int32_t *pos) {
+                return fossil_io_file_getpos(stream, pos);
             }
 
             /**
@@ -705,7 +705,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t rotate(const char *filename, int32_t n) {
-                return fossil_fstream_rotate(filename, n);
+                return fossil_io_file_rotate(filename, n);
             }
 
             /**
@@ -718,7 +718,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t rotate(const std::string &filename, int32_t n) {
-                return fossil_fstream_rotate(filename.c_str(), n);
+                return fossil_io_file_rotate(filename.c_str(), n);
             }
 
             /**
@@ -731,7 +731,7 @@ namespace fossil {
              * @return              0 on success, non-zero on failure.
              */
             static int32_t backup(const char *filename, const char *backup_suffix) {
-                return fossil_fstream_backup(filename, backup_suffix);
+                return fossil_io_file_backup(filename, backup_suffix);
             }
 
             /**
@@ -744,7 +744,7 @@ namespace fossil {
              * @return              0 on success, non-zero on failure.
              */
             static int32_t backup(const std::string &filename, const std::string &backup_suffix) {
-                return fossil_fstream_backup(filename.c_str(), backup_suffix.c_str());
+                return fossil_io_file_backup(filename.c_str(), backup_suffix.c_str());
             }
 
             /**
@@ -756,7 +756,7 @@ namespace fossil {
              * @return         1 if the file exists, 0 if not.
              */
             static int32_t file_exists(const char *filename) {
-                return fossil_fstream_file_exists(filename);
+                return fossil_io_file_file_exists(filename);
             }
 
             /**
@@ -768,7 +768,7 @@ namespace fossil {
              * @return         1 if the file exists, 0 if not.
              */
             static int32_t file_exists(const std::string &filename) {
-                return fossil_fstream_file_exists(filename.c_str());
+                return fossil_io_file_file_exists(filename.c_str());
             }
 
             /**
@@ -776,11 +776,11 @@ namespace fossil {
              *
              * This function retrieves the size of an open stream.
              *
-             * @param stream Pointer to the fossil_fstream_t structure to get the size of.
+             * @param stream Pointer to the fossil_io_file_t structure to get the size of.
              * @return       The size of the open stream.
              */
-            static int32_t get_size(fossil_fstream_t *stream) {
-                return fossil_fstream_get_size(stream);
+            static int32_t get_size(fossil_io_file_t *stream) {
+                return fossil_io_file_get_size(stream);
             }
 
             /**
@@ -792,7 +792,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t delete_file(const char *filename) {
-                return fossil_fstream_delete(filename);
+                return fossil_io_file_delete(filename);
             }
 
             /**
@@ -804,7 +804,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t delete_file(const std::string &filename) {
-                return fossil_fstream_delete(filename.c_str());
+                return fossil_io_file_delete(filename.c_str());
             }
 
             /**
@@ -816,7 +816,7 @@ namespace fossil {
              * @return         The type of the file stream.
              */
             static int get_type(const char *filename) {
-                return fossil_fstream_get_type(filename);
+                return fossil_io_file_get_type(filename);
             }
 
             /**
@@ -828,7 +828,7 @@ namespace fossil {
              * @return         The type of the file stream.
              */
             static int get_type(const std::string &filename) {
-                return fossil_fstream_get_type(filename.c_str());
+                return fossil_io_file_get_type(filename.c_str());
             }
 
             /**
@@ -838,8 +838,8 @@ namespace fossil {
              *
              * @return A pointer to the name of the temporary file, or NULL on failure.
              */
-            static fossil_fstream_t tempfile() {
-                return fossil_fstream_tempfile();
+            static fossil_io_file_t tempfile() {
+                return fossil_io_file_tempfile();
             }
 
             /**
@@ -851,7 +851,7 @@ namespace fossil {
              * @return         1 if readable, 0 otherwise.
              */
             static int32_t is_readable(const char *filename) {
-                return fossil_fstream_is_readable(filename);
+                return fossil_io_file_is_readable(filename);
             }
 
             /**
@@ -863,7 +863,7 @@ namespace fossil {
              * @return         1 if readable, 0 otherwise.
              */
             static int32_t is_readable(const std::string &filename) {
-                return fossil_fstream_is_readable(filename.c_str());
+                return fossil_io_file_is_readable(filename.c_str());
             }
 
             /**
@@ -875,7 +875,7 @@ namespace fossil {
              * @return         1 if writable, 0 otherwise.
              */
             static int32_t is_writable(const char *filename) {
-                return fossil_fstream_is_writable(filename);
+                return fossil_io_file_is_writable(filename);
             }
 
             /**
@@ -887,7 +887,7 @@ namespace fossil {
              * @return         1 if writable, 0 otherwise.
              */
             static int32_t is_writable(const std::string &filename) {
-                return fossil_fstream_is_writable(filename.c_str());
+                return fossil_io_file_is_writable(filename.c_str());
             }
 
             /**
@@ -899,7 +899,7 @@ namespace fossil {
              * @return         1 if executable, 0 otherwise.
              */
             static int32_t is_executable(const char *filename) {
-                return fossil_fstream_is_executable(filename);
+                return fossil_io_file_is_executable(filename);
             }
 
             /**
@@ -911,7 +911,7 @@ namespace fossil {
              * @return         1 if executable, 0 otherwise.
              */
             static int32_t is_executable(const std::string &filename) {
-                return fossil_fstream_is_executable(filename.c_str());
+                return fossil_io_file_is_executable(filename.c_str());
             }
 
             /**
@@ -924,7 +924,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t set_permissions(const char *filename, int32_t mode) {
-                return fossil_fstream_set_permissions(filename, mode);
+                return fossil_io_file_set_permissions(filename, mode);
             }
 
             /**
@@ -937,7 +937,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t set_permissions(const std::string &filename, int32_t mode) {
-                return fossil_fstream_set_permissions(filename.c_str(), mode);
+                return fossil_io_file_set_permissions(filename.c_str(), mode);
             }
 
             /**
@@ -950,7 +950,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t get_permissions(const char *filename, int32_t *mode) {
-                return fossil_fstream_get_permissions(filename, mode);
+                return fossil_io_file_get_permissions(filename, mode);
             }
 
             /**
@@ -963,7 +963,7 @@ namespace fossil {
              * @return         0 on success, non-zero on failure.
              */
             static int32_t get_permissions(const std::string &filename, int32_t *mode) {
-                return fossil_fstream_get_permissions(filename.c_str(), mode);
+                return fossil_io_file_get_permissions(filename.c_str(), mode);
             }
 
         };
