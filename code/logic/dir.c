@@ -670,9 +670,17 @@ int32_t fossil_io_dir_realpath(const char *path, char *out, size_t outsz){
     DWORD r = GetFullPathNameA(path, (DWORD)outsz, out, NULL);
     return (r > 0 && r < outsz) ? 0 : -1;
 #else
-    char buf[PATH_MAX];
-    if (realpath(path, buf) == NULL) return -1;
-    safe_strcpy(out, buf, outsz);
+    // Alternative to realpath: resolve absolute path, but do not resolve symlinks
+    if (fossil_io_dir_is_absolute(path)) {
+        safe_strcpy(out, path, outsz);
+        return 0;
+    }
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, sizeof(cwd))) return -1;
+    char abs[PATH_MAX * 2];
+    if (snprintf(abs, sizeof(abs), "%s/%s", cwd, path) >= (int)sizeof(abs)) return -1;
+    // Normalize the result
+    fossil_io_dir_normalize(abs, out, outsz);
     return 0;
 #endif
 }
