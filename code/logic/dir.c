@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h> // for realpath, getenv, mkdtemp
+#include <unistd.h> // for mkdtemp
 
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
@@ -915,8 +916,9 @@ int32_t fossil_io_dir_get_created(const char *path, uint64_t *timestamp){
 #ifndef _WIN32
     // POSIX does not generally expose creation time; return ctime as approximation
     stat_t st;
+    if (stat_native(path, &st) != 0) return -1;
 #ifdef __APPLE__
-    *timestamp = (uint64_t)st.st_birthtimespec.tv_sec;
+    *timestamp = (uint64_t)st.st_birthtime;
 #else
     *timestamp = (uint64_t)st.st_ctime;
 #endif
