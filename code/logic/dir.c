@@ -525,7 +525,7 @@ int32_t fossil_io_dir_iter_next(fossil_io_dir_iter_t *it){
         wh->has_current = 0; // consume current
         if (!path_is_dot_or_dotdot(name)){
             safe_strcpy(it->current.name, name, sizeof(it->current.name));
-            snprintf(it->current.path, sizeof(it->current.path), "%s\\%s", it->basepath, name);
+            fossil_io_dir_join(it->basepath, name, it->current.path, sizeof(it->current.path));
             if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) it->current.type = 1;
             else it->current.type = 0;
             // size (DWORD/FILETIME conversion)
@@ -895,8 +895,9 @@ int32_t fossil_io_dir_create_temp(char *out, size_t outsz){
     snprintf(tpl, sizeof(tpl), "%s/fossil_tmp_%u_%u", tmpdir, (unsigned)getpid(), (unsigned)time(NULL));
     // Try to create a unique directory by appending a counter
     for (int i = 0; i < 1000; ++i) {
-        char path[PATH_MAX * 4];
-        snprintf(path, sizeof(path), "%s_%03d", tpl, i);
+        char path[PATH_MAX * 4 + 8]; // Extra space for "_%03d" and null terminator
+        int n = snprintf(path, sizeof(path), "%s_%03d", tpl, i);
+        if (n < 0 || n >= (int)sizeof(path)) continue; // Skip if truncated
         if (mkdir_native(path, 0700) == 0) {
             safe_strcpy(out, path, outsz);
             return 0;
