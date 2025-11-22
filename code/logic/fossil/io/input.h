@@ -26,7 +26,7 @@
 #define FOSSIL_IO_INPUT_H
 
 #include <stdarg.h>
-#include "stream.h"
+#include "file.h"
 
 /* Contexts */
 typedef enum {

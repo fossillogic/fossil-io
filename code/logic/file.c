@@ -22,7 +22,7 @@
  * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include "fossil/io/stream.h"
+#include "fossil/io/file.h"
 #include "fossil/io/output.h"
 #include "fossil/io/error.h"
 #include <stdio.h>

@@ -26,7 +26,7 @@
 #define FOSSIL_IO_OUTPUT_H
 
 #include <stdarg.h>
-#include "stream.h"
+#include "file.h"
 
 #ifdef __cplusplus
 extern "C" {
