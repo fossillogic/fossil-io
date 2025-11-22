@@ -293,14 +293,14 @@ int32_t fossil_io_dir_clear(const char *path){
     return 0;
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", path);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
     do {
         const char *name = fd.cFileName;
         if (path_is_dot_or_dotdot(name)) continue;
-        char child[MAX_PATH];
+        char child[PATH_MAX * 2];
         snprintf(child, sizeof(child), "%s\\%s", path, name);
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
             if (remove_recursive_internal(child) != 0) { FindClose(h); return -1; }
@@ -340,7 +340,7 @@ int32_t fossil_io_dir_copy(const char *src, const char *dst){
     return rc;
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", src);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
@@ -387,7 +387,7 @@ static int32_t copy_recursive_internal(const char *src, const char *dst){
     return rc;
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", src);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
@@ -395,7 +395,7 @@ static int32_t copy_recursive_internal(const char *src, const char *dst){
     do {
         const char *name = fd.cFileName;
         if (path_is_dot_or_dotdot(name)) continue;
-        char schild[MAX_PATH], dchild[MAX_PATH];
+        char schild[PATH_MAX * 2], dchild[PATH_MAX * 2];
         snprintf(schild, sizeof(schild), "%s\\%s", src, name);
         snprintf(dchild, sizeof(dchild), "%s\\%s", dst, name);
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
@@ -696,7 +696,7 @@ int32_t fossil_io_dir_is_empty(const char *path){
     return empty;
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", path);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
@@ -724,7 +724,7 @@ int32_t fossil_io_dir_count(const char *path, size_t *count){
     closedir(d);
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", path);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
@@ -758,14 +758,14 @@ static int32_t size_recursive_internal(const char *path, uint64_t *acc){
     return 0;
 #else
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[PATH_MAX * 2];
     snprintf(search, sizeof(search), "%s\\*", path);
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE) return -1;
     do {
         const char *name = fd.cFileName;
         if (path_is_dot_or_dotdot(name)) continue;
-        char child[MAX_PATH];
+        char child[PATH_MAX * 2];
         snprintf(child, sizeof(child), "%s\\%s", path, name);
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
             if (size_recursive_internal(child, acc) != 0) { FindClose(h); return -1; }
@@ -880,14 +880,14 @@ int32_t fossil_io_dir_temp(char *out, size_t outsz){
 
 int32_t fossil_io_dir_create_temp(char *out, size_t outsz){
     if (!out) return -1;
-    char tmpdir[512];
+    char tmpdir[PATH_MAX * 2];
     if (fossil_io_dir_temp(tmpdir, sizeof(tmpdir)) != 0) return -1;
 
-    char tpl[PATH_MAX * 2];
+    char tpl[PATH_MAX * 4];
     snprintf(tpl, sizeof(tpl), "%s/fossil_tmp_%u_%u", tmpdir, (unsigned)getpid(), (unsigned)time(NULL));
     // Try to create a unique directory by appending a counter
     for (int i = 0; i < 1000; ++i) {
-        char path[PATH_MAX * 2];
+        char path[PATH_MAX * 4];
         snprintf(path, sizeof(path), "%s_%03d", tpl, i);
         if (mkdir_native(path, 0700) == 0) {
             safe_strcpy(out, path, outsz);
