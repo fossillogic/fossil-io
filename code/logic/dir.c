@@ -882,22 +882,20 @@ int32_t fossil_io_dir_create_temp(char *out, size_t outsz){
     if (!out) return -1;
     char tmpdir[512];
     if (fossil_io_dir_temp(tmpdir, sizeof(tmpdir)) != 0) return -1;
-#ifdef _WIN32
-    char tpl[MAX_PATH];
-    snprintf(tpl, sizeof(tpl), "%s\\fossil_tmp_XXXXXX", tmpdir);
-    // _mktemp_s modifies tpl in-place; create directory
-    if (_mktemp_s(tpl, sizeof(tpl)) != 0) return -1;
-    if (_mkdir(tpl) != 0) return -1;
-    safe_strcpy(out, tpl, outsz);
-    return 0;
-#else
+
     char tpl[PATH_MAX];
-    snprintf(tpl, sizeof(tpl), "%s/fossil_tmp_XXXXXX", tmpdir);
-    char *r = mkdtemp(tpl);
-    if (!r) return -1;
-    safe_strcpy(out, r, outsz);
-    return 0;
-#endif
+    snprintf(tpl, sizeof(tpl), "%s/fossil_tmp_%u_%u", tmpdir, (unsigned)getpid(), (unsigned)time(NULL));
+    // Try to create a unique directory by appending a counter
+    for (int i = 0; i < 1000; ++i) {
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s_%03d", tpl, i);
+        if (mkdir_native(path, 0700) == 0) {
+            safe_strcpy(out, path, outsz);
+            return 0;
+        }
+        if (errno != EEXIST) break;
+    }
+    return -1;
 }
 
 // ------------------------------------------------------------
