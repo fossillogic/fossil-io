@@ -69,8 +69,11 @@
 static void safe_strcpy(char *dst, const char *src, size_t dstlen){
     if (!dst || dstlen == 0) return;
     if (!src) { dst[0] = '\0'; return; }
-    strncpy(dst, src, dstlen - 1);
-    dst[dstlen - 1] = '\0';
+    size_t srclen = strlen(src);
+    if (srclen >= dstlen)
+        srclen = dstlen - 1;
+    memcpy(dst, src, srclen);
+    dst[srclen] = '\0';
 }
 
 static int32_t join_paths(const char *a, const char *b, char *out, size_t outsz){
@@ -79,17 +82,38 @@ static int32_t join_paths(const char *a, const char *b, char *out, size_t outsz)
     if (!b || !b[0]) { safe_strcpy(out, a, outsz); return 0; }
 
     size_t la = strlen(a);
-    int need_sep = (a[la-1] != '/' && a[la-1] != '\\');
-
+    size_t lb = strlen(b);
+    int need_sep = 0;
 #ifdef _WIN32
     need_sep = (a[la-1] != '\\' && a[la-1] != '/');
+#else
+    need_sep = (a[la-1] != '/' && a[la-1] != '\\');
 #endif
 
-    if (need_sep)
-        snprintf(out, outsz, "%s%c%s", a, PATHSEP, b);
-    else
-        snprintf(out, outsz, "%s%s", a, b);
-    out[outsz-1] = '\0';
+    size_t total = la + (need_sep ? 1 : 0) + lb;
+    if (total >= outsz) {
+        // Truncate b if needed
+        size_t copy_b = outsz - la - (need_sep ? 1 : 0) - 1;
+        if (copy_b > lb) copy_b = lb;
+        memcpy(out, a, la);
+        if (need_sep && la < outsz - 1) {
+            out[la] = PATHSEP;
+            la++;
+        }
+        if (copy_b > 0 && la + copy_b < outsz) {
+            memcpy(out + la, b, copy_b);
+            la += copy_b;
+        }
+        out[la] = '\0';
+    } else {
+        memcpy(out, a, la);
+        size_t pos = la;
+        if (need_sep) {
+            out[pos++] = PATHSEP;
+        }
+        memcpy(out + pos, b, lb);
+        out[pos + lb] = '\0';
+    }
     return 0;
 }
 
