@@ -252,7 +252,7 @@ static int32_t remove_recursive_internal(const char *path){
     do {
         const char *name = fd.cFileName;
         if (path_is_dot_or_dotdot(name)) continue;
-        char child[MAX_PATH];
+        char child[PATH_MAX * 2];
         snprintf(child, sizeof(child), "%s\\%s", path, name);
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
             if (remove_recursive_internal(child) != 0) { FindClose(h); return -1; }
@@ -348,7 +348,7 @@ int32_t fossil_io_dir_copy(const char *src, const char *dst){
     do {
         const char *name = fd.cFileName;
         if (path_is_dot_or_dotdot(name)) continue;
-        char schild[MAX_PATH], dchild[MAX_PATH];
+        char schild[PATH_MAX * 2], dchild[PATH_MAX * 2];
         snprintf(schild, sizeof(schild), "%s\\%s", src, name);
         snprintf(dchild, sizeof(dchild), "%s\\%s", dst, name);
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
@@ -883,11 +883,11 @@ int32_t fossil_io_dir_create_temp(char *out, size_t outsz){
     char tmpdir[512];
     if (fossil_io_dir_temp(tmpdir, sizeof(tmpdir)) != 0) return -1;
 
-    char tpl[PATH_MAX];
+    char tpl[PATH_MAX * 2];
     snprintf(tpl, sizeof(tpl), "%s/fossil_tmp_%u_%u", tmpdir, (unsigned)getpid(), (unsigned)time(NULL));
     // Try to create a unique directory by appending a counter
     for (int i = 0; i < 1000; ++i) {
-        char path[PATH_MAX];
+        char path[PATH_MAX * 2];
         snprintf(path, sizeof(path), "%s_%03d", tpl, i);
         if (mkdir_native(path, 0700) == 0) {
             safe_strcpy(out, path, outsz);
