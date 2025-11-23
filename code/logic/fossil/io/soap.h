@@ -216,6 +216,132 @@ char *fossil_io_soap_filter(const char *patterns, const char *text);
  */
 void fossil_io_soap_clear_custom_filters(void);
 
+// ============================================================================
+// Readability Analysis
+// ============================================================================
+
+/**
+ * @brief Compute a readability score for the input text (0–100 scale).
+ *
+ * @param text Input string to analyze.
+ * @return Integer readability score; higher = easier to read.
+ */
+int fossil_io_soap_readability_score(const char *text);
+
+/**
+ * @brief Provide a label for readability ("easy", "medium", "complex").
+ *
+ * @param text Input text.
+ * @return A constant string label.
+ */
+const char *fossil_io_soap_readability_label(const char *text);
+
+
+// ============================================================================
+// Summarization Utilities
+// ============================================================================
+
+/**
+ * @brief Generate a concise summary (1–3 sentences).
+ *
+ * @param text Input text.
+ * @return A dynamically allocated summary string (caller frees).
+ */
+char *fossil_io_soap_summarize(const char *text);
+
+/**
+ * @brief Extract the single key sentence (TL;DR).
+ *
+ * @param text Input text.
+ * @return A dynamically allocated extracted sentence (caller frees).
+ */
+char *fossil_io_soap_extract_key_sentence(const char *text);
+
+
+// ============================================================================
+// Style Analysis
+// ============================================================================
+
+/**
+ * @brief Analyze the writing style ("concise", "verbose", "technical", etc.).
+ *
+ * @param text Input text.
+ * @return A constant string label.
+ */
+const char *fossil_io_soap_analyze_style(const char *text);
+
+/**
+ * @brief Estimate passive voice usage (0–100%).
+ *
+ * @param text Input string.
+ * @return Percentage of passive constructions.
+ */
+int fossil_io_soap_passive_voice_ratio(const char *text);
+
+
+// ============================================================================
+// Quality & Clarity Heuristics
+// ============================================================================
+
+/**
+ * @brief Evaluate clarity of writing (0–100).
+ *
+ * @param text Input.
+ * @return Clarity score.
+ */
+int fossil_io_soap_clarity_score(const char *text);
+
+/**
+ * @brief Assess overall writing quality (grammar, concision, structure).
+ *
+ * @param text Input.
+ * @return Quality score 0–100.
+ */
+int fossil_io_soap_quality_score(const char *text);
+
+// ============================================================================
+// Structural / Formatting Utilities
+// ============================================================================
+
+/**
+ * @brief Split text into sentences.
+ *
+ * @param text Input.
+ * @return NULL-terminated array of strdup'd sentences (caller frees array & elements).
+ */
+char **fossil_io_soap_split_sentences(const char *text);
+
+/**
+ * @brief Reflow text to max line width. Preserves words; inserts line breaks.
+ *
+ * @param text Input.
+ * @param width Maximum allowed characters per line.
+ * @return A dynamically allocated reflowed string (caller frees).
+ */
+char *fossil_io_soap_reflow(const char *text, int width);
+
+
+// ============================================================================
+// Normalization Helpers
+// ============================================================================
+
+/**
+ * @brief Normalize whitespace, punctuation, spacing, and basic formatting.
+ *
+ * @param text Input string.
+ * @return A dynamically allocated normalized string (caller frees).
+ */
+char *fossil_io_soap_normalize(const char *text);
+
+/**
+ * @brief Apply capitalization rules.
+ *
+ * @param text Input text.
+ * @param mode 0 = sentence case, 1 = title case, 2 = uppercase, 3 = lowercase.
+ * @return A dynamically allocated transformed string (caller frees).
+ */
+char *fossil_io_soap_capitalize(const char *text, int mode);
+
 #ifdef __cplusplus
 }
 
