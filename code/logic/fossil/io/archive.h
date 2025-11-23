@@ -25,7 +25,7 @@
 #ifndef FOSSIL_IO_ARCHIVE_H
 #define FOSSIL_IO_ARCHIVE_H
 
-#include "stream.h"
+#include "file.h"
 
 #ifdef __cplusplus
 extern "C" {

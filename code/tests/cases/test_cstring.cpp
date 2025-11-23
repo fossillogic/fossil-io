@@ -36,7 +36,7 @@
 
 // Define the test suite and add test cases
 FOSSIL_SUITE(cpp_string_suite);
-fossil_fstream_t cpp_string;
+fossil_io_file_t cpp_string;
 
 // Setup function for the test suite
 FOSSIL_SETUP(cpp_string_suite) {

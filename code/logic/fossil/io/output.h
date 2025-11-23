@@ -26,7 +26,7 @@
 #define FOSSIL_IO_OUTPUT_H
 
 #include <stdarg.h>
-#include "stream.h"
+#include "file.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,7 +91,7 @@ extern int32_t FOSSIL_IO_COLOR_ENABLE; // Flag to enable/disable color output
  *
  * @param stream The output stream where subsequent output should be redirected.
  */
-void fossil_io_redirect_output(fossil_fstream_t *stream);
+void fossil_io_redirect_output(fossil_io_file_t *stream);
 
 /**
  * Prints a string to the output.
@@ -157,7 +157,7 @@ void fossil_io_putchar(char c);
  * @param stream The output stream where the string should be printed. This should be a valid pointer to a `FILE` object.
  * @param str The string to be printed. This should be a null-terminated string.
  */
-void fossil_io_fputs(fossil_fstream_t *stream, const char *str);
+void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
 
 /**
  * Prints a formatted string to the specified output stream.
@@ -178,7 +178,7 @@ void fossil_io_fputs(fossil_fstream_t *stream, const char *str);
  * @param ... The additional arguments to be formatted. These arguments are inserted into the format string
  *            in the order they appear, based on the format specifiers.
  */
-void fossil_io_fprintf(fossil_fstream_t *stream, const char *format, ...);
+void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...);
 
 // TUI part of the API
 
@@ -303,21 +303,21 @@ namespace fossil {
             /**
              * @brief Writes a null-terminated string to a specified fossil output stream.
              *
-             * @param stream A pointer to the fossil_fstream_t stream.
+             * @param stream A pointer to the fossil_io_file_t stream.
              * @param str A null-terminated C string.
              */
-            static void fputs(fossil_fstream_t *stream, const char *str) {
+            static void fputs(fossil_io_file_t *stream, const char *str) {
                 fossil_io_fputs(stream, str);
             }
 
             /**
              * @brief Prints a formatted string to a specified fossil output stream.
              *
-             * @param stream A pointer to the fossil_fstream_t stream.
+             * @param stream A pointer to the fossil_io_file_t stream.
              * @param format A printf-style format string.
              * @param ... Additional arguments to be formatted.
              */
-            static void fprintf(fossil_fstream_t *stream, const char *format, ...) {
+            static void fprintf(fossil_io_file_t *stream, const char *format, ...) {
                 va_list args;
                 va_start(args, format);
                 fossil_io_fprintf(stream, format, args);
