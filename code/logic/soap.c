@@ -1190,7 +1190,7 @@ char *fossil_io_soap_extract_key_sentence(const char *text) {
         if (len > blen) { best = i; blen = len; }
     }
 
-    char *ret = best >= 0 ? fossil_io_cstring_dup(sent[best]) : strdup("");
+    char *ret = best >= 0 ? fossil_io_cstring_dup(sent[best]) : fossil_io_cstring_dup("");
     for (int i = 0; sent[i]; i++) free(sent[i]);
     free(sent);
 
