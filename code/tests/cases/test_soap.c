@@ -391,6 +391,140 @@ FOSSIL_TEST(c_test_io_soap_detect_tone_casual) {
     ASSUME_ITS_EQUAL_CSTR(tone, "casual");
 }
 
+FOSSIL_TEST(c_test_io_soap_readability_score_easy) {
+    const char *input = "The cat sat on the mat.";
+    int score = fossil_io_soap_readability_score(input);
+    ASSUME_ITS_TRUE(score >= 70);
+}
+
+FOSSIL_TEST(c_test_io_soap_readability_score_complex) {
+    const char *input = "Notwithstanding the aforementioned stipulations, the contractual obligations remain in effect.";
+    int score = fossil_io_soap_readability_score(input);
+    ASSUME_ITS_TRUE(score <= 40);
+}
+
+FOSSIL_TEST(c_test_io_soap_readability_label_easy) {
+    const char *input = "The dog runs fast.";
+    const char *label = fossil_io_soap_readability_label(input);
+    ASSUME_ITS_EQUAL_CSTR(label, "easy");
+}
+
+FOSSIL_TEST(c_test_io_soap_readability_label_complex) {
+    const char *input = "Insofar as the empirical evidence suggests, the paradigm shift is inevitable.";
+    const char *label = fossil_io_soap_readability_label(input);
+    ASSUME_ITS_EQUAL_CSTR(label, "complex");
+}
+
+FOSSIL_TEST(c_test_io_soap_summarize_basic) {
+    const char *input = "This is the first sentence. Here is the second. And finally, the third.";
+    char *summary = fossil_io_soap_summarize(input);
+    ASSUME_ITS_TRUE(summary != NULL);
+    ASSUME_ITS_TRUE(strstr(summary, "first sentence") != NULL);
+    free(summary);
+}
+
+FOSSIL_TEST(c_test_io_soap_extract_key_sentence_basic) {
+    const char *input = "Cats are great pets. They are independent and clean.";
+    char *key = fossil_io_soap_extract_key_sentence(input);
+    ASSUME_ITS_TRUE(key != NULL);
+    ASSUME_ITS_TRUE(strstr(key, "Cats are great pets") != NULL);
+    free(key);
+}
+
+FOSSIL_TEST(c_test_io_soap_analyze_style_concise) {
+    const char *input = "Go now. Finish quickly.";
+    const char *style = fossil_io_soap_analyze_style(input);
+    ASSUME_ITS_EQUAL_CSTR(style, "concise");
+}
+
+FOSSIL_TEST(c_test_io_soap_analyze_style_verbose) {
+    const char *input = "It is with great pleasure that I inform you of the following details regarding our upcoming event.";
+    const char *style = fossil_io_soap_analyze_style(input);
+    ASSUME_ITS_EQUAL_CSTR(style, "verbose");
+}
+
+FOSSIL_TEST(c_test_io_soap_passive_voice_ratio_none) {
+    const char *input = "The dog chased the ball.";
+    int ratio = fossil_io_soap_passive_voice_ratio(input);
+    ASSUME_ITS_TRUE(ratio == 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_passive_voice_ratio_some) {
+    const char *input = "The ball was chased by the dog.";
+    int ratio = fossil_io_soap_passive_voice_ratio(input);
+    ASSUME_ITS_TRUE(ratio > 0);
+}
+
+FOSSIL_TEST(c_test_io_soap_clarity_score_high) {
+    const char *input = "Water boils at 100 degrees Celsius.";
+    int score = fossil_io_soap_clarity_score(input);
+    ASSUME_ITS_TRUE(score >= 80);
+}
+
+FOSSIL_TEST(c_test_io_soap_quality_score_high) {
+    const char *input = "The experiment was conducted according to standard procedures.";
+    int score = fossil_io_soap_quality_score(input);
+    ASSUME_ITS_TRUE(score >= 80);
+}
+
+FOSSIL_TEST(c_test_io_soap_split_sentences_basic) {
+    const char *input = "Hello world. This is Fossil.";
+    char **sentences = fossil_io_soap_split_sentences(input);
+    ASSUME_ITS_TRUE(sentences != NULL);
+    ASSUME_ITS_TRUE(sentences[0] != NULL && sentences[1] != NULL);
+    free(sentences[0]);
+    free(sentences[1]);
+    free(sentences);
+}
+
+FOSSIL_TEST(c_test_io_soap_reflow_basic) {
+    const char *input = "This is a long sentence that should be wrapped to fit the width.";
+    char *reflowed = fossil_io_soap_reflow(input, 20);
+    ASSUME_ITS_TRUE(reflowed != NULL);
+    ASSUME_ITS_TRUE(strchr(reflowed, '\n') != NULL);
+    free(reflowed);
+}
+
+FOSSIL_TEST(c_test_io_soap_normalize_whitespace) {
+    const char *input = "This   is   spaced   out.";
+    char *normalized = fossil_io_soap_normalize(input);
+    ASSUME_ITS_TRUE(normalized != NULL);
+    ASSUME_ITS_TRUE(strstr(normalized, "This is spaced out.") != NULL);
+    free(normalized);
+}
+
+FOSSIL_TEST(c_test_io_soap_capitalize_sentence_case) {
+    const char *input = "hello world. this is fossil.";
+    char *output = fossil_io_soap_capitalize(input, 0);
+    ASSUME_ITS_TRUE(output != NULL);
+    ASSUME_ITS_TRUE(strncmp(output, "Hello world.", 12) == 0);
+    free(output);
+}
+
+FOSSIL_TEST(c_test_io_soap_capitalize_title_case) {
+    const char *input = "hello world from fossil.";
+    char *output = fossil_io_soap_capitalize(input, 1);
+    ASSUME_ITS_TRUE(output != NULL);
+    ASSUME_ITS_TRUE(strstr(output, "Hello World From Fossil.") != NULL);
+    free(output);
+}
+
+FOSSIL_TEST(c_test_io_soap_capitalize_uppercase) {
+    const char *input = "hello world";
+    char *output = fossil_io_soap_capitalize(input, 2);
+    ASSUME_ITS_TRUE(output != NULL);
+    ASSUME_ITS_TRUE(strcmp(output, "HELLO WORLD") == 0);
+    free(output);
+}
+
+FOSSIL_TEST(c_test_io_soap_capitalize_lowercase) {
+    const char *input = "HELLO WORLD";
+    char *output = fossil_io_soap_capitalize(input, 3);
+    ASSUME_ITS_TRUE(output != NULL);
+    ASSUME_ITS_TRUE(strcmp(output, "hello world") == 0);
+    free(output);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -455,6 +589,27 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_tone_sarcastic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_tone_ragebait);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_detect_tone_casual);
+
+    // readability, summarization, style, and sentence tests
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_score_easy);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_score_complex);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_label_easy);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_readability_label_complex);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_summarize_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_extract_key_sentence_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_analyze_style_concise);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_analyze_style_verbose);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_passive_voice_ratio_none);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_passive_voice_ratio_some);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_clarity_score_high);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_quality_score_high);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_split_sentences_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_reflow_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_whitespace);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_capitalize_sentence_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_capitalize_title_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_capitalize_uppercase);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_capitalize_lowercase);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
