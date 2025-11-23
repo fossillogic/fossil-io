@@ -1107,10 +1107,14 @@ int fossil_io_soap_readability_score(const char *text) {
             int saw_vowel = 0;
             while (isalpha((unsigned char)*ptr)) {
                 char c = tolower(*ptr);
-                if (c=='a'||c=='e'||c=='i'||c=='o'||c=='u' || c=='y')
-                    if (!saw_vowel) { syllables++; saw_vowel = 1; }
-                else
+                if (c=='a'||c=='e'||c=='i'||c=='o'||c=='u' || c=='y') {
+                    if (!saw_vowel) {
+                        syllables++;
+                        saw_vowel = 1;
+                    }
+                } else {
                     saw_vowel = 0;
+                }
                 ptr++;
             }
         } else {
