@@ -216,11 +216,138 @@ char *fossil_io_soap_filter(const char *patterns, const char *text);
  */
 void fossil_io_soap_clear_custom_filters(void);
 
+// ============================================================================
+// Readability Analysis
+// ============================================================================
+
+/**
+ * @brief Compute a readability score for the input text (0–100 scale).
+ *
+ * @param text Input string to analyze.
+ * @return Integer readability score; higher = easier to read.
+ */
+int fossil_io_soap_readability_score(const char *text);
+
+/**
+ * @brief Provide a label for readability ("easy", "medium", "complex").
+ *
+ * @param text Input text.
+ * @return A constant string label.
+ */
+const char *fossil_io_soap_readability_label(const char *text);
+
+
+// ============================================================================
+// Summarization Utilities
+// ============================================================================
+
+/**
+ * @brief Generate a concise summary (1–3 sentences).
+ *
+ * @param text Input text.
+ * @return A dynamically allocated summary string (caller frees).
+ */
+char *fossil_io_soap_summarize(const char *text);
+
+/**
+ * @brief Extract the single key sentence (TL;DR).
+ *
+ * @param text Input text.
+ * @return A dynamically allocated extracted sentence (caller frees).
+ */
+char *fossil_io_soap_extract_key_sentence(const char *text);
+
+
+// ============================================================================
+// Style Analysis
+// ============================================================================
+
+/**
+ * @brief Analyze the writing style ("concise", "verbose", "technical", etc.).
+ *
+ * @param text Input text.
+ * @return A constant string label.
+ */
+const char *fossil_io_soap_analyze_style(const char *text);
+
+/**
+ * @brief Estimate passive voice usage (0–100%).
+ *
+ * @param text Input string.
+ * @return Percentage of passive constructions.
+ */
+int fossil_io_soap_passive_voice_ratio(const char *text);
+
+
+// ============================================================================
+// Quality & Clarity Heuristics
+// ============================================================================
+
+/**
+ * @brief Evaluate clarity of writing (0–100).
+ *
+ * @param text Input.
+ * @return Clarity score.
+ */
+int fossil_io_soap_clarity_score(const char *text);
+
+/**
+ * @brief Assess overall writing quality (grammar, concision, structure).
+ *
+ * @param text Input.
+ * @return Quality score 0–100.
+ */
+int fossil_io_soap_quality_score(const char *text);
+
+// ============================================================================
+// Structural / Formatting Utilities
+// ============================================================================
+
+/**
+ * @brief Split text into sentences.
+ *
+ * @param text Input.
+ * @return NULL-terminated array of strdup'd sentences (caller frees array & elements).
+ */
+char **fossil_io_soap_split_sentences(const char *text);
+
+/**
+ * @brief Reflow text to max line width. Preserves words; inserts line breaks.
+ *
+ * @param text Input.
+ * @param width Maximum allowed characters per line.
+ * @return A dynamically allocated reflowed string (caller frees).
+ */
+char *fossil_io_soap_reflow(const char *text, int width);
+
+
+// ============================================================================
+// Normalization Helpers
+// ============================================================================
+
+/**
+ * @brief Normalize whitespace, punctuation, spacing, and basic formatting.
+ *
+ * @param text Input string.
+ * @return A dynamically allocated normalized string (caller frees).
+ */
+char *fossil_io_soap_normalize(const char *text);
+
+/**
+ * @brief Apply capitalization rules.
+ *
+ * @param text Input text.
+ * @param mode 0 = sentence case, 1 = title case, 2 = uppercase, 3 = lowercase.
+ * @return A dynamically allocated transformed string (caller frees).
+ */
+char *fossil_io_soap_capitalize(const char *text, int mode);
+
 #ifdef __cplusplus
 }
 
 #include <string>
 #include <memory>
+#include <vector>
 
 /**
  * C++ wrapper for the SOAP API.
@@ -485,6 +612,124 @@ namespace fossil {
             static std::string correct_grammar(const std::string &text) {
                 std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_correct_grammar(text.c_str()), free);
                 return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            // ========================================================================
+            // Readability Analysis
+            // ========================================================================
+            /**
+             * @brief Compute a readability score for the input text (0–100 scale).
+             */
+            static int readability_score(const std::string &text) {
+            return fossil_io_soap_readability_score(text.c_str());
+            }
+
+            /**
+             * @brief Provide a label for readability ("easy", "medium", "complex").
+             */
+            static std::string readability_label(const std::string &text) {
+            return std::string(fossil_io_soap_readability_label(text.c_str()));
+            }
+
+            // ========================================================================
+            // Summarization Utilities
+            // ========================================================================
+            /**
+             * @brief Generate a concise summary (1–3 sentences).
+             */
+            static std::string summarize(const std::string &text) {
+            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_summarize(text.c_str()), free);
+            return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Extract the single key sentence (TL;DR).
+             */
+            static std::string extract_key_sentence(const std::string &text) {
+            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_extract_key_sentence(text.c_str()), free);
+            return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            // ========================================================================
+            // Style Analysis
+            // ========================================================================
+            /**
+             * @brief Analyze the writing style ("concise", "verbose", "technical", etc.).
+             */
+            static std::string analyze_style(const std::string &text) {
+            return std::string(fossil_io_soap_analyze_style(text.c_str()));
+            }
+
+            /**
+             * @brief Estimate passive voice usage (0–100%).
+             */
+            static int passive_voice_ratio(const std::string &text) {
+            return fossil_io_soap_passive_voice_ratio(text.c_str());
+            }
+
+            // ========================================================================
+            // Quality & Clarity Heuristics
+            // ========================================================================
+            /**
+             * @brief Evaluate clarity of writing (0–100).
+             */
+            static int clarity_score(const std::string &text) {
+            return fossil_io_soap_clarity_score(text.c_str());
+            }
+
+            /**
+             * @brief Assess overall writing quality (grammar, concision, structure).
+             */
+            static int quality_score(const std::string &text) {
+            return fossil_io_soap_quality_score(text.c_str());
+            }
+
+            // ========================================================================
+            // Structural / Formatting Utilities
+            // ========================================================================
+            /**
+             * @brief Split text into sentences.
+             * @return std::vector<std::string> of sentences.
+             */
+            static std::vector<std::string> split_sentences(const std::string &text) {
+            std::vector<std::string> sentences;
+            char **raw = fossil_io_soap_split_sentences(text.c_str());
+            if (raw) {
+                for (size_t i = 0; raw[i] != nullptr; ++i) {
+                sentences.emplace_back(raw[i]);
+                free(raw[i]);
+                }
+                free(raw);
+            }
+            return sentences;
+            }
+
+            /**
+             * @brief Reflow text to max line width. Preserves words; inserts line breaks.
+             */
+            static std::string reflow(const std::string &text, int width) {
+            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_reflow(text.c_str(), width), free);
+            return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            // ========================================================================
+            // Normalization Helpers
+            // ========================================================================
+            /**
+             * @brief Normalize whitespace, punctuation, spacing, and basic formatting.
+             */
+            static std::string normalize(const std::string &text) {
+            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_normalize(text.c_str()), free);
+            return ptr ? std::string(ptr.get()) : std::string{};
+            }
+
+            /**
+             * @brief Apply capitalization rules.
+             * @param mode 0 = sentence case, 1 = title case, 2 = uppercase, 3 = lowercase.
+             */
+            static std::string capitalize(const std::string &text, int mode) {
+            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_capitalize(text.c_str(), mode), free);
+            return ptr ? std::string(ptr.get()) : std::string{};
             }
 
             /**

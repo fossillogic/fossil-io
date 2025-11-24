@@ -289,6 +289,130 @@ FOSSIL_TEST(objcpp_test_io_soap_detect_tone_casual) {
     ASSUME_ITS_EQUAL_CSTR(tone.c_str(), "casual");
 }
 
+FOSSIL_TEST(objcpp_test_io_soap_readability_score_easy) {
+    std::string input = "The cat sat on the mat.";
+    int score = fossil::io::Soap::readability_score(input);
+    ASSUME_ITS_TRUE(score >= 70);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_readability_score_complex) {
+    std::string input = "Notwithstanding the aforementioned stipulations, the contractual obligations remain in effect.";
+    int score = fossil::io::Soap::readability_score(input);
+    ASSUME_ITS_TRUE(score <= 40);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_readability_label_easy) {
+    std::string input = "The dog runs fast.";
+    std::string label = fossil::io::Soap::readability_label(input);
+    ASSUME_ITS_EQUAL_CSTR(label.c_str(), "easy");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_readability_label_complex) {
+    std::string input = "Insofar as the empirical evidence suggests, the paradigm shift is inevitable.";
+    std::string label = fossil::io::Soap::readability_label(input);
+    ASSUME_ITS_EQUAL_CSTR(label.c_str(), "complex");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_summarize_basic) {
+    std::string input = "This is the first sentence. Here is the second. And finally, the third.";
+    std::string summary = fossil::io::Soap::summarize(input);
+    ASSUME_ITS_TRUE(!summary.empty());
+    ASSUME_ITS_TRUE(summary.find("first sentence") != std::string::npos);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_extract_key_sentence_basic) {
+    std::string input = "Cats are great pets. They are independent and clean.";
+    std::string key = fossil::io::Soap::extract_key_sentence(input);
+    ASSUME_ITS_TRUE(!key.empty());
+    ASSUME_ITS_TRUE(key.find("Cats are great pets") != std::string::npos);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_analyze_style_concise) {
+    std::string input = "Go now. Finish quickly.";
+    std::string style = fossil::io::Soap::analyze_style(input);
+    ASSUME_ITS_EQUAL_CSTR(style.c_str(), "concise");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_analyze_style_verbose) {
+    std::string input = "It is with great pleasure that I inform you of the following details regarding our upcoming event.";
+    std::string style = fossil::io::Soap::analyze_style(input);
+    ASSUME_ITS_EQUAL_CSTR(style.c_str(), "verbose");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_passive_voice_ratio_none) {
+    std::string input = "The dog chased the ball.";
+    int ratio = fossil::io::Soap::passive_voice_ratio(input);
+    ASSUME_ITS_TRUE(ratio == 0);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_passive_voice_ratio_some) {
+    std::string input = "The ball was chased by the dog.";
+    int ratio = fossil::io::Soap::passive_voice_ratio(input);
+    ASSUME_ITS_TRUE(ratio > 0);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_clarity_score_high) {
+    std::string input = "Water boils at 100 degrees Celsius.";
+    int score = fossil::io::Soap::clarity_score(input);
+    ASSUME_ITS_TRUE(score >= 80);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_quality_score_high) {
+    std::string input = "The experiment was conducted according to standard procedures.";
+    int score = fossil::io::Soap::quality_score(input);
+    ASSUME_ITS_TRUE(score >= 80);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_split_sentences_basic) {
+    std::string input = "Hello world. This is Fossil.";
+    auto sentences = fossil::io::Soap::split_sentences(input);
+    ASSUME_ITS_TRUE(sentences.size() >= 2);
+    ASSUME_ITS_TRUE(sentences[0] == "Hello world.");
+    ASSUME_ITS_TRUE(sentences[1] == "This is Fossil.");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_reflow_basic) {
+    std::string input = "This is a long sentence that should be wrapped to fit the width.";
+    std::string reflowed = fossil::io::Soap::reflow(input, 20);
+    ASSUME_ITS_TRUE(!reflowed.empty());
+    ASSUME_ITS_TRUE(reflowed.find('\n') != std::string::npos);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_normalize_whitespace) {
+    std::string input = "This   is   spaced   out.";
+    std::string normalized = fossil::io::Soap::normalize(input);
+    ASSUME_ITS_TRUE(!normalized.empty());
+    ASSUME_ITS_TRUE(normalized.find("This is spaced out.") != std::string::npos);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_capitalize_sentence_case) {
+    std::string input = "hello world. this is fossil.";
+    std::string output = fossil::io::Soap::capitalize(input, 0);
+    ASSUME_ITS_TRUE(!output.empty());
+    ASSUME_ITS_TRUE(output.substr(0, 12) == "Hello world.");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_capitalize_title_case) {
+    std::string input = "hello world from fossil.";
+    std::string output = fossil::io::Soap::capitalize(input, 1);
+    ASSUME_ITS_TRUE(!output.empty());
+    ASSUME_ITS_TRUE(output.find("Hello World From Fossil.") != std::string::npos);
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_capitalize_uppercase) {
+    std::string input = "hello world";
+    std::string output = fossil::io::Soap::capitalize(input, 2);
+    ASSUME_ITS_TRUE(!output.empty());
+    ASSUME_ITS_TRUE(output == "HELLO WORLD");
+}
+
+FOSSIL_TEST(objcpp_test_io_soap_capitalize_lowercase) {
+    std::string input = "HELLO WORLD";
+    std::string output = fossil::io::Soap::capitalize(input, 3);
+    ASSUME_ITS_TRUE(!output.empty());
+    ASSUME_ITS_TRUE(output == "hello world");
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -341,6 +465,33 @@ FOSSIL_TEST_GROUP(objcpp_soap_tests) {
     FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_detect_tone_sarcastic);
     FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_detect_tone_ragebait);
     FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_detect_tone_casual);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_readability_score_easy);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_readability_score_complex);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_readability_label_easy);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_readability_label_complex);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_summarize_basic);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_extract_key_sentence_basic);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_analyze_style_concise);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_analyze_style_verbose);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_passive_voice_ratio_none);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_passive_voice_ratio_some);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_clarity_score_high);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_quality_score_high);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_split_sentences_basic);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_reflow_basic);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_normalize_whitespace);
+
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_capitalize_sentence_case);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_capitalize_title_case);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_capitalize_uppercase);
+    FOSSIL_TEST_ADD(objcpp_soap_suite, objcpp_test_io_soap_capitalize_lowercase);
 
     FOSSIL_TEST_REGISTER(objcpp_soap_suite);
 }
