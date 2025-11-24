@@ -347,6 +347,7 @@ char *fossil_io_soap_capitalize(const char *text, int mode);
 
 #include <string>
 #include <memory>
+#include <vector>
 
 /**
  * C++ wrapper for the SOAP API.
