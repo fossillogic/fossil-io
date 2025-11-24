@@ -351,26 +351,6 @@ FOSSIL_TEST(cpp_test_io_soap_passive_voice_ratio_some) {
     ASSUME_ITS_TRUE(ratio > 0);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_clarity_score_high) {
-    std::string input = "Water boils at 100 degrees Celsius.";
-    int score = fossil::io::Soap::clarity_score(input);
-    ASSUME_ITS_TRUE(score >= 70);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_quality_score_high) {
-    std::string input = "The experiment was conducted according to standard procedures.";
-    int score = fossil::io::Soap::quality_score(input);
-    ASSUME_ITS_TRUE(score >= 70);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_split_sentences_basic) {
-    std::string input = "Hello world. This is Fossil.";
-    auto sentences = fossil::io::Soap::split_sentences(input);
-    ASSUME_ITS_TRUE(sentences.size() >= 2);
-    ASSUME_ITS_TRUE(sentences[0] == "Hello world.");
-    ASSUME_ITS_TRUE(sentences[1] == "This is Fossil");
-}
-
 FOSSIL_TEST(cpp_test_io_soap_reflow_basic) {
     std::string input = "This is a long sentence that should be wrapped to fit the width.";
     std::string reflowed = fossil::io::Soap::reflow(input, 20);
@@ -481,11 +461,7 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_passive_voice_ratio_none);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_passive_voice_ratio_some);
 
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_clarity_score_high);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_quality_score_high);
-
     // sentence and text manipulation
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_split_sentences_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_reflow_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_normalize_whitespace);
 

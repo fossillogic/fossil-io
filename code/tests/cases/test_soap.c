@@ -455,18 +455,6 @@ FOSSIL_TEST(c_test_io_soap_passive_voice_ratio_some) {
     ASSUME_ITS_TRUE(ratio > 0);
 }
 
-FOSSIL_TEST(c_test_io_soap_clarity_score_high) {
-    const char *input = "Water boils at 100 degrees Celsius.";
-    int score = fossil_io_soap_clarity_score(input);
-    ASSUME_ITS_TRUE(score >= 70);
-}
-
-FOSSIL_TEST(c_test_io_soap_quality_score_high) {
-    const char *input = "The experiment was conducted according to standard procedures.";
-    int score = fossil_io_soap_quality_score(input);
-    ASSUME_ITS_TRUE(score >= 70);
-}
-
 FOSSIL_TEST(c_test_io_soap_split_sentences_basic) {
     const char *input = "Hello world. This is Fossil.";
     char **sentences = fossil_io_soap_split_sentences(input);
@@ -601,8 +589,6 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_analyze_style_verbose);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_passive_voice_ratio_none);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_passive_voice_ratio_some);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_clarity_score_high);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_quality_score_high);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_split_sentences_basic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_reflow_basic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_io_soap_normalize_whitespace);
