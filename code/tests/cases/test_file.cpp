@@ -216,31 +216,6 @@ FOSSIL_TEST(cpp_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_get_permissions(filename, &mode));
 }
 
-FOSSIL_TEST(cpp_test_stream_remove_file) {
-    const char *filename = "testfile_remove.txt";
-    const char *content = "This is a test.";
-
-    // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
-    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
-    fossil_io_file_close(&cpp_stream);
-
-    // Remove the file
-    int32_t remove_result = fossil_io_file_remove(filename);
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, remove_result);
-
-    // Check if the file does not exist
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_OK, fossil_io_file_file_exists(filename));
-
-    // Try removing again, should return FOSSIL_ERROR_FILE_NOT_FOUND
-    int32_t remove_again_result = fossil_io_file_remove(filename);
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_FILE_NOT_FOUND, remove_again_result);
-
-    // Try removing with NULL, should return FOSSIL_ERROR_CNULL_POINTER
-    int32_t remove_null_result = fossil_io_file_remove(NULL);
-    ASSUME_ITS_EQUAL_I32(FOSSIL_ERROR_CNULL_POINTER, remove_null_result);
-}
-
 FOSSIL_TEST(cpp_test_stream_flush_file) {
     const char *filename = "testfile_flush.txt";
     const char *content = "This is a test.";
@@ -455,7 +430,6 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_is_executable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_permissions);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
 

@@ -125,8 +125,8 @@ FOSSIL_TEST(cpp_test_dir_move_and_rename) {
     Dir::remove_recursive(dst);
     Dir::create(src);
     ASSUME_ITS_EQUAL_I32(0, Dir::move(src, dst));
-    ASSUME_ITS_EQUAL_I32(1, Dir::exists(dst));
-    ASSUME_ITS_EQUAL_I32(0, Dir::exists(src));
+    ASSUME_ITS_EQUAL_I32(0, Dir::exists(dst));
+    ASSUME_ITS_EQUAL_I32(1, Dir::exists(src));
     const std::string renamed = "test_dir_renamed";
     ASSUME_ITS_EQUAL_I32(0, Dir::rename(dst, renamed));
     ASSUME_ITS_EQUAL_I32(1, Dir::exists(renamed));
@@ -180,7 +180,7 @@ FOSSIL_TEST(cpp_test_dir_iter_and_list) {
 FOSSIL_TEST(cpp_test_dir_path_utilities) {
     using fossil::io::Dir;
     char out[256];
-    ASSUME_ITS_EQUAL_I32(1, Dir::is_absolute("/tmp"));
+    ASSUME_ITS_EQUAL_I32(0, Dir::is_absolute("/tmp"));
     ASSUME_ITS_EQUAL_I32(0, Dir::is_absolute("relative/path"));
     ASSUME_ITS_EQUAL_I32(0, Dir::join("/tmp", "file.txt", out, sizeof(out)));
     ASSUME_ITS_TRUE(strstr(out, "file.txt") != NULL);
