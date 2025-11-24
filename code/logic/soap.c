@@ -1253,14 +1253,19 @@ int fossil_io_soap_clarity_score(const char *text) {
 
     int score = fossil_io_soap_readability_score(text);
 
-    /* Penalize for excessive filler words */
+    // Penalize for excessive filler words, but only if not in a factual/neutral context
     int filler = 0;
+    int neutral = fossil_io_soap_detect_neutral(text);
+
     for (int i = 0; SOAP_QUALITY_PATTERNS[i]; i++) {
         if (custom_strcasestr(text, SOAP_QUALITY_PATTERNS[i]))
             filler += 3;
     }
 
-    score -= filler;
+    // If the text is neutral/factual, do not penalize for filler
+    if (!neutral)
+        score -= filler;
+
     if (score < 0) score = 0;
     if (score > 100) score = 100;
 
@@ -1273,7 +1278,12 @@ int fossil_io_soap_quality_score(const char *text) {
     int clarity = fossil_io_soap_clarity_score(text);
     int passive = fossil_io_soap_passive_voice_ratio(text);
 
-    int q = clarity - (passive / 2);
+    // If the text is neutral/factual, do not penalize for passive voice
+    int neutral = fossil_io_soap_detect_neutral(text);
+    int q = clarity;
+    if (!neutral)
+        q -= (passive / 2);
+
     if (q < 0) q = 0;
     if (q > 100) q = 100;
 
