@@ -30,6 +30,7 @@
 #include <stdio.h>
 
 int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
+int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing 
 
 // Define color codes for output
 #define FOSSIL_IO_COLOR_RESET       "\033[0m"
@@ -57,6 +58,46 @@ int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
 #define FOSSIL_IO_ATTR_BLINK        "\033[5m"
 #define FOSSIL_IO_ATTR_HIDDEN       "\033[8m"
 #define FOSSIL_IO_ATTR_NORMAL       "\033[22m" // For reverting to normal text
+
+#define FOSSIL_CHAR_CHECK     "[OK]"
+#define FOSSIL_CHAR_CROSS     "[X]"
+#define FOSSIL_CHAR_ARROW     "->"
+#define FOSSIL_CHAR_WARN      "!!"
+
+// Basic bullets & markers
+#define FOSSIL_SYM_DOT         "•"
+#define FOSSIL_SYM_DIAMOND     "◆"
+#define FOSSIL_SYM_TRI_RIGHT   "▶"
+#define FOSSIL_SYM_TRI_DOWN    "▼"
+
+// Status icons
+#define FOSSIL_SYM_OK          "✔"
+#define FOSSIL_SYM_FAIL        "✘"
+#define FOSSIL_SYM_WARN        "⚠"
+#define FOSSIL_SYM_INFO        "ℹ"
+#define FOSSIL_SYM_STAR        "★"
+
+// Arrows
+#define FOSSIL_SYM_ARROW       "➤"
+#define FOSSIL_SYM_ARROW_L     "←"
+#define FOSSIL_SYM_ARROW_R     "→"
+#define FOSSIL_SYM_ARROW_U     "↑"
+#define FOSSIL_SYM_ARROW_D     "↓"
+
+// Box drawing
+#define FOSSIL_BOX_H           "─"
+#define FOSSIL_BOX_V           "│"
+#define FOSSIL_BOX_TL          "┌"
+#define FOSSIL_BOX_TR          "┐"
+#define FOSSIL_BOX_BL          "└"
+#define FOSSIL_BOX_BR          "┘"
+#define FOSSIL_BOX_CROSS       "┼"
+
+// Shading
+#define FOSSIL_SHADE_LIGHT     "░"
+#define FOSSIL_SHADE_MEDIUM    "▒"
+#define FOSSIL_SHADE_DARK      "▓"
+#define FOSSIL_SHADE_FULL      "█"
 
 // Additional attributes
 #define FOSSIL_IO_ATTR_ITALIC       "\033[3m"
