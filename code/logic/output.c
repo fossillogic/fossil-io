@@ -32,82 +32,74 @@
 int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
 int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing 
 
-// Define color codes for output
-#define FOSSIL_IO_COLOR_RESET       "\033[0m"
-#define FOSSIL_IO_COLOR_RED         "\033[31m"
-#define FOSSIL_IO_COLOR_GREEN       "\033[32m"
-#define FOSSIL_IO_COLOR_YELLOW      "\033[33m"
-#define FOSSIL_IO_COLOR_BLUE        "\033[34m"
-#define FOSSIL_IO_COLOR_MAGENTA     "\033[35m"
-#define FOSSIL_IO_COLOR_CYAN        "\033[36m"
-#define FOSSIL_IO_COLOR_WHITE       "\033[37m"
+// ================================================================
+// RESET
+// ================================================================
+#define FOSSIL_IO_COLOR_RESET            "\033[0m"
 
-// Bright colors
-#define FOSSIL_IO_COLOR_BRIGHT_RED   "\033[91m"
-#define FOSSIL_IO_COLOR_BRIGHT_GREEN "\033[92m"
-#define FOSSIL_IO_COLOR_BRIGHT_YELLOW "\033[93m"
-#define FOSSIL_IO_COLOR_BRIGHT_BLUE  "\033[94m"
-#define FOSSIL_IO_COLOR_BRIGHT_MAGENTA "\033[95m"
-#define FOSSIL_IO_COLOR_BRIGHT_CYAN  "\033[96m"
-#define FOSSIL_IO_COLOR_BRIGHT_WHITE "\033[97m"
 
-// Define text attributes
-#define FOSSIL_IO_ATTR_BOLD         "\033[1m"
-#define FOSSIL_IO_ATTR_UNDERLINE    "\033[4m"
-#define FOSSIL_IO_ATTR_REVERSED     "\033[7m"
-#define FOSSIL_IO_ATTR_BLINK        "\033[5m"
-#define FOSSIL_IO_ATTR_HIDDEN       "\033[8m"
-#define FOSSIL_IO_ATTR_NORMAL       "\033[22m" // For reverting to normal text
+// ================================================================
+// DARK (STANDARD) COLORS
+// ================================================================
+#define FOSSIL_IO_COLOR_BLACK            "\033[30m"
+#define FOSSIL_IO_COLOR_RED              "\033[31m"
+#define FOSSIL_IO_COLOR_GREEN            "\033[32m"
+#define FOSSIL_IO_COLOR_YELLOW           "\033[33m"
+#define FOSSIL_IO_COLOR_BLUE             "\033[34m"
+#define FOSSIL_IO_COLOR_MAGENTA          "\033[35m"
+#define FOSSIL_IO_COLOR_CYAN             "\033[36m"
+#define FOSSIL_IO_COLOR_WHITE            "\033[37m"
+#define FOSSIL_IO_COLOR_GRAY             "\033[90m"
+#define FOSSIL_IO_COLOR_ORANGE           "\033[38;5;208m"
+#define FOSSIL_IO_COLOR_PINK             "\033[38;5;205m"
+#define FOSSIL_IO_COLOR_PURPLE           "\033[38;5;93m"
+#define FOSSIL_IO_COLOR_BROWN            "\033[38;5;94m"
+#define FOSSIL_IO_COLOR_TEAL             "\033[38;5;30m"
+#define FOSSIL_IO_COLOR_SILVER           "\033[38;5;7m"
 
-#define FOSSIL_CHAR_CHECK     "[OK]"
-#define FOSSIL_CHAR_CROSS     "[X]"
-#define FOSSIL_CHAR_ARROW     "->"
-#define FOSSIL_CHAR_WARN      "!!"
+// ================================================================
+// BRIGHT COLORS
+// ================================================================
+#define FOSSIL_IO_COLOR_BRIGHT_BLACK     "\033[90m"
+#define FOSSIL_IO_COLOR_BRIGHT_RED       "\033[91m"
+#define FOSSIL_IO_COLOR_BRIGHT_GREEN     "\033[92m"
+#define FOSSIL_IO_COLOR_BRIGHT_YELLOW    "\033[93m"
+#define FOSSIL_IO_COLOR_BRIGHT_BLUE      "\033[94m"
+#define FOSSIL_IO_COLOR_BRIGHT_MAGENTA   "\033[95m"
+#define FOSSIL_IO_COLOR_BRIGHT_CYAN      "\033[96m"
+#define FOSSIL_IO_COLOR_BRIGHT_WHITE     "\033[97m"
 
-// Basic bullets & markers
-#define FOSSIL_SYM_DOT         "•"
-#define FOSSIL_SYM_DIAMOND     "◆"
-#define FOSSIL_SYM_TRI_RIGHT   "▶"
-#define FOSSIL_SYM_TRI_DOWN    "▼"
+// ================================================================
+// TEXT ATTRIBUTES
+// ================================================================
+#define FOSSIL_IO_ATTR_BOLD              "\033[1m"
+#define FOSSIL_IO_ATTR_DIM               "\033[2m"
+#define FOSSIL_IO_ATTR_ITALIC            "\033[3m"
+#define FOSSIL_IO_ATTR_UNDERLINE         "\033[4m"
+#define FOSSIL_IO_ATTR_BLINK             "\033[5m"
+#define FOSSIL_IO_ATTR_REVERSE           "\033[7m"
+#define FOSSIL_IO_ATTR_HIDDEN            "\033[8m"
+#define FOSSIL_IO_ATTR_STRIKETHROUGH     "\033[9m"
+#define FOSSIL_IO_ATTR_NORMAL            "\033[22;23;24;25;27;28m" // Reset all attributes
+#define FOSSIL_IO_ATTR_REVERSED          "\033[7m"
 
-// Status icons
-#define FOSSIL_SYM_OK          "✔"
-#define FOSSIL_SYM_FAIL        "✘"
-#define FOSSIL_SYM_WARN        "⚠"
-#define FOSSIL_SYM_INFO        "ℹ"
-#define FOSSIL_SYM_STAR        "★"
-
-// Arrows
-#define FOSSIL_SYM_ARROW       "➤"
-#define FOSSIL_SYM_ARROW_L     "←"
-#define FOSSIL_SYM_ARROW_R     "→"
-#define FOSSIL_SYM_ARROW_U     "↑"
-#define FOSSIL_SYM_ARROW_D     "↓"
-
-// Box drawing
-#define FOSSIL_BOX_H           "─"
-#define FOSSIL_BOX_V           "│"
-#define FOSSIL_BOX_TL          "┌"
-#define FOSSIL_BOX_TR          "┐"
-#define FOSSIL_BOX_BL          "└"
-#define FOSSIL_BOX_BR          "┘"
-#define FOSSIL_BOX_CROSS       "┼"
-
-// Shading
-#define FOSSIL_SHADE_LIGHT     "░"
-#define FOSSIL_SHADE_MEDIUM    "▒"
-#define FOSSIL_SHADE_DARK      "▓"
-#define FOSSIL_SHADE_FULL      "█"
-
-// Additional attributes
-#define FOSSIL_IO_ATTR_ITALIC       "\033[3m"
-#define FOSSIL_IO_ATTR_STRIKETHROUGH "\033[9m"
+// Reset specific attributes
+#define FOSSIL_IO_ATTR_RESET_BOLD        "\033[22m"
+#define FOSSIL_IO_ATTR_RESET_DIM         "\033[22m"
+#define FOSSIL_IO_ATTR_RESET_ITALIC      "\033[23m"
+#define FOSSIL_IO_ATTR_RESET_UNDERLINE   "\033[24m"
+#define FOSSIL_IO_ATTR_RESET_BLINK       "\033[25m"
+#define FOSSIL_IO_ATTR_RESET_REVERSE     "\033[27m"
+#define FOSSIL_IO_ATTR_RESET_HIDDEN      "\033[28m"
+#define FOSSIL_IO_ATTR_RESET_STRIKE      "\033[29m"
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
 // Function to apply color
 void fossil_io_apply_color(const char *color) {
-    if (strcmp(color, "red") == 0) {
+    if (strcmp(color, "black") == 0) {
+        printf(FOSSIL_IO_COLOR_BLACK);
+    } else if (strcmp(color, "red") == 0) {
         printf(FOSSIL_IO_COLOR_RED);
     } else if (strcmp(color, "green") == 0) {
         printf(FOSSIL_IO_COLOR_GREEN);
@@ -121,9 +113,25 @@ void fossil_io_apply_color(const char *color) {
         printf(FOSSIL_IO_COLOR_CYAN);
     } else if (strcmp(color, "white") == 0) {
         printf(FOSSIL_IO_COLOR_WHITE);
+    } else if (strcmp(color, "gray") == 0) {
+        printf(FOSSIL_IO_COLOR_GRAY);
+    } else if (strcmp(color, "orange") == 0) {
+        printf(FOSSIL_IO_COLOR_ORANGE);
+    } else if (strcmp(color, "pink") == 0) {
+        printf(FOSSIL_IO_COLOR_PINK);
+    } else if (strcmp(color, "purple") == 0) {
+        printf(FOSSIL_IO_COLOR_PURPLE);
+    } else if (strcmp(color, "brown") == 0) {
+        printf(FOSSIL_IO_COLOR_BROWN);
+    } else if (strcmp(color, "teal") == 0) {
+        printf(FOSSIL_IO_COLOR_TEAL);
+    } else if (strcmp(color, "silver") == 0) {
+        printf(FOSSIL_IO_COLOR_SILVER);
     }
     // Bright colors
-    else if (strcmp(color, "bright_red") == 0) {
+    else if (strcmp(color, "bright_black") == 0) {
+        printf(FOSSIL_IO_COLOR_BRIGHT_BLACK);
+    } else if (strcmp(color, "bright_red") == 0) {
         printf(FOSSIL_IO_COLOR_BRIGHT_RED);
     } else if (strcmp(color, "bright_green") == 0) {
         printf(FOSSIL_IO_COLOR_BRIGHT_GREEN);
@@ -142,26 +150,46 @@ void fossil_io_apply_color(const char *color) {
     }
 }
 
-// Function to apply text attributes (e.g., bold, underline)
+// Function to apply text attributes (e.g., bold, underline, dim, etc.)
 void fossil_io_apply_attribute(const char *attribute) {
     if (strcmp(attribute, "bold") == 0) {
         printf(FOSSIL_IO_ATTR_BOLD);
-    } else if (strcmp(attribute, "underline") == 0) {
-        printf(FOSSIL_IO_ATTR_UNDERLINE);
-    } else if (strcmp(attribute, "reversed") == 0) {
-        printf(FOSSIL_IO_ATTR_REVERSED);
-    } else if (strcmp(attribute, "blink") == 0) {
-        printf(FOSSIL_IO_ATTR_BLINK);
-    } else if (strcmp(attribute, "hidden") == 0) {
-        printf(FOSSIL_IO_ATTR_HIDDEN);
-    } else if (strcmp(attribute, "normal") == 0) {
-        printf(FOSSIL_IO_ATTR_NORMAL);
+    } else if (strcmp(attribute, "dim") == 0) {
+        printf(FOSSIL_IO_ATTR_DIM);
     } else if (strcmp(attribute, "italic") == 0) {
         printf(FOSSIL_IO_ATTR_ITALIC);
+    } else if (strcmp(attribute, "underline") == 0) {
+        printf(FOSSIL_IO_ATTR_UNDERLINE);
+    } else if (strcmp(attribute, "blink") == 0) {
+        printf(FOSSIL_IO_ATTR_BLINK);
+    } else if (strcmp(attribute, "reverse") == 0) {
+        printf(FOSSIL_IO_ATTR_REVERSE);
+    } else if (strcmp(attribute, "reversed") == 0) {
+        printf(FOSSIL_IO_ATTR_REVERSED);
+    } else if (strcmp(attribute, "hidden") == 0) {
+        printf(FOSSIL_IO_ATTR_HIDDEN);
     } else if (strcmp(attribute, "strikethrough") == 0) {
         printf(FOSSIL_IO_ATTR_STRIKETHROUGH);
+    } else if (strcmp(attribute, "normal") == 0) {
+        printf(FOSSIL_IO_ATTR_NORMAL);
+    } else if (strcmp(attribute, "reset_bold") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_BOLD);
+    } else if (strcmp(attribute, "reset_dim") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_DIM);
+    } else if (strcmp(attribute, "reset_italic") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_ITALIC);
+    } else if (strcmp(attribute, "reset_underline") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_UNDERLINE);
+    } else if (strcmp(attribute, "reset_blink") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_BLINK);
+    } else if (strcmp(attribute, "reset_reverse") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_REVERSE);
+    } else if (strcmp(attribute, "reset_hidden") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_HIDDEN);
+    } else if (strcmp(attribute, "reset_strike") == 0) {
+        printf(FOSSIL_IO_ATTR_RESET_STRIKE);
     } else if (strcmp(attribute, "reset") == 0) {
-        printf(FOSSIL_IO_ATTR_NORMAL); // Reset to normal if attribute not recognized
+        printf(FOSSIL_IO_ATTR_NORMAL);
     }
 }
 
