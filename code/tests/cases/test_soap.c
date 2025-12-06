@@ -172,7 +172,7 @@ FOSSIL_TEST(c_test_io_soap_detect_hype_true) {
 FOSSIL_TEST(c_test_io_soap_detect_hype_false) {
     const char *input = "This is a normal system update with minor improvements.";
     int result = fossil_io_soap_detect_hype(input);
-    ASSUME_ITS_FALSE(result == 0);
+    ASSUME_ITS_FALSE(result);
 }
 
 // --- QUALITY detection ---
