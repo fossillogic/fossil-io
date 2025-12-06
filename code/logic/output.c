@@ -70,6 +70,35 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 #define FOSSIL_IO_COLOR_BRIGHT_WHITE     "\033[97m"
 
 // ================================================================
+// BACKGROUND COLORS
+// ================================================================
+#define FOSSIL_IO_BG_BLACK            "\033[40m"
+#define FOSSIL_IO_BG_RED              "\033[41m"
+#define FOSSIL_IO_BG_GREEN            "\033[42m"
+#define FOSSIL_IO_BG_YELLOW           "\033[43m"
+#define FOSSIL_IO_BG_BLUE             "\033[44m"
+#define FOSSIL_IO_BG_MAGENTA          "\033[45m"
+#define FOSSIL_IO_BG_CYAN             "\033[46m"
+#define FOSSIL_IO_BG_WHITE            "\033[47m"
+#define FOSSIL_IO_BG_GRAY             "\033[100m"
+#define FOSSIL_IO_BG_ORANGE           "\033[48;5;208m"
+#define FOSSIL_IO_BG_PINK             "\033[48;5;205m"
+#define FOSSIL_IO_BG_PURPLE           "\033[48;5;93m"
+#define FOSSIL_IO_BG_BROWN            "\033[48;5;94m"
+#define FOSSIL_IO_BG_TEAL             "\033[48;5;30m"
+#define FOSSIL_IO_BG_SILVER           "\033[48;5;7m"
+
+// Bright background colors
+#define FOSSIL_IO_BG_BRIGHT_BLACK     "\033[100m"
+#define FOSSIL_IO_BG_BRIGHT_RED       "\033[101m"
+#define FOSSIL_IO_BG_BRIGHT_GREEN     "\033[102m"
+#define FOSSIL_IO_BG_BRIGHT_YELLOW    "\033[103m"
+#define FOSSIL_IO_BG_BRIGHT_BLUE      "\033[104m"
+#define FOSSIL_IO_BG_BRIGHT_MAGENTA   "\033[105m"
+#define FOSSIL_IO_BG_BRIGHT_CYAN      "\033[106m"
+#define FOSSIL_IO_BG_BRIGHT_WHITE     "\033[107m"
+
+// ================================================================
 // TEXT ATTRIBUTES
 // ================================================================
 #define FOSSIL_IO_ATTR_BOLD              "\033[1m"
@@ -94,6 +123,61 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 #define FOSSIL_IO_ATTR_RESET_STRIKE      "\033[29m"
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
+
+// Function to apply background color
+void fossil_io_apply_bg_color(const char *bg_color) {
+    if (strcmp(bg_color, "black") == 0) {
+        printf(FOSSIL_IO_BG_BLACK);
+    } else if (strcmp(bg_color, "red") == 0) {
+        printf(FOSSIL_IO_BG_RED);
+    } else if (strcmp(bg_color, "green") == 0) {
+        printf(FOSSIL_IO_BG_GREEN);
+    } else if (strcmp(bg_color, "yellow") == 0) {
+        printf(FOSSIL_IO_BG_YELLOW);
+    } else if (strcmp(bg_color, "blue") == 0) {
+        printf(FOSSIL_IO_BG_BLUE);
+    } else if (strcmp(bg_color, "magenta") == 0) {
+        printf(FOSSIL_IO_BG_MAGENTA);
+    } else if (strcmp(bg_color, "cyan") == 0) {
+        printf(FOSSIL_IO_BG_CYAN);
+    } else if (strcmp(bg_color, "white") == 0) {
+        printf(FOSSIL_IO_BG_WHITE);
+    } else if (strcmp(bg_color, "gray") == 0) {
+        printf(FOSSIL_IO_BG_GRAY);
+    } else if (strcmp(bg_color, "orange") == 0) {
+        printf(FOSSIL_IO_BG_ORANGE);
+    } else if (strcmp(bg_color, "pink") == 0) {
+        printf(FOSSIL_IO_BG_PINK);
+    } else if (strcmp(bg_color, "purple") == 0) {
+        printf(FOSSIL_IO_BG_PURPLE);
+    } else if (strcmp(bg_color, "brown") == 0) {
+        printf(FOSSIL_IO_BG_BROWN);
+    } else if (strcmp(bg_color, "teal") == 0) {
+        printf(FOSSIL_IO_BG_TEAL);
+    } else if (strcmp(bg_color, "silver") == 0) {
+        printf(FOSSIL_IO_BG_SILVER);
+    }
+    // Bright background colors
+    else if (strcmp(bg_color, "bright_black") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_BLACK);
+    } else if (strcmp(bg_color, "bright_red") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_RED);
+    } else if (strcmp(bg_color, "bright_green") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_GREEN);
+    } else if (strcmp(bg_color, "bright_yellow") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_YELLOW);
+    } else if (strcmp(bg_color, "bright_blue") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_BLUE);
+    } else if (strcmp(bg_color, "bright_magenta") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_MAGENTA);
+    } else if (strcmp(bg_color, "bright_cyan") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_CYAN);
+    } else if (strcmp(bg_color, "bright_white") == 0) {
+        printf(FOSSIL_IO_BG_BRIGHT_WHITE);
+    } else if (strcmp(bg_color, "reset") == 0) {
+        printf(FOSSIL_IO_COLOR_RESET);
+    }
+}
 
 // Function to apply color
 void fossil_io_apply_color(const char *color) {
@@ -222,7 +306,10 @@ void fossil_io_apply_position(const char *pos) {
     }
 }
 
-// Function to print text with attributes, colors, positions, and format specifiers
+/*
+ * Function to print text with attributes, colors, background colors, positions, and format specifiers.
+ * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
+ */
 void fossil_io_print_with_attributes(const char *str) {
     if (str == NULL) {
         fputs("cnullptr\n", stderr);
@@ -246,29 +333,35 @@ void fossil_io_print_with_attributes(const char *str) {
             strncpy(attributes, start + 1, length);
             attributes[length] = '\0';
 
-            // Split by comma to separate color, attribute, or position
-            char *color = NULL;
-            char *attribute = NULL;
-            char *pos = NULL;
-            char *comma_pos = strchr(attributes, ',');
-            if (comma_pos) {
-                *comma_pos = '\0';  // Null-terminate the first part
-                color = attributes; // Color or position part
-                attribute = comma_pos + 1; // Attribute part
+            // Check for bg: or pos: prefix
+            if (strncmp(attributes, "bg:", 3) == 0) {
+                // Handle background color and optional attribute
+                char *bg_color = attributes + 3;
+                char *comma_pos = strchr(bg_color, ',');
+                if (comma_pos) {
+                    *comma_pos = '\0';
+                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
+                    fossil_io_apply_attribute(comma_pos + 1);
+                } else {
+                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
+                }
+            } else if (strncmp(attributes, "pos:", 4) == 0) {
+                // Handle position
+                fossil_io_apply_position(attributes + 4);
             } else {
-                color = attributes; // Only one part (could be color, attribute, or position)
-            }
-
-            // Handle positions (like {pos:name})
-            if (strstr(color, "pos:") == color) {
-                pos = color + 4; // Skip the "pos:" prefix
-                fossil_io_apply_position(pos);
-            } else {
-                // Apply color and/or attribute based on flags
-                if (FOSSIL_IO_COLOR_ENABLE && color) {
+                // Handle color and/or attribute
+                char *color = attributes;
+                char *attribute = NULL;
+                char *comma_pos = strchr(attributes, ',');
+                if (comma_pos) {
+                    *comma_pos = '\0';
+                    color = attributes;
+                    attribute = comma_pos + 1;
+                }
+                if (FOSSIL_IO_COLOR_ENABLE && color && color[0] != '\0') {
                     fossil_io_apply_color(color);
                 }
-                if (attribute) {
+                if (attribute && attribute[0] != '\0') {
                     fossil_io_apply_attribute(attribute);
                 }
             }
@@ -324,6 +417,7 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str)
 
 // Function to print a sanitized string with attributes inside {}
 void fossil_io_puts(const char *str) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     if (str != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
@@ -338,11 +432,13 @@ void fossil_io_puts(const char *str) {
 
 // Function to print a single character
 void fossil_io_putchar(char c) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     putchar(c);
 }
 
 // Function to print sanitized formatted output with attributes
 void fossil_io_printf(const char *format, ...) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     va_list args;
     va_start(args, format);
 
@@ -358,6 +454,7 @@ void fossil_io_printf(const char *format, ...) {
 
 // Function to print a sanitized string to a specific file stream
 void fossil_io_fputs(fossil_io_file_t *stream, const char *str) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
@@ -372,6 +469,7 @@ void fossil_io_fputs(fossil_io_file_t *stream, const char *str) {
 
 // Function to print a sanitized formatted string to a specific file stream
 void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     va_list args;
     va_start(args, format);
 
@@ -385,25 +483,40 @@ void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...) {
     va_end(args);
 }
 
+// Function to format a string into a buffer
+int fossil_io_snprintf(char *buffer, size_t size, const char *format, ...) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return -1;
+    va_list args;
+    va_start(args, format);
+    int result = vsnprintf(buffer, size, format, args);
+    va_end(args);
+    return result;
+}
+
 // TUI PART
 
 void fossil_io_clear_screen(void) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     printf("\033[2J\033[H");
 }
 
 void fossil_io_move_cursor(int row, int col) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     printf("\033[%d;%dH", row, col);
 }
 
 void fossil_io_hide_cursor(void) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     printf("\033[?25l");
 }
 
 void fossil_io_show_cursor(void) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     printf("\033[?25h");
 }
 
 void fossil_io_draw_horizontal_line(int length, char ch) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     for (int i = 0; i < length; ++i) {
         putchar(ch);
     }
@@ -411,6 +524,7 @@ void fossil_io_draw_horizontal_line(int length, char ch) {
 }
 
 void fossil_io_draw_vertical_line(int length, char ch) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     for (int i = 0; i < length; ++i) {
         putchar(ch);
         putchar('\n');
@@ -418,5 +532,6 @@ void fossil_io_draw_vertical_line(int length, char ch) {
 }
 
 void fossil_io_flush(void) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     fflush(stdout);
 }
