@@ -126,9 +126,19 @@ FOSSIL_TEST(c_test_dir_move_and_rename) {
     fossil_io_dir_remove_recursive(src);
     fossil_io_dir_remove_recursive(dst);
     fossil_io_dir_create(src);
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_move(src, dst));
+
+    // Ensure src exists before move
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_exists(src));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_exists(dst));
+
+    // Move src to dst
+    int move_result = fossil_io_dir_move(src, dst);
+    ASSUME_ITS_EQUAL_I32(0, move_result);
+
+    // After move, src should not exist, dst should exist
     ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_exists(dst));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_exists(src));
+
     const char *renamed = "test_dir_renamed";
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_rename(dst, renamed));
     ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_exists(renamed));

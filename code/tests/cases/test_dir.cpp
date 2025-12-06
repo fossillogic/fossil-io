@@ -123,6 +123,12 @@ FOSSIL_TEST(cpp_test_dir_move_and_rename) {
     fossil_io_dir_remove_recursive(src);
     fossil_io_dir_remove_recursive(dst);
     fossil_io_dir_create(src);
+
+    // Ensure src is empty before moving
+    size_t count = 0;
+    fossil_io_dir_count(src, &count);
+    ASSUME_ITS_EQUAL_I32(0, count);
+
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_move(src, dst));
     ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_exists(dst));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_exists(src));
