@@ -33,55 +33,67 @@ extern "C" {
 #endif
 
 extern int32_t FOSSIL_IO_COLOR_ENABLE; // Flag to enable/disable color output
+extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testing
 
-/** 
- * This code provides a robust set of functions for formatting and manipulating terminal output, 
- * allowing developers to apply color, text attributes (like bold, underline, etc.), and cursor positioning 
- * to improve the visual appeal and functionality of text-based applications. The functionality is primarily 
- * based on ANSI escape sequences, which are widely supported in most terminal environments (such as Linux terminals, 
- * macOS Terminal, and Windows terminals that support ANSI escape codes).
+/**
+ * -----------------------------------------------------------------------------
+ * Fossil IO Output Styling and Control Macros & Functions
  *
- * The core concept behind this system is a simple markup language that allows developers to specify formatting 
- * instructions within the text output. These instructions are enclosed in curly braces `{}` within the format string 
- * and are processed dynamically to change the appearance of the text. The markup supports various styles, such as:
- * 
- * 1. **Colors** - The code includes a set of predefined color codes for changing the foreground color of text. 
- *    Supported colors include basic colors (e.g., red, green, blue) and bright colors (e.g., bright red, bright green, etc.).
- *    The colors are implemented using ANSI escape sequences and can be easily extended to support more colors if needed.
+ * This section provides a comprehensive set of macros and functions for
+ * controlling terminal output styling, including colors, background colors,
+ * text attributes, and cursor positioning. It is designed for building
+ * visually rich CLI applications with flexible formatting.
  *
- * 2. **Attributes** - Text attributes can be applied to the text to change its appearance. These attributes include:
- *    - **Bold** (for making text bold)
- *    - **Underline** (for adding an underline to the text)
- *    - **Reversed** (for inverting the colors of the text and background)
- *    - **Blink** (for making text blink)
- *    - **Hidden** (for hiding the text)
- *    - **Normal** (for reverting text back to its normal form, removing any attributes)
+ * Output Control Flags:
+ *   - int32_t FOSSIL_IO_COLOR_ENABLE = 1;
+ *     Enables or disables color output globally. When set to 1, color and
+ *     attribute escape codes are emitted; when 0, output is plain text.
+ *   - int32_t FOSSIL_IO_OUTPUT_ENABLE = 1;
+ *     Enables or disables all output. Useful for suppressing output during
+ *     unit testing or silent operation.
  *
- * 3. **Positioning** - The code introduces a flexible way to manipulate the position of the text in the terminal using 
- *    named positions such as `top`, `bottom`, `left`, and `right`. These positions allow for text to be dynamically 
- *    placed at specific locations on the terminal screen, enhancing the user experience for applications requiring 
- *    more control over text layout and movement. The positions are marked with `pos:` followed by the desired 
- *    position name (e.g., `{pos:top}` or `{pos:left}`).
- * 
- * 4. **Flexibility and Extendability** - The markup language allows for the use of multiple color and attribute 
- *    specifications in a single string. The color and attribute specifications can be combined, for instance, 
- *    `{red,bold}` for red and bold text, or `{green,underline}` for green and underlined text. This allows for 
- *    fine-grained control over the text output. The system is flexible enough to be extended with more attributes, 
- *    colors, and positioning options as required.
+ * Color Macros:
+ *   - Standard (dark) colors: FOSSIL_IO_COLOR_BLACK, FOSSIL_IO_COLOR_RED, etc.
+ *   - Bright colors: FOSSIL_IO_COLOR_BRIGHT_RED, FOSSIL_IO_COLOR_BRIGHT_GREEN, etc.
+ *   - Extended colors: orange, pink, purple, brown, teal, silver.
+ *   - Background colors: FOSSIL_IO_BG_BLUE, FOSSIL_IO_BG_BRIGHT_YELLOW, etc.
  *
- * 5. **Implementation Details** - The function `fossil_io_print_with_attributes` processes the format string 
- *    provided to it, looking for `{}` markers. When it encounters a `{}`, it checks if the enclosed string specifies 
- *    a color, attribute, or position, and then calls the respective helper functions (`fossil_io_apply_color` and 
- *    `fossil_io_apply_attribute`) to modify the terminal output accordingly. If a position marker is found (e.g., 
- *    `{pos:top}`), it adjusts the cursor position in the terminal to the specified location. The code uses standard 
- *    C string manipulation functions like `strchr`, `strncpy`, and `vsnprintf` to process the format string and apply 
- *    the requested changes to the output.
- * 
- * In summary, this system provides a highly customizable and intuitive way to format terminal text with colors, 
- * attributes, and positions, making it ideal for developers who want to build visually rich and interactive 
- * command-line interfaces. The markup-based approach is simple to use and can be easily extended to meet the 
- * needs of more complex applications.
- */
+ * Text Attribute Macros:
+ *   - Bold, dim, italic, underline, blink, reverse, hidden, strikethrough.
+ *   - Reset macros for each attribute and for all attributes.
+ *
+ * Buffer Size:
+ *   - FOSSIL_IO_BUFFER_SIZE is set to 1000 for safe formatting and output.
+ *
+ * Functions:
+ *   - fossil_io_apply_color(const char *color)
+ *     Applies a named foreground color using ANSI escape codes.
+ *   - fossil_io_apply_bg_color(const char *bg_color)
+ *     Applies a named background color.
+ *   - fossil_io_apply_attribute(const char *attribute)
+ *     Applies a named text attribute.
+ *   - fossil_io_apply_position(const char *pos)
+ *     Moves the cursor to a named position (top, bottom, left, right, center, etc.).
+ *   - fossil_io_print_with_attributes(const char *str)
+ *     Prints text with inline markup for color, background, attributes, and position.
+ *   - fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str)
+ *     Prints sanitized text (without escape codes) to a file stream.
+ *
+ * Markup Syntax:
+ *   - Inline markup uses curly braces, e.g.:
+ *     {red}, {bold}, {bg:yellow}, {bg:blue,underline}, {pos:center}
+ *     Combinations: {red,bold}, {bg:green,italic}
+ *   - Markup is parsed and corresponding ANSI codes are applied.
+ *   - For file output, markup is stripped for clean output.
+ *
+ * Example Usage:
+ *   fossil_io_puts("Normal {red,bold}Red Bold{reset} Text");
+ *   fossil_io_printf("Score: {green}%d{reset}\n", score);
+ *   fossil_io_fputs(file, "File output {bg:yellow,underline}highlighted{reset}");
+ *
+ * -----------------------------------------------------------------------------
+ *
+*/
 
 /**
  * Redirects the output to a specified stream.
@@ -179,6 +191,21 @@ void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
  *            in the order they appear, based on the format specifiers.
  */
 void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...);
+
+/**
+ * Formats a string and stores it in the provided buffer.
+ *
+ * This function works like snprintf, formatting the string according to the format specifiers
+ * and storing the result in the buffer. It ensures that no more than `size` characters are written,
+ * including the null terminator.
+ *
+ * @param buffer The buffer where the formatted string will be stored.
+ * @param size The size of the buffer.
+ * @param format The format string.
+ * @param ... Additional arguments to be formatted.
+ * @return The number of characters written (excluding the null terminator), or a negative value on error.
+ */
+int fossil_io_snprintf(char *buffer, size_t size, const char *format, ...);
 
 // TUI part of the API
 
@@ -322,6 +349,27 @@ namespace fossil {
                 va_start(args, format);
                 fossil_io_fprintf(stream, format, args);
                 va_end(args);
+            }
+
+            /**
+             * @brief Formats a string and stores it in the provided buffer.
+             *
+             * This method works like snprintf, formatting the string according to the format specifiers
+             * and storing the result in the buffer. It ensures that no more than `size` characters are written,
+             * including the null terminator.
+             *
+             * @param buffer The buffer where the formatted string will be stored.
+             * @param size The size of the buffer.
+             * @param format The format string.
+             * @param ... Additional arguments to be formatted.
+             * @return The number of characters written (excluding the null terminator), or a negative value on error.
+             */
+            static int snprintf(char *buffer, size_t size, const char *format, ...) {
+                va_list args;
+                va_start(args, format);
+                int result = fossil_io_snprintf(buffer, size, format, args);
+                va_end(args);
+                return result;
             }
 
             /**
