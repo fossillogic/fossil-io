@@ -496,24 +496,30 @@ int fossil_io_snprintf(char *buffer, size_t size, ccstring format, ...) {
 
 void fossil_io_clear_screen(void) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    fossil_io_file_write(FOSSIL_STDOUT, "\033[2J\033[H", 1, strlen("\033[2J\033[H"));
+    cstring esc = fossil_io_cstring_create("\033[2J\033[H");
+    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_cstring_free(esc);
 }
 
 void fossil_io_move_cursor(int row, int col) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    char buf[32];
-    snprintf(buf, sizeof(buf), "\033[%d;%dH", row, col);
-    fossil_io_file_write(FOSSIL_STDOUT, buf, 1, strlen(buf));
+    cstring buf = fossil_io_cstring_format("\033[%d;%dH", row, col);
+    fossil_io_file_write(FOSSIL_STDOUT, buf, 1, fossil_io_cstring_length(buf));
+    fossil_io_cstring_free(buf);
 }
 
 void fossil_io_hide_cursor(void) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    fossil_io_file_write(FOSSIL_STDOUT, "\033[?25l", 1, strlen("\033[?25l"));
+    cstring esc = fossil_io_cstring_create("\033[?25l");
+    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_cstring_free(esc);
 }
 
 void fossil_io_show_cursor(void) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    fossil_io_file_write(FOSSIL_STDOUT, "\033[?25h", 1, strlen("\033[?25h"));
+    cstring esc = fossil_io_cstring_create("\033[?25h");
+    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_cstring_free(esc);
 }
 
 void fossil_io_draw_horizontal_line(int length, char ch) {
