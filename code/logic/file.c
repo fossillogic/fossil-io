@@ -1590,25 +1590,15 @@ int fossil_io_file_link(
     int rc = 0;
 
 #ifdef _WIN32
-    // --------------------------------------------------------
-    // Windows implementation
-    // --------------------------------------------------------
     if (symbolic) {
-        DWORD flags = SYMBOLIC_LINK_FLAG_FILE;
-
-        if (!CreateSymbolicLinkA(dest_path, src->filename, flags)) {
+        DWORD flags = 0;   // no SYMBOLIC_LINK_FLAG_FILE — safe for Windows 7–11
+        if (!CreateSymbolicLinkA(dest_path, src->filename, flags))
             return -(int)GetLastError();
-        }
     } else {
-        if (!CreateHardLinkA(dest_path, src->filename, NULL)) {
+        if (!CreateHardLinkA(dest_path, src->filename, NULL))
             return -(int)GetLastError();
-        }
     }
-
 #else
-    // --------------------------------------------------------
-    // POSIX implementation
-    // --------------------------------------------------------
     if (symbolic) {
         if (symlink(src->filename, dest_path) != 0)
             return -errno;
