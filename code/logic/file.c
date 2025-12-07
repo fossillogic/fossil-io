@@ -973,7 +973,9 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
 #else
     // Use mkstemp for POSIX
     snprintf(temp_filename, FOSSIL_BUFFER_MEDIUM, "/tmp/fossil_tempfile_XXXXXX");
-    int fd = mkstemp(temp_filename);
+    FILE *tmp_fp = fopen(temp_filename, "wb+");
+    int fd = tmp_fp ? fileno(tmp_fp) : -1;
+    if (tmp_fp) fclose(tmp_fp);
     if (fd == -1) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to create temporary file\n");
         temp_stream.file = NULL;
