@@ -40,8 +40,10 @@
 #include <fcntl.h>
 #endif
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <pwd.h>
 #include <grp.h>
+#endif
 
 fossil_io_file_t *FOSSIL_STDIN;
 fossil_io_file_t *FOSSIL_STDOUT;
@@ -1301,6 +1303,14 @@ int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, 
         return -1;
     }
 
+    // Use model and model_size to influence embedding dimension (dummy usage)
+    size_t embedding_dim = 32;
+    if (model && model_size > 0) {
+        // For demonstration, use the first byte of model (if available) to alter embedding_dim
+        const unsigned char *model_bytes = (const unsigned char *)model;
+        embedding_dim = 16 + (model_bytes[0] % 48); // Range: 16-63
+    }
+
     // Free previous embedding if present
     if (f->embedding) {
         free(f->embedding);
@@ -1324,7 +1334,6 @@ int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, 
     fseek(f->file, orig_pos, SEEK_SET);
 
     // Dummy embedding: for demonstration, just hash the buffer and fill a float array
-    size_t embedding_dim = 32; // Example embedding dimension
     float *embedding_vec = (float *)malloc(sizeof(float) * embedding_dim);
     if (!embedding_vec) {
         return -1;
@@ -1333,6 +1342,10 @@ int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, 
         unsigned int hash = 0;
         for (size_t j = i; j < bytes; j += embedding_dim) {
             hash += (unsigned char)buffer[j];
+        }
+        // Mix in model data if available
+        if (model && model_size > 0) {
+            hash ^= ((const unsigned char *)model)[i % model_size];
         }
         embedding_vec[i] = (float)(hash % 997) / 997.0f;
     }
