@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #endif
 #include <sys/stat.h>
 #ifndef _WIN32
@@ -1537,3 +1538,123 @@ int fossil_io_file_decompress(fossil_io_file_t *f)
     return 0;
 }
 
+// ------------------------------------------------------------
+// Internal helpers
+// ------------------------------------------------------------
+static int fossil_copy_file_metadata(const char *src, const char *dest) {
+#ifndef _WIN32
+    struct stat st;
+    if (stat(src, &st) != 0)
+        return -errno;
+
+    // chmod
+    if (chmod(dest, st.st_mode) != 0)
+        return -errno;
+
+    // timestamps
+    struct timeval times[2];
+    times[0].tv_sec  = st.st_atime;
+    times[0].tv_usec = 0;
+    times[1].tv_sec  = st.st_mtime;
+    times[1].tv_usec = 0;
+
+    if (utimes(dest, times) != 0)
+        return -errno;
+
+    return 0;
+
+#else
+    // Windows does not support portable chmod/timestamp copying in this mode.
+    // Explicitly mark parameters as used to avoid -Werror=unused-parameter.
+    (void)src;
+    (void)dest;
+
+    return 0;
+#endif
+}
+
+static void fossil_io_file_reset(fossil_io_file_t *f, const char *path) {
+    memset(f, 0, sizeof(*f));
+    f->fd = -1;
+    f->file = NULL;
+    strncpy(f->filename, path, sizeof(f->filename) - 1);
+}
+
+// ------------------------------------------------------------
+// Main function
+// ------------------------------------------------------------
+int fossil_io_file_link(
+        const fossil_io_file_t *src,
+        fossil_io_file_t *dest,
+        const char *dest_path,
+        bool symbolic,
+        bool copy_meta)
+{
+    if (!src || !dest_path)
+        return -EINVAL;
+
+    int rc = 0;
+
+#ifdef _WIN32
+    if (symbolic) {
+        DWORD flags = 0;   // no SYMBOLIC_LINK_FLAG_FILE — safe for Windows 7–11
+        if (!CreateSymbolicLinkA(dest_path, src->filename, flags))
+            return -(int)GetLastError();
+    } else {
+        if (!CreateHardLinkA(dest_path, src->filename, NULL))
+            return -(int)GetLastError();
+    }
+#else
+    if (symbolic) {
+        if (symlink(src->filename, dest_path) != 0)
+            return -errno;
+    } else {
+        if (link(src->filename, dest_path) != 0)
+            return -errno;
+    }
+#endif
+
+    // --------------------------------------------------------
+    // Populate destination structure (optional)
+    // --------------------------------------------------------
+    if (dest != NULL) {
+        fossil_io_file_reset(dest, dest_path);
+
+        // Hard link → real file, Symlink → metadata follows actual target
+        strncpy(dest->type, src->type, sizeof(dest->type));
+        dest->mode = src->mode;
+        dest->readable  = src->readable;
+        dest->writable  = src->writable;
+        dest->executable = src->executable;
+
+        dest->is_open = false;
+        dest->indexed = false;
+        dest->analyzed = false;
+
+        dest->size = src->size;
+        dest->created_at  = src->created_at;
+        dest->modified_at = src->modified_at;
+        dest->accessed_at = src->accessed_at;
+
+        dest->is_binary = src->is_binary;
+
+        // Reset AI fields; these are content-specific and should not be inherited
+        memset(dest->tags, 0, sizeof(dest->tags));
+        dest->tag_count = 0;
+        dest->embedding = NULL;
+        dest->embedding_size = 0;
+        dest->sentiment = 0.0f;
+        memset(dest->language, 0, sizeof(dest->language));
+    }
+
+    // --------------------------------------------------------
+    // Metadata propagation (optional)
+    // --------------------------------------------------------
+    if (copy_meta) {
+        rc = fossil_copy_file_metadata(src->filename, dest_path);
+        if (rc < 0)
+            return rc;
+    }
+
+    return 0;
+}

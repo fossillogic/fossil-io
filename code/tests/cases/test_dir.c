@@ -91,9 +91,11 @@ FOSSIL_TEST(c_test_dir_clear) {
     fossil_io_dir_create(dirname);
     char fname[128];
     fossil_io_dir_join(dirname, "file.txt", fname, sizeof(fname));
-    FILE *f = fopen(fname, "w");
-    fprintf(f, "data");
-    fclose(f);
+    fossil_io_file_t f;
+    fossil_io_file_open(&f, fname, "w");
+    const char *data = "data";
+    fossil_io_file_write(&f, data, 1, strlen(data));
+    fossil_io_file_close(&f);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_clear(dirname));
     size_t count = 0;
     fossil_io_dir_count(dirname, &count);
@@ -109,9 +111,11 @@ FOSSIL_TEST(c_test_dir_copy_and_copy_recursive) {
     fossil_io_dir_create(src);
     char fname[128];
     fossil_io_dir_join(src, "file.txt", fname, sizeof(fname));
-    FILE *f = fopen(fname, "w");
-    fprintf(f, "copytest");
-    fclose(f);
+    fossil_io_file_t f;
+    fossil_io_file_open(&f, fname, "w");
+    const char *data = "copytest";
+    fossil_io_file_write(&f, data, 1, strlen(data));
+    fossil_io_file_close(&f);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_copy(src, dst));
     size_t count = 0;
     fossil_io_dir_count(dst, &count);
@@ -153,9 +157,11 @@ FOSSIL_TEST(c_test_dir_iter_and_list) {
     // Create a file in the directory
     char fname[128];
     fossil_io_dir_join(dirname, "file.txt", fname, sizeof(fname));
-    FILE *f = fopen(fname, "w");
-    fprintf(f, "entry");
-    fclose(f);
+    fossil_io_file_t f;
+    fossil_io_file_open(&f, fname, "w");
+    const char *data = "entry";
+    fossil_io_file_write(&f, data, 1, strlen(data));
+    fossil_io_file_close(&f);
 
     // Test directory iterator
     fossil_io_dir_iter_t it;
@@ -214,9 +220,11 @@ FOSSIL_TEST(c_test_dir_is_empty_and_count_and_size) {
     ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_is_empty(dirname));
     char fname[128];
     fossil_io_dir_join(dirname, "file.txt", fname, sizeof(fname));
-    FILE *f = fopen(fname, "w");
-    fprintf(f, "abc");
-    fclose(f);
+    fossil_io_file_t f;
+    fossil_io_file_open(&f, fname, "w");
+    const char *data = "abc";
+    fossil_io_file_write(&f, data, 1, strlen(data));
+    fossil_io_file_close(&f);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_is_empty(dirname));
     size_t count = 0;
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_count(dirname, &count));
@@ -268,16 +276,17 @@ FOSSIL_TEST(c_test_dir_backup_mirror_sync) {
     fossil_io_dir_create(src);
     char fname[128];
     fossil_io_dir_join(src, "file.txt", fname, sizeof(fname));
-    FILE *f = fopen(fname, "w");
-    fprintf(f, "sync");
-    fclose(f);
+    fossil_io_file_t f;
+    fossil_io_file_open(&f, fname, "w");
+    const char *data = "sync";
+    fossil_io_file_write(&f, data, 1, strlen(data));
+    fossil_io_file_close(&f);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_backup(src, "_bak"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_mirror(src, dst));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_sync(src, dst, 1));
     fossil_io_dir_remove_recursive(src);
     fossil_io_dir_remove_recursive(dst);
 }
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool

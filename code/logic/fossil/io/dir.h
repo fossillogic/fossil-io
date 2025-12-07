@@ -36,14 +36,48 @@ extern "C" {
 // ============================================================================
 
 /**
- * @brief Represents a directory entry (file, directory, symlink, etc.)
+ * @brief Represents a directory entry with extended metadata.
  */
 typedef struct {
-    char name[512];     ///< Entry name
-    char path[1024];    ///< Full resolved path
-    int32_t type;       ///< 0=file, 1=dir, 2=symlink, 3=other
-    uint64_t size;      ///< File size in bytes (0 for dirs)
-    uint64_t modified;  ///< Last modified timestamp (UTC epoch)
+    char name[512];             ///< Entry name (basename only)
+    char path[1024];            ///< Full resolved path
+
+    int32_t type;               ///< 0=file, 1=dir, 2=symlink, 3=pipe, 4=sock, 5=blockdev, 6=chardev, 7=other
+
+    uint64_t size;              ///< File size in bytes (0 for dirs)
+    uint64_t allocated_size;    ///< Allocated size on disk (blocks * blocksize)
+
+    uint64_t modified;          ///< Last modified timestamp (UTC epoch)
+    uint64_t accessed;          ///< Last access timestamp
+    uint64_t changed;           ///< Metadata change timestamp
+    uint64_t created;           ///< Creation timestamp (UTC epoch; 0 if unknown)
+
+    int32_t permissions;        ///< Platform-specific permissions/mode bits
+    int32_t owner_uid;          ///< Owner user ID (POSIX), -1 if not available
+    int32_t owner_gid;          ///< Owner group ID (POSIX), -1 if not available
+
+    int32_t is_hidden;          ///< 1=hidden, 0=not hidden
+    int32_t is_readonly;        ///< 1=readonly, 0=not readonly
+    int32_t is_system;          ///< Windows system attribute (1=yes), otherwise 0
+    int32_t is_executable;      ///< Executable bit inferred from mode or extension
+
+    uint32_t hash_crc32;        ///< Optional: CRC32 of file (0 if skipped)
+    uint64_t hash_murmur64;     ///< Optional: Murmur64 hash
+    uint8_t hash_sha1[20];      ///< Optional: SHA-1 hash (zeroed if unused)
+
+    uint8_t attributes;         ///< Portable attribute bitfield (cross-platform)
+    /*
+        Bit 0 = Hidden
+        Bit 1 = Readonly
+        Bit 2 = Executable
+        Bit 3 = Symlink
+        Bit 4 = System
+        Bit 5 = Archive (Win)
+        Bit 6 = Compressed
+        Bit 7 = Encrypted
+    */
+
+    void *platform_data;        ///< OS-specific data (FILE_ATTRIBUTE_xxx or struct stat)
 } fossil_io_dir_entry_t;
 
 
@@ -52,15 +86,32 @@ typedef struct {
 // ============================================================================
 
 /**
- * @brief Represents an open directory iterator.
+ * @brief Directory iterator with support for filtering, sorting, and recursion.
  */
 typedef struct {
-    void *handle;           ///< Platform-specific DIR*/HANDLE
-    char basepath[1024];    ///< The directory being iterated
-    fossil_io_dir_entry_t current;
-    int32_t active;         ///< 1=active, 0=end or closed
-} fossil_io_dir_iter_t;
+    void *handle;               ///< Platform-specific DIR* / HANDLE / etc.
+    char basepath[1024];        ///< The directory being iterated
 
+    fossil_io_dir_entry_t current; ///< Current entry metadata
+
+    int32_t active;             ///< 1=active, 0=end or closed
+    size_t index;               ///< Current entry index
+    size_t total;               ///< Total entries known (0=unknown)
+
+    int32_t recursive;          ///< 1=recursive, 0=flat
+    int32_t follow_symlinks;    ///< 1=follow symlinks, 0=ignore
+
+    int32_t include_hidden;     ///< 1=list hidden files, 0=skip
+    int32_t include_system;     ///< 1=list system files (Windows), 0=skip
+
+    int32_t sort_mode;          ///< 0=none, 1=name, 2=size, 3=date, 4=type
+    int32_t sort_descending;    ///< 1=reverse order
+
+    const char *filter_glob;    ///< Optional: "*.c", "*.txt", etc. (NULL=none)
+    const char *filter_regex;   ///< Optional regex filtering (NULL=none)
+
+    void *platform_data;        ///< Extra platform-specific state (WIN32_FIND_DATAA, etc.)
+} fossil_io_dir_iter_t;
 
 // ============================================================================
 // Basic Directory Operations
@@ -410,6 +461,26 @@ int32_t fossil_io_dir_is_file(const char *path);
  * @return 1 if symlink, 0 if not, negative on error.
  */
 int32_t fossil_io_dir_is_symlink(const char *path);
+
+// ------------------------------------------------------------
+// Link and Symlink
+// ------------------------------------------------------------
+
+/**
+ * @brief Creates a hard link at linkpath to the target file.
+ * @param target The target file path.
+ * @param linkpath The path where the hard link will be created.
+ * @return 0 on success, negative on error.
+ */
+int32_t fossil_io_dir_link(const char *target, const char *linkpath);
+
+/**
+ * @brief Creates a symbolic link at linkpath to the target file or directory.
+ * @param target The target file or directory path.
+ * @param linkpath The path where the symbolic link will be created.
+ * @return 0 on success, negative on error.
+ */
+int32_t fossil_io_dir_symlink(const char *target, const char *linkpath);
 
 #ifdef __cplusplus
 }
@@ -800,6 +871,31 @@ namespace fossil {
             static int32_t is_symlink(const std::string& path) {
             return fossil_io_dir_is_symlink(path.c_str());
             }
+
+            // ------------------------------------------------------------
+            // Link and Symlink
+            // ------------------------------------------------------------
+
+            /**
+             * @brief Creates a hard link at linkpath to the target file.
+             * @param target The target file path.
+             * @param linkpath The path where the hard link will be created.
+             * @return 0 on success, negative on error.
+             */
+            static int32_t link(const std::string& target, const std::string& linkpath) {
+                return fossil_io_dir_link(target.c_str(), linkpath.c_str());
+            }
+
+            /**
+             * @brief Creates a symbolic link at linkpath to the target file or directory.
+             * @param target The target file or directory path.
+             * @param linkpath The path where the symbolic link will be created.
+             * @return 0 on success, negative on error.
+             */
+            static int32_t symlink(const std::string& target, const std::string& linkpath) {
+                return fossil_io_dir_symlink(target.c_str(), linkpath.c_str());
+            }
+
         };
 
     }
