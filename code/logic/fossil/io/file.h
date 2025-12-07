@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <time.h>
 #include <fcntl.h>
 
 #ifdef __cplusplus
@@ -36,11 +37,93 @@ extern "C" {
 #endif
 
 /**
- * Structure representing a file stream.
+ * @brief Structure representing a file stream with extended metadata and AI processing support.
+ *
+ * This structure encapsulates all relevant information and state required to manage a file stream
+ * in the Fossil Logic framework. It includes standard file stream and descriptor members, as well as
+ * extended metadata (such as filename, type, permissions, ownership, and timestamps), state flags,
+ * buffering, and advanced fields for AI-driven content analysis (including language detection,
+ * sentiment, tags, and embeddings).
+ *
+ * The structure is designed to support high-performance, cross-platform file operations, and to
+ * enable intelligent processing and indexing of file content for advanced applications.
+ *
+ * Members:
+ *   - FILE *file: Pointer to the standard C FILE structure for high-level stream operations.
+ *   - int fd: File descriptor for low-level POSIX operations.
+ *   - char filename[500]: Buffer for the file's name or path.
+ *   - char type[32]: String describing the file type (e.g., "text", "binary").
+ *   - int32_t mode: POSIX-style permission bits (e.g., 0644).
+ *   - char owner[128]: Username of the file's owner (optional).
+ *   - char group[128]: Group name of the file's owner (optional).
+ *   - int flags: Flags used when opening the file (e.g., O_RDONLY, O_WRONLY).
+ *   - bool is_open: Indicates if the file is currently open.
+ *   - bool readable, writable, executable: Access permission flags.
+ *   - bool append_mode: True if file is opened in append mode.
+ *   - bool temporary: True if the file is temporary (auto-delete on close).
+ *   - bool locked: True if the file is locked for writing.
+ *   - size_t size: Cached file size, if known.
+ *   - int64_t position: Current file position.
+ *   - void *buffer: Optional pointer to a custom buffer for read/write caching.
+ *   - size_t buffer_size: Size of the custom buffer.
+ *   - time_t created_at, modified_at, accessed_at: File timestamps.
+ *   - bool indexed: True if the file content has been indexed for search/analysis.
+ *   - bool analyzed: True if content has been processed by AI (e.g., NLP, classification).
+ *   - char language[32]: Detected language of the text content (if applicable).
+ *   - float sentiment: Sentiment score (-1.0 to 1.0) for text content.
+ *   - char *tags[16]: Array of AI-generated tags or categories for the file.
+ *   - int tag_count: Number of tags generated.
+ *   - bool compressed: True if the file is AI-optimized for storage (e.g., vector embeddings).
+ *   - void *embedding: Pointer to an AI embedding vector (if processed).
+ *   - size_t embedding_size: Size of the embedding vector.
+ *   - bool is_binary: True if AI processing detected non-text content.
  */
 typedef struct {
-    FILE *file;         // Pointer to the FILE structure for the stream
-    char filename[500]; // Array to store the filename
+    // Core file stream and descriptor
+    FILE *file;             // Pointer to the FILE structure for the stream
+    int fd;                 // File descriptor for low-level operations
+
+    // File identification and metadata
+    char filename[500];     // Array to store the filename
+    char type[32];          // Type of the file (e.g., "text", "binary")
+    int32_t mode;           // POSIX-style permission bits (e.g., 0644)
+    char owner[128];        // Owner username (optional)
+    char group[128];        // Group name (optional)
+
+    // File state and flags
+    int flags;              // Flags used when opening the file
+    bool is_open;           // Indicates if the file is currently open
+    bool readable;          // True if the file is readable
+    bool writable;          // True if the file is writable
+    bool executable;        // True if the file is executable
+    bool append_mode;       // True if file is opened in append mode
+    bool temporary;         // True if the file is temporary (auto-delete on close)
+    bool locked;            // True if the file is locked for writing
+
+    // File size and position
+    size_t size;            // Cached file size, if known
+    int64_t position;       // Current file position
+
+    // Buffering
+    void *buffer;           // Optional buffer for custom read/write caching
+    size_t buffer_size;     // Size of the buffer
+
+    // Timestamps
+    time_t created_at;      // Timestamp when the file was created
+    time_t modified_at;     // Timestamp of last modification
+    time_t accessed_at;     // Timestamp of last access
+
+    // AI / intelligent processing members
+    bool indexed;           // True if the file content has been indexed for search/analysis
+    bool analyzed;          // True if content has been processed by AI (e.g., NLP, classification)
+    char language[32];      // Detected language of the text content (if applicable)
+    float sentiment;        // Sentiment score (-1.0 to 1.0) for text content
+    char *tags[16];         // AI-generated tags or categories for the file
+    int tag_count;          // Number of tags generated
+    bool compressed;        // True if the file is AI-optimized for storage (e.g., vector embeddings)
+    void *embedding;        // Pointer to an AI embedding vector (if processed)
+    size_t embedding_size;  // Size of the embedding vector
+    bool is_binary;         // True if AI processing detected non-text content
 } fossil_io_file_t;
 
 extern fossil_io_file_t *FOSSIL_STDIN;
@@ -227,7 +310,7 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream);
  * @param stream Pointer to the fossil_io_file_t structure to seek.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_io_file_setpos(fossil_io_file_t *stream, int32_t pos);
+int32_t fossil_io_file_setpos(fossil_io_file_t *stream, int64_t pos);
 
 /**
  * Get the current position of the file pointer in an open stream.
@@ -238,7 +321,7 @@ int32_t fossil_io_file_setpos(fossil_io_file_t *stream, int32_t pos);
  * @param pos    Pointer to store the current position of the file pointer.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int32_t *pos);
+int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos);
 
 /**
  * Rotate a file stream.
@@ -372,6 +455,102 @@ int32_t fossil_io_file_get_permissions(const char *filename, int32_t *mode);
  * @param stream Pointer to a `fossil_io_file_t` structure representing the file stream.
  */
 void fossil_io_file_rewind(fossil_io_file_t *stream);
+
+/**
+ * @brief Analyze file content using AI (text classification, sentiment, language detection).
+ *
+ * This function performs AI-driven analysis on the file content, including text classification,
+ * sentiment analysis, and language detection. Results are stored in the fossil_io_file_t structure.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_ai_analyze(fossil_io_file_t *f);
+
+/**
+ * @brief Generate or update AI tags for the file.
+ *
+ * This function generates or updates AI-generated tags or categories for the file content,
+ * storing them in the fossil_io_file_t structure.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_ai_generate_tags(fossil_io_file_t *f);
+
+/**
+ * @brief Compute and store embeddings for semantic search.
+ *
+ * This function computes AI embedding vectors for the file content using the provided model,
+ * storing the result in the fossil_io_file_t structure for semantic search and analysis.
+ *
+ * @param f         Pointer to the fossil_io_file_t structure representing the file.
+ * @param model     Pointer to the AI model used for embedding computation.
+ * @param model_size Size of the AI model.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, size_t model_size);
+
+/**
+ * @brief Check if file is ready for AI processing.
+ *
+ * This function checks if the file is in a valid state for AI processing (e.g., open, readable).
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ * @return true if ready, false otherwise.
+ */
+bool fossil_io_file_ai_ready(fossil_io_file_t *f);
+
+/**
+ * @brief Clear AI metadata (tags, embeddings, analysis state).
+ *
+ * This function resets AI-related metadata in the fossil_io_file_t structure, including tags,
+ * embeddings, and analysis state.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ */
+void fossil_io_file_ai_reset(fossil_io_file_t *f);
+
+/**
+ * @brief Add a tag to the file (up to 16).
+ *
+ * This function adds a new AI-generated tag to the fossil_io_file_t structure, up to a maximum of 16 tags.
+ *
+ * @param f   Pointer to the fossil_io_file_t structure representing the file.
+ * @param tag Pointer to the tag string to add.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_add_tag(fossil_io_file_t *f, const char *tag);
+
+/**
+ * @brief Detect if file is binary or text.
+ *
+ * This function analyzes the file content to determine if it is binary or text, updating the is_binary flag.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ */
+void fossil_io_file_detect_binary(fossil_io_file_t *f);
+
+/**
+ * @brief Compress file content for AI storage/embedding.
+ *
+ * This function compresses the file content for optimized AI storage or embedding, updating the compressed flag.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_compress(fossil_io_file_t *f);
+
+/**
+ * @brief Decompress AI-compressed content.
+ *
+ * This function decompresses AI-compressed file content, restoring the original data in the fossil_io_file_t structure.
+ *
+ * @param f Pointer to the fossil_io_file_t structure representing the file.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_file_decompress(fossil_io_file_t *f);
+
 
 #ifdef __cplusplus
 }
@@ -678,7 +857,7 @@ namespace fossil {
              * @param stream Pointer to the fossil_io_file_t structure to seek.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t setpos(fossil_io_file_t *stream, int32_t pos) {
+            static int32_t setpos(fossil_io_file_t *stream, int64_t pos) {
                 return fossil_io_file_setpos(stream, pos);
             }
 
@@ -691,7 +870,7 @@ namespace fossil {
              * @param pos    Pointer to store the current position of the file pointer.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t getpos(fossil_io_file_t *stream, int32_t *pos) {
+            static int32_t getpos(fossil_io_file_t *stream, int64_t *pos) {
                 return fossil_io_file_getpos(stream, pos);
             }
 
@@ -964,6 +1143,119 @@ namespace fossil {
              */
             static int32_t get_permissions(const std::string &filename, int32_t *mode) {
                 return fossil_io_file_get_permissions(filename.c_str(), mode);
+            }
+
+            /**
+             * Analyze file content using AI (text classification, sentiment, language detection).
+             *
+             * This function performs AI-driven analysis on the file content, including text classification,
+             * sentiment analysis, and language detection. Results are stored in the fossil_io_file_t structure.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int ai_analyze(fossil_io_file_t *f) {
+                return fossil_io_file_ai_analyze(f);
+            }
+
+            /**
+             * Generate or update AI tags for the file.
+             *
+             * This function generates or updates AI-generated tags or categories for the file content,
+             * storing them in the fossil_io_file_t structure.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int ai_generate_tags(fossil_io_file_t *f) {
+                return fossil_io_file_ai_generate_tags(f);
+            }
+
+            /**
+             * Compute and store embeddings for semantic search.
+             *
+             * This function computes AI embedding vectors for the file content using the provided model,
+             * storing the result in the fossil_io_file_t structure for semantic search and analysis.
+             *
+             * @param f         Pointer to the fossil_io_file_t structure representing the file.
+             * @param model     Pointer to the AI model used for embedding computation.
+             * @param model_size Size of the AI model.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int ai_compute_embedding(fossil_io_file_t *f, const void *model, size_t model_size) {
+                return fossil_io_file_ai_compute_embedding(f, model, model_size);
+            }
+
+            /**
+             * Check if file is ready for AI processing.
+             *
+             * This function checks if the file is in a valid state for AI processing (e.g., open, readable).
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             * @return true if ready, false otherwise.
+             */
+            static bool ai_ready(fossil_io_file_t *f) {
+                return fossil_io_file_ai_ready(f);
+            }
+
+            /**
+             * Clear AI metadata (tags, embeddings, analysis state).
+             *
+             * This function resets AI-related metadata in the fossil_io_file_t structure, including tags,
+             * embeddings, and analysis state.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             */
+            static void ai_reset(fossil_io_file_t *f) {
+                fossil_io_file_ai_reset(f);
+            }
+
+            /**
+             * Add a tag to the file (up to 16).
+             *
+             * This function adds a new AI-generated tag to the fossil_io_file_t structure, up to a maximum of 16 tags.
+             *
+             * @param f   Pointer to the fossil_io_file_t structure representing the file.
+             * @param tag Pointer to the tag string to add.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int add_tag(fossil_io_file_t *f, const char *tag) {
+                return fossil_io_file_add_tag(f, tag);
+            }
+
+            /**
+             * Detect if file is binary or text.
+             *
+             * This function analyzes the file content to determine if it is binary or text, updating the is_binary flag.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             */
+            static void detect_binary(fossil_io_file_t *f) {
+                fossil_io_file_detect_binary(f);
+            }
+
+            /**
+             * Compress file content for AI storage/embedding.
+             *
+             * This function compresses the file content for optimized AI storage or embedding, updating the compressed flag.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int compress(fossil_io_file_t *f) {
+                return fossil_io_file_compress(f);
+            }
+
+            /**
+             * Decompress AI-compressed content.
+             *
+             * This function decompresses AI-compressed file content, restoring the original data in the fossil_io_file_t structure.
+             *
+             * @param f Pointer to the fossil_io_file_t structure representing the file.
+             * @return 0 on success, non-zero on failure.
+             */
+            static int decompress(fossil_io_file_t *f) {
+                return fossil_io_file_decompress(f);
             }
 
         };
