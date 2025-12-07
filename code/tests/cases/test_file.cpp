@@ -78,7 +78,7 @@ FOSSIL_TEST(cpp_test_stream_tempfile_cleanup) {
     fossil_io_file_close(&temp_stream);
 
     // Verify the temporary file is deleted
-    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_let_write_and_read_file) {
@@ -232,7 +232,7 @@ FOSSIL_TEST(cpp_test_stream_flush_file) {
 FOSSIL_TEST(cpp_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
-    int32_t pos;
+    int64_t pos;
 
     // Create the file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
@@ -275,7 +275,7 @@ FOSSIL_TEST(cpp_test_stream_class_tempfile_cleanup) {
     fossil::io::Stream::close(&temp_stream);
 
     // Verify the temporary file is deleted
-    ASSUME_NOT_EQUAL_I32(0, fossil::io::Stream::file_exists(temp_filename));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::file_exists(temp_filename));
 }
 
 FOSSIL_TEST(cpp_test_stream_class_write_and_read_file) {
@@ -413,6 +413,101 @@ FOSSIL_TEST(cpp_test_stream_class_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::get_permissions(filename, &mode));
 }
 
+FOSSIL_TEST(cpp_test_stream_class_ai_analyze) {
+    const char *filename = "testfile_ai.txt";
+    const char *content = "This is a test for AI analysis.";
+
+    // Write data to the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Open for reading and run AI analysis
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::ai_analyze(&cpp_stream));
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_ai_generate_tags) {
+    const char *filename = "testfile_ai_tags.txt";
+    const char *content = "AI tagging test content.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::ai_generate_tags(&cpp_stream));
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_ai_compute_embedding) {
+    const char *filename = "testfile_ai_embed.txt";
+    const char *content = "Embedding test content.";
+    char dummy_model[16] = {0};
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::ai_compute_embedding(&cpp_stream, dummy_model, sizeof(dummy_model)));
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_ai_ready_and_reset) {
+    const char *filename = "testfile_ai_ready.txt";
+    const char *content = "Ready/reset test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_TRUE(fossil::io::Stream::ai_ready(&cpp_stream));
+    fossil::io::Stream::ai_reset(&cpp_stream);
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_add_tag) {
+    const char *filename = "testfile_add_tag.txt";
+    const char *content = "Tag add test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::add_tag(&cpp_stream, "test-tag"));
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_detect_binary) {
+    const char *filename = "testfile_detect_binary.txt";
+    const char *content = "Binary detection test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    fossil::io::Stream::detect_binary(&cpp_stream);
+    fossil::io::Stream::close(&cpp_stream);
+}
+
+FOSSIL_TEST(cpp_test_stream_class_compress_and_decompress) {
+    const char *filename = "testfile_compress.txt";
+    const char *content = "Compression test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::compress(&cpp_stream));
+    fossil::io::Stream::close(&cpp_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -445,6 +540,14 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_is_executable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_get_permissions);
+
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_analyze);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_generate_tags);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_compute_embedding);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_ready_and_reset);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_add_tag);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_detect_binary);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_compress_and_decompress);
 
     FOSSIL_TEST_REGISTER(cpp_stream_suite);
 }

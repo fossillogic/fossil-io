@@ -78,7 +78,7 @@ FOSSIL_TEST(c_test_stream_tempfile_cleanup) {
     fossil_io_file_close(&temp_stream);
 
     // Verify the temporary file is deleted
-    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
 }
 
 FOSSIL_TEST(c_test_stream_let_write_and_read_file) {
@@ -260,7 +260,7 @@ FOSSIL_TEST(c_test_stream_flush_file) {
 FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
-    int32_t pos;
+    int64_t pos;
 
     // Create the file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
@@ -278,6 +278,102 @@ FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
     ASSUME_ITS_EQUAL_I32(5, pos);
 
     // Close the file
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_ai_analyze) {
+    const char *filename = "testfile_ai.txt";
+    const char *content = "This is a test for AI analysis.";
+
+    // Write data to the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    // Open for reading and run AI analysis
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_ai_analyze(&c_stream));
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_ai_generate_tags) {
+    const char *filename = "testfile_ai_tags.txt";
+    const char *content = "AI tagging test content.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_ai_generate_tags(&c_stream));
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_ai_compute_embedding) {
+    const char *filename = "testfile_ai_embed.txt";
+    const char *content = "Embedding test content.";
+    char dummy_model[16] = {0};
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_ai_compute_embedding(&c_stream, dummy_model, sizeof(dummy_model)));
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_ai_ready_and_reset) {
+    const char *filename = "testfile_ai_ready.txt";
+    const char *content = "Ready/reset test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_TRUE(fossil_io_file_ai_ready(&c_stream));
+    fossil_io_file_ai_reset(&c_stream);
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_add_tag) {
+    const char *filename = "testfile_add_tag.txt";
+    const char *content = "Tag add test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_add_tag(&c_stream, "test-tag"));
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_detect_binary) {
+    const char *filename = "testfile_detect_binary.txt";
+    const char *content = "Binary detection test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    fossil_io_file_detect_binary(&c_stream);
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_compress_and_decompress) {
+    const char *filename = "testfile_compress.txt";
+    const char *content = "Compression test.";
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_compress(&c_stream));
+    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_decompress(&c_stream));
     fossil_io_file_close(&c_stream);
 }
 
@@ -301,6 +397,13 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_analyze);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_generate_tags);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_compute_embedding);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_ready_and_reset);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_add_tag);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_detect_binary);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_compress_and_decompress);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);
 }

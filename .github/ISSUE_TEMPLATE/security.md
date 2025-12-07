@@ -25,8 +25,4 @@ If you are comfortable, please share how we can reach you:
 ✅ **Guidelines for Safe Reporting:**
 - Do not share exploit code or detailed steps here.
 - Do not share user data or private keys.
-<<<<<<< HEAD
 - Wait for maintainer response before disclosing further details.
-=======
-- Wait for maintainer response before disclosing further details.
->>>>>>> 8fa1a3c6925c6eca33bb790e3bd44098e27e32bb
