@@ -260,7 +260,7 @@ FOSSIL_TEST(c_test_stream_flush_file) {
 FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
     const char *filename = "testfile_setpos_getpos.txt";
     const char *content = "This is a test.";
-    int32_t pos;
+    int64_t pos;
 
     // Create the file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
