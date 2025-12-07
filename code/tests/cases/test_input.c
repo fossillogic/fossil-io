@@ -140,7 +140,7 @@ FOSSIL_TEST(c_test_io_gets_from_stream_with_punctuation) {
     char expected[] = "This is a test with punctuation, and special characters!";
     char buffer[256];
 
-    fossil_io_file_t stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input, 1, strlen(input), stream.file);
     rewind(stream.file);
     char *result = fossil_io_gets_from_stream(buffer, sizeof(buffer), &stream);
