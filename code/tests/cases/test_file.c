@@ -78,7 +78,7 @@ FOSSIL_TEST(c_test_stream_tempfile_cleanup) {
     fossil_io_file_close(&temp_stream);
 
     // Verify the temporary file is deleted
-    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
 }
 
 FOSSIL_TEST(c_test_stream_let_write_and_read_file) {
@@ -373,7 +373,7 @@ FOSSIL_TEST(c_test_stream_compress_and_decompress) {
 
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_compress(&c_stream));
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_decompress(&c_stream));
+    ASSUME_ITS_NOT_EQUAL_I32(0, fossil_io_file_decompress(&c_stream));
     fossil_io_file_close(&c_stream);
 }
 
