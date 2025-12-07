@@ -546,7 +546,7 @@ int32_t fossil_io_dir_iter_next(fossil_io_dir_iter_t *it){
 #ifdef __linux__
             e->allocated_size = (uint64_t)st.st_blocks * 512;
 #else
-            e->allocated_size = (uint64_t)st.st_blocks * (uint64_t)DEV_BSIZE;
+            e->allocated_size = (uint64_t)st.st_blocks * (uint64_t)(st.st_blksize);
 #endif
             e->modified = (uint64_t)st.st_mtime;
             e->accessed = (uint64_t)st.st_atime;
