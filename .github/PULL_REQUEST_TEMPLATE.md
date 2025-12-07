@@ -19,8 +19,4 @@
 - [ ] Documentation updated if necessary
 
 ## Additional Notes
-<<<<<<< HEAD
 <!-- Optional: Anything else reviewers should know. -->
-=======
-<!-- Optional: Anything else reviewers should know. -->
->>>>>>> 8fa1a3c6925c6eca33bb790e3bd44098e27e32bb
