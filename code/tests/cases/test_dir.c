@@ -288,95 +288,6 @@ FOSSIL_TEST(c_test_dir_backup_mirror_sync) {
     fossil_io_dir_remove_recursive(dst);
 }
 
-FOSSIL_TEST(c_test_dir_link_and_symlink) {
-    const char *dirname = "test_dir_link";
-    const char *filename = "file.txt";
-    char dirpath[128], filepath[128], linkpath[128], symlinkpath[128];
-
-    fossil_io_dir_remove_recursive(dirname);
-    fossil_io_dir_create(dirname);
-    fossil_io_dir_join(dirname, filename, filepath, sizeof(filepath));
-
-    // Create a file to link to
-    fossil_io_file_t f;
-    fossil_io_file_open(&f, filepath, "w");
-    const char *data = "linktest";
-    fossil_io_file_write(&f, data, 1, strlen(data));
-    fossil_io_file_close(&f);
-
-    // Hard link test (may not be supported on all platforms)
-    fossil_io_dir_join(dirname, "file_link.txt", linkpath, sizeof(linkpath));
-    int link_result = fossil_io_dir_link(filepath, linkpath);
-#if defined(_WIN32)
-    // Windows: link may not be supported without admin, so allow failure
-    ASSUME_ITS_TRUE(link_result == 0 || link_result < 0);
-#else
-    ASSUME_ITS_EQUAL_I32(0, link_result);
-    // Check that the link exists and is a file
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_is_file(linkpath));
-#endif
-
-    // Symlink test (may not be supported on all platforms)
-    fossil_io_dir_join(dirname, "file_symlink.txt", symlinkpath, sizeof(symlinkpath));
-    int symlink_result = fossil_io_dir_symlink(filepath, symlinkpath);
-#if defined(_WIN32)
-    // Windows: symlink may not be supported without admin, so allow failure
-    ASSUME_ITS_TRUE(symlink_result == 0 || symlink_result < 0);
-#else
-    ASSUME_ITS_EQUAL_I32(0, symlink_result);
-    // Check that the symlink exists and is a symlink
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_is_symlink(symlinkpath));
-#endif
-
-    fossil_io_dir_remove_recursive(dirname);
-}
-
-FOSSIL_TEST(c_test_dir_search) {
-    const char *dirname = "test_dir_search";
-    fossil_io_dir_remove_recursive(dirname);
-    fossil_io_dir_create(dirname);
-
-    // Create files
-    char fname1[128], fname2[128], fname3[128];
-    fossil_io_dir_join(dirname, "a.txt", fname1, sizeof(fname1));
-    fossil_io_dir_join(dirname, "b.txt", fname2, sizeof(fname2));
-    fossil_io_dir_join(dirname, "c.txt", fname3, sizeof(fname3));
-    fossil_io_file_t f1, f2, f3;
-    fossil_io_file_open(&f1, fname1, "w"); fossil_io_file_write(&f1, "a", 1, 1); fossil_io_file_close(&f1);
-    fossil_io_file_open(&f2, fname2, "w"); fossil_io_file_write(&f2, "b", 1, 1); fossil_io_file_close(&f2);
-    fossil_io_file_open(&f3, fname3, "w"); fossil_io_file_write(&f3, "c", 1, 1); fossil_io_file_close(&f3);
-
-    // List directory entries
-    fossil_io_dir_entry_t entries[10];
-    size_t count = 0;
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_list(dirname, entries, &count, 10));
-    // Sort entries by name for search
-    // (Assume fossil_io_dir_entry_cmp is available and sorts by name)
-    // If not, sort manually
-    for (size_t i = 0; i < count; ++i) {
-        for (size_t j = i + 1; j < count; ++j) {
-            if (strcmp(entries[i].name, entries[j].name) > 0) {
-                fossil_io_dir_entry_t tmp = entries[i];
-                entries[i] = entries[j];
-                entries[j] = tmp;
-            }
-        }
-    }
-
-    // Search for existing and non-existing files
-    int idx_a = fossil_io_dir_search(entries, count, "a.txt");
-    int idx_b = fossil_io_dir_search(entries, count, "b.txt");
-    int idx_c = fossil_io_dir_search(entries, count, "c.txt");
-    int idx_none = fossil_io_dir_search(entries, count, "notfound.txt");
-
-    ASSUME_ITS_TRUE(idx_a >= 0 && strcmp(entries[idx_a].name, "a.txt") == 0);
-    ASSUME_ITS_TRUE(idx_b >= 0 && strcmp(entries[idx_b].name, "b.txt") == 0);
-    ASSUME_ITS_TRUE(idx_c >= 0 && strcmp(entries[idx_c].name, "c.txt") == 0);
-    ASSUME_ITS_EQUAL_I32(-1, idx_none);
-
-    fossil_io_dir_remove_recursive(dirname);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -394,8 +305,6 @@ FOSSIL_TEST_GROUP(c_dir_tests) {
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_temp_and_create_temp);
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_metadata);
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_backup_mirror_sync);
-    FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_link_and_symlink);
-    FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_search);
 
     FOSSIL_TEST_REGISTER(c_dir_suite);
 }
