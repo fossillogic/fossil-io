@@ -110,7 +110,7 @@ FOSSIL_TEST(c_test_io_trim_whitespace_middle_preserved) {
 
 FOSSIL_TEST(c_test_io_gets_from_stream) {
     const char *input_data = "test input\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
     rewind(input_stream.file);
 
@@ -126,7 +126,7 @@ FOSSIL_TEST(c_test_io_gets_from_stream_no_offensive) {
     char expected[] = "This is a clean sentence.";
     char buffer[256];
 
-    fossil_io_file_t stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input, 1, strlen(input), stream.file);
     rewind(stream.file);
     char *result = fossil_io_gets_from_stream(buffer, sizeof(buffer), &stream);
@@ -151,9 +151,9 @@ FOSSIL_TEST(c_test_io_gets_from_stream_with_punctuation) {
 
 FOSSIL_TEST(c_test_io_gets_from_stream_empty_input) {
     const char *input_data = "\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
+    fossil_io_file_rewind(&input_stream);
 
     char buf[20];
     char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
@@ -164,9 +164,9 @@ FOSSIL_TEST(c_test_io_gets_from_stream_empty_input) {
 
 FOSSIL_TEST(c_test_io_gets_from_stream_only_whitespace) {
     const char *input_data = "   \n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
+    fossil_io_file_rewind(&input_stream);
 
     char buf[20];
     char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
@@ -177,9 +177,9 @@ FOSSIL_TEST(c_test_io_gets_from_stream_only_whitespace) {
 
 FOSSIL_TEST(c_test_io_gets_from_stream_long_input) {
     const char *input_data = "This is a very long input string that exceeds the buffer size\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
+    fossil_io_file_rewind(&input_stream);
 
     char buf[20];
     char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
@@ -190,9 +190,9 @@ FOSSIL_TEST(c_test_io_gets_from_stream_long_input) {
 
 FOSSIL_TEST(c_test_io_gets_from_stream_ex) {
     const char *input_data = "test input\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
+    fossil_io_file_rewind(&input_stream);
 
     char buf[20];
     int error_code = 0;
@@ -204,9 +204,9 @@ FOSSIL_TEST(c_test_io_gets_from_stream_ex) {
 
 FOSSIL_TEST(c_test_io_gets_utf8) {
     const char *input_data = "test input\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = { .file = tmpfile(), .filename = "tempfile" };
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
+    fossil_io_file_rewind(&input_stream);
 
     char buf[20];
     char *result = fossil_io_gets_utf8(buf, sizeof(buf), &input_stream);
@@ -275,7 +275,9 @@ FOSSIL_TEST(c_test_io_validate_is_length_invalid) {
 
 FOSSIL_TEST(c_test_io_getc) {
     const char *input_data = "test input\n";
-    fossil_io_file_t input_stream = {tmpfile(), "tempfile"};
+    fossil_io_file_t input_stream = {0};
+    input_stream.file = tmpfile();
+    strncpy(input_stream.filename, "tempfile", sizeof(input_stream.filename) - 1);
     fwrite(input_data, 1, strlen(input_data), input_stream.file);
     rewind(input_stream.file);
 
