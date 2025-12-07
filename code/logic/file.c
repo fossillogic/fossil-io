@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #endif
 #include <sys/stat.h>
 #ifndef _WIN32
@@ -1552,17 +1553,22 @@ static int fossil_copy_file_metadata(const char *src, const char *dest) {
 
     // timestamps
     struct timeval times[2];
-    times[0].tv_sec = st.st_atime;
+    times[0].tv_sec  = st.st_atime;
     times[0].tv_usec = 0;
-    times[1].tv_sec = st.st_mtime;
+    times[1].tv_sec  = st.st_mtime;
     times[1].tv_usec = 0;
 
     if (utimes(dest, times) != 0)
         return -errno;
 
     return 0;
+
 #else
-    // On Windows we currently skip metadata since it's non-portable.
+    // Windows does not support portable chmod/timestamp copying in this mode.
+    // Explicitly mark parameters as used to avoid -Werror=unused-parameter.
+    (void)src;
+    (void)dest;
+
     return 0;
 #endif
 }
