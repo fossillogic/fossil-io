@@ -551,6 +551,27 @@ int fossil_io_file_compress(fossil_io_file_t *f);
  */
 int fossil_io_file_decompress(fossil_io_file_t *f);
 
+/**
+ * @brief Create a hard or symbolic link to a file, with optional metadata propagation.
+ *
+ * This function creates a new link (hard or symbolic) from `src->filename` to `dest_path`.
+ * It optionally populates a fossil_io_file_t structure for the destination link and can
+ * propagate file metadata such as timestamps and mode.
+ *
+ * @param src        Pointer to source fossil_io_file_t representing the existing file.
+ * @param dest       Pointer to destination fossil_io_file_t to populate (may be NULL).
+ * @param dest_path  Path to the file to create.
+ * @param symbolic   If true, create a symbolic link; else create a hard link.
+ * @param copy_meta  If true, copy metadata (mode, timestamps).
+ *
+ * @return int       0 on success, negative errno-style value on error.
+ */
+int fossil_io_file_link(
+        const fossil_io_file_t *src,
+        fossil_io_file_t *dest,
+        const char *dest_path,
+        bool symbolic,
+        bool copy_meta);
 
 #ifdef __cplusplus
 }
