@@ -1215,8 +1215,15 @@ int32_t fossil_io_dir_sync(const char *src, const char *dst, int32_t delete_extr
                 break;
             case 0: // file
             default: {
-                // Use fossil_io_file_copy for file copy, which uses fossil_io_file_t
-                if (fossil_io_file_link(srcchild, dstchild) != 0) {
+                // Attempt hard-link creation; fall back to file copy if linking fails
+                if (fossil_io_file_link(
+                        srcchild,        // source fossil_io_file_t
+                        dstchild,        // destination fossil_io_file_t
+                        dstchild->filename,  // path where link should be created
+                        false,           // symbolic = false → hard link
+                        true             // copy_meta = true → replicate mode/timestamps
+                    ) != 0)
+                {
                     fossil_io_file_copy(srcchild, dstchild);
                 }
                 break;
