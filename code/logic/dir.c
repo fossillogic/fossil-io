@@ -472,12 +472,24 @@ int32_t fossil_io_dir_iter_open(fossil_io_dir_iter_t *it, const char *path){
     memset(it, 0, sizeof(*it));
     safe_strcpy(it->basepath, path, sizeof(it->basepath));
     it->active = 0;
+    it->index = 0;
+    it->total = 0;
+    it->recursive = 0;
+    it->follow_symlinks = 0;
+    it->include_hidden = 0;
+    it->include_system = 0;
+    it->sort_mode = 0;
+    it->sort_descending = 0;
+    it->filter_glob = NULL;
+    it->filter_regex = NULL;
+    it->platform_data = NULL;
 
 #ifndef _WIN32
     DIR *d = opendir(path);
     if (!d) return -1;
     it->handle = d;
     it->active = 1;
+    it->current.platform_data = NULL;
     return 0;
 #else
     // Windows: store search handle in handle and preload first
@@ -500,6 +512,7 @@ int32_t fossil_io_dir_iter_open(fossil_io_dir_iter_t *it, const char *path){
     free(fd);
     it->handle = wh;
     it->active = 1;
+    it->current.platform_data = NULL;
     return 0;
 #endif
 }
@@ -512,32 +525,84 @@ int32_t fossil_io_dir_iter_next(fossil_io_dir_iter_t *it){
     struct dirent *ent;
     while ((ent = readdir(d)) != NULL){
         if (path_is_dot_or_dotdot(ent->d_name)) continue;
-        safe_strcpy(it->current.name, ent->d_name, sizeof(it->current.name));
-        join_paths(it->basepath, ent->d_name, it->current.path, sizeof(it->current.path));
-        // fill type, size, modified
+        fossil_io_dir_entry_t *e = &it->current;
+        memset(e, 0, sizeof(*e));
+        safe_strcpy(e->name, ent->d_name, sizeof(e->name));
+        join_paths(it->basepath, ent->d_name, e->path, sizeof(e->path));
+
         stat_t st;
-        if (stat_native(it->current.path, &st) == 0){
-#ifdef _WIN32
-            it->current.type = (st.st_mode & _S_IFDIR) ? 1 : 0;
+        if (lstat(e->path, &st) == 0){
+            // Type
+            if (S_ISREG(st.st_mode))      e->type = 0;
+            else if (S_ISDIR(st.st_mode)) e->type = 1;
+            else if (S_ISLNK(st.st_mode)) e->type = 2;
+            else if (S_ISFIFO(st.st_mode))e->type = 3;
+            else if (S_ISSOCK(st.st_mode))e->type = 4;
+            else if (S_ISBLK(st.st_mode)) e->type = 5;
+            else if (S_ISCHR(st.st_mode)) e->type = 6;
+            else                          e->type = 7;
+
+            e->size = (uint64_t)st.st_size;
+#ifdef __linux__
+            e->allocated_size = (uint64_t)st.st_blocks * 512;
 #else
-            if (S_ISDIR(st.st_mode)) it->current.type = 1;
-            else if (S_ISLNK(st.st_mode)) it->current.type = 2;
-            else if (S_ISREG(st.st_mode)) it->current.type = 0;
-            else it->current.type = 3;
+            e->allocated_size = (uint64_t)st.st_blocks * (uint64_t)DEV_BSIZE;
 #endif
-            it->current.size = (uint64_t)st.st_size;
-            it->current.modified = (uint64_t)st.st_mtime;
+            e->modified = (uint64_t)st.st_mtime;
+            e->accessed = (uint64_t)st.st_atime;
+            e->changed  = (uint64_t)st.st_ctime;
+#ifdef __APPLE__
+            e->created  = (uint64_t)st.st_birthtime;
+#else
+            e->created  = 0;
+#endif
+            e->permissions = (int32_t)(st.st_mode & 07777);
+            e->owner_uid = (int32_t)st.st_uid;
+            e->owner_gid = (int32_t)st.st_gid;
+            // Hidden: dotfile
+            e->is_hidden = (e->name[0] == '.') ? 1 : 0;
+            // Readonly: no write bit for owner
+            e->is_readonly = ((st.st_mode & S_IWUSR) == 0) ? 1 : 0;
+            // System: not applicable on POSIX
+            e->is_system = 0;
+            // Executable: owner execute bit
+            e->is_executable = ((st.st_mode & S_IXUSR) != 0) ? 1 : 0;
+            // Attributes bitfield
+            e->attributes = 0;
+            if (e->is_hidden)     e->attributes |= (1 << 0);
+            if (e->is_readonly)   e->attributes |= (1 << 1);
+            if (e->is_executable) e->attributes |= (1 << 2);
+            if (e->type == 2)     e->attributes |= (1 << 3);
+            // platform_data
+            e->platform_data = NULL;
         } else {
-            it->current.type = 3;
-            it->current.size = 0;
-            it->current.modified = 0;
+            // fallback: unknown type
+            e->type = 7;
+            e->size = 0;
+            e->allocated_size = 0;
+            e->modified = 0;
+            e->accessed = 0;
+            e->changed = 0;
+            e->created = 0;
+            e->permissions = 0;
+            e->owner_uid = -1;
+            e->owner_gid = -1;
+            e->is_hidden = (e->name[0] == '.') ? 1 : 0;
+            e->is_readonly = 0;
+            e->is_system = 0;
+            e->is_executable = 0;
+            e->attributes = 0;
+            if (e->is_hidden) e->attributes |= (1 << 0);
+            e->platform_data = NULL;
         }
+        // Hashes not computed here
+        e->hash_crc32 = 0;
+        e->hash_murmur64 = 0;
+        memset(e->hash_sha1, 0, sizeof(e->hash_sha1));
         return 1;
     }
-    // end
     return 0;
 #else
-    // Windows: our handle object
     struct {
         HANDLE handle;
         WIN32_FIND_DATAA data;
@@ -548,24 +613,80 @@ int32_t fossil_io_dir_iter_next(fossil_io_dir_iter_t *it){
         const char *name = wh->data.cFileName;
         wh->has_current = 0; // consume current
         if (!path_is_dot_or_dotdot(name)){
-            safe_strcpy(it->current.name, name, sizeof(it->current.name));
-            fossil_io_dir_join(it->basepath, name, it->current.path, sizeof(it->current.path));
-            if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) it->current.type = 1;
-            else it->current.type = 0;
-            // size (DWORD/FILETIME conversion)
-            uint64_t size = ((uint64_t)wh->data.nFileSizeHigh << 32) | wh->data.nFileSizeLow;
-            it->current.size = size;
-            // convert FILETIME to time_t (approx)
+            fossil_io_dir_entry_t *e = &it->current;
+            memset(e, 0, sizeof(*e));
+            safe_strcpy(e->name, name, sizeof(e->name));
+            fossil_io_dir_join(it->basepath, name, e->path, sizeof(e->path));
+            // Type
+            if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                e->type = 1;
+            else if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+                e->type = 2;
+            else
+                e->type = 0;
+            // Size
+            e->size = ((uint64_t)wh->data.nFileSizeHigh << 32) | wh->data.nFileSizeLow;
+            e->allocated_size = e->size; // Windows: no easy way to get allocated size
+            // Modified
             FILETIME ft = wh->data.ftLastWriteTime;
             ULARGE_INTEGER ull;
             ull.LowPart = ft.dwLowDateTime;
             ull.HighPart = ft.dwHighDateTime;
-            // Windows epoch is 100-ns since Jan 1 1601. Convert to Unix epoch.
             uint64_t windows_time = ull.QuadPart;
-            // 11644473600 seconds between epochs
             uint64_t seconds = (windows_time / 10000000ULL) - 11644473600ULL;
-            it->current.modified = seconds;
-            // prepare next
+            e->modified = seconds;
+            // Accessed
+            ft = wh->data.ftLastAccessTime;
+            ull.LowPart = ft.dwLowDateTime;
+            ull.HighPart = ft.dwHighDateTime;
+            windows_time = ull.QuadPart;
+            seconds = (windows_time / 10000000ULL) - 11644473600ULL;
+            e->accessed = seconds;
+            // Changed (Windows: use last write)
+            e->changed = e->modified;
+            // Created
+            ft = wh->data.ftCreationTime;
+            ull.LowPart = ft.dwLowDateTime;
+            ull.HighPart = ft.dwHighDateTime;
+            windows_time = ull.QuadPart;
+            seconds = (windows_time / 10000000ULL) - 11644473600ULL;
+            e->created = seconds;
+            // Permissions: map readonly
+            e->permissions = (wh->data.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? 0444 : 0666;
+            e->owner_uid = -1;
+            e->owner_gid = -1;
+            // Hidden
+            e->is_hidden = (wh->data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0;
+            // Readonly
+            e->is_readonly = (wh->data.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? 1 : 0;
+            // System
+            e->is_system = (wh->data.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) ? 1 : 0;
+            // Executable: guess by extension
+            const char *ext = strrchr(e->name, '.');
+            if (ext && (
+                _stricmp(ext, ".exe") == 0 ||
+                _stricmp(ext, ".bat") == 0 ||
+                _stricmp(ext, ".cmd") == 0 ||
+                _stricmp(ext, ".com") == 0
+            )) e->is_executable = 1;
+            else e->is_executable = 0;
+            // Attributes bitfield
+            e->attributes = 0;
+            if (e->is_hidden)     e->attributes |= (1 << 0);
+            if (e->is_readonly)   e->attributes |= (1 << 1);
+            if (e->is_executable) e->attributes |= (1 << 2);
+            if (e->type == 2)     e->attributes |= (1 << 3);
+            if (e->is_system)     e->attributes |= (1 << 4);
+            if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE)    e->attributes |= (1 << 5);
+            if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_COMPRESSED) e->attributes |= (1 << 6);
+            if (wh->data.dwFileAttributes & FILE_ATTRIBUTE_ENCRYPTED)  e->attributes |= (1 << 7);
+            // platform_data
+            e->platform_data = NULL;
+            // Hashes not computed here
+            e->hash_crc32 = 0;
+            e->hash_murmur64 = 0;
+            memset(e->hash_sha1, 0, sizeof(e->hash_sha1));
+            // Prepare next
             if (FindNextFileA(wh->handle, &wh->data)) wh->has_current = 1;
             return 1;
         }
@@ -583,6 +704,8 @@ void fossil_io_dir_iter_close(fossil_io_dir_iter_t *it){
     closedir(d);
     it->handle = NULL;
     it->active = 0;
+    it->platform_data = NULL;
+    memset(&it->current, 0, sizeof(it->current));
 #else
     struct {
         HANDLE handle;
@@ -595,6 +718,8 @@ void fossil_io_dir_iter_close(fossil_io_dir_iter_t *it){
     }
     it->handle = NULL;
     it->active = 0;
+    it->platform_data = NULL;
+    memset(&it->current, 0, sizeof(it->current));
 #endif
 }
 
@@ -607,8 +732,12 @@ int32_t fossil_io_dir_list(const char *path,
     fossil_io_dir_iter_t it;
     if (fossil_io_dir_iter_open(&it, path) != 0) return -1;
     size_t idx = 0;
-    while (idx < max_entries && fossil_io_dir_iter_next(&it)){
-        entries[idx++] = it.current;
+    while (idx < max_entries && fossil_io_dir_iter_next(&it)) {
+        // Copy all fields of the updated fossil_io_dir_entry_t
+        entries[idx] = it.current;
+        // If platform_data is a pointer, set to NULL to avoid dangling pointers
+        entries[idx].platform_data = NULL;
+        idx++;
     }
     fossil_io_dir_iter_close(&it);
     *count = idx;
@@ -830,8 +959,10 @@ int32_t fossil_io_dir_size(const char *path, uint64_t *bytes){
 int32_t fossil_io_dir_scan(const char *path, fossil_io_dir_scan_callback cb, void *userdata){
     if (!path || !cb) return -1;
     fossil_io_dir_iter_t it;
+    memset(&it, 0, sizeof(it));
     if (fossil_io_dir_iter_open(&it, path) != 0) return -1;
     while (fossil_io_dir_iter_next(&it)){
+        // The callback receives a fully populated fossil_io_dir_entry_t
         if (!cb(&it.current, userdata)) break;
     }
     fossil_io_dir_iter_close(&it);
@@ -844,10 +975,16 @@ static int32_t scan_recursive_internal(const char *path, fossil_io_dir_scan_call
     if (fossil_io_dir_iter_open(&it, path) != 0) return -1;
     while (fossil_io_dir_iter_next(&it)){
         // invoke callback
-        if (!cb(&it.current, userdata)) { fossil_io_dir_iter_close(&it); return 0; }
-        // if directory, recurse
+        if (!cb(&it.current, userdata)) {
+            fossil_io_dir_iter_close(&it);
+            return 0;
+        }
+        // if entry is a directory (type == 1), recurse
         if (it.current.type == 1){
-            if (scan_recursive_internal(it.current.path, cb, userdata) != 0) { fossil_io_dir_iter_close(&it); return -1; }
+            if (scan_recursive_internal(it.current.path, cb, userdata) != 0) {
+                fossil_io_dir_iter_close(&it);
+                return -1;
+            }
         }
     }
     fossil_io_dir_iter_close(&it);
@@ -994,10 +1131,19 @@ static int32_t sync_internal_delete_extraneous(const char *src, const char *dst)
     while (fossil_io_dir_iter_next(&it)){
         join_paths(src, it.current.name, srcchild, sizeof(srcchild));
         join_paths(dst, it.current.name, dstchild, sizeof(dstchild));
-        if (!fossil_io_dir_is_directory(srcchild) && !fossil_io_dir_is_file(srcchild)){
+        // Use the new type field for entry type
+        if (!fossil_io_dir_is_directory(srcchild) && !fossil_io_dir_is_file(srcchild) && !fossil_io_dir_is_symlink(srcchild)){
             // not present in src => remove from dst (recursively)
-            if (it.current.type == 1) fossil_io_dir_remove_recursive(dstchild);
-            else remove(dstchild);
+            if (it.current.type == 1) { // directory
+                fossil_io_dir_remove_recursive(dstchild);
+            } else if (it.current.type == 2) { // symlink
+                remove(dstchild);
+            } else if (it.current.type == 0) { // file
+                remove(dstchild);
+            } else {
+                // other types: pipe, sock, blockdev, chardev, etc.
+                remove(dstchild);
+            }
         } else {
             // present, recurse for directories
             if (it.current.type == 1) sync_internal_delete_extraneous(srcchild, dstchild);
@@ -1005,6 +1151,44 @@ static int32_t sync_internal_delete_extraneous(const char *src, const char *dst)
     }
     fossil_io_dir_iter_close(&it);
     return 0;
+}
+
+// ------------------------------------------------------------
+// Link and Symlink
+// ------------------------------------------------------------
+int32_t fossil_io_dir_link(const char *target, const char *linkpath){
+    if (!target || !linkpath) return -1;
+#ifdef _WIN32
+    // On Windows, CreateHardLinkA only works for files, not directories
+    // Try to create a hard link for files
+    if (fossil_io_dir_is_file(target)) {
+        if (CreateHardLinkA(linkpath, target, NULL)) return 0;
+        return -1;
+    }
+    // Hard links to directories are not supported on Windows
+    return -1;
+#else
+    // POSIX: use link()
+    if (link(target, linkpath) == 0) return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_dir_symlink(const char *target, const char *linkpath){
+    if (!target || !linkpath) return -1;
+#ifdef _WIN32
+    // On Windows, use CreateSymbolicLinkA
+    DWORD flags = 0;
+    if (fossil_io_dir_is_directory(target))
+        flags = 0x1; // SYMBOLIC_LINK_FLAG_DIRECTORY
+    // Since Windows 10 1703, unprivileged symlink creation is allowed in developer mode
+    if (CreateSymbolicLinkA(linkpath, target, flags)) return 0;
+    return -1;
+#else
+    // POSIX: use symlink()
+    if (symlink(target, linkpath) == 0) return 0;
+    return -1;
+#endif
 }
 
 int32_t fossil_io_dir_sync(const char *src, const char *dst, int32_t delete_extraneous){
@@ -1019,11 +1203,24 @@ int32_t fossil_io_dir_sync(const char *src, const char *dst, int32_t delete_extr
     while (fossil_io_dir_iter_next(&it)){
         join_paths(src, it.current.name, srcchild, sizeof(srcchild));
         join_paths(dst, it.current.name, dstchild, sizeof(dstchild));
-        if (it.current.type == 1){
-            fossil_io_dir_sync(srcchild, dstchild, delete_extraneous);
-        } else {
-            // simple copy (overwrite)
-            file_copy_internal(srcchild, dstchild);
+        switch (it.current.type) {
+            case 1: // directory
+                fossil_io_dir_sync(srcchild, dstchild, delete_extraneous);
+                break;
+            case 2: // symlink
+                // Copy symlink using fossil_io_dir_symlink
+                // Remove any existing file/dir at dstchild first
+                fossil_io_dir_remove_recursive(dstchild);
+                fossil_io_dir_symlink(srcchild, dstchild);
+                break;
+            case 0: // file
+            default: {
+                // Use fossil_io_file_copy for file copy, which uses fossil_io_file_t
+                if (fossil_io_file_link(srcchild, dstchild) != 0) {
+                    fossil_io_file_copy(srcchild, dstchild);
+                }
+                break;
+            }
         }
     }
     fossil_io_dir_iter_close(&it);
