@@ -121,9 +121,7 @@ typedef struct {
     const char *style;       // "formal", "technical", "casual", etc.
 } fossil_io_soap_grammar_style_t;
 
-fossil_io_soap_grammar_style_t
-fossil_io_soap_analyze_grammar_style(const char *text);
-
+fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text);
 char *fossil_io_soap_correct_grammar(const char *text);
 
 // ============================================================================
@@ -138,29 +136,7 @@ typedef struct {
 
 fossil_io_soap_scores_t fossil_io_soap_score(const char *text);
 const char *fossil_io_soap_readability_label(int readability_score);
-
-// ============================================================================
-// Unified Detector API with Flow Type
-// ============================================================================
-
-int fossil_io_soap_detect(
-    const char *text,
-    const char *detector_id,
-    const char *flow_type
-);
-
-// ============================================================================
-// Custom Vocabulary Control
-// ============================================================================
-
-int fossil_io_soap_custom_load(const char *phrase);
-void fossil_io_soap_custom_unload(void);
-char *fossil_io_soap_custom_filter(const char *text);
-
-// ============================================================================
-// Text Splitting & Normalization
-// ============================================================================
-
+int fossil_io_soap_detect(const char *text, const char *detector_id, const char *flow_type);
 char **fossil_io_soap_split(const char *text, const char *flow_type);
 char *fossil_io_soap_reflow(const char *text, int width);
 char *fossil_io_soap_normalize(const char *text);
@@ -339,25 +315,7 @@ namespace fossil {
                                const std::string &flow_type) {
                 return fossil_io_soap_detect(text.c_str(), detector_id.c_str(), flow_type.c_str()) != 0;
             }
-        
-            // ===============================
-            // Custom Vocabulary
-            // ===============================
-            static bool custom_load(const std::string &phrase) {
-                return fossil_io_soap_custom_load(phrase.c_str()) == 0;
-            }
-        
-            static void custom_unload() {
-                fossil_io_soap_custom_unload();
-            }
-        
-            static std::string custom_filter(const std::string &text) {
-                char *res = fossil_io_soap_custom_filter(text.c_str());
-                std::string out = res ? res : "";
-                free(res);
-                return out;
-            }
-        
+      
             // ===============================
             // Splitting & Normalization
             // ===============================
