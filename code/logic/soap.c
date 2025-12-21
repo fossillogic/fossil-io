@@ -176,70 +176,143 @@ const char *fossil_io_soap_readability_label(int score){
  * Detector
  * ============================================================================ */
 
+typedef struct {
+    char *processed_text;                  // sanitized / normalized / grammar-corrected
+    char *summary;                         // optional summary
+    fossil_io_soap_scores_t scores;        // readability / clarity / quality
+    fossil_io_soap_grammar_style_t style;  // grammar / style
+
+    /* ================= Detectors ================= */
+    struct {
+        /* word-level */
+        int brain_rot;
+        int leet;
+
+        /* sentence-level */
+        int spam;
+        int ragebait;
+        int clickbait;
+        int bot;
+        int marketing;
+        int technobabble;
+        int hype;
+        int political;
+        int offensive;
+        int misinfo;      // shorthand for misinformation
+        int morse;
+
+        /* document-level */
+        int propaganda;
+        int conspiracy;
+
+        /* stylistic / behavioral */
+        int formal;
+        int casual;
+        int sarcasm;
+        int neutral;
+        int aggressive;
+        int emotional;
+        int passive_aggressive;
+
+        /* structural analysis (redundancy, cohesion, repetition) */
+        int redundant_sentences;
+        int poor_cohesion;
+        int repeated_words;
+
+    } flags;
+} fossil_io_soap_result_verbose_t;
+
+typedef struct { const char *pattern; } pattern_t;
+
+static const pattern_t spam_patterns[] = {
+    {"buy now"}, {"click here"}, {"free gift"}, {"subscribe"}, {"limited offer"}, {NULL}
+};
+
+static const pattern_t ragebait_patterns[] = {
+    {"you won't believe"}, {"shocking"}, {"outrageous"}, {"unbelievable"}, {NULL}
+};
+
+static const pattern_t clickbait_patterns[] = {
+    {"this one trick"}, {"what happened next"}, {"will blow your mind"}, {"you need to see"}, {NULL}
+};
+
+static const pattern_t bot_patterns[] = {
+    {"check this out"}, {"hello everyone"}, {"click the link"}, {"visit our page"}, {NULL}
+};
+
+static const pattern_t marketing_patterns[] = {
+    {"special promotion"}, {"exclusive offer"}, {"sign up now"}, {"limited time"}, {NULL}
+};
+
+static const pattern_t technobabble_patterns[] = {
+    {"AI-driven"}, {"blockchain-enabled"}, {"synergy"}, {"paradigm shift"}, {NULL}
+};
+
+static const pattern_t hype_patterns[] = {
+    {"revolutionary"}, {"next level"}, {"game-changing"}, {"amazing results"}, {NULL}
+};
+
+static const pattern_t political_patterns[] = {
+    {"vote for"}, {"government"}, {"policy change"}, {"election"}, {NULL}
+};
+
+static const pattern_t offensive_patterns[] = {
+    {"slur1"}, {"slur2"}, {"slur3"}, {NULL} // replace with actual offensive words
+};
+
+static const pattern_t propaganda_patterns[] = {
+    {"must believe"}, {"hidden agenda"}, {"our way or"}, {"truth about"}, {NULL}
+};
+
+static const pattern_t misinformation_patterns[] = {
+    {"cure for cancer"}, {"miracle"}, {"hoax"}, {"false claims"}, {NULL}
+};
+
+static const pattern_t conspiracy_patterns[] = {
+    {"secret government"}, {"they don't want you to know"}, {"cover-up"}, {"hidden truth"}, {NULL}
+};
+
+static int match_patterns(const char *text, const pattern_t *patterns) {
+    if (!text || !patterns) return 0;
+    for (int i = 0; patterns[i].pattern; i++) {
+        if (strstr(text, patterns[i].pattern)) return 1;
+    }
+    return 0;
+}
+
 int fossil_io_soap_detect(const char *text,
                           const char *detector_id,
                           const char *flow_type)
 {
     if (!text || !detector_id) return 0;
 
+    /* word-level normalization */
+    char *norm = dupstr(text);
+    normalize_leet(norm);
+    strtolower(norm);
+
     int result = 0;
 
-    /* Normalize for detection */
-    char *norm = dupstr(text);
-    for (char *p = norm; *p; p++) *p = (char)tolower((unsigned char)*p);
+    /* ================= Word-level detectors ================= */
+    if (strcmp(detector_id,"brain_rot")==0) {
+        result = strstr(norm,"lol") || strstr(norm,"bro") || strstr(norm,"wtf") || strstr(norm,"bruh");
+    } else if (strcmp(detector_id,"leet")==0) {
+        for (char *p=norm; *p; p++) if (*p=='4'||*p=='3'||*p=='1'||*p=='0'||*p=='5'||*p=='7') { result=1; break; }
+    }
 
-    /* ========================================================================
-     * Flow-specific detection
-     * ======================================================================== */
-    if (flow_type && strcmp(flow_type, "") != 0) {
-        if (strcmp(flow_type, "words") == 0) {
-            /* Word-level: scan tokens individually */
-            char *token = strtok(norm, " \t\n");
-            while (token) {
-                if (strcmp(detector_id, "brain_rot") == 0) {
-                    if (strstr(token, "lol") || strstr(token, "bro")) { result = 1; break; }
-                }
-                if (strcmp(detector_id, "leet") == 0) {
-                    for (char *c = token; *c; c++)
-                        if (*c=='4'||*c=='3'||*c=='1'||*c=='0'||*c=='5'||*c=='7') { result=1; break; }
-                }
-                token = strtok(NULL, " \t\n");
-            }
-        }
-        else if (strcmp(flow_type, "sentences") == 0) {
-            /* Sentence-level: scan for tone / spam phrases */
-            const char *p = norm;
-            while (*p) {
-                if (strcmp(detector_id, "spam") == 0) {
-                    if (strstr(p,"buy now") || strstr(p,"click here")) { result=1; break; }
-                }
-                if (strcmp(detector_id, "ragebait") == 0) {
-                    if (strstr(p,"you won't believe") || strstr(p,"shocking")) { result=1; break; }
-                }
-                if (strcmp(detector_id, "morse") == 0) {
-                    if (strchr(p,'.') && strchr(p,'-')) { result=1; break; }
-                }
-                /* move to next sentence */
-                while (*p && *p != '.' && *p != '!' && *p != '?') p++;
-                if (*p) p++;
-            }
-        }
-        else if (strcmp(flow_type, "documents") == 0) {
-            /* Document-level: full text heuristics */
-            if (strcmp(detector_id, "propaganda") == 0) {
-                if (strstr(norm,"must believe") || strstr(norm,"agenda")) result=1;
-            }
-            if (strcmp(detector_id, "conspiracy") == 0) {
-                if (strstr(norm,"secret") && strstr(norm,"government")) result=1;
-            }
-        }
-    }
-    else {
-        /* Fallback: simple global detection */
-        if (strcmp(detector_id, "spam") == 0) result = strstr(norm,"buy now")!=NULL;
-        else if (strcmp(detector_id, "brain_rot") == 0) result = strstr(norm,"lol") || strstr(norm,"bro");
-        else if (strcmp(detector_id, "morse") == 0) result = strchr(norm,'.') && strchr(norm,'-');
-    }
+    /* ================= Sentence-level detectors ================= */
+    else if (strcmp(detector_id,"spam")==0) result = match_patterns(norm, spam_patterns);
+    else if (strcmp(detector_id,"ragebait")==0) result = match_patterns(norm, ragebait_patterns);
+    else if (strcmp(detector_id,"clickbait")==0) result = match_patterns(norm, clickbait_patterns);
+    else if (strcmp(detector_id,"bot")==0) result = match_patterns(norm, bot_patterns);
+    else if (strcmp(detector_id,"marketing")==0) result = match_patterns(norm, marketing_patterns);
+    else if (strcmp(detector_id,"technobabble")==0) result = match_patterns(norm, technobabble_patterns);
+    else if (strcmp(detector_id,"hype")==0) result = match_patterns(norm, hype_patterns);
+    else if (strcmp(detector_id,"political")==0) result = match_patterns(norm, political_patterns);
+    else if (strcmp(detector_id,"offensive")==0) result = match_patterns(norm, offensive_patterns);
+    else if (strcmp(detector_id,"propaganda")==0) result = match_patterns(norm, propaganda_patterns);
+    else if (strcmp(detector_id,"misinfo")==0) result = match_patterns(norm, misinformation_patterns);
+    else if (strcmp(detector_id,"conspiracy")==0) result = match_patterns(norm, conspiracy_patterns);
 
     free(norm);
     return result;
@@ -335,87 +408,125 @@ char *fossil_io_soap_summarize(const char *text){
  * High-level process with flow-type dispatch
  * ============================================================================ */
 
-char *fossil_io_soap_process(const char *text,
-                             const char *flow_type,
-                             const fossil_io_soap_options_t *options)
+typedef struct {
+    char *processed_text;                  // sanitized, normalized, grammar-corrected
+    char *summary;                         // short summary (if requested)
+    fossil_io_soap_scores_t scores;        // readability, clarity, quality
+    fossil_io_soap_grammar_style_t style;  // style analysis
+    struct {
+        int brain_rot;
+        int leet;
+        int spam;
+        int ragebait;
+        int propaganda;
+        int conspiracy;
+        int clickbait;
+        int bot;
+        int marketing;
+        int technobabble;
+        int hype;
+        int political;
+        int offensive;
+        int misinformation;
+        int formal;
+        int casual;
+        int sarcasm;
+        int neutral;
+        int aggressive;
+        int emotional;
+        int passive_aggressive;
+    } flags;
+} fossil_io_soap_result_t;
+
+static int detect_flag(const char *text, const char *detector_id, const char *flow_type) {
+    if (!text || !detector_id) return 0;
+    int res = fossil_io_soap_detect(text, detector_id, flow_type);
+    return res;
+}
+
+fossil_io_soap_result_t *fossil_io_soap_process(
+    const char *text,
+    const char *flow_type,
+    const fossil_io_soap_options_t *options)
 {
     if (!text) return NULL;
-    char *work = dupstr(text);
+    fossil_io_soap_result_t *r = calloc(1, sizeof(*r));
+    r->processed_text = dupstr(text);
 
-    /* Step 0: Decode Morse if detected */
+    /* Step 0: Morse decoding (optional) */
     if (!options || options->detect_brain_rot || options->detect_quality) {
-        if (fossil_io_soap_detect(work, "morse", flow_type)) {
-            char *tmp = decode_morse(work);
-            free(work);
-            work = tmp;
+        if (fossil_io_soap_detect(r->processed_text, "morse", flow_type)) {
+            char *tmp = decode_morse(r->processed_text);
+            free(r->processed_text);
+            r->processed_text = tmp;
         }
     }
 
-    /* Step 1: Apply normalization/sanitization/grammar correction if enabled */
+    /* Step 1: Sanitization, normalization, grammar correction */
     if (options) {
         if (options->apply_sanitization) {
-            char *tmp = fossil_io_soap_sanitize(work);
-            free(work); work = tmp;
+            char *tmp = fossil_io_soap_sanitize(r->processed_text);
+            free(r->processed_text); r->processed_text = tmp;
         }
         if (options->apply_normalization) {
-            char *tmp = fossil_io_soap_normalize(work);
-            free(work); work = tmp;
+            char *tmp = fossil_io_soap_normalize(r->processed_text);
+            free(r->processed_text); r->processed_text = tmp;
         }
         if (options->apply_grammar_correction) {
-            char *tmp = fossil_io_soap_correct_grammar(work);
-            free(work); work = tmp;
+            char *tmp = fossil_io_soap_correct_grammar(r->processed_text);
+            free(r->processed_text); r->processed_text = tmp;
         }
     }
 
-    /* Step 2: Flow-type specific analysis based on enabled options */
+    /* Step 2: Flow-type processing and detector aggregation */
     if (flow_type) {
-        if (strcmp(flow_type, "words") == 0) {
-            char **tokens = fossil_io_soap_split(work, "words");
-            for (size_t i = 0; tokens[i]; i++) {
-                if (options) {
-                    if (options->detect_brain_rot)
-                        fossil_io_soap_detect(tokens[i], "brain_rot", "words");
-                    if (options->detect_quality)
-                        fossil_io_soap_detect(tokens[i], "leet", "words");
-                }
+        if (strcmp(flow_type,"words")==0) {
+            char **tokens = fossil_io_soap_split(r->processed_text,"words");
+            for (size_t i=0; tokens[i]; i++) {
+                if (!options) continue;
+                if (options->detect_brain_rot) r->flags.brain_rot |= detect_flag(tokens[i],"brain_rot","words");
+                if (options->detect_quality)    r->flags.leet       |= detect_flag(tokens[i],"leet","words");
+                if (options->detect_formal)     r->flags.formal     |= detect_flag(tokens[i],"formal","words");
+                if (options->detect_casual)     r->flags.casual     |= detect_flag(tokens[i],"casual","words");
+                if (options->detect_sarcasm)    r->flags.sarcasm    |= detect_flag(tokens[i],"sarcasm","words");
+                if (options->detect_neutral)    r->flags.neutral    |= detect_flag(tokens[i],"neutral","words");
+                if (options->detect_aggressive) r->flags.aggressive |= detect_flag(tokens[i],"aggressive","words");
+                if (options->detect_emotional)  r->flags.emotional  |= detect_flag(tokens[i],"emotional","words");
+                if (options->detect_passive_aggressive) r->flags.passive_aggressive |= detect_flag(tokens[i],"passive_aggressive","words");
             }
+            for (size_t i=0; tokens[i]; i++) free(tokens[i]);
+            free(tokens);
         }
-        else if (strcmp(flow_type, "sentences") == 0) {
-            char **sentences = fossil_io_soap_split(work, "sentences");
-            for (size_t i = 0; sentences[i]; i++) {
-                if (options) {
-                    if (options->analyze_grammar)
-                        fossil_io_soap_analyze_grammar_style(sentences[i]);
-                    if (options->detect_spam)
-                        fossil_io_soap_detect(sentences[i], "spam", "sentences");
-                    if (options->detect_ragebait)
-                        fossil_io_soap_detect(sentences[i], "ragebait", "sentences");
-                }
+        else if (strcmp(flow_type,"sentences")==0) {
+            char **sentences = fossil_io_soap_split(r->processed_text,"sentences");
+            for (size_t i=0; sentences[i]; i++) {
+                if (!options) continue;
+                if (options->analyze_grammar || options->include_style)
+                    r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
+                if (options->detect_spam) r->flags.spam |= detect_flag(sentences[i],"spam","sentences");
+                if (options->detect_ragebait) r->flags.ragebait |= detect_flag(sentences[i],"ragebait","sentences");
+                if (options->detect_clickbait) r->flags.clickbait |= detect_flag(sentences[i],"clickbait","sentences");
+                if (options->detect_bot) r->flags.bot |= detect_flag(sentences[i],"bot","sentences");
+                if (options->detect_marketing) r->flags.marketing |= detect_flag(sentences[i],"marketing","sentences");
+                if (options->detect_technobabble) r->flags.technobabble |= detect_flag(sentences[i],"technobabble","sentences");
+                if (options->detect_hype) r->flags.hype |= detect_flag(sentences[i],"hype","sentences");
+                if (options->detect_political) r->flags.political |= detect_flag(sentences[i],"political","sentences");
+                if (options->detect_offensive) r->flags.offensive |= detect_flag(sentences[i],"offensive","sentences");
+                if (options->detect_misinformation) r->flags.misinformation |= detect_flag(sentences[i],"misinformation","sentences");
+                if (options->detect_morse) r->flags.leet |= detect_flag(sentences[i],"morse","sentences");
             }
+            for (size_t i=0; sentences[i]; i++) free(sentences[i]);
+            free(sentences);
         }
-        else if (strcmp(flow_type, "documents") == 0) {
-            if (options) {
-                if (options->analyze_redundancy || options->analyze_paragraph_cohesion)
-                    fossil_io_soap_score(work); // placeholder for document-level metrics
-                if (options->detect_propaganda)
-                    fossil_io_soap_detect(work, "propaganda", "documents");
-                if (options->detect_conspiracy)
-                    fossil_io_soap_detect(work, "conspiracy", "documents");
-                if (options->include_summary)
-                    fossil_io_soap_summarize(work);
-            }
+        else if (strcmp(flow_type,"documents")==0) {
+            if (!options) options = &(fossil_io_soap_options_t){0};
+            if (options->analyze_redundancy || options->analyze_paragraph_cohesion || options->include_scores)
+                r->scores = fossil_io_soap_score(r->processed_text);
+            if (options->detect_propaganda) r->flags.propaganda |= detect_flag(r->processed_text,"propaganda","documents");
+            if (options->detect_conspiracy) r->flags.conspiracy |= detect_flag(r->processed_text,"conspiracy","documents");
+            if (options->include_summary) r->summary = fossil_io_soap_summarize(r->processed_text);
         }
     }
 
-    /* Step 3: Additional options-controlled outputs (style, flags, debug) */
-    if (options) {
-        if (options->include_style)
-            fossil_io_soap_analyze_grammar_style(work);
-        if (options->include_scores)
-            fossil_io_soap_score(work);
-        if (options->include_debug)
-            ; /* optional debug logging or internal diagnostics */
-    }
-
-    return work;
+    return r;
 }
