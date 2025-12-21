@@ -335,39 +335,70 @@ char *fossil_io_soap_summarize(const char *text){
  * High-level process with flow-type dispatch
  * ============================================================================ */
 
-char *fossil_io_soap_process(const char *text,const char *flow_type,const fossil_io_soap_options_t *options){
-    if(!text) return NULL;
-    char *work=dupstr(text);
+char *fossil_io_soap_process(const char *text,
+                             const char *flow_type,
+                             const fossil_io_soap_options_t *options)
+{
+    if (!text) return NULL;
 
-    /* decode Morse if detected */
-    if(fossil_io_soap_detect(work,"morse","signal")){
-        char *tmp=decode_morse(work);
-        free(work); work=tmp;
+    /* Step 0: duplicate input for safe processing */
+    char *work = dupstr(text);
+
+    /* Step 1: decode Morse if detected */
+    if (fossil_io_soap_detect(work, "morse", flow_type)) {
+        char *tmp = decode_morse(work);
+        free(work);
+        work = tmp;
     }
 
-    /* normalization / sanitization / grammar correction */
-    if(options){
-        if(options->apply_sanitization){ char *tmp=fossil_io_soap_sanitize(work); free(work); work=tmp; }
-        if(options->apply_normalization){ char *tmp=fossil_io_soap_normalize(work); free(work); work=tmp; }
-        if(options->apply_grammar_correction){ char *tmp=fossil_io_soap_correct_grammar(work); free(work); work=tmp; }
+    /* Step 2: apply sanitization, normalization, grammar correction */
+    if (options) {
+        if (options->apply_sanitization) {
+            char *tmp = fossil_io_soap_sanitize(work);
+            free(work);
+            work = tmp;
+        }
+        if (options->apply_normalization) {
+            char *tmp = fossil_io_soap_normalize(work);
+            free(work);
+            work = tmp;
+        }
+        if (options->apply_grammar_correction) {
+            char *tmp = fossil_io_soap_correct_grammar(work);
+            free(work);
+            work = tmp;
+        }
     }
 
-    /* flow-type dispatch */
-    if(flow_type){
-        if(!strcmp(flow_type,"words")){
-            char **tokens=fossil_io_soap_split(work,"words");
-            for(size_t i=0;tokens[i];i++){
-                fossil_io_soap_detect(tokens[i],"brain_rot","words");
+    /* Step 3: Flow-type specific processing */
+    if (flow_type) {
+        if (strcmp(flow_type, "words") == 0) {
+            /* Token-level processing */
+            char **tokens = fossil_io_soap_split(work, "words");
+            for (size_t i = 0; tokens[i]; i++) {
+                /* Detect brain-rot or leet patterns */
+                if (fossil_io_soap_detect(tokens[i], "brain_rot", "words") ||
+                    fossil_io_soap_detect(tokens[i], "leet", "words")) {
+                    /* Optional: mark / log / modify token here */
+                }
             }
-        } else if(!strcmp(flow_type,"sentences")){
-            char **sentences=fossil_io_soap_split(work,"sentences");
-            for(size_t i=0;sentences[i];i++){
+        }
+        else if (strcmp(flow_type, "sentences") == 0) {
+            /* Sentence-level processing */
+            char **sentences = fossil_io_soap_split(work, "sentences");
+            for (size_t i = 0; sentences[i]; i++) {
                 fossil_io_soap_analyze_grammar_style(sentences[i]);
                 fossil_io_soap_score(sentences[i]);
+                fossil_io_soap_detect(sentences[i], "spam", "sentences");
+                fossil_io_soap_detect(sentences[i], "ragebait", "sentences");
             }
-        } else if(!strcmp(flow_type,"documents")){
+        }
+        else if (strcmp(flow_type, "documents") == 0) {
+            /* Document-level processing */
             fossil_io_soap_score(work);
             fossil_io_soap_summarize(work);
+            fossil_io_soap_detect(work, "propaganda", "documents");
+            fossil_io_soap_detect(work, "conspiracy", "documents");
         }
     }
 
