@@ -340,66 +340,81 @@ char *fossil_io_soap_process(const char *text,
                              const fossil_io_soap_options_t *options)
 {
     if (!text) return NULL;
-
-    /* Step 0: duplicate input for safe processing */
     char *work = dupstr(text);
 
-    /* Step 1: decode Morse if detected */
-    if (fossil_io_soap_detect(work, "morse", flow_type)) {
-        char *tmp = decode_morse(work);
-        free(work);
-        work = tmp;
+    /* Step 0: Decode Morse if detected */
+    if (!options || options->detect_brain_rot || options->detect_quality) {
+        if (fossil_io_soap_detect(work, "morse", flow_type)) {
+            char *tmp = decode_morse(work);
+            free(work);
+            work = tmp;
+        }
     }
 
-    /* Step 2: apply sanitization, normalization, grammar correction */
+    /* Step 1: Apply normalization/sanitization/grammar correction if enabled */
     if (options) {
         if (options->apply_sanitization) {
             char *tmp = fossil_io_soap_sanitize(work);
-            free(work);
-            work = tmp;
+            free(work); work = tmp;
         }
         if (options->apply_normalization) {
             char *tmp = fossil_io_soap_normalize(work);
-            free(work);
-            work = tmp;
+            free(work); work = tmp;
         }
         if (options->apply_grammar_correction) {
             char *tmp = fossil_io_soap_correct_grammar(work);
-            free(work);
-            work = tmp;
+            free(work); work = tmp;
         }
     }
 
-    /* Step 3: Flow-type specific processing */
+    /* Step 2: Flow-type specific analysis based on enabled options */
     if (flow_type) {
         if (strcmp(flow_type, "words") == 0) {
-            /* Token-level processing */
             char **tokens = fossil_io_soap_split(work, "words");
             for (size_t i = 0; tokens[i]; i++) {
-                /* Detect brain-rot or leet patterns */
-                if (fossil_io_soap_detect(tokens[i], "brain_rot", "words") ||
-                    fossil_io_soap_detect(tokens[i], "leet", "words")) {
-                    /* Optional: mark / log / modify token here */
+                if (options) {
+                    if (options->detect_brain_rot)
+                        fossil_io_soap_detect(tokens[i], "brain_rot", "words");
+                    if (options->detect_quality)
+                        fossil_io_soap_detect(tokens[i], "leet", "words");
                 }
             }
         }
         else if (strcmp(flow_type, "sentences") == 0) {
-            /* Sentence-level processing */
             char **sentences = fossil_io_soap_split(work, "sentences");
             for (size_t i = 0; sentences[i]; i++) {
-                fossil_io_soap_analyze_grammar_style(sentences[i]);
-                fossil_io_soap_score(sentences[i]);
-                fossil_io_soap_detect(sentences[i], "spam", "sentences");
-                fossil_io_soap_detect(sentences[i], "ragebait", "sentences");
+                if (options) {
+                    if (options->analyze_grammar)
+                        fossil_io_soap_analyze_grammar_style(sentences[i]);
+                    if (options->detect_spam)
+                        fossil_io_soap_detect(sentences[i], "spam", "sentences");
+                    if (options->detect_ragebait)
+                        fossil_io_soap_detect(sentences[i], "ragebait", "sentences");
+                }
             }
         }
         else if (strcmp(flow_type, "documents") == 0) {
-            /* Document-level processing */
-            fossil_io_soap_score(work);
-            fossil_io_soap_summarize(work);
-            fossil_io_soap_detect(work, "propaganda", "documents");
-            fossil_io_soap_detect(work, "conspiracy", "documents");
+            if (options) {
+                if (options->analyze_redundancy || options->analyze_paragraph_cohesion)
+                    fossil_io_soap_score(work); // placeholder for document-level metrics
+                if (options->detect_propaganda)
+                    fossil_io_soap_detect(work, "propaganda", "documents");
+                if (options->detect_conspiracy)
+                    fossil_io_soap_detect(work, "conspiracy", "documents");
+                if (options->include_summary)
+                    fossil_io_soap_summarize(work);
+            }
         }
+    }
+
+    /* Step 3: Additional options-controlled outputs (style, flags, debug) */
+    if (options) {
+        if (options->include_style)
+            fossil_io_soap_analyze_grammar_style(work);
+        if (options->include_scores)
+            fossil_io_soap_score(work);
+        if (options->include_debug)
+            ; /* optional debug logging or internal diagnostics */
     }
 
     return work;
