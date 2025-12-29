@@ -581,11 +581,14 @@ typedef struct {
 } detector_map_t;
 
 /* ============================================================================
- * Detector map (including Morse)
+ * Full detector map
  * ============================================================================ */
 static const detector_map_t detector_map[] = {
+    /* Document-level */
     {"propaganda", propaganda_patterns},
     {"conspiracy", conspiracy_patterns},
+
+    /* Sentence-level */
     {"spam", spam_patterns},
     {"ragebait", ragebait_patterns},
     {"clickbait", clickbait_patterns},
@@ -596,6 +599,13 @@ static const detector_map_t detector_map[] = {
     {"political", political_patterns},
     {"offensive", offensive_patterns},
     {"misinfo", misinformation_patterns},
+
+    /* Word-level / slang */
+    {"brain_rot", brain_rot_patterns},
+    {"leet", NULL},       // handled separately
+    {"morse", NULL},      // handled separately
+
+    /* Stylistic / behavioral */
     {"formal", formal_patterns},
     {"casual", casual_patterns},
     {"sarcasm", sarcasm_patterns},
@@ -603,11 +613,15 @@ static const detector_map_t detector_map[] = {
     {"aggressive", aggressive_patterns},
     {"emotional", emotional_patterns},
     {"passive_aggressive", passive_aggressive_patterns},
-    {"brain_rot", brain_rot_patterns},  // now uses a table
-    {"leet", NULL},       // handled separately
-    {"morse", NULL},      // handled separately
+
+    /* Structural (logic handled separately) */
+    {"redundant_sentences", NULL},
+    {"poor_cohesion", NULL},
+    {"repeated_words", NULL},
+
     {NULL, NULL}          // sentinel
 };
+
 
 /* ========================= Helper: get patterns by ID ========================= */
 static const pattern_t *get_patterns(const char *detector_id) {
@@ -617,6 +631,76 @@ static const pattern_t *get_patterns(const char *detector_id) {
         }
     }
     return NULL;
+}
+
+/* ============================================================================
+ * Structural detection helpers
+ * ============================================================================ */
+
+static int detect_redundant_sentences(char **sentences) {
+    if (!sentences) return 0;
+    for (size_t i = 0; sentences[i]; i++) {
+        for (size_t j = i + 1; sentences[j]; j++) {
+            if (strcmp(sentences[i], sentences[j]) == 0) return 1;
+        }
+    }
+    return 0;
+}
+
+static int detect_repeated_words(char **words) {
+    if (!words) return 0;
+    for (size_t i = 0; words[i]; i++) {
+        for (size_t j = i + 1; words[j]; j++) {
+            if (strcmp(words[i], words[j]) == 0) return 1;
+        }
+    }
+    return 0;
+}
+
+static int detect_poor_cohesion(char **sentences) {
+    if (!sentences) return 0;
+
+    const char *linkers[] = {
+        "and","but","so","because","however","therefore","thus","meanwhile",
+        "moreover","furthermore","consequently","in addition","as a result",NULL
+    };
+
+    size_t total = 0;
+    size_t weak = 0;
+
+    for (size_t i = 0; sentences[i]; i++) {
+        total++;
+
+        // Count words
+        size_t word_count = 0;
+        char *copy = dupstr(sentences[i]);
+        for (char *tok = strtok(copy, " \t\n"); tok; tok = strtok(NULL, " \t\n")) word_count++;
+        free(copy);
+        if (word_count < 5) weak++;
+
+        // Check if next sentence starts with a linker (punctuation-aware)
+        if (sentences[i+1]) {
+            char *next = dupstr(sentences[i+1]);
+            // skip leading punctuation and spaces
+            char *p = next;
+            while (*p && (isspace((unsigned char)*p) || ispunct((unsigned char)*p))) p++;
+
+            int has_linker = 0;
+            for (size_t k = 0; linkers[k]; k++) {
+                size_t len = strlen(linkers[k]);
+                if (strncasecmp(p, linkers[k], len) == 0 &&
+                    (isspace((unsigned char)p[len]) || ispunct((unsigned char)p[len]) || p[len]==0)) {
+                    has_linker = 1;
+                    break;
+                }
+            }
+            if (!has_linker) weak++;
+            free(next);
+        }
+    }
+
+    if (total == 0) return 0;
+    return ((double)weak / total) > 0.3;
 }
 
 /* ============================================================================
@@ -630,7 +714,7 @@ static int match_brain_rot(const char *word) {
 }
 
 /* ============================================================================
- * Refactored fossil_io_soap_detect with Morse support
+ * Refactored fossil_io_soap_detect with Morse, BrainRot, Leet, and Structural
  * ============================================================================ */
 int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (!text || !detector_id) return 0;
@@ -643,58 +727,71 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     strtolower(norm);
 
     const pattern_t *patterns = get_patterns(detector_id);
-    if (patterns) {
-        result |= match_patterns(norm, patterns);
-    }
-
+    if (patterns) result |= match_patterns(norm, patterns);
     free(norm);
 
     /* ================= Sentence-level detection ================= */
     char **sentences = fossil_io_soap_split(text, "sentences");
-    for (size_t i = 0; sentences && sentences[i]; i++) {
-        char *s_norm = dupstr(sentences[i]);
-        normalize_leet(s_norm);
-        strtolower(s_norm);
+    if (sentences) {
+        for (size_t i = 0; sentences[i]; i++) {
+            char *s_norm = dupstr(sentences[i]);
+            normalize_leet(s_norm);
+            strtolower(s_norm);
 
-        if (patterns) {
-            result |= match_patterns(s_norm, patterns);
+            if (patterns) result |= match_patterns(s_norm, patterns);
+
+            free(s_norm);
         }
-
-        free(s_norm);
     }
-
-    for (size_t i = 0; sentences && sentences[i]; i++) free(sentences[i]);
-    free(sentences);
 
     /* ================= Word-level detection ================= */
     char **words = fossil_io_soap_split(text, "words");
-    for (size_t i = 0; words && words[i]; i++) {
-        char *w_norm = dupstr(words[i]);
-        normalize_leet(w_norm);
-        strtolower(w_norm);
+    if (words) {
+        for (size_t i = 0; words[i]; i++) {
+            char *w_norm = dupstr(words[i]);
+            normalize_leet(w_norm);
+            strtolower(w_norm);
 
-        if (strcmp(detector_id, "brain_rot") == 0) {
-            if (match_brain_rot(w_norm)) result = 1;
-        } else if (strcmp(detector_id, "leet") == 0) {
-            for (char *p = w_norm; *p; p++)
-                if (*p == '4' || *p == '3' || *p == '1' || *p == '0' || *p == '5' || *p == '7') {
-                    result = 1;
-                    break;
+            if (strcmp(detector_id, "brain_rot") == 0) {
+                if (match_brain_rot(w_norm)) result = 1;
+            } else if (strcmp(detector_id, "leet") == 0) {
+                for (char *p = w_norm; *p; p++)
+                    if (*p == '4' || *p == '3' || *p == '1' || *p == '0' || *p == '5' || *p == '7') {
+                        result = 1;
+                        break;
+                    }
+            } else if (strcmp(detector_id, "morse") == 0) {
+                char *decoded = decode_morse(w_norm);
+                if (decoded) {
+                    for (size_t j=0; j<strlen(decoded); j++)
+                        if (isalpha(decoded[j])) { result = 1; break; }
+                    free(decoded);
                 }
-        } else if (strcmp(detector_id, "morse") == 0) {
-            char *decoded = decode_morse(w_norm);
-            if (decoded) {
-                for (size_t j=0; j<strlen(decoded); j++)
-                    if (isalpha(decoded[j])) { result = 1; break; }
-                free(decoded);
             }
-        }
 
-        free(w_norm);
+            free(w_norm);
+        }
     }
 
-    for (size_t i = 0; words && words[i]; i++) free(words[i]);
-    free(words);
+    /* ================= Structural detection ================= */
+    if (strcmp(detector_id, "redundant_sentences") == 0) {
+        result = detect_redundant_sentences(sentences);
+    } else if (strcmp(detector_id, "repeated_words") == 0) {
+        result = detect_repeated_words(words);
+    } else if (strcmp(detector_id, "poor_cohesion") == 0) {
+        result = detect_poor_cohesion(sentences);
+    }
+
+    /* ================= Cleanup ================= */
+    if (sentences) {
+        for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
+        free(sentences);
+    }
+
+    if (words) {
+        for (size_t i = 0; words[i]; i++) free(words[i]);
+        free(words);
+    }
 
     return result;
 }
