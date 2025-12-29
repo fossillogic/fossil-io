@@ -141,6 +141,8 @@ typedef struct {
     /** Detect passive-aggressive phrasing patterns. */
     int detect_passive_aggressive;
 
+    int detect_morse;
+
     /* =====================================================================
      * Structural & linguistic analysis
      * ===================================================================== */
