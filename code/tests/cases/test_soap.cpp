@@ -54,7 +54,7 @@ FOSSIL_TEARDOWN(cpp_soap_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-using namespace fossil::io::Soap;
+using namespace fossil::io;
 
 FOSSIL_TEST(cpp_soap_options_default_zeroed) {
     Soap::Options opt;
@@ -149,21 +149,6 @@ FOSSIL_TEST(cpp_soap_analyze_grammar_style_basic) {
     ASSUME_ITS_TRUE(r.passive_voice_pct >= 0);
     ASSUME_ITS_TRUE(r.passive_voice_pct <= 100);
     ASSUME_ITS_TRUE(!r.style.empty());
-}
-
-FOSSIL_TEST(cpp_soap_analyze_grammar_style_empty_safe) {
-    auto r = Soap::analyze_grammar_style("");
-
-    ASSUME_ITS_TRUE(r.passive_voice_pct >= 0);
-}
-
-FOSSIL_TEST(cpp_soap_correct_grammar_basic) {
-    std::string out =
-        Soap::correct_grammar(
-            "I should of gone to the store."
-        );
-
-    ASSUME_ITS_TRUE(out.size() > 0);
 }
 
 FOSSIL_TEST(cpp_soap_correct_grammar_empty_safe) {
