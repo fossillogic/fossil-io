@@ -380,7 +380,7 @@ namespace fossil {
             struct Options {
                 fossil_io_soap_options_t c_options;
             
-                Options() { std::memset(&c_options, 0, sizeof(c_options)); }
+                Options() { memset(&c_options, 0, sizeof(c_options)); }
             
                 // ===============================
                 // Core quality signals
