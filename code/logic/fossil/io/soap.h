@@ -36,70 +36,167 @@ extern "C" {
 // SOAP v3 Analysis & Processing Options (Primary Control Surface)
 // ============================================================================
 
+/**
+ * fossil_io_soap_options_t
+ *
+ * Central configuration structure controlling all SOAP analysis, detection,
+ * normalization, and output behavior.
+ *
+ * Each field acts as an enable/disable switch (0 = off, non-zero = on),
+ * allowing callers to compose lightweight scans or full forensic analysis
+ * pipelines without recompilation.
+ *
+ * NOTE:
+ *  - Options are intentionally flat to avoid nested config churn.
+ *  - Fields may be interpreted as weights or thresholds in future versions.
+ *  - Unknown or unsupported flags MUST be ignored for forward compatibility.
+ */
 typedef struct {
 
     /* =====================================================================
      * Core quality signals (scored / weighted)
      * ===================================================================== */
-    int detect_quality;           // overall writing quality
-    int detect_clarity;           // clarity & coherence
-    int detect_tone;              // tone classification
-    int detect_readability;       // readability metrics
-    int detect_brain_rot;         // meme-speak, slang abuse, low-signal phrasing
+
+    /** Evaluate overall writing quality using combined heuristics:
+     *  grammar, clarity, coherence, redundancy, and signal density.
+     */
+    int detect_quality;
+
+    /** Measure clarity and logical coherence of ideas and sentence flow. */
+    int detect_clarity;
+
+    /** Classify tone (e.g., neutral, aggressive, sarcastic). */
+    int detect_tone;
+
+    /** Compute readability metrics (sentence length, word complexity, flow). */
+    int detect_readability;
+
+    /** Detect low-signal language such as meme-speak, excessive slang,
+     *  filler phrasing, or stylistic degradation ("brain rot").
+     */
+    int detect_brain_rot;
 
     /* =====================================================================
      * Content & intent detection
      * ===================================================================== */
+
+    /** Heuristic detection of spam-like or templated content. */
     int detect_spam;
+
+    /** Identify emotionally manipulative rage-bait patterns. */
     int detect_ragebait;
+
+    /** Detect exaggerated or curiosity-driven clickbait phrasing. */
     int detect_clickbait;
+
+    /** Detect non-human or automated text patterns. */
     int detect_bot;
+
+    /** Detect marketing, sales, or promotional language. */
     int detect_marketing;
+
+    /** Detect dense but low-meaning technical jargon. */
     int detect_technobabble;
+
+    /** Detect hype-driven exaggeration or inflated claims. */
     int detect_hype;
+
+    /** Identify political framing or messaging. */
     int detect_political;
+
+    /** Detect conspiratorial framing or narrative patterns. */
     int detect_conspiracy;
+
+    /** Detect offensive, abusive, or demeaning language. */
     int detect_offensive;
-    int detect_propaganda;        // agenda-driven manipulation
-    int detect_misinformation;    // false or misleading claims (heuristic)
+
+    /** Detect agenda-driven messaging or ideological persuasion. */
+    int detect_propaganda;
+
+    /** Heuristic detection of false, misleading, or unsupported claims. */
+    int detect_misinformation;
 
     /* =====================================================================
      * Behavioral / stylistic signals
      * ===================================================================== */
+
+    /** Detect formal or academic writing style. */
     int detect_formal;
+
+    /** Detect casual or conversational writing style. */
     int detect_casual;
+
+    /** Detect sarcasm or ironic phrasing. */
     int detect_sarcasm;
+
+    /** Detect emotionally neutral or objective tone. */
     int detect_neutral;
+
+    /** Detect aggressive or confrontational language. */
     int detect_aggressive;
+
+    /** Detect emotionally charged language. */
     int detect_emotional;
+
+    /** Detect passive-aggressive phrasing patterns. */
     int detect_passive_aggressive;
 
     /* =====================================================================
      * Structural & linguistic analysis
      * ===================================================================== */
+
+    /** Perform grammar validation and error detection. */
     int analyze_grammar;
+
+    /** Analyze overall writing style and consistency. */
     int analyze_style;
+
+    /** Measure passive voice usage frequency. */
     int analyze_passive_voice;
+
+    /** Analyze sentence complexity and syntactic depth. */
     int analyze_sentence_complexity;
+
+    /** Measure paragraph-level cohesion and flow. */
     int analyze_paragraph_cohesion;
+
+    /** Detect redundant phrasing or repeated ideas. */
     int analyze_redundancy;
+
+    /** Detect excessive word or phrase repetition. */
     int analyze_word_repetition;
 
     /* =====================================================================
      * Normalization & correction passes
      * ===================================================================== */
-    int apply_sanitization;       // sanitize low-quality language
-    int apply_normalization;      // whitespace, punctuation, casing
+
+    /** Sanitize low-quality or unsafe language. */
+    int apply_sanitization;
+
+    /** Normalize whitespace, punctuation, and casing. */
+    int apply_normalization;
+
+    /** Apply grammar correction heuristics. */
     int apply_grammar_correction;
 
     /* =====================================================================
      * Output controls
      * ===================================================================== */
+
+    /** Include a human-readable summary in the output. */
     int include_summary;
+
+    /** Include numerical quality and analysis scores. */
     int include_scores;
+
+    /** Include detected flags and classifications. */
     int include_flags;
+
+    /** Include style and tone descriptors. */
     int include_style;
-    int include_debug;            // include internal diagnostics
+
+    /** Include internal diagnostics and debug metadata. */
+    int include_debug;
 
 } fossil_io_soap_options_t;
 
@@ -107,45 +204,152 @@ typedef struct {
 // Sanitize, Analysis, & Summary
 // ============================================================================
 
+/**
+ * fossil_io_soap_sanitize
+ *
+ * Cleans and filters low-quality, unsafe, or disallowed language while
+ * preserving original meaning where possible.
+ *
+ * Returns:
+ *  - Newly allocated sanitized string (caller owns memory)
+ *  - NULL on allocation or processing failure
+ */
 char *fossil_io_soap_sanitize(const char *text);
+
+/**
+ * fossil_io_soap_suggest
+ *
+ * Generates improvement suggestions for clarity, tone, or quality without
+ * directly modifying the original text.
+ *
+ * Intended for assistive or review workflows.
+ */
 char *fossil_io_soap_suggest(const char *text);
+
+/**
+ * fossil_io_soap_summarize
+ *
+ * Produces a concise summary capturing the primary intent and content of
+ * the input text.
+ */
 char *fossil_io_soap_summarize(const char *text);
 
 // ============================================================================
 // Grammar & Style Analysis
 // ============================================================================
 
+/**
+ * fossil_io_soap_grammar_style_t
+ *
+ * Aggregate result of grammar and stylistic analysis.
+ */
 typedef struct {
-    int grammar_ok;          // 1 = clean, 0 = issues found
-    int passive_voice_pct;   // 0–100
-    const char *style;       // "formal", "technical", "casual", etc.
+
+    /** 1 if no grammar issues detected, 0 otherwise. */
+    int grammar_ok;
+
+    /** Percentage of sentences using passive voice (0–100). */
+    int passive_voice_pct;
+
+    /** Classified writing style label (static string). */
+    const char *style;
+
 } fossil_io_soap_grammar_style_t;
 
-fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text);
+/**
+ * Analyzes grammar correctness and stylistic characteristics.
+ */
+fossil_io_soap_grammar_style_t
+fossil_io_soap_analyze_grammar_style(const char *text);
+
+/**
+ * Applies grammar correction heuristics and returns corrected text.
+ */
 char *fossil_io_soap_correct_grammar(const char *text);
 
 // ============================================================================
 // Readability, Clarity, & Quality Analysis
 // ============================================================================
 
+/**
+ * fossil_io_soap_scores_t
+ *
+ * Numerical scoring results normalized to 0–100.
+ */
 typedef struct {
-    int readability;   // 0–100
-    int clarity;       // 0–100
-    int quality;       // 0–100
+
+    /** Ease of reading and comprehension. */
+    int readability;
+
+    /** Logical clarity and coherence. */
+    int clarity;
+
+    /** Overall writing quality. */
+    int quality;
+
 } fossil_io_soap_scores_t;
 
+/**
+ * Computes readability, clarity, and quality scores.
+ */
 fossil_io_soap_scores_t fossil_io_soap_score(const char *text);
+
+/**
+ * Converts a readability score into a human-readable label.
+ */
 const char *fossil_io_soap_readability_label(int readability_score);
-int fossil_io_soap_detect(const char *text, const char *detector_id, const char *flow_type);
+
+/**
+ * Generic detection interface for a single detector identifier.
+ */
+int fossil_io_soap_detect(
+    const char *text,
+    const char *detector_id,
+    const char *flow_type
+);
+
+/**
+ * Splits text into logical units (sentences, paragraphs, blocks)
+ * based on flow type.
+ */
 char **fossil_io_soap_split(const char *text, const char *flow_type);
+
+/**
+ * Reflows text to a target line width.
+ */
 char *fossil_io_soap_reflow(const char *text, int width);
+
+/**
+ * Normalizes whitespace, punctuation, and casing.
+ */
 char *fossil_io_soap_normalize(const char *text);
+
+/**
+ * Applies capitalization rules.
+ *
+ * mode may indicate sentence-case, title-case, or preserve-case.
+ */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
 // ============================================================================
 // High-Level Text Processing
 // ============================================================================
 
+/**
+ * fossil_io_soap_process
+ *
+ * Executes a full SOAP processing pipeline using the supplied options.
+ *
+ * This function may perform:
+ *  - Detection and scoring
+ *  - Grammar and style analysis
+ *  - Sanitization and normalization
+ *  - Summary and metadata generation
+ *
+ * Returns:
+ *  - Newly allocated output string (caller owns memory)
+ *  - NULL on failure
+ */
 char *fossil_io_soap_process(
     const char *text,
     const char *flow_type,
