@@ -226,6 +226,7 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_analyze_grammar_style_empty_safe);
 
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_correct_grammar_basic);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_correct_grammar_empty_safe);
 
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_score_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_readability_label_bounds);
