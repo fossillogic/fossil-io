@@ -23,7 +23,6 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/soap.h"
-#include "soap.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
