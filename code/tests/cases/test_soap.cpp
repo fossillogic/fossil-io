@@ -151,9 +151,11 @@ FOSSIL_TEST(cpp_soap_analyze_grammar_style_basic) {
     ASSUME_ITS_TRUE(!r.style.empty());
 }
 
-FOSSIL_TEST(cpp_soap_correct_grammar_empty_safe) {
-    std::string out = Soap::correct_grammar("");
-    ASSUME_ITS_EQUAL_CSTR(out.c_str(), "");
+FOSSIL_TEST(cpp_soap_analyze_grammar_style_empty_safe) {
+    auto r = Soap::analyze_grammar_style("");
+    ASSUME_ITS_TRUE(r.passive_voice_pct >= 0);
+    ASSUME_ITS_TRUE(r.passive_voice_pct <= 100);
+    ASSUME_ITS_TRUE(r.style.empty());
 }
 
 FOSSIL_TEST(cpp_soap_correct_grammar_basic) {
@@ -163,11 +165,6 @@ FOSSIL_TEST(cpp_soap_correct_grammar_basic) {
         );
 
     ASSUME_ITS_TRUE(out.size() > 0);
-}
-
-FOSSIL_TEST(cpp_soap_correct_grammar_empty_safe) {
-    std::string out = Soap::correct_grammar("");
-    ASSUME_ITS_EQUAL_CSTR(out.c_str(), "");
 }
 
 FOSSIL_TEST(cpp_soap_score_basic) {
@@ -286,9 +283,7 @@ FOSSIL_TEST(cpp_soap_all_empty_inputs_safe) {
         Soap::sanitize("").size() == 0
     );
 
-    ASSUME_ITS_TRUE(
-        Soap::process("", "", &opt).size() >= 0
-    );
+    ASSUME_ITS_TRUE(Soap::process("", "", &opt).empty());
 }
 
 
