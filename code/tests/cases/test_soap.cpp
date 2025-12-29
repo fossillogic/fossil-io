@@ -54,6 +54,8 @@ FOSSIL_TEARDOWN(cpp_soap_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
+using namespace fossil::io;
+
 FOSSIL_TEST(cpp_soap_options_default_zeroed) {
     Soap::Options opt;
 
