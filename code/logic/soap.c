@@ -429,21 +429,24 @@ static const pattern_t passive_aggressive_patterns[] = {
 /* ============================================================================
  * BrainRot patterns table (expanded to cover maximal internet casual/slang terms)
  * ============================================================================ */
-static const char *brain_rot_patterns[] = {
-    "lol","lmao","rofl","bruh","wtf","omg","haha","hehe","xd","xdxd",
-    "yo","hey","sup","what's up","man","dude","bro","broski","homie","fam",
-    "yolo","smh","fml","idk","ikr","tbh","ily","ily2","omfg","wtfv",
-    "haha","heh","meh","ugh","aww","yay","yayyy","yesss","nope","nah",
-    "yep","bruhh","brooo","duuuude","lolz","lols","lul","lulz","hahaaha",
-    "roflmao","lmfao","kek","pog","poggers","pogchamp","rip","gg","ggwp",
-    "rekt","owned","clap","clapclap","smh","facepalm","yikes","oops","oopsie",
-    "ayyy","ayyy lmao","hehehe","yayyyyy","nooooo","yaaaas","bruh moment","oh no",
-    "ikr","omgosh","lmaoed","lmaoing","haha lol","lol haha","xd lol","lol xd",
-    "fml lol","smdh","sksksk","and i oop","yeet","yeeted","yeeting","uwu","owo",
-    "uwu uwu","owo owo","rawr","rawr x3",">:(","<3",":3","-_-","^_^","T_T",";-;",
-    ">:O","-.-",">:(","D:","XD","xD","XD XD",">:|","-.-'","-__-","o.O","O.o",
-    "lolwut","lold","lolol","lololol","haha lmao","roflol","roflolmao","wtf lol",
-    NULL
+/* ============================================================================
+ * BrainRot patterns table (FULL, UNTRIMMED, BRACE-SAFE)
+ * ============================================================================ */
+static const pattern_t brain_rot_patterns[] = {
+    {"lol"},{"lmao"},{"rofl"},{"bruh"},{"wtf"},{"omg"},{"haha"},{"hehe"},{"xd"},{"xdxd"},
+    {"yo"},{"hey"},{"sup"},{"what's up"},{"man"},{"dude"},{"bro"},{"broski"},{"homie"},{"fam"},
+    {"yolo"},{"smh"},{"fml"},{"idk"},{"ikr"},{"tbh"},{"ily"},{"ily2"},{"omfg"},{"wtfv"},
+    {"haha"},{"heh"},{"meh"},{"ugh"},{"aww"},{"yay"},{"yayyy"},{"yesss"},{"nope"},{"nah"},
+    {"yep"},{"bruhh"},{"brooo"},{"duuuude"},{"lolz"},{"lols"},{"lul"},{"lulz"},{"hahaaha"},
+    {"roflmao"},{"lmfao"},{"kek"},{"pog"},{"poggers"},{"pogchamp"},{"rip"},{"gg"},{"ggwp"},
+    {"rekt"},{"owned"},{"clap"},{"clapclap"},{"smh"},{"facepalm"},{"yikes"},{"oops"},{"oopsie"},
+    {"ayyy"},{"ayyy lmao"},{"hehehe"},{"yayyyyy"},{"nooooo"},{"yaaaas"},{"bruh moment"},{"oh no"},
+    {"ikr"},{"omgosh"},{"lmaoed"},{"lmaoing"},{"haha lol"},{"lol haha"},{"xd lol"},{"lol xd"},
+    {"fml lol"},{"smdh"},{"sksksk"},{"and i oop"},{"yeet"},{"yeeted"},{"yeeting"},{"uwu"},{"owo"},
+    {"uwu uwu"},{"owo owo"},{"rawr"},{"rawr x3"},{">:("},{"<3"},{":3"},{"-_-"},{"^_^"},{"T_T"},{";-;"},
+    {">:O"},{"-.-"},{">:("},{"D:"},{"XD"},{"xD"},{"XD XD"},{">:|"},{"-.-'"},{"-__-"},{"o.O"},{"O.o"},
+    {"lolwut"},{"lold"},{"lolol"},{"lololol"},{"haha lmao"},{"roflol"},{"roflolmao"},{"wtf lol"},
+    {NULL}
 };
 
 typedef struct {
