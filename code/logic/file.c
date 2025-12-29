@@ -1219,83 +1219,72 @@ int fossil_io_file_ai_generate_tags(fossil_io_file_t *f)
     }
     f->tag_count = 0;
 
-    // Only analyze text files
     if (f->is_binary) {
         f->tags[0] = fossil_io_cstring_create("binary");
         f->tag_count = 1;
         return 0;
     }
 
-    // Read up to 4096 bytes for tag analysis
     long orig_pos = ftell(f->file);
     fseek(f->file, 0, SEEK_SET);
+
     char buffer[4096 + 1] = {0};
     size_t bytes = fread(buffer, 1, sizeof(buffer) - 1, f->file);
     buffer[bytes] = '\0';
     fseek(f->file, orig_pos, SEEK_SET);
 
-    // Sanitize input before analysis
     char *sanitized = fossil_io_soap_sanitize(buffer);
 
-    // Tag generation using fossil_io_soap_* detection functions
     int max_tags = 16;
     int tag_idx = 0;
 
-    if (fossil_io_soap_detect_ragebait(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("ragebait");
-    if (fossil_io_soap_detect_clickbait(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("clickbait");
-    if (fossil_io_soap_detect_spam(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("spam");
-    if (fossil_io_soap_detect_woke(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("woke");
-    if (fossil_io_soap_detect_bot(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("bot");
-    if (fossil_io_soap_detect_sarcasm(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("sarcasm");
-    if (fossil_io_soap_detect_formal(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("formal");
-    if (fossil_io_soap_detect_snowflake(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("snowflake");
-    if (fossil_io_soap_detect_offensive(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("offensive");
-    if (fossil_io_soap_detect_neutral(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("neutral");
-    if (fossil_io_soap_detect_hype(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("hype");
-    if (fossil_io_soap_detect_quality(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("quality");
-    if (fossil_io_soap_detect_political(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("political");
-    if (fossil_io_soap_detect_conspiracy(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("conspiracy");
-    if (fossil_io_soap_detect_marketing(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("marketing");
-    if (fossil_io_soap_detect_technobabble(sanitized) && tag_idx < max_tags)
-        f->tags[tag_idx++] = fossil_io_cstring_create("technobabble");
+    struct { const char *id; const char *label; const char *flow; } detectors[] = {
+        {"ragebait", "ragebait", "sentences"},
+        {"clickbait", "clickbait", "sentences"},
+        {"spam", "spam", "sentences"},
+        {"woke", "woke", "words"},   // example, choose flow appropriately
+        {"bot", "bot", "sentences"},
+        {"sarcasm", "sarcasm", "words"},
+        {"formal", "formal", "words"},
+        {"snowflake", "snowflake", "words"},
+        {"offensive", "offensive", "sentences"},
+        {"neutral", "neutral", "words"},
+        {"hype", "hype", "sentences"},
+        {"quality", "quality", "words"},
+        {"political", "political", "sentences"},
+        {"conspiracy", "conspiracy", "documents"},
+        {"marketing", "marketing", "sentences"},
+        {"technobabble", "technobabble", "sentences"},
+    };
 
-    // Add readability and style tags
+    for (size_t i = 0; i < sizeof(detectors)/sizeof(detectors[0]); i++) {
+        if (tag_idx >= max_tags) break;
+        if (fossil_io_soap_detect(sanitized, detectors[i].id, detectors[i].flow))
+            f->tags[tag_idx++] = fossil_io_cstring_create(detectors[i].label);
+    }
+
+    // Readability
     if (tag_idx < max_tags) {
-        const char *readability = fossil_io_soap_readability_label(sanitized);
+        int readability_score = fossil_io_soap_score_readability(sanitized); // integer score
+        const char *readability = fossil_io_soap_readability_label(readability_score);
         if (readability && readability[0])
             f->tags[tag_idx++] = fossil_io_cstring_create(readability);
     }
+
+    // Style
     if (tag_idx < max_tags) {
-        const char *style = fossil_io_soap_analyze_style(sanitized);
-        if (style && style[0])
-            f->tags[tag_idx++] = fossil_io_cstring_create(style);
+        fossil_io_soap_grammar_style_t style_struct = fossil_io_soap_analyze_grammar_style(sanitized);
+        if (style_struct.label && style_struct.label[0])
+            f->tags[tag_idx++] = fossil_io_cstring_create(style_struct.label);
     }
 
-    // If no tags found, add "untagged"
     if (tag_idx == 0) {
         f->tags[0] = fossil_io_cstring_create("untagged");
         tag_idx = 1;
     }
 
     f->tag_count = tag_idx;
-
-    if (sanitized)
-        free(sanitized);
+    free(sanitized);
 
     return 0;
 }
