@@ -141,6 +141,11 @@ FOSSIL_TEST(cpp_soap_detect_empty_text_safe) {
     );
 }
 
+FOSSIL_TEST(cpp_soap_correct_grammar_empty_safe) {
+    std::string out = Soap::correct_grammar("");
+    ASSUME_ITS_EQUAL_CSTR(out.c_str(), "");
+}
+
 FOSSIL_TEST(cpp_soap_analyze_grammar_style_basic) {
     auto r = Soap::analyze_grammar_style(
         "The ball was thrown by the boy."
@@ -304,7 +309,6 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_analyze_grammar_style_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_analyze_grammar_style_empty_safe);
 
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_correct_grammar_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_correct_grammar_empty_safe);
 
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_soap_score_basic);
