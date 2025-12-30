@@ -310,7 +310,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id);
  * Splits text into logical units (sentences, paragraphs, blocks)
  * based on flow type.
  */
-char **fossil_io_soap_split(const char *text, int split_type);
+char **fossil_io_soap_split(const char *text);
 
 /**
  * Reflows text to a target line width.
@@ -519,8 +519,8 @@ namespace fossil {
             // ===============================
             // Splitting & Normalization
             // ===============================
-            static std::vector<std::string> split(const std::string &text, int split_type) {
-                char **arr = fossil_io_soap_split(text.c_str(), split_type);
+            static std::vector<std::string> split(const std::string &text) {
+                char **arr = fossil_io_soap_split(text.c_str());
                 std::vector<std::string> result;
                 if (!arr) return result;
                 for (size_t i = 0; arr[i]; ++i) {

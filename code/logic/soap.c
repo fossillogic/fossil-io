@@ -771,7 +771,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     free(norm);
 
     /* ================= Sentence-level detection ================= */
-    char **sentences = fossil_io_soap_split(text, 1);
+    char **sentences = fossil_io_soap_split(text);
     if (sentences) {
         for (size_t i = 0; sentences[i]; i++) {
             char *s_norm = dupstr(sentences[i]);
@@ -785,7 +785,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     }
 
     /* ================= Word-level detection ================= */
-    char **words = fossil_io_soap_split(text, 0);
+    char **words = fossil_io_soap_split(text);
     if (words) {
         for (size_t i = 0; words[i]; i++) {
             char *w_norm = dupstr(words[i]);
@@ -840,13 +840,20 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
  * Split / Reflow / Capitalize
  * ============================================================================ */
 
-char **fossil_io_soap_split(const char *text, int split_type) {
-    // split_type: 0 = words, 1 = sentences
+char **fossil_io_soap_split(const char *text) {
+    // Overload: if text contains sentence-ending punctuation, split as sentences; else, split as words.
     if (!text) return NULL;
+
+    // Heuristic: if text contains '.', '!' or '?', treat as sentences
+    int is_sentence = 0;
+    for (const char *q = text; *q; q++) {
+        if (*q == '.' || *q == '!' || *q == '?') { is_sentence = 1; break; }
+    }
+
     size_t count = 0;
     const char *p = text;
     while (*p) {
-        if (split_type == 0) {
+        if (!is_sentence) {
             if (isspace((unsigned char)*p)) count++;
         } else {
             if (*p == '.' || *p == '!' || *p == '?') count++;
@@ -858,8 +865,8 @@ char **fossil_io_soap_split(const char *text, int split_type) {
     const char *start = text;
     p = text;
     while (*p) {
-        if ((split_type == 0 && isspace((unsigned char)*p)) ||
-            (split_type == 1 && (*p == '.' || *p == '!' || *p == '?'))) {
+        if ((!is_sentence && isspace((unsigned char)*p)) ||
+            (is_sentence && (*p == '.' || *p == '!' || *p == '?'))) {
             size_t len = p - start;
             char *s = (char*)malloc(len + 1);
             strncpy(s, start, len); s[len] = 0;
@@ -914,7 +921,7 @@ char *fossil_io_soap_suggest(const char *text){
 
 char *fossil_io_soap_summarize(const char *text){
     if(!text) return NULL;
-    char **sentences=fossil_io_soap_split(text,"sentences");
+    char **sentences=fossil_io_soap_split(text);
     if(!sentences) return dupstr(text);
     char *out=malloc(1024);
     out[0]=0;
@@ -1001,7 +1008,7 @@ soap_process_internal(const char *text,
     if (options) {
 
         // Word-level
-        char **tokens = fossil_io_soap_split(r->processed_text, "words");
+        char **tokens = fossil_io_soap_split(r->processed_text);
         for (size_t i = 0; tokens && tokens[i]; i++) {
             if (options->detect_brain_rot)
                 r->flags.brain_rot |= detect_flag(tokens[i],"brain_rot");
@@ -1026,7 +1033,7 @@ soap_process_internal(const char *text,
         free(tokens);
 
         // Sentence-level
-        char **sentences = fossil_io_soap_split(r->processed_text, "sentences");
+        char **sentences = fossil_io_soap_split(r->processed_text);
         for (size_t i = 0; sentences && sentences[i]; i++) {
             if (options->analyze_grammar || options->include_style)
                 r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
