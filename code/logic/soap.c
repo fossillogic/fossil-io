@@ -581,8 +581,8 @@ static int detect_poor_cohesion(char **sentences) {
  * Word-level helpers
  * ============================================================================ */
 static int match_brain_rot(const char *word) {
-    for (int i=0; brain_rot_patterns[i]; i++) {
-        if (strstr(word, brain_rot_patterns[i])) return 1;
+    for (int i=0; brain_rot_patterns[i].pattern; i++) {
+        if (strstr(word, brain_rot_patterns[i].pattern)) return 1;
     }
     return 0;
 }
