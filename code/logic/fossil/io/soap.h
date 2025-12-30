@@ -304,11 +304,7 @@ const char *fossil_io_soap_readability_label(int readability_score);
 /**
  * Generic detection interface for a single detector identifier.
  */
-int fossil_io_soap_detect(
-    const char *text,
-    const char *detector_id,
-    const char *flow_type
-);
+int fossil_io_soap_detect(const char *text, const char *detector_id);
 
 /**
  * Splits text into logical units (sentences, paragraphs, blocks)
@@ -517,9 +513,8 @@ namespace fossil {
             // ===============================
             // Detection
             // ===============================
-            static bool detect(const std::string &text, const std::string &detector_id,
-                               const std::string &flow_type) {
-                return fossil_io_soap_detect(text.c_str(), detector_id.c_str(), flow_type.c_str()) != 0;
+            static bool detect(const std::string &text, const std::string &detector_id) {
+                return fossil_io_soap_detect(text.c_str(), detector_id.c_str()) != 0;
             }
       
             // ===============================
