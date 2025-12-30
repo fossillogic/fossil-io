@@ -147,8 +147,154 @@ fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *
     return r;
 }
 
-char *fossil_io_soap_correct_grammar(const char *text){
-    return dupstr(text); // placeholder: safe no-op
+char *fossil_io_soap_correct_grammar(const char *text)
+{
+    if (!text) return NULL;
+
+    char *out = malloc(strlen(text) * 2 + 4);
+    if (!out) return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    int new_sentence = 1;
+    int last_space = 0;
+    char last_char = 0;
+
+    while (*p) {
+        char c = *p++;
+
+        /* Normalize whitespace */
+        if (isspace((unsigned char)c)) {
+            if (!last_space) {
+                *q++ = ' ';
+                last_space = 1;
+            }
+            continue;
+        }
+
+        last_space = 0;
+
+        /* Capitalize start of sentences */
+        if (new_sentence && isalpha((unsigned char)c)) {
+            c = (char)toupper((unsigned char)c);
+            new_sentence = 0;
+        }
+
+        /* Fix duplicated punctuation (!!!, ??, ..) */
+        if (ispunct((unsigned char)c) && c == last_char) {
+            continue;
+        }
+
+        /* Track sentence boundaries */
+        if (c == '.' || c == '!' || c == '?') {
+            new_sentence = 1;
+        }
+
+        *q++ = c;
+        last_char = c;
+    }
+
+    /* Ensure terminal punctuation */
+    if (q > out && !ispunct((unsigned char)q[-1])) {
+        *q++ = '.';
+    }
+
+    *q = '\0';
+
+    /* ---- Common contraction fixes ---- */
+    struct {
+        const char *from;
+        const char *to;
+    } contractions[] = {
+    
+        /* ---- Negations ---- */
+        {" dont ", " don't "},
+        {" cant ", " can't "},
+        {" wont ", " won't "},
+        {" isnt ", " isn't "},
+        {" arent ", " aren't "},
+        {" wasnt ", " wasn't "},
+        {" werent ", " weren't "},
+        {" doesnt ", " doesn't "},
+        {" didnt ", " didn't "},
+        {" hasnt ", " hasn't "},
+        {" havent ", " haven't "},
+        {" hadnt ", " hadn't "},
+        {" couldnt ", " couldn't "},
+        {" wouldnt ", " wouldn't "},
+        {" shouldnt ", " shouldn't "},
+        {" mustnt ", " mustn't "},
+        {" neednt ", " needn't "},
+        {" darent ", " daren't "},
+    
+        /* ---- Pronoun + verb ---- */
+        {" im ", " I'm "},
+        {" ive ", " I've "},
+        {" ill ", " I'll "},
+        {" id ", " I'd "},
+        {" youre ", " you're "},
+        {" youve ", " you've "},
+        {" youll ", " you'll "},
+        {" youd ", " you'd "},
+        {" hes ", " he's "},
+        {" hed ", " he'd "},
+        {" hell ", " he'll "},
+        {" shes ", " she's "},
+        {" shed ", " she'd "},
+        {" shell ", " she'll "},
+        {" its ", " it's "},      /* NOTE: ambiguous but common error */
+        {" were ", " we're "},    /* also ambiguous; see notes below */
+        {" theyre ", " they're "},
+        {" theyve ", " they've "},
+        {" theyll ", " they'll "},
+        {" theyd ", " they'd "},
+    
+        /* ---- Demonstratives / relatives ---- */
+        {" thats ", " that's "},
+        {" theres ", " there's "},
+        {" whats ", " what's "},
+        {" whos ", " who's "},
+        {" wheres ", " where's "},
+        {" whens ", " when's "},
+        {" whys ", " why's "},
+        {" hows ", " how's "},
+    
+        /* ---- Modal + have ---- */
+        {" couldve ", " could've "},
+        {" wouldve ", " would've "},
+        {" shouldve ", " should've "},
+        {" mightve ", " might've "},
+        {" mustve ", " must've "},
+        {" mayve ", " may've "},
+    
+        /* ---- Let / that / there forms ---- */
+        {" lets ", " let's "},
+        {" thats ", " that's "},
+        {" theres ", " there's "},
+    
+        /* ---- Double-space edge anchors ---- */
+        {" dont.", " don't."},
+        {" dont,", " don't,"},
+        {" cant.", " can't."},
+        {" cant,", " can't,"},
+        {" wont.", " won't."},
+        {" wont,", " won't,"},
+    
+        {NULL, NULL}
+    };
+
+    for (int i = 0; contractions[i].from; i++) {
+        char *pos;
+        while ((pos = strstr(out, contractions[i].from))) {
+            size_t a = strlen(contractions[i].from);
+            size_t b = strlen(contractions[i].to);
+            memmove(pos + b, pos + a, strlen(pos + a) + 1);
+            memcpy(pos, contractions[i].to, b);
+        }
+    }
+
+    return out;
 }
 
 /* ============================================================================
