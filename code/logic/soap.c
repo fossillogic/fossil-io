@@ -46,6 +46,16 @@ static void strtolower(char *s) {
     for (; *s; s++) *s = (char)tolower((unsigned char)*s);
 }
 
+static int soap_is_abbrev(const char *s) {
+    static const char *abbr[] = {
+        "mr.", "mrs.", "dr.", "vs.", "etc.", "e.g.", "i.e.", NULL
+    };
+    for (int i = 0; abbr[i]; i++)
+        if (strcasecmp(s, abbr[i]) == 0)
+            return 1;
+    return 0;
+}
+
 /* ============================================================================
  * Leetspeak normalization
  * ============================================================================ */
