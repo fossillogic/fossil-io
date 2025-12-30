@@ -747,6 +747,15 @@ static int match_brain_rot(const char *word) {
 /* ============================================================================
  * Refactored fossil_io_soap_detect with Morse, BrainRot, Leet, and Structural
  * ============================================================================ */
+/* Helper: match_patterns implementation */
+static int match_patterns(const char *text, const pattern_t *patterns) {
+    if (!text || !patterns) return 0;
+    for (int i = 0; patterns[i].pattern; i++) {
+        if (strstr(text, patterns[i].pattern)) return 1;
+    }
+    return 0;
+}
+
 int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (!text || !detector_id) return 0;
 
@@ -831,37 +840,38 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
  * Split / Reflow / Capitalize
  * ============================================================================ */
 
-char **fossil_io_soap_split(const char *text, const char *flow_type){
-    if(!text) return NULL;
-    size_t count=0;
-    const char *p=text;
-    while(*p){
-        if(!strcmp(flow_type,"words")){
-            if(isspace((unsigned char)*p)) count++;
-        }else{
-            if(*p=='.'||*p=='!'||*p=='?') count++;
+char **fossil_io_soap_split(const char *text, int split_type) {
+    // split_type: 0 = words, 1 = sentences
+    if (!text) return NULL;
+    size_t count = 0;
+    const char *p = text;
+    while (*p) {
+        if (split_type == 0) {
+            if (isspace((unsigned char)*p)) count++;
+        } else {
+            if (*p == '.' || *p == '!' || *p == '?') count++;
         }
         p++;
     }
-    char **arr = (char**)malloc(sizeof(char*)*(count+2));
-    size_t idx=0;
-    const char *start=text;
-    p=text;
-    while(*p){
-        if((!strcmp(flow_type,"words") && isspace((unsigned char)*p)) ||
-           (!strcmp(flow_type,"sentences") && (*p=='.'||*p=='!'||*p=='?'))){
-            size_t len=p-start;
-            char *s=(char*)malloc(len+1);
-            strncpy(s,start,len); s[len]=0;
-            arr[idx++]=s;
-            start=p+1;
+    char **arr = (char**)malloc(sizeof(char*) * (count + 2));
+    size_t idx = 0;
+    const char *start = text;
+    p = text;
+    while (*p) {
+        if ((split_type == 0 && isspace((unsigned char)*p)) ||
+            (split_type == 1 && (*p == '.' || *p == '!' || *p == '?'))) {
+            size_t len = p - start;
+            char *s = (char*)malloc(len + 1);
+            strncpy(s, start, len); s[len] = 0;
+            arr[idx++] = s;
+            start = p + 1;
         }
         p++;
     }
-    if(*start){
-        arr[idx++]=dupstr(start);
+    if (*start) {
+        arr[idx++] = dupstr(start);
     }
-    arr[idx]=NULL;
+    arr[idx] = NULL;
     return arr;
 }
 

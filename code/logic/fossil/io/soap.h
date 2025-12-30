@@ -310,7 +310,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id);
  * Splits text into logical units (sentences, paragraphs, blocks)
  * based on flow type.
  */
-char **fossil_io_soap_split(const char *text, const char *flow_type);
+char **fossil_io_soap_split(const char *text);
 
 /**
  * Reflows text to a target line width.
@@ -350,7 +350,6 @@ char *fossil_io_soap_capitalize(const char *text, int mode);
  */
 char *fossil_io_soap_process(
     const char *text,
-    const char *flow_type,
     const fossil_io_soap_options_t *options
 );
 
@@ -520,8 +519,8 @@ namespace fossil {
             // ===============================
             // Splitting & Normalization
             // ===============================
-            static std::vector<std::string> split(const std::string &text, const std::string &flow_type) {
-                char **arr = fossil_io_soap_split(text.c_str(), flow_type.c_str());
+            static std::vector<std::string> split(const std::string &text) {
+                char **arr = fossil_io_soap_split(text.c_str());
                 std::vector<std::string> result;
                 if (!arr) return result;
                 for (size_t i = 0; arr[i]; ++i) {
@@ -557,10 +556,9 @@ namespace fossil {
             // High-Level Process
             // ===============================
             static std::string process(const std::string &text,
-                                       const std::string &flow_type,
                                        const Options *options = nullptr) {
                 const fossil_io_soap_options_t *opt_ptr = options ? &options->c_options : nullptr;
-                char *res = fossil_io_soap_process(text.c_str(), flow_type.c_str(), opt_ptr);
+                char *res = fossil_io_soap_process(text.c_str(), opt_ptr);
                 std::string out = res ? res : "";
                 free(res);
                 return out;
