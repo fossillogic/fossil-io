@@ -771,7 +771,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     free(norm);
 
     /* ================= Sentence-level detection ================= */
-    char **sentences = fossil_io_soap_split(text, "sentences");
+    char **sentences = fossil_io_soap_split(text, 1);
     if (sentences) {
         for (size_t i = 0; sentences[i]; i++) {
             char *s_norm = dupstr(sentences[i]);
@@ -785,7 +785,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     }
 
     /* ================= Word-level detection ================= */
-    char **words = fossil_io_soap_split(text, "words");
+    char **words = fossil_io_soap_split(text, 0);
     if (words) {
         for (size_t i = 0; words[i]; i++) {
             char *w_norm = dupstr(words[i]);
