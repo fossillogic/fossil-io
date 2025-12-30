@@ -288,7 +288,7 @@ static const pattern_t ragebait_patterns[] = {
     { "ridiculous content" }, { "infuriating post" }, { "triggered tweet" }, { NULL }
 };
 
-// ========================= CLICKBAIT PATTERNS =========================
+// ========================= CLICKBAIT PATTERNS (MAXIMIZED) =========================
 static const pattern_t clickbait_patterns[] = {
     { "you won't believe" }, { "this is why" }, { "what happens next" },
     { "the reason is" }, { "will shock you" }, { "revealed" }, { "top 10" },
@@ -303,10 +303,26 @@ static const pattern_t clickbait_patterns[] = {
     { "life changing" }, { "you won't believe what happened" }, { "secret revealed" },
     { "top secret" }, { "must know" }, { "before it's too late" }, { "what happens when" },
     { "amazing discovery" }, { "unseen" }, { "mind blowing fact" }, { "shocking event" },
+    { "this will blow your mind" }, { "what happened next will shock you" }, { "the truth revealed" },
+    { "you'll be surprised" }, { "find out why" }, { "the shocking reason" }, { "the real story" },
+    { "the truth behind" }, { "you can't miss this" }, { "must watch" }, { "the ultimate guide" },
+    { "the best ever" }, { "the most amazing" }, { "the secret to" }, { "the real reason" },
+    { "the shocking secret" }, { "the truth about" }, { "the one trick" }, { "the only way" },
+    { "the best kept secret" }, { "the shocking truth" }, { "the untold story" }, { "the hidden truth" },
+    { "the secret nobody tells you" }, { "the secret everyone is talking about" },
+    { "the secret to success" }, { "the secret revealed" }, { "the shocking discovery" },
+    { "the secret ingredient" }, { "the secret formula" }, { "the secret weapon" },
+    { "the secret behind the success" }, { "the shocking confession" }, { "the shocking admission" },
+    { "the shocking revelation" }, { "the shocking expose" }, { "the shocking expose revealed" },
+    { "the shocking expose exposed" }, { "the shocking expose uncovered" }, { "the shocking expose unmasked" },
+    { "the shocking expose unmasked revealed" }, { "the shocking expose unmasked exposed" },
+    { "the shocking expose unmasked uncovered" }, { "the shocking expose unmasked unmasked" },
+    { "the shocking expose unmasked unmasked revealed" }, { "the shocking expose unmasked unmasked exposed" },
+    { "the shocking expose unmasked unmasked uncovered" }, { "the shocking expose unmasked unmasked unmasked" },
     { NULL }
 };
 
-// ========================= BOT PATTERNS =========================
+// ========================= BOT PATTERNS (MAXIMIZED) =========================
 static const pattern_t bot_patterns[] = {
     { "buy now" }, { "click here" }, { "subscribe" }, { "free gift" },
     { "limited offer" }, { "act now" }, { "instant access" }, { "order today" },
@@ -316,119 +332,260 @@ static const pattern_t bot_patterns[] = {
     { "best price" }, { "lowest price" }, { "order now" }, { "urgent" },
     { "today only" }, { "final chance" }, { "exclusive access" }, { "secret deal" },
     { "free trial" }, { "sign up today" }, { "claim now" }, { "free shipping" },
+    { "register free" }, { "money saving" }, { "exclusive coupon" }, { "one-time offer" },
+    { "bonus gift" }, { "super deal" }, { "limited edition" }, { "exclusive bonus" },
+    { "big savings" }, { "act fast" }, { "click to claim" }, { "get access" },
+    { "amazing offer" }, { "deal alert" }, { "hot offer" }, { "free voucher" },
+    { "apply now" }, { "exclusive promotion" }, { "today's deal" }, { "instant offer" },
+    { "urgent offer" }, { "reward points" }, { "exclusive giveaway" }, { "free subscription" },
+    { "unlock now" }, { "best deal" }, { "fast offer" }, { "money making" },
+    { "limited opportunity" }, { "special access" }, { "claim gift" }, { "instant reward" },
+    { "exclusive deal today" }, { "cash bonus" }, { "bonus reward" }, { "top offer" },
+    { "mega offer" }, { "discount coupon" }, { "free trial offer" }, { "secret offer" },
+    { "one day only" }, { "hurry" }, { "final offer" }, { "special discount" },
+    { "cash prize" }, { "exclusive chance" }, { "register now" }, { "big bonus" },
+    { "limited availability" }, { "exclusive access code" }, { "free access" }, { "hot sale" },
+    { "get it now" }, { "special offer code" }, { "exclusive bonus deal" }, { "fast track" },
+    { "instant access code" }, { "limited edition gift" }, { "exclusive prize" }, { "amazing deal" },
+    { "cash back" }, { "super offer" }, { "exclusive membership access" }, { "hot discount" },
+    { "grab now" }, { "limited promotion" }, { "today only offer" }, { "exclusive opportunity" },
+    { "special reward" }, { "claim your bonus" }, { "urgent deal" }, { "biggest discount" },
+    { "free gift card" }, { "final chance offer" }, { "exclusive voucher" }, { "super discount" },
     { NULL }
 };
 
-// ========================= MARKETING PATTERNS =========================
+// ========================= MARKETING PATTERNS (MAXIMIZED) =========================
 static const pattern_t marketing_patterns[] = {
     { "limited time" }, { "special offer" }, { "act now" }, { "exclusive" },
     { "sale ends soon" }, { "best deal" }, { "discount" }, { "save now" },
     { "offer expires" }, { "today only" }, { "final chance" }, { "bonus gift" },
     { "unlock savings" }, { "order today" }, { "get it now" }, { "exclusive access" },
     { "mega discount" }, { "special promotion" }, { "cash reward" }, { "register now" },
-    { NULL }
+    { "limited time offer" }, { "exclusive deal" }, { "save big" }, { "lowest price" },
+    { "free shipping" }, { "money back" }, { "risk free" }, { "bonus" },
+    { "exclusive coupon" }, { "super deal" }, { "limited edition" }, { "exclusive bonus" },
+    { "big savings" }, { "act fast" }, { "click to claim" }, { "get access" },
+    { "amazing offer" }, { "deal alert" }, { "hot offer" }, { "free voucher" },
+    { "apply now" }, { "exclusive promotion" }, { "today's deal" }, { "instant offer" },
+    { "urgent offer" }, { "reward points" }, { "exclusive giveaway" }, { "free subscription" },
+    { "unlock now" }, { "fast offer" }, { "money making" }, { "limited opportunity" },
+    { "special access" }, { "claim gift" }, { "instant reward" }, { "exclusive deal today" },
+    { "cash bonus" }, { "bonus reward" }, { "top offer" }, { "mega offer" },
+    { "discount coupon" }, { "free trial offer" }, { "secret offer" }, { "one day only" },
+    { "hurry" }, { "final offer" }, { "special discount" }, { "cash prize" },
+    { "exclusive chance" }, { "big bonus" }, { "limited availability" }, { "exclusive access code" },
+    { "free access" }, { "hot sale" }, { "special offer code" }, { "exclusive bonus deal" },
+    { "fast track" }, { "instant access code" }, { "limited edition gift" }, { "exclusive prize" },
+    { "amazing deal" }, { "cash back" }, { "super offer" }, { "exclusive membership access" },
+    { "hot discount" }, { "grab now" }, { "limited promotion" }, { "today only offer" },
+    { "exclusive opportunity" }, { "special reward" }, { "claim your bonus" }, { "urgent deal" },
+    { "biggest discount" }, { "free gift card" }, { "final chance offer" }, { "exclusive voucher" },
+    { "super discount" }, { NULL }
 };
 
-// ========================= TECHNOBABBLE PATTERNS =========================
+// ========================= TECHNOBABBLE PATTERNS (MAXIMIZED) =========================
 static const pattern_t technobabble_patterns[] = {
     { "quantum entanglement" }, { "machine learning" }, { "deep neural network" },
     { "blockchain" }, { "AI-driven" }, { "cloud computing" }, { "hyperconverged" },
     { "cyber-physical" }, { "nanotechnology" }, { "augmented reality" }, { "edge computing" },
     { "IoT-enabled" }, { "autonomous system" }, { "next-gen" }, { "distributed ledger" },
+    { "big data" }, { "artificial intelligence" }, { "neural net" }, { "virtual reality" },
+    { "smart contract" }, { "tokenization" }, { "decentralized" }, { "cryptocurrency" },
+    { "internet of things" }, { "5G" }, { "metaverse" }, { "digital twin" },
+    { "self-driving" }, { "robotics" }, { "bioinformatics" }, { "genomics" },
+    { "quantum computing" }, { "blockchain technology" }, { "AI-powered" }, { "data lake" },
+    { "serverless" }, { "microservices" }, { "containerization" }, { "orchestration" },
+    { "edge AI" }, { "fog computing" }, { "digital transformation" }, { "smart city" },
+    { "predictive analytics" }, { "prescriptive analytics" }, { "data mining" },
+    { "data science" }, { "data engineering" }, { "cloud-native" }, { "multi-cloud" },
+    { "hybrid cloud" }, { "zero trust" }, { "blockchain-enabled" }, { "AI-first" },
     { NULL }
 };
 
-// ========================= HYPE PATTERNS =========================
+// ========================= HYPE PATTERNS (MAXIMIZED) =========================
 static const pattern_t hype_patterns[] = {
     { "amazing" }, { "incredible" }, { "epic" }, { "unbelievable" }, { "mind-blowing" },
     { "groundbreaking" }, { "revolutionary" }, { "next level" }, { "must see" },
     { "once in a lifetime" }, { "life changing" }, { "game changer" }, { "exclusive" },
+    { "jaw dropping" }, { "life altering" }, { "legendary" }, { "phenomenal" },
+    { "unprecedented" }, { "record-breaking" }, { "world-class" }, { "state-of-the-art" },
+    { "cutting edge" }, { "breakthrough" }, { "unmatched" }, { "unrivaled" },
+    { "unparalleled" }, { "best ever" }, { "never before" }, { "must have" },
+    { "can't miss" }, { "top rated" }, { "blockbuster" }, { "sensational" },
+    { "spectacular" }, { "mind blowing" }, { "outstanding" }, { "astounding" },
+    { "stunning" }, { "breathtaking" }, { "extraordinary" }, { "remarkable" },
+    { "unreal" }, { "fantastic" }, { "superb" }, { "magnificent" }, { "marvelous" },
     { NULL }
 };
 
-// ========================= POLITICAL PATTERNS =========================
+// ========================= POLITICAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t political_patterns[] = {
     { "vote" }, { "policy" }, { "government" }, { "election" }, { "legislation" },
     { "reform" }, { "candidate" }, { "campaign" }, { "democracy" }, { "party" },
     { "protest" }, { "senate" }, { "congress" }, { "bill" }, { "law" },
+    { "parliament" }, { "representative" }, { "constituent" }, { "lobby" },
+    { "politician" }, { "political" }, { "governor" }, { "mayor" }, { "president" },
+    { "prime minister" }, { "cabinet" }, { "minister" }, { "secretary" },
+    { "referendum" }, { "ballot" }, { "poll" }, { "platform" }, { "manifesto" },
+    { "coalition" }, { "majority" }, { "minority" }, { "opposition" }, { "incumbent" },
+    { "constituency" }, { "district" }, { "jurisdiction" }, { "executive" },
+    { "judiciary" }, { "legislature" }, { "bureaucracy" }, { "regulation" },
+    { "statute" }, { "ordinance" }, { "decree" }, { "mandate" }, { "impeachment" },
     { NULL }
 };
 
-// ========================= OFFENSIVE PATTERNS =========================
+// ========================= OFFENSIVE PATTERNS (MAXIMIZED) =========================
 static const pattern_t offensive_patterns[] = {
     { "idiot" }, { "stupid" }, { "dumb" }, { "fool" }, { "loser" },
     { "moron" }, { "hate" }, { "jerk" }, { "trash" }, { "scum" },
-    { "nonsense" }, { "pathetic" }, { "worthless" }, { "disgusting" }, { NULL }
+    { "nonsense" }, { "pathetic" }, { "worthless" }, { "disgusting" },
+    { "ignorant" }, { "cretin" }, { "imbecile" }, { "retard" }, { "sucks" },
+    { "garbage" }, { "ugly" }, { "fat" }, { "gross" }, { "stinks" },
+    { "douche" }, { "bastard" }, { "asshole" }, { "prick" }, { "bitch" },
+    { "slut" }, { "whore" }, { "dick" }, { "piss off" }, { "shut up" },
+    { "kill yourself" }, { "kys" }, { "die" }, { "go to hell" }, { "freak" },
+    { "weirdo" }, { "psycho" }, { "lunatic" }, { "nutcase" }, { "twat" },
+    { "cunt" }, { "fuck" }, { "shit" }, { "bullshit" }, { "crap" },
+    { NULL }
 };
 
-// ========================= PROPAGANDA PATTERNS =========================
+// ========================= PROPAGANDA PATTERNS (MAXIMIZED) =========================
 static const pattern_t propaganda_patterns[] = {
     { "truth" }, { "freedom" }, { "patriot" }, { "justice" }, { "liberty" },
     { "hero" }, { "enemy" }, { "threat" }, { "corruption" }, { "defend" },
-    { "protect" }, { "powerful" }, { "nation" }, { "agenda" }, { NULL }
+    { "protect" }, { "powerful" }, { "nation" }, { "agenda" }, { "righteous" },
+    { "traitor" }, { "evil" }, { "glory" }, { "sacrifice" }, { "martyr" },
+    { "victory" }, { "defeat" }, { "mission" }, { "cause" }, { "movement" },
+    { "revolution" }, { "uprising" }, { "resistance" }, { "regime" }, { "dictator" },
+    { "oppression" }, { "liberation" }, { "sovereignty" }, { "unity" }, { "solidarity" },
+    { "loyalty" }, { "allegiance" }, { "honor" }, { "duty" }, { "sacred" },
+    { "destiny" }, { "manifesto" }, { "propaganda" }, { "indoctrinate" }, { "brainwash" },
+    { NULL }
 };
 
-// ========================= MISINFORMATION PATTERNS =========================
+// ========================= MISINFORMATION PATTERNS (MAXIMIZED) =========================
 static const pattern_t misinformation_patterns[] = {
     { "fake news" }, { "hoax" }, { "false" }, { "misleading" }, { "rumor" },
     { "conspiracy" }, { "unverified" }, { "scam" }, { "fraud" }, { "deceptive" },
+    { "disinformation" }, { "fabricated" }, { "untrue" }, { "debunked" }, { "myth" },
+    { "urban legend" }, { "clickbait" }, { "sensationalized" }, { "out of context" },
+    { "doctored" }, { "forged" }, { "faked" }, { "manipulated" }, { "deepfake" },
+    { "false claim" }, { "false narrative" }, { "false report" }, { "false story" },
+    { "false information" }, { "false statement" }, { "falsehood" }, { "misreport" },
+    { "misquote" }, { "misattribute" }, { "misrepresent" }, { "misstate" }, { "misinform" },
+    { "mislead" }, { "misinterpret" }, { "misconstrue" }, { "miscommunicate" },
     { NULL }
 };
 
-// ========================= CONSPIRACY PATTERNS =========================
+// ========================= CONSPIRACY PATTERNS (MAXIMIZED) =========================
 static const pattern_t conspiracy_patterns[] = {
     { "hidden agenda" }, { "secret plan" }, { "shadow government" }, { "cover-up" },
     { "inside job" }, { "elite" }, { "controlled opposition" }, { "false flag" },
-    { "government plot" }, { "manipulation" }, { NULL }
+    { "government plot" }, { "manipulation" }, { "deep state" }, { "puppet master" },
+    { "new world order" }, { "illuminati" }, { "mind control" }, { "chemtrails" },
+    { "aliens" }, { "ufo" }, { "area 51" }, { "moon landing hoax" }, { "flat earth" },
+    { "reptilian" }, { "secret society" }, { "big pharma" }, { "big tech" },
+    { "big oil" }, { "big brother" }, { "mass surveillance" }, { "plandemic" },
+    { "crisis actor" }, { "hoax" }, { "cover up" }, { "deep cover" }, { "psyop" },
+    { "psy ops" }, { "psy-ops" }, { "psy ops operation" }, { "psy-ops operation" },
+    { "psy ops campaign" }, { "psy-ops campaign" }, { "psy ops program" }, { "psy-ops program" },
+    { NULL }
 };
 
-// ========================= FORMAL PATTERNS =========================
+// ========================= FORMAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t formal_patterns[] = {
     { "therefore" }, { "moreover" }, { "hence" }, { "thus" }, { "accordingly" },
     { "in conclusion" }, { "furthermore" }, { "consequently" }, { "as a result" }, { "in addition" },
+    { "notwithstanding" }, { "nevertheless" }, { "nonetheless" }, { "whereas" }, { "hereby" },
+    { "herein" }, { "herewith" }, { "heretofore" }, { "therein" }, { "therewith" },
+    { "thereafter" }, { "thereupon" }, { "thereby" }, { "wherein" }, { "whereof" },
+    { "whereupon" }, { "whereby" }, { "pursuant to" }, { "in accordance with" },
+    { "insofar as" }, { "inasmuch as" }, { "in the event that" }, { "in the absence of" },
+    { "in the presence of" }, { "in the course of" }, { "in the context of" },
+    { "in the light of" }, { "in the interest of" }, { "in the process of" },
+    { "in the case of" }, { "in the matter of" }, { "in the opinion of" },
     { NULL }
 };
 
-// ========================= CASUAL PATTERNS =========================
+// ========================= CASUAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t casual_patterns[] = {
     { "hey" }, { "lol" }, { "omg" }, { "btw" }, { "idk" },
     { "yep" }, { "nah" }, { "cool" }, { "awesome" }, { "what's up" },
+    { "sup" }, { "yo" }, { "dude" }, { "bro" }, { "fam" }, { "bruh" },
+    { "lmao" }, { "rofl" }, { "haha" }, { "hehe" }, { "xd" }, { "ikr" },
+    { "tbh" }, { "fyi" }, { "imo" }, { "imho" }, { "smh" }, { "fml" },
+    { "ily" }, { "nope" }, { "yolo" }, { "meh" }, { "ugh" }, { "yay" },
+    { "yesss" }, { "noooo" }, { "yaaaas" }, { "bruh moment" }, { "oh no" },
+    { "omfg" }, { "wtf" }, { "wtfv" }, { "lmaoed" }, { "lmaoing" },
+    { "haha lol" }, { "lol haha" }, { "xd lol" }, { "lol xd" }, { "fml lol" },
+    { "smdh" }, { "sksksk" }, { "and i oop" }, { "yeet" }, { "yeeted" },
+    { "yeeting" }, { "uwu" }, { "owo" }, { "rawr" }, { "rawr x3" },
     { NULL }
 };
 
-// ========================= SARCASM PATTERNS =========================
+// ========================= SARCASM PATTERNS (MAXIMIZED) =========================
 static const pattern_t sarcasm_patterns[] = {
     { "yeah right" }, { "as if" }, { "sure" }, { "oh great" }, { "fantastic" },
-    { "brilliant" }, { "wow" }, { "amazing" }, { "just perfect" }, { NULL }
+    { "brilliant" }, { "wow" }, { "amazing" }, { "just perfect" }, { "totally" },
+    { "obviously" }, { "of course" }, { "nice job" }, { "good luck with that" },
+    { "what a surprise" }, { "how original" }, { "so helpful" }, { "thanks a lot" },
+    { "just what I needed" }, { "couldn't be better" }, { "love it" }, { "can't wait" },
+    { "so excited" }, { "best ever" }, { "what a genius" }, { "so smart" },
+    { "how clever" }, { "so funny" }, { "hilarious" }, { "great idea" },
+    { NULL }
 };
 
-// ========================= NEUTRAL PATTERNS =========================
+// ========================= NEUTRAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t neutral_patterns[] = {
     { "okay" }, { "alright" }, { "yes" }, { "no" }, { "maybe" },
-    { "fine" }, { "good" }, { "bad" }, { "average" }, { NULL }
+    { "fine" }, { "good" }, { "bad" }, { "average" }, { "normal" },
+    { "regular" }, { "standard" }, { "typical" }, { "usual" }, { "ordinary" },
+    { "so-so" }, { "meh" }, { "not bad" }, { "not good" }, { "could be better" },
+    { "could be worse" }, { "nothing special" }, { "not sure" }, { "not certain" },
+    { "uncertain" }, { "possibly" }, { "perhaps" }, { "potentially" }, { "likely" },
+    { "unlikely" }, { "neutral" }, { "indifferent" }, { "unbiased" }, { "impartial" },
+    { NULL }
 };
 
-// ========================= AGGRESSIVE PATTERNS =========================
+// ========================= AGGRESSIVE PATTERNS (MAXIMIZED) =========================
 static const pattern_t aggressive_patterns[] = {
     { "attack" }, { "destroy" }, { "fight" }, { "kill" }, { "smash" },
-    { "crush" }, { "annihilate" }, { "rage" }, { "strike" }, { NULL }
+    { "crush" }, { "annihilate" }, { "rage" }, { "strike" }, { "obliterate" },
+    { "dominate" }, { "conquer" }, { "invade" }, { "overpower" }, { "subdue" },
+    { "eliminate" }, { "eradicate" }, { "wipe out" }, { "take down" }, { "beat" },
+    { "defeat" }, { "punish" }, { "hurt" }, { "harm" }, { "maul" }, { "batter" },
+    { "brawl" }, { "clash" }, { "assault" }, { "barrage" }, { "bombard" },
+    { "ambush" }, { "charge" }, { "storm" }, { "bust" }, { "wreck" },
+    { "wreck havoc" }, { "tear apart" }, { "rip apart" }, { "rip to shreds" },
+    { NULL }
 };
 
-// ========================= EMOTIONAL PATTERNS =========================
+// ========================= EMOTIONAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t emotional_patterns[] = {
     { "happy" }, { "sad" }, { "angry" }, { "excited" }, { "fear" },
-    { "joy" }, { "love" }, { "hate" }, { "surprised" }, { NULL }
+    { "joy" }, { "love" }, { "hate" }, { "surprised" }, { "ecstatic" },
+    { "depressed" }, { "anxious" }, { "nervous" }, { "thrilled" }, { "delighted" },
+    { "miserable" }, { "furious" }, { "elated" }, { "content" }, { "disappointed" },
+    { "frustrated" }, { "overjoyed" }, { "heartbroken" }, { "grateful" }, { "resentful" },
+    { "jealous" }, { "envious" }, { "ashamed" }, { "proud" }, { "guilty" },
+    { "hopeful" }, { "hopeless" }, { "relieved" }, { "stressed" }, { "calm" },
+    { "peaceful" }, { "confused" }, { "bored" }, { "lonely" }, { "scared" },
+    { NULL }
 };
 
-// ========================= PASSIVE_AGGRESSIVE PATTERNS =========================
+// ========================= PASSIVE_AGGRESSIVE PATTERNS (MAXIMIZED) =========================
 static const pattern_t passive_aggressive_patterns[] = {
     { "sure" }, { "whatever" }, { "fine" }, { "if you say so" }, { "okay then" },
-    { "no problem" }, { "as you wish" }, { "right" }, { "yeah, sure" }, { NULL }
+    { "no problem" }, { "as you wish" }, { "right" }, { "yeah, sure" },
+    { "if that's what you want" }, { "I guess" }, { "if you insist" },
+    { "not my problem" }, { "do what you want" }, { "go ahead" }, { "be my guest" },
+    { "I don't care" }, { "it's up to you" }, { "suit yourself" }, { "have it your way" },
+    { "whatever you say" }, { "if it makes you happy" }, { "I'm fine" },
+    { "I'm okay" }, { "I'm good" }, { "it's fine" }, { "it's okay" },
+    { "it's whatever" }, { "that's fine" }, { "that's okay" }, { "that's whatever" },
+    { NULL }
 };
 
-/* ============================================================================
- * BrainRot patterns table (expanded to cover maximal internet casual/slang terms)
- * ============================================================================ */
 /* ============================================================================
  * BrainRot patterns table (FULL, UNTRIMMED, BRACE-SAFE)
  * ============================================================================ */
@@ -790,15 +947,14 @@ typedef struct {
     } flags;
 } fossil_io_soap_result_t;
 
-static int detect_flag(const char *text, const char *detector_id, const char *flow_type) {
+static int detect_flag(const char *text, const char *detector_id) {
     if (!text || !detector_id) return 0;
-    int res = fossil_io_soap_detect(text, detector_id, flow_type);
+    int res = fossil_io_soap_detect(text, detector_id);
     return res;
 }
 
 static fossil_io_soap_result_t *
 soap_process_internal(const char *text,
-                      const char *flow_type,
                       const fossil_io_soap_options_t *options)
 {
     if (!text) return NULL;
@@ -807,7 +963,7 @@ soap_process_internal(const char *text,
     r->processed_text = dupstr(text);
 
     /* Step 0: implicit morse detection (heuristic, not option-gated) */
-    if (fossil_io_soap_detect(r->processed_text, "morse", flow_type)) {
+    if (fossil_io_soap_detect(r->processed_text, "morse")) {
         char *tmp = decode_morse(r->processed_text);
         if (tmp) {
             free(r->processed_text);
@@ -832,77 +988,74 @@ soap_process_internal(const char *text,
     }
 
     /* Step 2: flow dispatch */
-    if (flow_type && options) {
+    if (options) {
 
-        if (strcmp(flow_type, "words") == 0) {
-            char **tokens = fossil_io_soap_split(r->processed_text, "words");
-            for (size_t i = 0; tokens && tokens[i]; i++) {
-                if (options->detect_brain_rot)
-                    r->flags.brain_rot |= detect_flag(tokens[i],"brain_rot","words");
-                if (options->detect_quality)
-                    r->flags.leet |= detect_flag(tokens[i],"leet","words");
-                if (options->detect_formal)
-                    r->flags.formal |= detect_flag(tokens[i],"formal","words");
-                if (options->detect_casual)
-                    r->flags.casual |= detect_flag(tokens[i],"casual","words");
-                if (options->detect_sarcasm)
-                    r->flags.sarcasm |= detect_flag(tokens[i],"sarcasm","words");
-                if (options->detect_neutral)
-                    r->flags.neutral |= detect_flag(tokens[i],"neutral","words");
-                if (options->detect_aggressive)
-                    r->flags.aggressive |= detect_flag(tokens[i],"aggressive","words");
-                if (options->detect_emotional)
-                    r->flags.emotional |= detect_flag(tokens[i],"emotional","words");
-                if (options->detect_passive_aggressive)
-                    r->flags.passive_aggressive |= detect_flag(tokens[i],"passive_aggressive","words");
-            }
-            for (size_t i = 0; tokens && tokens[i]; i++) free(tokens[i]);
-            free(tokens);
+        // Word-level
+        char **tokens = fossil_io_soap_split(r->processed_text, "words");
+        for (size_t i = 0; tokens && tokens[i]; i++) {
+            if (options->detect_brain_rot)
+                r->flags.brain_rot |= detect_flag(tokens[i],"brain_rot");
+            if (options->detect_quality)
+                r->flags.leet |= detect_flag(tokens[i],"leet");
+            if (options->detect_formal)
+                r->flags.formal |= detect_flag(tokens[i],"formal");
+            if (options->detect_casual)
+                r->flags.casual |= detect_flag(tokens[i],"casual");
+            if (options->detect_sarcasm)
+                r->flags.sarcasm |= detect_flag(tokens[i],"sarcasm");
+            if (options->detect_neutral)
+                r->flags.neutral |= detect_flag(tokens[i],"neutral");
+            if (options->detect_aggressive)
+                r->flags.aggressive |= detect_flag(tokens[i],"aggressive");
+            if (options->detect_emotional)
+                r->flags.emotional |= detect_flag(tokens[i],"emotional");
+            if (options->detect_passive_aggressive)
+                r->flags.passive_aggressive |= detect_flag(tokens[i],"passive_aggressive");
         }
+        for (size_t i = 0; tokens && tokens[i]; i++) free(tokens[i]);
+        free(tokens);
 
-        else if (strcmp(flow_type, "sentences") == 0) {
-            char **sentences = fossil_io_soap_split(r->processed_text, "sentences");
-            for (size_t i = 0; sentences && sentences[i]; i++) {
-                if (options->analyze_grammar || options->include_style)
-                    r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
+        // Sentence-level
+        char **sentences = fossil_io_soap_split(r->processed_text, "sentences");
+        for (size_t i = 0; sentences && sentences[i]; i++) {
+            if (options->analyze_grammar || options->include_style)
+                r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
 
-                if (options->detect_spam)
-                    r->flags.spam |= detect_flag(sentences[i],"spam","sentences");
-                if (options->detect_ragebait)
-                    r->flags.ragebait |= detect_flag(sentences[i],"ragebait","sentences");
-                if (options->detect_clickbait)
-                    r->flags.clickbait |= detect_flag(sentences[i],"clickbait","sentences");
-                if (options->detect_bot)
-                    r->flags.bot |= detect_flag(sentences[i],"bot","sentences");
-                if (options->detect_marketing)
-                    r->flags.marketing |= detect_flag(sentences[i],"marketing","sentences");
-                if (options->detect_technobabble)
-                    r->flags.technobabble |= detect_flag(sentences[i],"technobabble","sentences");
-                if (options->detect_hype)
-                    r->flags.hype |= detect_flag(sentences[i],"hype","sentences");
-                if (options->detect_political)
-                    r->flags.political |= detect_flag(sentences[i],"political","sentences");
-                if (options->detect_offensive)
-                    r->flags.offensive |= detect_flag(sentences[i],"offensive","sentences");
-                if (options->detect_misinformation)
-                    r->flags.misinformation |= detect_flag(sentences[i],"misinformation","sentences");
-            }
-            for (size_t i = 0; sentences && sentences[i]; i++) free(sentences[i]);
-            free(sentences);
+            if (options->detect_spam)
+                r->flags.spam |= detect_flag(sentences[i],"spam");
+            if (options->detect_ragebait)
+                r->flags.ragebait |= detect_flag(sentences[i],"ragebait");
+            if (options->detect_clickbait)
+                r->flags.clickbait |= detect_flag(sentences[i],"clickbait");
+            if (options->detect_bot)
+                r->flags.bot |= detect_flag(sentences[i],"bot");
+            if (options->detect_marketing)
+                r->flags.marketing |= detect_flag(sentences[i],"marketing");
+            if (options->detect_technobabble)
+                r->flags.technobabble |= detect_flag(sentences[i],"technobabble");
+            if (options->detect_hype)
+                r->flags.hype |= detect_flag(sentences[i],"hype");
+            if (options->detect_political)
+                r->flags.political |= detect_flag(sentences[i],"political");
+            if (options->detect_offensive)
+                r->flags.offensive |= detect_flag(sentences[i],"offensive");
+            if (options->detect_misinformation)
+                r->flags.misinformation |= detect_flag(sentences[i],"misinformation");
         }
+        for (size_t i = 0; sentences && sentences[i]; i++) free(sentences[i]);
+        free(sentences);
 
-        else if (strcmp(flow_type, "documents") == 0) {
-            if (options->include_scores)
-                r->scores = fossil_io_soap_score(r->processed_text);
+        // Document-level
+        if (options->include_scores)
+            r->scores = fossil_io_soap_score(r->processed_text);
 
-            if (options->detect_propaganda)
-                r->flags.propaganda |= detect_flag(r->processed_text,"propaganda","documents");
-            if (options->detect_conspiracy)
-                r->flags.conspiracy |= detect_flag(r->processed_text,"conspiracy","documents");
+        if (options->detect_propaganda)
+            r->flags.propaganda |= detect_flag(r->processed_text,"propaganda");
+        if (options->detect_conspiracy)
+            r->flags.conspiracy |= detect_flag(r->processed_text,"conspiracy");
 
-            if (options->include_summary)
-                r->summary = fossil_io_soap_summarize(r->processed_text);
-        }
+        if (options->include_summary)
+            r->summary = fossil_io_soap_summarize(r->processed_text);
     }
 
     return r;
@@ -935,11 +1088,10 @@ soap_result_to_string(const fossil_io_soap_result_t *r,
 
 char *
 fossil_io_soap_process(const char *text,
-                       const char *flow_type,
                        const fossil_io_soap_options_t *options)
 {
     fossil_io_soap_result_t *r =
-        soap_process_internal(text, flow_type, options);
+        soap_process_internal(text, options);
 
     char *out = soap_result_to_string(r, options);
 
