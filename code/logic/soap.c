@@ -176,8 +176,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
     int in_paren = 0;
     int in_url = 0;
     int word_start = 1;
-    int caps_run = 0;
-    int sent_words = 0;
 
     // For abbreviation detection
     char prev_word[32] = {0};
@@ -224,12 +222,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
         if (in_url && isspace((unsigned char)c))
             in_url = 0;
 
-        // Capitalization run
-        if (isupper((unsigned char)c))
-            caps_run++;
-        else
-            caps_run = 0;
-
         // Normalize whitespace
         if (isspace((unsigned char)c)) {
             if (!last_space) {
@@ -243,7 +235,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
 
         // Word boundary and sentence word count
         if (isalpha((unsigned char)c) && word_start) {
-            sent_words++;
             word_start = 0;
         }
         if (!isalpha((unsigned char)c))
