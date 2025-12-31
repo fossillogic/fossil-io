@@ -178,7 +178,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
     int word_start = 1;
     int caps_run = 0;
     int sent_words = 0;
-    int clause_count = 0;
 
     // For abbreviation detection
     char prev_word[32] = {0};
@@ -225,8 +224,8 @@ char *fossil_io_soap_correct_grammar(const char *text)
         if (in_url && isspace((unsigned char)c))
             in_url = 0;
 
-        // Clause awareness
-        if (c == ',' || c == ';' || c == 0x2014 /* em-dash */ || c == '-') clause_count++;
+        // Clause awareness (em-dash removed, char can't represent 0x2014)
+        if (c == ',' || c == ';' || c == '-') /* clause_count++; */
 
         // Capitalization run
         if (isupper((unsigned char)c))
