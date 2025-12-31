@@ -329,10 +329,6 @@ char *fossil_io_soap_normalize(const char *text);
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
-char *fossil_io_soap_rewrite(const char *text, const char *flag);
-
-char *fossil_io_soap_format(const char *text, const char *flag);
-
 // ============================================================================
 // High-Level Text Processing
 // ============================================================================
@@ -448,36 +444,57 @@ namespace fossil {
             // ===============================
             // Sanitize, Suggest, Summarize
             // ===============================
+
+            /**
+             * Sanitizes the input text by removing or replacing low-quality or unsafe language.
+             * Returns a sanitized string. Throws away the result if allocation fails.
+             */
             static std::string sanitize(const std::string &text) {
                 char *res = fossil_io_soap_sanitize(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
+            /**
+             * Suggests improvements for clarity, tone, or quality without modifying the original text.
+             * Returns a suggestion string. Throws away the result if allocation fails.
+             */
             static std::string suggest(const std::string &text) {
                 char *res = fossil_io_soap_suggest(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
+            /**
+             * Summarizes the input text, producing a concise summary of its main content and intent.
+             * Returns a summary string. Throws away the result if allocation fails.
+             */
             static std::string summarize(const std::string &text) {
                 char *res = fossil_io_soap_summarize(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
             // ===============================
             // Grammar & Style
             // ===============================
+
+            /**
+             * Holds the result of grammar and style analysis.
+             */
             struct GrammarStyle {
-                bool grammar_ok;
-                int passive_voice_pct;
-                std::string style;
+                bool grammar_ok;           ///< True if no grammar issues detected.
+                int passive_voice_pct;     ///< Percentage of passive voice usage.
+                std::string style;         ///< Detected writing style label.
             };
-        
+
+            /**
+             * Analyzes grammar correctness and stylistic characteristics of the input text.
+             * Returns a GrammarStyle struct with analysis results.
+             */
             static GrammarStyle analyze_grammar_style(const std::string &text) {
                 auto result = fossil_io_soap_analyze_grammar_style(text.c_str());
                 return GrammarStyle{
@@ -486,43 +503,69 @@ namespace fossil {
                     result.style ? result.style : ""
                 };
             }
-        
+
+            /**
+             * Applies grammar correction heuristics to the input text.
+             * Returns a corrected string. Throws away the result if allocation fails.
+             */
             static std::string correct_grammar(const std::string &text) {
                 char *res = fossil_io_soap_correct_grammar(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
             // ===============================
             // Scores
             // ===============================
+
+            /**
+             * Holds readability, clarity, and quality scores.
+             */
             struct Scores {
-                int readability;
-                int clarity;
-                int quality;
+                int readability;   ///< Ease of reading and comprehension.
+                int clarity;       ///< Logical clarity and coherence.
+                int quality;       ///< Overall writing quality.
             };
-        
+
+            /**
+             * Computes readability, clarity, and quality scores for the input text.
+             * Returns a Scores struct with normalized values (0–100).
+             */
             static Scores score(const std::string &text) {
                 auto result = fossil_io_soap_score(text.c_str());
                 return Scores{ result.readability, result.clarity, result.quality };
             }
-        
+
+            /**
+             * Converts a readability score into a human-readable label.
+             * Returns the label as a string.
+             */
             static std::string readability_label(int score) {
                 const char *label = fossil_io_soap_readability_label(score);
                 return label ? label : "";
             }
-        
+
             // ===============================
             // Detection
             // ===============================
+
+            /**
+             * Runs a generic detector by identifier on the input text.
+             * Returns true if the detector is triggered, false otherwise.
+             */
             static bool detect(const std::string &text, const std::string &detector_id) {
                 return fossil_io_soap_detect(text.c_str(), detector_id.c_str()) != 0;
             }
-      
+
             // ===============================
             // Splitting & Normalization
             // ===============================
+
+            /**
+             * Splits the input text into logical units (sentences, paragraphs, or blocks).
+             * Returns a vector of strings, each representing a unit.
+             */
             static std::vector<std::string> split(const std::string &text) {
                 char **arr = fossil_io_soap_split(text.c_str());
                 std::vector<std::string> result;
@@ -534,31 +577,49 @@ namespace fossil {
                 free(arr);
                 return result;
             }
-        
+
+            /**
+             * Reflows the input text to a specified target line width.
+             * Returns the reflowed string. Throws away the result if allocation fails.
+             */
             static std::string reflow(const std::string &text, int width) {
                 char *res = fossil_io_soap_reflow(text.c_str(), width);
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
+            /**
+             * Normalizes whitespace, punctuation, and casing in the input text.
+             * Returns the normalized string. Throws away the result if allocation fails.
+             */
             static std::string normalize(const std::string &text) {
                 char *res = fossil_io_soap_normalize(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
+            /**
+             * Applies capitalization rules to the input text.
+             * The mode parameter specifies sentence-case, title-case, or preserve-case.
+             * Returns the capitalized string. Throws away the result if allocation fails.
+             */
             static std::string capitalize(const std::string &text, int mode) {
                 char *res = fossil_io_soap_capitalize(text.c_str(), mode);
                 std::string out = res ? res : "";
                 free(res);
                 return out;
             }
-        
+
             // ===============================
             // High-Level Process
             // ===============================
+
+            /**
+             * Executes the full SOAP processing pipeline on the input text using the supplied options.
+             * Returns the processed output string. Throws away the result if allocation fails.
+             */
             static std::string process(const std::string &text,
                                        const Options *options = nullptr) {
                 const fossil_io_soap_options_t *opt_ptr = options ? &options->c_options : nullptr;

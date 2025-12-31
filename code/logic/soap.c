@@ -161,6 +161,7 @@ char *fossil_io_soap_correct_grammar(const char *text)
 {
     if (!text) return NULL;
 
+    // --- Begin context-aware grammar correction ---
     char *out = malloc(strlen(text) * 2 + 4);
     if (!out) return NULL;
 
@@ -171,139 +172,157 @@ char *fossil_io_soap_correct_grammar(const char *text)
     int last_space = 0;
     char last_char = 0;
 
+    int in_quote = 0;
+    int in_paren = 0;
+    int in_url = 0;
+    int word_start = 1;
+    int caps_run = 0;
+    int sent_words = 0;
+    int clause_count = 0;
+
+    // For abbreviation detection
+    char prev_word[32] = {0};
+    int prev_word_len = 0;
+
+    struct {
+        const char *from;
+        const char *to;
+    } contractions[] = {
+        {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
+        {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
+        {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
+        {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
+        {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
+        {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
+        {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
+        {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
+        {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
+        {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
+        {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
+        {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
+        {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
+        {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
+        {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
+        {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
+        {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
+        {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
+    };
+
     while (*p) {
         char c = *p++;
 
-        /* Normalize whitespace */
+        // Track quote and paren state
+        if (c == '"' || c == '\'') in_quote ^= 1;
+        if (c == '(') in_paren++;
+        if (c == ')') if (in_paren > 0) in_paren--;
+
+        // URL detection (cheap, no regex)
+        if (!in_url && (strncmp(p - 1, "http://", 7) == 0 ||
+                        strncmp(p - 1, "https://", 8) == 0))
+            in_url = 1;
+        if (in_url && isspace((unsigned char)c))
+            in_url = 0;
+
+        // Clause awareness
+        if (c == ',' || c == ';' || c == 0x2014 /* em-dash */ || c == '-') clause_count++;
+
+        // Capitalization run
+        if (isupper((unsigned char)c))
+            caps_run++;
+        else
+            caps_run = 0;
+
+        // Normalize whitespace
         if (isspace((unsigned char)c)) {
             if (!last_space) {
                 *q++ = ' ';
                 last_space = 1;
             }
+            word_start = 1;
             continue;
         }
-
         last_space = 0;
 
-        /* Capitalize start of sentences */
+        // Word boundary and sentence word count
+        if (isalpha((unsigned char)c) && word_start) {
+            sent_words++;
+            word_start = 0;
+        }
+        if (!isalpha((unsigned char)c))
+            word_start = 1;
+
+        // Abbreviation detection (look back for word before '.')
+        if (c == '.' && prev_word_len > 0) {
+            prev_word[prev_word_len] = 0;
+        }
+
+        // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
+        int is_abbrev = 0;
         if (new_sentence && isalpha((unsigned char)c)) {
-            c = (char)toupper((unsigned char)c);
+            // Check for abbreviation before
+            if (prev_word_len > 0 && soap_is_abbrev(prev_word))
+                is_abbrev = 1;
+            if (!is_abbrev)
+                c = (char)toupper((unsigned char)c);
             new_sentence = 0;
         }
 
-        /* Fix duplicated punctuation (!!!, ??, ..) */
+        // Punctuation collapse, but smarter
         if (ispunct((unsigned char)c) && c == last_char) {
-            continue;
+            if (c == '.' || c == '!' || c == '?')
+                continue; // collapse
         }
 
-        /* Track sentence boundaries */
-        if (c == '.' || c == '!' || c == '?') {
-            new_sentence = 1;
+        // Sentence boundary detection (punctuation-aware)
+        if ((c == '.' || c == '!' || c == '?') && !in_quote) {
+            // Decimal number: don't end sentence
+            if (c == '.' && isdigit((unsigned char)*p))
+                ;
+            // Abbreviation: don't end sentence
+            else if (is_abbrev)
+                ;
+            // Ellipsis: don't end sentence
+            else if (c == '.' && *p == '.' && *(p+1) == '.')
+                ;
+            else
+                new_sentence = 1;
+        }
+
+        // Context-aware contraction replacement (inline, not global)
+        if (!in_quote && !in_url && !in_paren) {
+            for (int i = 0; contractions[i].from; i++) {
+                size_t len = strlen(contractions[i].from);
+                if (strncmp(p - 1, contractions[i].from, len) == 0) {
+                    memcpy(q - 1, contractions[i].to, strlen(contractions[i].to));
+                    p += len - 1;
+                    q += strlen(contractions[i].to) - 1;
+                    break;
+                }
+            }
         }
 
         *q++ = c;
         last_char = c;
+
+        // Track previous word for abbreviation check
+        if (isalpha((unsigned char)c)) {
+            if (prev_word_len < (int)sizeof(prev_word) - 1)
+                prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
+        } else {
+            prev_word_len = 0;
+        }
     }
 
-    /* Ensure terminal punctuation */
+    // Ensure terminal punctuation
     if (q > out && !ispunct((unsigned char)q[-1])) {
         *q++ = '.';
     }
 
     *q = '\0';
 
-    /* ---- Common contraction fixes ---- */
-    struct {
-        const char *from;
-        const char *to;
-    } contractions[] = {
-    
-        /* ---- Negations ---- */
-        {" dont ", " don't "},
-        {" cant ", " can't "},
-        {" wont ", " won't "},
-        {" isnt ", " isn't "},
-        {" arent ", " aren't "},
-        {" wasnt ", " wasn't "},
-        {" werent ", " weren't "},
-        {" doesnt ", " doesn't "},
-        {" didnt ", " didn't "},
-        {" hasnt ", " hasn't "},
-        {" havent ", " haven't "},
-        {" hadnt ", " hadn't "},
-        {" couldnt ", " couldn't "},
-        {" wouldnt ", " wouldn't "},
-        {" shouldnt ", " shouldn't "},
-        {" mustnt ", " mustn't "},
-        {" neednt ", " needn't "},
-        {" darent ", " daren't "},
-    
-        /* ---- Pronoun + verb ---- */
-        {" im ", " I'm "},
-        {" ive ", " I've "},
-        {" ill ", " I'll "},
-        {" id ", " I'd "},
-        {" youre ", " you're "},
-        {" youve ", " you've "},
-        {" youll ", " you'll "},
-        {" youd ", " you'd "},
-        {" hes ", " he's "},
-        {" hed ", " he'd "},
-        {" hell ", " he'll "},
-        {" shes ", " she's "},
-        {" shed ", " she'd "},
-        {" shell ", " she'll "},
-        {" its ", " it's "},      /* NOTE: ambiguous but common error */
-        {" were ", " we're "},    /* also ambiguous; see notes below */
-        {" theyre ", " they're "},
-        {" theyve ", " they've "},
-        {" theyll ", " they'll "},
-        {" theyd ", " they'd "},
-    
-        /* ---- Demonstratives / relatives ---- */
-        {" thats ", " that's "},
-        {" theres ", " there's "},
-        {" whats ", " what's "},
-        {" whos ", " who's "},
-        {" wheres ", " where's "},
-        {" whens ", " when's "},
-        {" whys ", " why's "},
-        {" hows ", " how's "},
-    
-        /* ---- Modal + have ---- */
-        {" couldve ", " could've "},
-        {" wouldve ", " would've "},
-        {" shouldve ", " should've "},
-        {" mightve ", " might've "},
-        {" mustve ", " must've "},
-        {" mayve ", " may've "},
-    
-        /* ---- Let / that / there forms ---- */
-        {" lets ", " let's "},
-        {" thats ", " that's "},
-        {" theres ", " there's "},
-    
-        /* ---- Double-space edge anchors ---- */
-        {" dont.", " don't."},
-        {" dont,", " don't,"},
-        {" cant.", " can't."},
-        {" cant,", " can't,"},
-        {" wont.", " won't."},
-        {" wont,", " won't,"},
-    
-        {NULL, NULL}
-    };
-
-    for (int i = 0; contractions[i].from; i++) {
-        char *pos;
-        while ((pos = strstr(out, contractions[i].from))) {
-            size_t a = strlen(contractions[i].from);
-            size_t b = strlen(contractions[i].to);
-            memmove(pos + b, pos + a, strlen(pos + a) + 1);
-            memcpy(pos, contractions[i].to, b);
-        }
-    }
-
+    // --- End context-aware grammar correction ---
     return out;
 }
 
@@ -1156,8 +1175,237 @@ soap_process_internal(const char *text,
             free(r->processed_text); r->processed_text = tmp;
         }
         if (options->apply_grammar_correction) {
-            char *tmp = fossil_io_soap_correct_grammar(r->processed_text);
-            free(r->processed_text); r->processed_text = tmp;
+            // --- Begin context-aware grammar correction ---
+            if (!r->processed_text) return r;
+            const char *text = r->processed_text;
+            size_t n = strlen(text);
+            char *out = malloc(n * 2 + 4);
+            if (!out) return r;
+
+            const char *p = text;
+            char *q = out;
+
+            int new_sentence = 1;
+            int last_space = 0;
+            char last_char = 0;
+
+            int in_quote = 0;
+            int in_paren = 0;
+            int in_url = 0;
+            int word_start = 1;
+            int caps_run = 0;
+            int sent_words = 0;
+            int clause_count = 0;
+
+            // For abbreviation detection
+            char prev_word[32] = {0};
+            int prev_word_len = 0;
+
+            struct {
+                const char *from;
+                const char *to;
+            } contractions[] = {
+                {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
+                {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
+                {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
+                {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
+                {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
+                {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
+                {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
+                {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
+                {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
+                {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
+                {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
+                {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
+                {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
+                {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
+                {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
+                {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
+                {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
+                {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
+                {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
+                {" wont.", " won't."}, {" wont,", " won't,"},
+                {"dont ", "don't "}, {"cant ", "can't "}, {"wont ", "won't "},
+                {"isnt ", "isn't "}, {"arent ", "aren't "}, {"wasnt ", "wasn't "},
+                {"werent ", "weren't "}, {"doesnt ", "doesn't "}, {"didnt ", "didn't "},
+                {"hasnt ", "hasn't "}, {"havent ", "haven't "}, {"hadnt ", "hadn't "},
+                {"couldnt ", "couldn't "}, {"wouldnt ", "wouldn't "}, {"shouldnt ", "shouldn't "},
+                {"mustnt ", "mustn't "}, {"neednt ", "needn't "}, {"darent ", "daren't "},
+                {"im ", "I'm "}, {"ive ", "I've "}, {"ill ", "I'll "}, {"id ", "I'd "},
+                {"youre ", "you're "}, {"youve ", "you've "}, {"youll ", "you'll "},
+                {"youd ", "you'd "}, {"hes ", "he's "}, {"hed ", "he'd "}, {"hell ", "he'll "},
+                {"shes ", "she's "}, {"shed ", "she'd "}, {"shell ", "she'll "},
+                {"its ", "it's "}, {"were ", "we're "}, {"theyre ", "they're "},
+                {"theyve ", "they've "}, {"theyll ", "they'll "}, {"theyd ", "they'd "},
+                {"thats ", "that's "}, {"theres ", "there's "}, {"whats ", "what's "},
+                {"whos ", "who's "}, {"wheres ", "where's "}, {"whens ", "when's "},
+                {"whys ", "why's "}, {"hows ", "how's "}, {"couldve ", "could've "},
+                {"wouldve ", "would've "}, {"shouldve ", "should've "}, {"mightve ", "might've "},
+                {"mustve ", "must've "}, {"mayve ", "may've "}, {"lets ", "let's "},
+                {"thats ", "that's "}, {"theres ", "there's "},
+                {"dont.", "don't."}, {"dont,", "don't,"}, {"cant.", "can't."}, {"cant,", "can't,"},
+                {"wont.", "won't."}, {"wont,", "won't,"},
+                {"I'm ", "I'm "}, {"I've ", "I've "}, {"I'll ", "I'll "}, {"I'd ", "I'd "},
+                {"you're ", "you're "}, {"you've ", "you've "}, {"you'll ", "you'll "},
+                {"you'd ", "you'd "}, {"he's ", "he's "}, {"he'd ", "he'd "}, {"he'll ", "he'll "},
+                {"she's ", "she's "}, {"she'd ", "she'd "}, {"she'll ", "she'll "},
+                {"it's ", "it's "}, {"we're ", "we're "}, {"they're ", "they're "},
+                {"they've ", "they've "}, {"they'll ", "they'll "}, {"they'd ", "they'd "},
+                {"that's ", "that's "}, {"there's ", "there's "}, {"what's ", "what's "},
+                {"who's ", "who's "}, {"where's ", "where's "}, {"when's ", "when's "},
+                {"why's ", "why's "}, {"how's ", "how's "}, {"could've ", "could've "},
+                {"would've ", "would've "}, {"should've ", "should've "}, {"might've ", "might've "},
+                {"must've ", "must've "}, {"may've ", "may've "}, {"let's ", "let's "},
+                {"that's ", "that's "}, {"there's ", "there's "},
+                {"don't.", "don't."}, {"don't,", "don't,"}, {"can't.", "can't."}, {"can't,", "can't,"},
+                {"won't.", "won't."}, {"won't,", "won't,"},
+                {"i am ", "I'm "}, {"i've ", "I've "}, {"i'll ", "I'll "}, {"i'd ", "I'd "},
+                {"you are ", "you're "}, {"you have ", "you've "}, {"you will ", "you'll "},
+                {"you would ", "you'd "}, {"he is ", "he's "}, {"he had ", "he'd "}, {"he will ", "he'll "},
+                {"she is ", "she's "}, {"she had ", "she'd "}, {"she will ", "she'll "},
+                {"it is ", "it's "}, {"we are ", "we're "}, {"they are ", "they're "},
+                {"they have ", "they've "}, {"they will ", "they'll "}, {"they would ", "they'd "},
+                {"that is ", "that's "}, {"there is ", "there's "}, {"what is ", "what's "},
+                {"who is ", "who's "}, {"where is ", "where's "}, {"when is ", "when's "},
+                {"why is ", "why's "}, {"how is ", "how's "}, {"could have ", "could've "},
+                {"would have ", "would've "}, {"should have ", "should've "}, {"might have ", "might've "},
+                {"must have ", "must've "}, {"may have ", "may've "}, {"let us ", "let's "},
+                {"that is ", "that's "}, {"there is ", "there's "},
+                {"i am.", "I'm."}, {"i am,", "I'm,"}, {"i've.", "I've."}, {"i've,", "I've,"},
+                {"i'll.", "I'll."}, {"i'll,", "I'll,"}, {"i'd.", "I'd."}, {"i'd,", "I'd,"},
+                {"you are.", "you're."}, {"you are,", "you're,"}, {"you have.", "you've."}, {"you have,", "you've,"},
+                {"you will.", "you'll."}, {"you will,", "you'll,"}, {"you would.", "you'd."}, {"you would,", "you'd,"},
+                {"he is.", "he's."}, {"he is,", "he's,"}, {"he had.", "he'd."}, {"he had,", "he'd,"}, {"he will.", "he'll."}, {"he will,", "he'll,"},
+                {"she is.", "she's."}, {"she is,", "she's,"}, {"she had.", "she'd."}, {"she had,", "she'd,"}, {"she will.", "she'll."}, {"she will,", "she'll,"},
+                {"it is.", "it's."}, {"it is,", "it's,"}, {"we are.", "we're."}, {"we are,", "we're,"},
+                {"they are.", "they're."}, {"they are,", "they're,"}, {"they have.", "they've."}, {"they have,", "they've,"},
+                {"they will.", "they'll."}, {"they will,", "they'll,"}, {"they would.", "they'd."}, {"they would,", "they'd,"},
+                {"that is.", "that's."}, {"that is,", "that's,"}, {"there is.", "there's."}, {"there is,", "there's,"},
+                {"what is.", "what's."}, {"what is,", "what's,"}, {"who is.", "who's."}, {"who is,", "who's,"},
+                {"where is.", "where's."}, {"where is,", "where's,"}, {"when is.", "when's."}, {"when is,", "when's,"},
+                {"why is.", "why's."}, {"why is,", "why's,"}, {"how is.", "how's."}, {"how is,", "how's,"},
+                {"could have.", "could've."}, {"could have,", "could've,"}, {"would have.", "would've."}, {"would have,", "would've,"},
+                {"should have.", "should've."}, {"should have,", "should've,"}, {"might have.", "might've."}, {"might have,", "might've,"},
+                {"must have.", "must've."}, {"must have,", "must've,"}, {"may have.", "may've."}, {"may have,", "may've,"},
+                {"let us.", "let's."}, {"let us,", "let's,"},
+                {NULL, NULL}
+            };
+
+            while (*p) {
+                char c = *p++;
+
+                // Track quote and paren state
+                if (c == '"' || c == '\'') in_quote ^= 1;
+                if (c == '(') in_paren++;
+                if (c == ')') if (in_paren > 0) in_paren--;
+
+                // URL detection (cheap, no regex)
+                if (!in_url && (strncmp(p - 1, "http://", 7) == 0 ||
+                                strncmp(p - 1, "https://", 8) == 0))
+                    in_url = 1;
+                if (in_url && isspace((unsigned char)c))
+                    in_url = 0;
+
+                // Clause awareness
+                if (c == ',' || c == ';' || c == 0x2014 /* em-dash */ || c == '-') clause_count++;
+
+                // Capitalization run
+                if (isupper((unsigned char)c))
+                    caps_run++;
+                else
+                    caps_run = 0;
+
+                // Normalize whitespace
+                if (isspace((unsigned char)c)) {
+                    if (!last_space) {
+                        *q++ = ' ';
+                        last_space = 1;
+                    }
+                    word_start = 1;
+                    continue;
+                }
+                last_space = 0;
+
+                // Word boundary and sentence word count
+                if (isalpha((unsigned char)c) && word_start) {
+                    sent_words++;
+                    word_start = 0;
+                }
+                if (!isalpha((unsigned char)c))
+                    word_start = 1;
+
+                // Abbreviation detection (look back for word before '.')
+                if (c == '.' && prev_word_len > 0) {
+                    prev_word[prev_word_len] = 0;
+                }
+
+                // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
+                int is_abbrev = 0;
+                if (new_sentence && isalpha((unsigned char)c)) {
+                    // Check for abbreviation before
+                    if (prev_word_len > 0 && soap_is_abbrev(prev_word))
+                        is_abbrev = 1;
+                    if (!is_abbrev)
+                        c = (char)toupper((unsigned char)c);
+                    new_sentence = 0;
+                }
+
+                // Punctuation collapse, but smarter
+                if (ispunct((unsigned char)c) && c == last_char) {
+                    if (c == '.' || c == '!' || c == '?')
+                        continue; // collapse
+                }
+
+                // Sentence boundary detection (punctuation-aware)
+                if ((c == '.' || c == '!' || c == '?') && !in_quote) {
+                    // Decimal number: don't end sentence
+                    if (c == '.' && isdigit((unsigned char)*p))
+                        ;
+                    // Abbreviation: don't end sentence
+                    else if (is_abbrev)
+                        ;
+                    // Ellipsis: don't end sentence
+                    else if (c == '.' && *p == '.' && *(p+1) == '.')
+                        ;
+                    else
+                        new_sentence = 1;
+                }
+
+                // Context-aware contraction replacement (inline, not global)
+                if (!in_quote && !in_url && !in_paren) {
+                    for (int i = 0; contractions[i].from; i++) {
+                        size_t len = strlen(contractions[i].from);
+                        if (strncmp(p - 1, contractions[i].from, len) == 0) {
+                            memcpy(q - 1, contractions[i].to, strlen(contractions[i].to));
+                            p += len - 1;
+                            q += strlen(contractions[i].to) - 1;
+                            break;
+                        }
+                    }
+                }
+
+                *q++ = c;
+                last_char = c;
+
+                // Track previous word for abbreviation check
+                if (isalpha((unsigned char)c)) {
+                    if (prev_word_len < (int)sizeof(prev_word) - 1)
+                        prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
+                } else {
+                    prev_word_len = 0;
+                }
+            }
+
+            // Ensure terminal punctuation
+            if (q > out && !ispunct((unsigned char)q[-1])) {
+                *q++ = '.';
+            }
+
+            *q = '\0';
+
+            free(r->processed_text);
+            r->processed_text = out;
+            // --- End context-aware grammar correction ---
         }
     }
 
@@ -1235,10 +1483,7 @@ soap_process_internal(const char *text,
     return r;
 }
 
-static char *
-soap_result_to_string(const fossil_io_soap_result_t *r,
-                      const fossil_io_soap_options_t *options)
-{
+static char *soap_result_to_string(const fossil_io_soap_result_t *r, const fossil_io_soap_options_t *options) {
     if (!r) return dupstr("");
 
     /* default behavior: return processed text only */
@@ -1260,10 +1505,7 @@ soap_result_to_string(const fossil_io_soap_result_t *r,
     return out;
 }
 
-char *
-fossil_io_soap_process(const char *text,
-                       const fossil_io_soap_options_t *options)
-{
+char *fossil_io_soap_process(const char *text, const fossil_io_soap_options_t *options) {
     fossil_io_soap_result_t *r =
         soap_process_internal(text, options);
 
