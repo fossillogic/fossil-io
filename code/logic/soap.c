@@ -224,9 +224,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
         if (in_url && isspace((unsigned char)c))
             in_url = 0;
 
-        // Clause awareness (em-dash removed, char can't represent 0x2014)
-        if (c == ',' || c == ';' || c == '-') /* clause_count++; */
-
         // Capitalization run
         if (isupper((unsigned char)c))
             caps_run++;
@@ -1306,7 +1303,7 @@ soap_process_internal(const char *text,
                     in_url = 0;
 
                 // Clause awareness
-                if (c == ',' || c == ';' || c == 0x2014 /* em-dash */ || c == '-') clause_count++;
+                if (c == ',' || c == ';' || c == '-') clause_count++;
 
                 // Capitalization run
                 if (isupper((unsigned char)c))
