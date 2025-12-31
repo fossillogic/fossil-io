@@ -749,23 +749,56 @@ static const pattern_t passive_aggressive_patterns[] = {
     { NULL }
 };
 
+//
+/* ============================================================================
+ * Snowflake patterns table (MAXIMIZED)
+ * ============================================================================ */
+static const pattern_t snowflake_patterns[] = {
+    { "triggered" }, { "microaggression" }, { "safe space" }, { "privilege" },
+    { "problematic" }, { "offended" }, { "snowflake" }, { "fragile" },
+    { "woke" }, { "cancel culture" }, { "toxic" }, { "gaslighting" },
+    { "trauma" }, { "oppressed" }, { "victim" }, { "identity politics" },
+    { "intersectional" }, { "systemic" }, { "inclusion" }, { "diversity" },
+    { "equity" }, { "ally" }, { "marginalized" }, { "lived experience" },
+    { "call out" }, { "callout" }, { "safe zone" }, { "emotional labor" },
+    { "tone policing" }, { "cultural appropriation" }, { "trigger warning" },
+    { "unpack" }, { "problematic fave" }, { "problematic favorite" },
+    { "privileged" }, { "decolonize" }, { "inclusivity" }, { "oppression" },
+    { "systemic bias" }, { "implicit bias" }, { "white fragility" },
+    { "white privilege" }, { "check your privilege" }, { "lived experiences" },
+    { "identity" }, { "safe environment" }, { "emotional support" },
+    { "emotional damage" }, { "emotional distress" }, { "emotional safety" },
+    { "emotional wellbeing" }, { "emotional well-being" }, { "emotional health" },
+    { "emotional needs" }, { "emotional response" }, { "emotional trauma" },
+    { "emotional abuse" }, { "emotional burden" }, { "emotional exhaustion" },
+    { "emotional intelligence" }, { "emotional resilience" }, { "emotional sensitivity" },
+    { "emotional support animal" }, { "emotional trigger" }, { "emotional vulnerability" },
+    { NULL }
+};
+
 /* ============================================================================
  * BrainRot patterns table (FULL, UNTRIMMED, BRACE-SAFE)
  * ============================================================================ */
 static const pattern_t brain_rot_patterns[] = {
-    {"lol"},{"lmao"},{"rofl"},{"bruh"},{"wtf"},{"omg"},{"haha"},{"hehe"},{"xd"},{"xdxd"},
-    {"yo"},{"hey"},{"sup"},{"what's up"},{"man"},{"dude"},{"bro"},{"broski"},{"homie"},{"fam"},
-    {"yolo"},{"smh"},{"fml"},{"idk"},{"ikr"},{"tbh"},{"ily"},{"ily2"},{"omfg"},{"wtfv"},
-    {"haha"},{"heh"},{"meh"},{"ugh"},{"aww"},{"yay"},{"yayyy"},{"yesss"},{"nope"},{"nah"},
-    {"yep"},{"bruhh"},{"brooo"},{"duuuude"},{"lolz"},{"lols"},{"lul"},{"lulz"},{"hahaaha"},
-    {"roflmao"},{"lmfao"},{"kek"},{"pog"},{"poggers"},{"pogchamp"},{"rip"},{"gg"},{"ggwp"},
-    {"rekt"},{"owned"},{"clap"},{"clapclap"},{"smh"},{"facepalm"},{"yikes"},{"oops"},{"oopsie"},
-    {"ayyy"},{"ayyy lmao"},{"hehehe"},{"yayyyyy"},{"nooooo"},{"yaaaas"},{"bruh moment"},{"oh no"},
-    {"ikr"},{"omgosh"},{"lmaoed"},{"lmaoing"},{"haha lol"},{"lol haha"},{"xd lol"},{"lol xd"},
-    {"fml lol"},{"smdh"},{"sksksk"},{"and i oop"},{"yeet"},{"yeeted"},{"yeeting"},{"uwu"},{"owo"},
-    {"uwu uwu"},{"owo owo"},{"rawr"},{"rawr x3"},{">:("},{"<3"},{":3"},{"-_-"},{"^_^"},{"T_T"},{";-;"},
-    {">:O"},{"-.-"},{">:("},{"D:"},{"XD"},{"xD"},{"XD XD"},{">:|"},{"-.-'"},{"-__-"},{"o.O"},{"O.o"},
-    {"lolwut"},{"lold"},{"lolol"},{"lololol"},{"haha lmao"},{"roflol"},{"roflolmao"},{"wtf lol"},
+    {"lol"}, {"lmao"}, {"rofl"}, {"bruh"}, {"wtf"}, {"omg"}, {"haha"}, {"hehe"}, {"xd"}, {"xdxd"},
+    {"yo"}, {"hey"}, {"sup"}, {"what's up"}, {"man"}, {"dude"}, {"bro"}, {"broski"}, {"homie"}, {"fam"},
+    {"yolo"}, {"smh"}, {"fml"}, {"idk"}, {"ikr"}, {"tbh"}, {"ily"}, {"ily2"}, {"omfg"}, {"wtfv"},
+    {"heh"}, {"meh"}, {"ugh"}, {"aww"}, {"yay"}, {"yayyy"}, {"yesss"}, {"nope"}, {"nah"}, {"yep"},
+    {"bruhh"}, {"brooo"}, {"duuuude"}, {"lolz"}, {"lols"}, {"lul"}, {"lulz"}, {"hahaaha"}, {"roflmao"}, {"lmfao"},
+    {"kek"}, {"pog"}, {"poggers"}, {"pogchamp"}, {"rip"}, {"gg"}, {"ggwp"}, {"rekt"}, {"owned"}, {"clap"},
+    {"clapclap"}, {"facepalm"}, {"yikes"}, {"oops"}, {"oopsie"}, {"ayyy"}, {"ayyy lmao"}, {"hehehe"}, {"yayyyyy"}, {"nooooo"},
+    {"yaaaas"}, {"bruh moment"}, {"oh no"}, {"ikr"}, {"omgosh"}, {"lmaoed"}, {"lmaoing"}, {"haha lol"}, {"lol haha"}, {"xd lol"},
+    {"lol xd"}, {"fml lol"}, {"smdh"}, {"sksksk"}, {"and i oop"}, {"yeet"}, {"yeeted"}, {"yeeting"}, {"uwu"}, {"owo"},
+    {"uwu uwu"}, {"owo owo"}, {"rawr"}, {"rawr x3"}, {">:("}, {"<3"}, {":3"}, {"-_-"}, {"^_^"}, {"T_T"},
+    {";-;"}, {">:O"}, {"-.-"}, {">:("}, {"D:"}, {"XD"}, {"xD"}, {"XD XD"}, {">:|"}, {"-.-'"},
+    {"-__-"}, {"o.O"}, {"O.o"}, {"lolwut"}, {"lold"}, {"lolol"}, {"lololol"}, {"haha lmao"}, {"roflol"}, {"roflolmao"},
+    {"wtf lol"}, {"no cap"}, {"sus"}, {"sussy"}, {"sus af"}, {"based"}, {"cringe"}, {"bet"}, {"lit"}, {"fire"},
+    {"goat"}, {"slay"}, {"flex"}, {"vibe"}, {"vibing"}, {"mood"}, {"big mood"}, {"dead"}, {"i'm dead"}, {"rip me"},
+    {"lowkey"}, {"highkey"}, {"salty"}, {"thirsty"}, {"shade"}, {"shook"}, {"stan"}, {"simp"}, {"snacc"}, {"snack"},
+    {"bop"}, {"bussin"}, {"drip"}, {"drippy"}, {"fam jam"}, {"fam squad"}, {"fam bam"}, {"fam fam"}, {"famalam"}, {"fam squad"},
+    {"on fleek"}, {"fleek"}, {"savage"}, {"savage af"}, {"extra"}, {"basic"}, {"woke"}, {"cancelled"}, {"cancel"}, {"clout"},
+    {"clout chaser"}, {"receipts"}, {"tea"}, {"spill the tea"}, {"spill tea"}, {"big yikes"}, {"big oof"}, {"oof"}, {"oop"},
+    {"no chill"}, {"deadass"}, {"facts"}, {"big facts"}, {"periodt"}, {"period"}, {"sis"}, {"sis bro"}, {"sis fam"}, {"sis queen"},
     {NULL}
 };
 
@@ -807,6 +840,7 @@ static const detector_map_t detector_map[] = {
     {"aggressive", aggressive_patterns},
     {"emotional", emotional_patterns},
     {"passive_aggressive", passive_aggressive_patterns},
+    {"snowflake", snowflake_patterns},
 
     /* Structural (logic handled separately) */
     {"redundant_sentences", NULL},
@@ -1407,6 +1441,10 @@ soap_process_internal(const char *text,
                 r->flags.emotional |= detect_flag(tokens[i],"emotional");
             if (options->detect_passive_aggressive)
                 r->flags.passive_aggressive |= detect_flag(tokens[i],"passive_aggressive");
+            if (options->detect_snowflake)
+                r->flags.passive_aggressive |= detect_flag(tokens[i],"snowflake");
+            if (options->detect_morse)
+                r->flags.brain_rot |= detect_flag(tokens[i],"morse");
         }
         for (size_t i = 0; tokens && tokens[i]; i++) free(tokens[i]);
         free(tokens);

@@ -141,6 +141,8 @@ typedef struct {
     /** Detect passive-aggressive phrasing patterns. */
     int detect_passive_aggressive;
 
+    int detect_snowflake;
+
     int detect_morse;
 
     /* =====================================================================
@@ -215,6 +217,12 @@ typedef struct {
  * Returns:
  *  - Newly allocated sanitized string (caller owns memory)
  *  - NULL on allocation or processing failure
+ *
+ * Internal logic:
+ *  - Duplicates the input string.
+ *  - Replaces control characters (except newline) with spaces.
+ *  - Normalizes leetspeak and lowercases the text.
+ *  - Returns the sanitized result.
  */
 char *fossil_io_soap_sanitize(const char *text);
 
@@ -225,6 +233,11 @@ char *fossil_io_soap_sanitize(const char *text);
  * directly modifying the original text.
  *
  * Intended for assistive or review workflows.
+ *
+ * Internal logic:
+ *  - Duplicates the input string.
+ *  - Collapses multiple spaces into one.
+ *  - Returns the suggestion string.
  */
 char *fossil_io_soap_suggest(const char *text);
 
@@ -233,6 +246,11 @@ char *fossil_io_soap_suggest(const char *text);
  *
  * Produces a concise summary capturing the primary intent and content of
  * the input text.
+ *
+ * Internal logic:
+ *  - Splits the input into sentences.
+ *  - Concatenates the first two sentences (if available) as the summary.
+ *  - Returns the summary string.
  */
 char *fossil_io_soap_summarize(const char *text);
 
@@ -260,12 +278,27 @@ typedef struct {
 
 /**
  * Analyzes grammar correctness and stylistic characteristics.
+ *
+ * Internal logic:
+ *  - Scans the input text for passive voice indicators (e.g., "was", "were").
+ *  - Counts total words and computes the percentage of passive voice usage.
+ *  - Classifies style as "emotional" if exclamation or question marks are present,
+ *    "formal" if certain formal words or punctuation are found, otherwise "neutral".
+ *  - Returns a struct with grammar_ok (always 1 in this stub), passive_voice_pct, and style label.
  */
 fossil_io_soap_grammar_style_t
 fossil_io_soap_analyze_grammar_style(const char *text);
 
 /**
  * Applies grammar correction heuristics and returns corrected text.
+ *
+ * Internal logic:
+ *  - Allocates a new string buffer for the output.
+ *  - Iterates through the input, tracking sentence boundaries, quotes, parentheses, and URLs.
+ *  - Normalizes whitespace, collapses repeated punctuation, and capitalizes sentence starts.
+ *  - Detects and replaces common contractions and fixes common grammar mistakes inline.
+ *  - Ensures terminal punctuation at the end of the output.
+ *  - Returns the corrected string (caller must free).
  */
 char *fossil_io_soap_correct_grammar(const char *text);
 
@@ -293,39 +326,72 @@ typedef struct {
 
 /**
  * Computes readability, clarity, and quality scores.
+ *
+ * Internal logic:
+ *  - Returns a struct with default scores (70/70/70).
+ *  - Penalizes readability if text is very short.
+ *  - Boosts clarity if text contains newlines.
+ *  - Boosts quality if text does not contain "!!!".
  */
 fossil_io_soap_scores_t fossil_io_soap_score(const char *text);
 
 /**
  * Converts a readability score into a human-readable label.
+ *
+ * Internal logic:
+ *  - Returns "excellent" for scores >80, "good" for >60, "fair" for >40, else "poor".
  */
 const char *fossil_io_soap_readability_label(int readability_score);
 
 /**
  * Generic detection interface for a single detector identifier.
+ *
+ * Internal logic:
+ *  - Normalizes input (leetspeak, lowercase).
+ *  - Looks up detector patterns by ID.
+ *  - Checks for pattern matches at document, sentence, and word level.
+ *  - Handles special detectors (brain_rot, leet, morse, structural).
+ *  - Returns 1 if any pattern matches, else 0.
  */
 int fossil_io_soap_detect(const char *text, const char *detector_id);
 
 /**
  * Splits text into logical units (sentences, paragraphs, blocks)
  * based on flow type.
+ *
+ * Internal logic:
+ *  - If text contains sentence-ending punctuation, splits as sentences.
+ *  - Otherwise, splits as words.
+ *  - Allocates and returns a NULL-terminated array of strings.
  */
 char **fossil_io_soap_split(const char *text);
 
 /**
  * Reflows text to a target line width.
+ *
+ * Internal logic:
+ *  - Copies input to output, inserting newlines at spaces when width is reached.
+ *  - Returns a newly allocated string.
  */
 char *fossil_io_soap_reflow(const char *text, int width);
 
 /**
  * Normalizes whitespace, punctuation, and casing.
+ *
+ * Internal logic:
+ *  - Duplicates input.
+ *  - Normalizes leetspeak and lowercases all letters.
+ *  - Returns the normalized string.
  */
 char *fossil_io_soap_normalize(const char *text);
 
 /**
  * Applies capitalization rules.
  *
- * mode may indicate sentence-case, title-case, or preserve-case.
+ * Internal logic:
+ *  - If mode==0, applies sentence-case (capitalize after '.', '!', '?').
+ *  - If mode==1, applies title-case (capitalize first letter of each word).
+ *  - Returns a newly allocated string.
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
@@ -338,11 +404,17 @@ char *fossil_io_soap_capitalize(const char *text, int mode);
  *
  * Executes a full SOAP processing pipeline using the supplied options.
  *
- * This function may perform:
- *  - Detection and scoring
- *  - Grammar and style analysis
- *  - Sanitization and normalization
- *  - Summary and metadata generation
+ * Internal logic:
+ *  - Allocates a result structure to hold all intermediate and final outputs.
+ *  - If Morse code is detected, decodes it before further processing.
+ *  - Applies normalization pipeline steps (sanitization, normalization, grammar correction)
+ *    according to the options provided, each step replacing the previous output.
+ *  - For word-level, sentence-level, and document-level detectors, splits the processed text
+ *    and applies enabled detectors, setting flags in the result structure.
+ *  - Runs grammar/style analysis and scoring if requested.
+ *  - Generates a summary if requested.
+ *  - Converts the result structure to a string, including summary and scores if requested.
+ *  - Frees all intermediate allocations and returns the final output string.
  *
  * Returns:
  *  - Newly allocated output string (caller owns memory)
@@ -448,6 +520,12 @@ namespace fossil {
             /**
              * Sanitizes the input text by removing or replacing low-quality or unsafe language.
              * Returns a sanitized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Duplicates the input string.
+             *   - Replaces control characters (except newline) with spaces.
+             *   - Normalizes leetspeak and lowercases the text.
+             *   - Returns the sanitized result.
              */
             static std::string sanitize(const std::string &text) {
                 char *res = fossil_io_soap_sanitize(text.c_str());
@@ -459,6 +537,11 @@ namespace fossil {
             /**
              * Suggests improvements for clarity, tone, or quality without modifying the original text.
              * Returns a suggestion string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Duplicates the input string.
+             *   - Collapses multiple spaces into one.
+             *   - Returns the suggestion string.
              */
             static std::string suggest(const std::string &text) {
                 char *res = fossil_io_soap_suggest(text.c_str());
@@ -470,6 +553,11 @@ namespace fossil {
             /**
              * Summarizes the input text, producing a concise summary of its main content and intent.
              * Returns a summary string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Splits the input into sentences.
+             *   - Concatenates the first two sentences (if available) as the summary.
+             *   - Returns the summary string.
              */
             static std::string summarize(const std::string &text) {
                 char *res = fossil_io_soap_summarize(text.c_str());
@@ -494,6 +582,13 @@ namespace fossil {
             /**
              * Analyzes grammar correctness and stylistic characteristics of the input text.
              * Returns a GrammarStyle struct with analysis results.
+             *
+             * Internal logic:
+             *   - Scans the input text for passive voice indicators (e.g., "was", "were").
+             *   - Counts total words and computes the percentage of passive voice usage.
+             *   - Classifies style as "emotional" if exclamation or question marks are present,
+             *     "formal" if certain formal words or punctuation are found, otherwise "neutral".
+             *   - Returns a struct with grammar_ok (always 1 in this stub), passive_voice_pct, and style label.
              */
             static GrammarStyle analyze_grammar_style(const std::string &text) {
                 auto result = fossil_io_soap_analyze_grammar_style(text.c_str());
@@ -507,6 +602,14 @@ namespace fossil {
             /**
              * Applies grammar correction heuristics to the input text.
              * Returns a corrected string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Allocates a new string buffer for the output.
+             *   - Iterates through the input, tracking sentence boundaries, quotes, parentheses, and URLs.
+             *   - Normalizes whitespace, collapses repeated punctuation, and capitalizes sentence starts.
+             *   - Detects and replaces common contractions and fixes common grammar mistakes inline.
+             *   - Ensures terminal punctuation at the end of the output.
+             *   - Returns the corrected string (caller must free).
              */
             static std::string correct_grammar(const std::string &text) {
                 char *res = fossil_io_soap_correct_grammar(text.c_str());
@@ -531,6 +634,12 @@ namespace fossil {
             /**
              * Computes readability, clarity, and quality scores for the input text.
              * Returns a Scores struct with normalized values (0–100).
+             *
+             * Internal logic:
+             *   - Returns a struct with default scores (70/70/70).
+             *   - Penalizes readability if text is very short.
+             *   - Boosts clarity if text contains newlines.
+             *   - Boosts quality if text does not contain "!!!".
              */
             static Scores score(const std::string &text) {
                 auto result = fossil_io_soap_score(text.c_str());
@@ -540,6 +649,9 @@ namespace fossil {
             /**
              * Converts a readability score into a human-readable label.
              * Returns the label as a string.
+             *
+             * Internal logic:
+             *   - Returns "excellent" for scores >80, "good" for >60, "fair" for >40, else "poor".
              */
             static std::string readability_label(int score) {
                 const char *label = fossil_io_soap_readability_label(score);
@@ -553,6 +665,13 @@ namespace fossil {
             /**
              * Runs a generic detector by identifier on the input text.
              * Returns true if the detector is triggered, false otherwise.
+             *
+             * Internal logic:
+             *   - Normalizes input (leetspeak, lowercase).
+             *   - Looks up detector patterns by ID.
+             *   - Checks for pattern matches at document, sentence, and word level.
+             *   - Handles special detectors (brain_rot, leet, morse, structural).
+             *   - Returns 1 if any pattern matches, else 0.
              */
             static bool detect(const std::string &text, const std::string &detector_id) {
                 return fossil_io_soap_detect(text.c_str(), detector_id.c_str()) != 0;
@@ -565,6 +684,11 @@ namespace fossil {
             /**
              * Splits the input text into logical units (sentences, paragraphs, or blocks).
              * Returns a vector of strings, each representing a unit.
+             *
+             * Internal logic:
+             *   - If text contains sentence-ending punctuation, splits as sentences.
+             *   - Otherwise, splits as words.
+             *   - Allocates and returns a NULL-terminated array of strings.
              */
             static std::vector<std::string> split(const std::string &text) {
                 char **arr = fossil_io_soap_split(text.c_str());
@@ -581,6 +705,10 @@ namespace fossil {
             /**
              * Reflows the input text to a specified target line width.
              * Returns the reflowed string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Copies input to output, inserting newlines at spaces when width is reached.
+             *   - Returns a newly allocated string.
              */
             static std::string reflow(const std::string &text, int width) {
                 char *res = fossil_io_soap_reflow(text.c_str(), width);
@@ -592,6 +720,11 @@ namespace fossil {
             /**
              * Normalizes whitespace, punctuation, and casing in the input text.
              * Returns the normalized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Duplicates input.
+             *   - Normalizes leetspeak and lowercases all letters.
+             *   - Returns the normalized string.
              */
             static std::string normalize(const std::string &text) {
                 char *res = fossil_io_soap_normalize(text.c_str());
@@ -604,6 +737,11 @@ namespace fossil {
              * Applies capitalization rules to the input text.
              * The mode parameter specifies sentence-case, title-case, or preserve-case.
              * Returns the capitalized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - If mode==0, applies sentence-case (capitalize after '.', '!', '?').
+             *   - If mode==1, applies title-case (capitalize first letter of each word).
+             *   - Returns a newly allocated string.
              */
             static std::string capitalize(const std::string &text, int mode) {
                 char *res = fossil_io_soap_capitalize(text.c_str(), mode);
@@ -619,6 +757,18 @@ namespace fossil {
             /**
              * Executes the full SOAP processing pipeline on the input text using the supplied options.
              * Returns the processed output string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Allocates a result structure to hold all intermediate and final outputs.
+             *   - If Morse code is detected, decodes it before further processing.
+             *   - Applies normalization pipeline steps (sanitization, normalization, grammar correction)
+             *     according to the options provided, each step replacing the previous output.
+             *   - For word-level, sentence-level, and document-level detectors, splits the processed text
+             *     and applies enabled detectors, setting flags in the result structure.
+             *   - Runs grammar/style analysis and scoring if requested.
+             *   - Generates a summary if requested.
+             *   - Converts the result structure to a string, including summary and scores if requested.
+             *   - Frees all intermediate allocations and returns the final output string.
              */
             static std::string process(const std::string &text,
                                        const Options *options = nullptr) {
