@@ -329,6 +329,10 @@ char *fossil_io_soap_normalize(const char *text);
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
+char *fossil_io_soap_rewrite(const char *text, const char *flag);
+
+char *fossil_io_soap_format(const char *text, const char *flag);
+
 // ============================================================================
 // High-Level Text Processing
 // ============================================================================
