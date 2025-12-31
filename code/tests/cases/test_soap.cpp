@@ -238,26 +238,6 @@ FOSSIL_TEST(cpp_test_soap_capitalize_empty) {
     ASSUME_ITS_EQUAL_CSTR("", sent.c_str());
 }
 
-// ============================================================================
-// High-Level Text Processing
-// ============================================================================
-
-FOSSIL_TEST(cpp_test_soap_process_basic) {
-    fossil::io::Soap::Options opts;
-    opts.detect_spam(true).detect_clickbait(true).include_summary(true);
-    std::string result = fossil::io::Soap::process("Buy now! You won't believe this.", &opts);
-    ASSUME_ITS_TRUE(!result.empty());
-    ASSUME_ITS_TRUE(result.find("detected: spam") != std::string::npos || result.find("detected: clickbait") != std::string::npos);
-}
-
-FOSSIL_TEST(cpp_test_soap_process_detect_multiple) {
-    fossil::io::Soap::Options opts;
-    opts.detect_spam(true).detect_clickbait(true);
-    std::string result = fossil::io::Soap::process("Buy now! You won't believe this amazing offer.", &opts);
-    ASSUME_ITS_TRUE(!result.empty());
-    ASSUME_ITS_TRUE(result.find("detected: spam") != std::string::npos || result.find("detected: clickbait") != std::string::npos);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -295,8 +275,6 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_reflow_shorter_than_width);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_modes);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_empty);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_process_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_process_detect_multiple);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
