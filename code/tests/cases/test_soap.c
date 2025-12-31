@@ -280,7 +280,7 @@ FOSSIL_TEST(c_test_soap_process_basic) {
     opts.include_summary = 1;
     char *result = fossil_io_soap_process("Buy now! You won't believe this.", &opts);
     ASSUME_ITS_TRUE(result != NULL);
-    ASSUME_ITS_TRUE(strstr(result, "Spam") || strstr(result, "Clickbait") || strstr(result, "spam") || strstr(result, "clickbait"));
+    ASSUME_ITS_TRUE(strstr(result, "spam") || strstr(result, "clickbait"));
     free(result);
 }
 
@@ -290,7 +290,7 @@ FOSSIL_TEST(c_test_soap_process_detect_multiple) {
     opts.detect_clickbait = 1;
     char *result = fossil_io_soap_process("Buy now! You won't believe this amazing offer.", &opts);
     ASSUME_ITS_TRUE(result != NULL);
-    ASSUME_ITS_TRUE(strstr(result, "Spam") || strstr(result, "Clickbait") || strstr(result, "spam") || strstr(result, "clickbait"));
+    ASSUME_ITS_TRUE(strstr(result, "spam") || strstr(result, "clickbait"));
     free(result);
 }
 
