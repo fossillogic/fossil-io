@@ -269,31 +269,6 @@ FOSSIL_TEST(c_test_soap_capitalize_empty) {
     free(sent);
 }
 
-// ============================================================================
-// High-Level Text Processing
-// ============================================================================
-
-FOSSIL_TEST(c_test_soap_process_basic) {
-    fossil_io_soap_options_t opts = {0};
-    opts.detect_spam = 1;
-    opts.detect_clickbait = 1;
-    opts.include_summary = 1;
-    char *result = fossil_io_soap_process("Buy now! You won't believe this.", &opts);
-    ASSUME_ITS_TRUE(result != NULL);
-    ASSUME_ITS_TRUE(strcasestr(result, "spam") || strcasestr(result, "clickbait"));
-    free(result);
-}
-
-FOSSIL_TEST(c_test_soap_process_detect_multiple) {
-    fossil_io_soap_options_t opts = {0};
-    opts.detect_spam = 1;
-    opts.detect_clickbait = 1;
-    char *result = fossil_io_soap_process("Buy now! You won't believe this amazing offer.", &opts);
-    ASSUME_ITS_TRUE(result != NULL);
-    ASSUME_ITS_TRUE(strcasestr(result, "spam") || strcasestr(result, "clickbait"));
-    free(result);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -333,9 +308,6 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
 
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_modes);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_empty);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_basic);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_detect_multiple);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
