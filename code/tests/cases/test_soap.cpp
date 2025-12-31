@@ -247,10 +247,7 @@ FOSSIL_TEST(cpp_test_soap_process_basic) {
     opts.detect_spam(true).detect_clickbait(true).include_summary(true);
     std::string result = fossil::io::Soap::process("Buy now! You won't believe this.", &opts);
     ASSUME_ITS_TRUE(!result.empty());
-    // Print result for debugging
-    std::cout << "Process result: " << result << std::endl;
-    ASSUME_ITS_TRUE(result.find("spam") != std::string::npos || result.find("clickbait") != std::string::npos ||
-                    result.find("Spam") != std::string::npos || result.find("Clickbait") != std::string::npos);
+    ASSUME_ITS_TRUE(result.find("detected: spam") != std::string::npos || result.find("detected: clickbait") != std::string::npos);
 }
 
 FOSSIL_TEST(cpp_test_soap_process_detect_multiple) {
@@ -258,8 +255,7 @@ FOSSIL_TEST(cpp_test_soap_process_detect_multiple) {
     opts.detect_spam(true).detect_clickbait(true);
     std::string result = fossil::io::Soap::process("Buy now! You won't believe this amazing offer.", &opts);
     ASSUME_ITS_TRUE(!result.empty());
-    ASSUME_ITS_TRUE(result.find("Spam") != std::string::npos || result.find("Clickbait") != std::string::npos ||
-                    result.find("spam") != std::string::npos || result.find("clickbait") != std::string::npos);
+    ASSUME_ITS_TRUE(result.find("detected: spam") != std::string::npos || result.find("detected: clickbait") != std::string::npos);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
