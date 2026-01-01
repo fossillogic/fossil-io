@@ -1026,8 +1026,11 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     }
 
     if (words) {
-        for (size_t i = 0; words[i]; i++) free(words[i]);
-        free(words);
+        // Only free if words is not the same as sentences
+        if (words != sentences) {
+            for (size_t i = 0; words[i]; i++) free(words[i]);
+            free(words);
+        }
     }
 
     return result;
