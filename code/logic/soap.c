@@ -1450,32 +1450,32 @@ soap_process_internal(const char *text,
 
         // Sentence-level
         char **sentences = fossil_io_soap_split(r->processed_text);
-        for (size_t i = 0; sentences && sentences[i]; i++) {
-            if (options->analyze_grammar || options->include_style)
-                r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
-
-            if (options->detect_spam)
-                r->flags.spam |= detect_flag(sentences[i],"spam");
-            if (options->detect_ragebait)
-                r->flags.ragebait |= detect_flag(sentences[i],"ragebait");
-            if (options->detect_clickbait)
-                r->flags.clickbait |= detect_flag(sentences[i],"clickbait");
-            if (options->detect_bot)
-                r->flags.bot |= detect_flag(sentences[i],"bot");
-            if (options->detect_marketing)
-                r->flags.marketing |= detect_flag(sentences[i],"marketing");
-            if (options->detect_technobabble)
-                r->flags.technobabble |= detect_flag(sentences[i],"technobabble");
-            if (options->detect_hype)
-                r->flags.hype |= detect_flag(sentences[i],"hype");
-            if (options->detect_political)
-                r->flags.political |= detect_flag(sentences[i],"political");
-            if (options->detect_offensive)
-                r->flags.offensive |= detect_flag(sentences[i],"offensive");
-            if (options->detect_misinformation)
-                r->flags.misinformation |= detect_flag(sentences[i],"misinformation");
-        }
         if (sentences) {
+            for (size_t i = 0; sentences[i]; i++) {
+                if (options->analyze_grammar || options->include_style)
+                    r->style = fossil_io_soap_analyze_grammar_style(sentences[i]);
+
+                if (options->detect_spam)
+                    r->flags.spam |= detect_flag(sentences[i],"spam");
+                if (options->detect_ragebait)
+                    r->flags.ragebait |= detect_flag(sentences[i],"ragebait");
+                if (options->detect_clickbait)
+                    r->flags.clickbait |= detect_flag(sentences[i],"clickbait");
+                if (options->detect_bot)
+                    r->flags.bot |= detect_flag(sentences[i],"bot");
+                if (options->detect_marketing)
+                    r->flags.marketing |= detect_flag(sentences[i],"marketing");
+                if (options->detect_technobabble)
+                    r->flags.technobabble |= detect_flag(sentences[i],"technobabble");
+                if (options->detect_hype)
+                    r->flags.hype |= detect_flag(sentences[i],"hype");
+                if (options->detect_political)
+                    r->flags.political |= detect_flag(sentences[i],"political");
+                if (options->detect_offensive)
+                    r->flags.offensive |= detect_flag(sentences[i],"offensive");
+                if (options->detect_misinformation)
+                    r->flags.misinformation |= detect_flag(sentences[i],"misinformation");
+            }
             for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
             free(sentences);
         }
