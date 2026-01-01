@@ -395,36 +395,6 @@ char *fossil_io_soap_normalize(const char *text);
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
-// ============================================================================
-// High-Level Text Processing
-// ============================================================================
-
-/**
- * fossil_io_soap_process
- *
- * Executes a full SOAP processing pipeline using the supplied options.
- *
- * Internal logic:
- *  - Allocates a result structure to hold all intermediate and final outputs.
- *  - If Morse code is detected, decodes it before further processing.
- *  - Applies normalization pipeline steps (sanitization, normalization, grammar correction)
- *    according to the options provided, each step replacing the previous output.
- *  - For word-level, sentence-level, and document-level detectors, splits the processed text
- *    and applies enabled detectors, setting flags in the result structure.
- *  - Runs grammar/style analysis and scoring if requested.
- *  - Generates a summary if requested.
- *  - Converts the result structure to a string, including summary and scores if requested.
- *  - Frees all intermediate allocations and returns the final output string.
- *
- * Returns:
- *  - Newly allocated output string (caller owns memory)
- *  - NULL on failure
- */
-char *fossil_io_soap_process(
-    const char *text,
-    const fossil_io_soap_options_t *options
-);
-
 #ifdef __cplusplus
 }
 
@@ -749,36 +719,6 @@ namespace fossil {
                 free(res);
                 return out;
             }
-
-            // ===============================
-            // High-Level Process
-            // ===============================
-
-            /**
-             * Executes the full SOAP processing pipeline on the input text using the supplied options.
-             * Returns the processed output string. Throws away the result if allocation fails.
-             *
-             * Internal logic:
-             *   - Allocates a result structure to hold all intermediate and final outputs.
-             *   - If Morse code is detected, decodes it before further processing.
-             *   - Applies normalization pipeline steps (sanitization, normalization, grammar correction)
-             *     according to the options provided, each step replacing the previous output.
-             *   - For word-level, sentence-level, and document-level detectors, splits the processed text
-             *     and applies enabled detectors, setting flags in the result structure.
-             *   - Runs grammar/style analysis and scoring if requested.
-             *   - Generates a summary if requested.
-             *   - Converts the result structure to a string, including summary and scores if requested.
-             *   - Frees all intermediate allocations and returns the final output string.
-             */
-            static std::string process(const std::string &text,
-                                       const Options *options = nullptr) {
-                const fossil_io_soap_options_t *opt_ptr = options ? &options->c_options : nullptr;
-                char *res = fossil_io_soap_process(text.c_str(), opt_ptr);
-                std::string out = res ? res : "";
-                free(res);
-                return out;
-            }
-        };
     
     } // namespace io
 
