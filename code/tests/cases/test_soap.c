@@ -269,6 +269,108 @@ FOSSIL_TEST(c_test_soap_capitalize_empty) {
     free(sent);
 }
 
+FOSSIL_TEST(c_test_soap_process_basic_sanitization) {
+    fossil_io_soap_options_t opts = {0};
+    opts.apply_sanitization = 1;
+    char *out = fossil_io_soap_process("Hello\x01W0rld!", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "hello world") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_full_pipeline) {
+    fossil_io_soap_options_t opts = {0};
+    opts.apply_sanitization = 1;
+    opts.apply_normalization = 1;
+    opts.apply_grammar_correction = 1;
+    opts.include_summary = 1;
+    opts.include_scores = 1;
+    opts.include_style = 1;
+    char *out = fossil_io_soap_process("Th1s is a t3st. Second sentence!", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "this is a test") != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "summary") != NULL || strstr(out, "Summary") != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "score") != NULL || strstr(out, "Score") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_detect_spam_and_clickbait) {
+    fossil_io_soap_options_t opts = {0};
+    opts.detect_spam = 1;
+    opts.detect_clickbait = 1;
+    opts.include_flags = 1;
+    char *out = fossil_io_soap_process("Buy now! You won't believe what happened next!", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "spam") != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "clickbait") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_detect_brain_rot) {
+    fossil_io_soap_options_t opts = {0};
+    opts.detect_brain_rot = 1;
+    opts.include_flags = 1;
+    char *out = fossil_io_soap_process("skibidi rizz sigma", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "brain_rot") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_morse_decoding) {
+    fossil_io_soap_options_t opts = {0};
+    opts.detect_morse = 1;
+    char *out = fossil_io_soap_process(".... . .-.. .-.. ---", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "hello") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_null_and_empty) {
+    fossil_io_soap_options_t opts = {0};
+    char *out = fossil_io_soap_process(NULL, &opts);
+    ASSUME_ITS_TRUE(out == NULL);
+    out = fossil_io_soap_process("", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_only_summary) {
+    fossil_io_soap_options_t opts = {0};
+    opts.include_summary = 1;
+    char *out = fossil_io_soap_process("First. Second. Third.", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "First") != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "Second") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_detect_tone_aggressive) {
+    fossil_io_soap_options_t opts = {0};
+    opts.detect_tone = 1;
+    opts.detect_aggressive = 1;
+    opts.include_flags = 1;
+    char *out = fossil_io_soap_process("This is terrible! You must fix it now!", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "aggressive") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_process_detect_formal_and_casual) {
+    fossil_io_soap_options_t opts = {0};
+    opts.detect_formal = 1;
+    opts.detect_casual = 1;
+    opts.include_flags = 1;
+    char *out = fossil_io_soap_process("Therefore, we conclude the experiment.", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "formal") != NULL);
+    free(out);
+
+    out = fossil_io_soap_process("Hey dude, what's up?", &opts);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "casual") != NULL);
+    free(out);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -308,6 +410,16 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
 
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_modes);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_empty);
+
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_basic_sanitization);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_full_pipeline);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_detect_spam_and_clickbait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_detect_brain_rot);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_morse_decoding);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_null_and_empty);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_only_summary);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_detect_tone_aggressive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_detect_formal_and_casual);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
