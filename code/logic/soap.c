@@ -1171,7 +1171,11 @@ static fossil_io_soap_result_t *
 soap_process_internal(const char *text,
                       const fossil_io_soap_options_t *options)
 {
-    if (!text) return NULL;
+    if (!text) {
+        fossil_io_soap_result_t *r = calloc(1, sizeof(*r));
+        r->processed_text = dupstr("");
+        return r;
+    }
 
     fossil_io_soap_result_t *r = calloc(1, sizeof(*r));
     r->processed_text = dupstr(text);
@@ -1196,7 +1200,6 @@ soap_process_internal(const char *text,
             free(r->processed_text); r->processed_text = tmp;
         }
         if (options->apply_grammar_correction) {
-            // --- Begin context-aware grammar correction ---
             if (!r->processed_text) return r;
             const char *text = r->processed_text;
             size_t n = strlen(text);
@@ -1215,7 +1218,6 @@ soap_process_internal(const char *text,
             int in_url = 0;
             int word_start = 1;
 
-            // For abbreviation detection
             char prev_word[32] = {0};
             int prev_word_len = 0;
 
@@ -1350,7 +1352,6 @@ soap_process_internal(const char *text,
                 // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
                 int is_abbrev = 0;
                 if (new_sentence && isalpha((unsigned char)c)) {
-                    // Check for abbreviation before
                     if (prev_word_len > 0 && soap_is_abbrev(prev_word))
                         is_abbrev = 1;
                     if (!is_abbrev)
@@ -1366,13 +1367,10 @@ soap_process_internal(const char *text,
 
                 // Sentence boundary detection (punctuation-aware)
                 if ((c == '.' || c == '!' || c == '?') && !in_quote) {
-                    // Decimal number: don't end sentence
                     if (c == '.' && isdigit((unsigned char)*p))
                         ;
-                    // Abbreviation: don't end sentence
                     else if (is_abbrev)
                         ;
-                    // Ellipsis: don't end sentence
                     else if (c == '.' && *p == '.' && *(p+1) == '.')
                         ;
                     else
@@ -1405,7 +1403,7 @@ soap_process_internal(const char *text,
             }
 
             // Ensure terminal punctuation
-            if (q > out && !ispunct((unsigned char)q[-1])) {
+            if (q > out && q[-1] != '.' && q[-1] != '!' && q[-1] != '?') {
                 *q++ = '.';
             }
 
@@ -1413,7 +1411,6 @@ soap_process_internal(const char *text,
 
             free(r->processed_text);
             r->processed_text = out;
-            // --- End context-aware grammar correction ---
         }
     }
 
@@ -1446,8 +1443,10 @@ soap_process_internal(const char *text,
             if (options->detect_morse)
                 r->flags.brain_rot |= detect_flag(tokens[i],"morse");
         }
-        for (size_t i = 0; tokens && tokens[i]; i++) free(tokens[i]);
-        free(tokens);
+        if (tokens) {
+            for (size_t i = 0; tokens[i]; i++) free(tokens[i]);
+            free(tokens);
+        }
 
         // Sentence-level
         char **sentences = fossil_io_soap_split(r->processed_text);
@@ -1476,8 +1475,10 @@ soap_process_internal(const char *text,
             if (options->detect_misinformation)
                 r->flags.misinformation |= detect_flag(sentences[i],"misinformation");
         }
-        for (size_t i = 0; sentences && sentences[i]; i++) free(sentences[i]);
-        free(sentences);
+        if (sentences) {
+            for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
+            free(sentences);
+        }
 
         // Document-level
         if (options->include_scores)
@@ -1498,18 +1499,81 @@ soap_process_internal(const char *text,
 static char *soap_result_to_string(const fossil_io_soap_result_t *r, const fossil_io_soap_options_t *options) {
     if (!r) return dupstr("");
 
-    /* default behavior: return processed text only */
-    if (!options || !options->include_summary)
+    // If options is NULL, just return processed text
+    if (!options)
+        return dupstr(r->processed_text ? r->processed_text : "");
+
+    // If empty string, return empty string
+    if (!r->processed_text || r->processed_text[0] == '\0')
+        return dupstr("");
+
+    // If only processed text is requested
+    if (!options->include_summary && !options->include_flags && !options->include_scores)
         return dupstr(r->processed_text);
 
-    /* simple annotated output */
-    size_t len = strlen(r->processed_text) + 128;
-    if (r->summary) len += strlen(r->summary);
+    // Compute output length
+    size_t len = strlen(r->processed_text) + 256;
+    if (r->summary) len += strlen(r->summary) + 32;
 
-    char *out = calloc(1, len);
+    // For flags
+    char flags_buf[512] = {0};
+    if (options->include_flags) {
+        char *f = flags_buf;
+        int first = 1;
+        #define FLAG_APPEND(flagname) \
+            if (r->flags.flagname) { \
+                if (!first) { *f++ = ','; *f++ = ' '; } \
+                strcpy(f, #flagname); f += strlen(#flagname); first = 0; \
+            }
+        FLAG_APPEND(brain_rot)
+        FLAG_APPEND(leet)
+        FLAG_APPEND(spam)
+        FLAG_APPEND(ragebait)
+        FLAG_APPEND(clickbait)
+        FLAG_APPEND(bot)
+        FLAG_APPEND(marketing)
+        FLAG_APPEND(technobabble)
+        FLAG_APPEND(hype)
+        FLAG_APPEND(political)
+        FLAG_APPEND(offensive)
+        FLAG_APPEND(misinformation)
+        FLAG_APPEND(formal)
+        FLAG_APPEND(casual)
+        FLAG_APPEND(sarcasm)
+        FLAG_APPEND(neutral)
+        FLAG_APPEND(aggressive)
+        FLAG_APPEND(emotional)
+        FLAG_APPEND(passive_aggressive)
+        FLAG_APPEND(propaganda)
+        FLAG_APPEND(conspiracy)
+        #undef FLAG_APPEND
+    }
+
+    // For scores
+    char scores_buf[256] = {0};
+    if (options->include_scores) {
+        snprintf(scores_buf, sizeof(scores_buf),
+            "\nScore: readability=%d (%s), clarity=%d, quality=%d",
+            r->scores.readability,
+            fossil_io_soap_readability_label(r->scores.readability),
+            r->scores.clarity,
+            r->scores.quality
+        );
+    }
+
+    char *out = calloc(1, len + strlen(flags_buf) + strlen(scores_buf) + 32);
     strcat(out, r->processed_text);
 
-    if (r->summary) {
+    if (options->include_flags && flags_buf[0]) {
+        strcat(out, "\n\nFlags: ");
+        strcat(out, flags_buf);
+    }
+
+    if (options->include_scores && scores_buf[0]) {
+        strcat(out, scores_buf);
+    }
+
+    if (options->include_summary && r->summary) {
         strcat(out, "\n\nSummary:\n");
         strcat(out, r->summary);
     }
@@ -1518,14 +1582,14 @@ static char *soap_result_to_string(const fossil_io_soap_result_t *r, const fossi
 }
 
 char *fossil_io_soap_process(const char *text, const fossil_io_soap_options_t *options) {
-    fossil_io_soap_result_t *r =
-        soap_process_internal(text, options);
+    fossil_io_soap_result_t *r = soap_process_internal(text, options);
 
     char *out = soap_result_to_string(r, options);
 
     /* cleanup */
     if (r) {
-        free(r->processed_text);
+        if (r->processed_text)
+            free(r->processed_text);
         if (r->summary)
             free(r->summary);
         free(r);
