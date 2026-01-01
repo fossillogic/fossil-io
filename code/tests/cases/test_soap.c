@@ -274,8 +274,10 @@ FOSSIL_TEST(c_test_soap_process_morse_implicit) {
     // No detect_morse set, but morse is detected implicitly
     char *out = fossil_io_soap_process(".... . .-.. .-.. ---", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "hello") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "hello") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_contraction_correction) {
@@ -283,9 +285,11 @@ FOSSIL_TEST(c_test_soap_process_contraction_correction) {
     opts.apply_grammar_correction = 1;
     char *out = fossil_io_soap_process("i am happy. you are sad.", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "I'm happy.") != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "You're sad.") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "I'm happy.") != NULL);
+        ASSUME_ITS_TRUE(strstr(out, "You're sad.") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_sentence_capitalization) {
@@ -293,9 +297,11 @@ FOSSIL_TEST(c_test_soap_process_sentence_capitalization) {
     opts.apply_grammar_correction = 1;
     char *out = fossil_io_soap_process("this is a test. another sentence!", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "This is a test.") != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "Another sentence!") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "This is a test.") != NULL);
+        ASSUME_ITS_TRUE(strstr(out, "Another sentence!") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_terminal_punctuation_added) {
@@ -303,9 +309,11 @@ FOSSIL_TEST(c_test_soap_process_terminal_punctuation_added) {
     opts.apply_grammar_correction = 1;
     char *out = fossil_io_soap_process("this is a test without punctuation", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    size_t len = strlen(out);
-    ASSUME_ITS_TRUE(out[len-1] == '.' || out[len-1] == '!' || out[len-1] == '?');
-    free(out);
+    if (out != NULL) {
+        size_t len = strlen(out);
+        ASSUME_ITS_TRUE(out[len-1] == '.' || out[len-1] == '!' || out[len-1] == '?');
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_flags_word_and_sentence_level) {
@@ -316,9 +324,11 @@ FOSSIL_TEST(c_test_soap_process_flags_word_and_sentence_level) {
     opts.include_flags = 1;
     char *out = fossil_io_soap_process("skibidi rizz sigma. Buy now!", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "brain_rot") != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "spam") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "brain_rot") != NULL);
+        ASSUME_ITS_TRUE(strstr(out, "spam") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_propaganda_and_conspiracy) {
@@ -329,8 +339,10 @@ FOSSIL_TEST(c_test_soap_process_propaganda_and_conspiracy) {
     char *out = fossil_io_soap_process("This is a secret government plot.", &opts);
     ASSUME_ITS_TRUE(out != NULL);
     // Accept either flag if present
-    ASSUME_ITS_TRUE(strstr(out, "propaganda") != NULL || strstr(out, "conspiracy") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "propaganda") != NULL || strstr(out, "conspiracy") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_include_scores) {
@@ -338,24 +350,30 @@ FOSSIL_TEST(c_test_soap_process_include_scores) {
     opts.include_scores = 1;
     char *out = fossil_io_soap_process("This is a test for scores.", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "score") != NULL || strstr(out, "Score") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "score") != NULL || strstr(out, "Score") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_null_options) {
     // Should not crash if options is NULL
     char *out = fossil_io_soap_process("Just text.", NULL);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "Just text.") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "Just text.") != NULL);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_empty_string) {
     fossil_io_soap_options_t opts = {0};
     char *out = fossil_io_soap_process("", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_EQUAL_CSTR("", out);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_EQUAL_CSTR("", out);
+        free(out);
+    }
 }
 
 FOSSIL_TEST(c_test_soap_process_summary_and_processed_text) {
@@ -363,9 +381,11 @@ FOSSIL_TEST(c_test_soap_process_summary_and_processed_text) {
     opts.include_summary = 1;
     char *out = fossil_io_soap_process("First sentence. Second sentence.", &opts);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "Summary") != NULL || strstr(out, "summary") != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "First sentence") != NULL);
-    free(out);
+    if (out != NULL) {
+        ASSUME_ITS_TRUE(strstr(out, "Summary") != NULL || strstr(out, "summary") != NULL);
+        ASSUME_ITS_TRUE(strstr(out, "First sentence") != NULL);
+        free(out);
+    }
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
