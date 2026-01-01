@@ -1020,7 +1020,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     }
 
     /* ================= Cleanup ================= */
-    if (sentences) {
+    if (sentences && sentences != words) {
         for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
         free(sentences);
     }
