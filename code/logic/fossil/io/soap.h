@@ -719,6 +719,8 @@ namespace fossil {
                 free(res);
                 return out;
             }
+
+        };
     
     } // namespace io
 
