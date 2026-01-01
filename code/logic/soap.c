@@ -1526,7 +1526,8 @@ char *fossil_io_soap_process(const char *text, const fossil_io_soap_options_t *o
     /* cleanup */
     if (r) {
         free(r->processed_text);
-        free(r->summary);
+        if (r->summary)
+            free(r->summary);
         free(r);
     }
 
