@@ -26,6 +26,7 @@
 
 #include "fossil/io/framework.h"
 
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -54,343 +55,187 @@ FOSSIL_TEARDOWN(cpp_soap_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(cpp_test_io_soap_detect_ragebait_true) {
-    std::string input = "This is outrageous and infuriating!";
-    bool result = fossil::io::Soap::is_ragebait(input);
-    ASSUME_ITS_TRUE(result);
+// ============================================================================
+// Sanitize, Analysis, & Summary
+// ============================================================================
+
+FOSSIL_TEST(cpp_test_soap_sanitize_basic) {
+    // Should remove control chars, normalize leet, lowercase
+    std::string input = "Hello\x01W0rld!\n";
+    std::string san = fossil::io::Soap::sanitize(input);
+    ASSUME_ITS_EQUAL_CSTR("hello world!\n", san.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_ragebait_false) {
-    std::string input = "This is a calm and reasonable statement.";
-    bool result = fossil::io::Soap::is_ragebait(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_sanitize_empty_and_null) {
+    std::string san = fossil::io::Soap::sanitize("");
+    ASSUME_ITS_EQUAL_CSTR("", san.c_str());
+
+    // NULL input: C++ wrapper expects std::string, so skip this test
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_clickbait_true) {
-    std::string input = "Top 10 amazing secrets revealed!";
-    bool result = fossil::io::Soap::is_clickbait(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_suggest_basic) {
+    std::string sug = fossil::io::Soap::suggest("This   is   a   test.");
+    ASSUME_ITS_EQUAL_CSTR("This is a test.", sug.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_clickbait_false) {
-    std::string input = "Here is a regular informative article.";
-    bool result = fossil::io::Soap::is_clickbait(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_suggest_improvement) {
+    std::string sug = fossil::io::Soap::suggest("bad grammar here");
+    ASSUME_ITS_TRUE(!sug.empty());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_spam_true) {
-    std::string input = "Earn cash fast with this exclusive deal!";
-    bool result = fossil::io::Soap::is_spam(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_summarize_basic) {
+    std::string sum = fossil::io::Soap::summarize("First sentence. Second sentence. Third sentence.");
+    ASSUME_ITS_EQUAL_CSTR("First sentence  Second sentence ", sum.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_spam_false) {
-    std::string input = "This is a normal conversation.";
-    bool result = fossil::io::Soap::is_spam(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_summarize_short_text) {
+    std::string sum = fossil::io::Soap::summarize("Short text.");
+    ASSUME_ITS_EQUAL_CSTR("Short text ", sum.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_woke_true) {
-    std::string input = "We need more diversity and inclusion in the workplace.";
-    bool result = fossil::io::Soap::is_woke(input);
-    ASSUME_ITS_TRUE(result);
+// ============================================================================
+// Grammar & Style Analysis
+// ============================================================================
+
+FOSSIL_TEST(cpp_test_soap_analyze_grammar_style) {
+    auto r = fossil::io::Soap::analyze_grammar_style("This is a test.");
+    ASSUME_ITS_TRUE(r.grammar_ok);
+    ASSUME_ITS_TRUE(r.passive_voice_pct >= 0 && r.passive_voice_pct <= 100);
+    ASSUME_ITS_TRUE(!r.style.empty());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_woke_false) {
-    std::string input = "Let's focus on productivity and teamwork.";
-    bool result = fossil::io::Soap::is_woke(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_analyze_grammar_style_emotional) {
+    auto r = fossil::io::Soap::analyze_grammar_style("Wow! This is amazing!");
+    ASSUME_ITS_TRUE(r.style.find("emotional") != std::string::npos);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_bot_true) {
-    std::string input = "This is an auto-generated reply from a bot.";
-    bool result = fossil::io::Soap::is_bot(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_analyze_grammar_style_formal) {
+    auto r = fossil::io::Soap::analyze_grammar_style("Therefore, we conclude the experiment;");
+    ASSUME_ITS_TRUE(r.style.find("formal") != std::string::npos);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_bot_false) {
-    std::string input = "I'm writing this message myself.";
-    bool result = fossil::io::Soap::is_bot(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_correct_grammar) {
+    std::string input = "this is a test";
+    std::string corr = fossil::io::Soap::correct_grammar(input);
+    ASSUME_ITS_TRUE(!corr.empty());
+    ASSUME_ITS_TRUE(corr[0] == 'T');
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_sarcasm_true) {
-    std::string input = "Oh, great. Just what I needed.";
-    bool result = fossil::io::Soap::is_sarcastic(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_correct_grammar_terminal_punctuation) {
+    std::string input = "this is a test without punctuation";
+    std::string corr = fossil::io::Soap::correct_grammar(input);
+    ASSUME_ITS_TRUE(!corr.empty());
+    size_t len = corr.length();
+    ASSUME_ITS_TRUE(corr[len-1] == '.' || corr[len-1] == '!' || corr[len-1] == '?');
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_sarcasm_false) {
-    std::string input = "Thank you for your help.";
-    bool result = fossil::io::Soap::is_sarcastic(input);
-    ASSUME_ITS_FALSE(result);
+// ============================================================================
+// Readability, Clarity, & Quality Analysis
+// ============================================================================
+
+FOSSIL_TEST(cpp_test_soap_score_short_text) {
+    auto s = fossil::io::Soap::score("short");
+    ASSUME_ITS_TRUE(s.readability < 70);
+    ASSUME_ITS_TRUE(s.clarity >= 70);
+    ASSUME_ITS_TRUE(s.quality >= 70);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_formal_true) {
-    std::string input = "Dear Sir or Madam, I am writing to request information.";
-    bool result = fossil::io::Soap::is_formal(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_score_long_text) {
+    std::string txt = "This is a sufficiently long text to test the readability scoring system. "
+                      "It should not be penalized for being too short.";
+    auto s = fossil::io::Soap::score(txt);
+    ASSUME_ITS_TRUE(s.readability >= 70);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_formal_false) {
-    std::string input = "Hey, what's up?";
-    bool result = fossil::io::Soap::is_formal(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_score_multiline) {
+    auto s = fossil::io::Soap::score("Line one.\nLine two.");
+    ASSUME_ITS_TRUE(s.clarity > 70);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_snowflake_true) {
-    std::string input = "You're such a snowflake, always offended easily.";
-    bool result = fossil::io::Soap::is_snowflake(input);
-    ASSUME_ITS_TRUE(result);
+FOSSIL_TEST(cpp_test_soap_readability_label) {
+    ASSUME_ITS_EQUAL_CSTR("excellent", fossil::io::Soap::readability_label(90).c_str());
+    ASSUME_ITS_EQUAL_CSTR("good", fossil::io::Soap::readability_label(70).c_str());
+    ASSUME_ITS_EQUAL_CSTR("fair", fossil::io::Soap::readability_label(50).c_str());
+    ASSUME_ITS_EQUAL_CSTR("poor", fossil::io::Soap::readability_label(30).c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_snowflake_false) {
-    std::string input = "You are very resilient and strong.";
-    bool result = fossil::io::Soap::is_snowflake(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_readability_label_boundaries) {
+    ASSUME_ITS_EQUAL_CSTR("excellent", fossil::io::Soap::readability_label(81).c_str());
+    ASSUME_ITS_EQUAL_CSTR("good", fossil::io::Soap::readability_label(61).c_str());
+    ASSUME_ITS_EQUAL_CSTR("fair", fossil::io::Soap::readability_label(41).c_str());
+    ASSUME_ITS_EQUAL_CSTR("poor", fossil::io::Soap::readability_label(0).c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_offensive_true) {
-    std::string input = "You are an idiot and a loser.";
-    bool result = fossil::io::Soap::is_neutral(input) == false; // Assuming offensive means not neutral
-    ASSUME_ITS_TRUE(result);
+// ============================================================================
+// Detection, Normalization, Split, Reflow, Capitalization
+// ============================================================================
+
+FOSSIL_TEST(cpp_test_soap_detect_spam) {
+    bool found = fossil::io::Soap::detect("Buy now for a free gift!", "spam");
+    ASSUME_ITS_TRUE(found);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_detect_offensive_false) {
-    std::string input = "You are a wonderful person.";
-    bool result = fossil::io::Soap::is_neutral(input);
-    ASSUME_ITS_FALSE(result);
+FOSSIL_TEST(cpp_test_soap_detect_clickbait) {
+    bool found = fossil::io::Soap::detect("You won't believe what happened next!", "clickbait");
+    ASSUME_ITS_TRUE(found);
 }
 
-// filter cases
-
-FOSSIL_TEST(cpp_test_io_soap_add_custom_filter) {
-    int result = fossil::io::Soap::add_custom_filter("unicorn");
-    ASSUME_ITS_TRUE(result == 0);
+FOSSIL_TEST(cpp_test_soap_detect_no_match) {
+    bool found = fossil::io::Soap::detect("This is a normal sentence.", "spam");
+    ASSUME_ITS_TRUE(!found);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_filter_basic) {
-    std::string patterns = "idiot,loser";
-    std::string text = "You are an idiot and a loser.";
-    std::string filtered = fossil::io::Soap::filter(patterns, text);
-    ASSUME_ITS_TRUE(filtered == "You are an ***** and a *****.");
+FOSSIL_TEST(cpp_test_soap_detect_case_insensitive) {
+    bool found = fossil::io::Soap::detect("BUY NOW for a FREE gift!", "spam");
+    ASSUME_ITS_TRUE(found);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_filter_wildcard) {
-    std::string patterns = "lo*er";
-    std::string text = "You are a loser and a lover.";
-    std::string filtered = fossil::io::Soap::filter(patterns, text);
-    ASSUME_ITS_TRUE(filtered == "You are a ***** and a *****.");
+FOSSIL_TEST(cpp_test_soap_detect_bot_pattern) {
+    bool found = fossil::io::Soap::detect("Click here to subscribe!", "bot");
+    ASSUME_ITS_TRUE(found);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_filter_case_insensitive) {
-    std::string patterns = "IdIoT";
-    std::string text = "You are an idiot.";
-    std::string filtered = fossil::io::Soap::filter(patterns, text);
-    ASSUME_ITS_TRUE(filtered == "You are an *****.");
+FOSSIL_TEST(cpp_test_soap_normalize_leet_and_case) {
+    std::string input = "H3LL0 W0RLD";
+    std::string norm = fossil::io::Soap::normalize(input);
+    ASSUME_ITS_EQUAL_CSTR("hello world", norm.c_str());
 }
 
-// grammar cases
+FOSSIL_TEST(cpp_test_soap_normalize_null_and_empty) {
+    // NULL input: C++ wrapper expects std::string, so skip this test
 
-FOSSIL_TEST(cpp_test_io_soap_check_grammar_clean) {
-    std::string input = "She has gone to the store.";
-    int result = fossil_io_soap_check_grammar(input.c_str());
-    ASSUME_ITS_TRUE(result == 0);
+    std::string norm = fossil::io::Soap::normalize("");
+    ASSUME_ITS_EQUAL_CSTR("", norm.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_check_grammar_incorrect) {
-    std::string input = "I should of went to the party.";
-    int result = fossil_io_soap_check_grammar(input.c_str());
-    ASSUME_ITS_TRUE(result != 0);
-}
+FOSSIL_TEST(cpp_test_soap_split_and_reflow) {
+    auto split = fossil::io::Soap::split("Sentence one. Sentence two.");
+    ASSUME_ITS_TRUE(split.size() >= 2);
 
-FOSSIL_TEST(cpp_test_io_soap_check_grammar_multiple_errors) {
-    std::string input = "Me and him should of went.";
-    int result = fossil_io_soap_check_grammar(input.c_str());
-    ASSUME_ITS_TRUE(result != 0);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_correct_grammar_basic) {
-    std::string input = "I should of went to the party.";
-    std::string corrected = fossil::io::Soap::correct_grammar(input);
-    ASSUME_ITS_TRUE(corrected == "I should have went to the party.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_correct_grammar_multiple) {
-    std::string input = "Me and him should of went.";
-    std::string corrected = fossil::io::Soap::correct_grammar(input);
-    ASSUME_ITS_TRUE(corrected == "he and I should have went.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_correct_grammar_no_change) {
-    std::string input = "She has gone to the store.";
-    std::string corrected = fossil::io::Soap::correct_grammar(input);
-    ASSUME_ITS_TRUE(corrected == input);
-}
-
-// general cases
-FOSSIL_TEST(cpp_test_io_soap_sanitize_rotbrain) {
-    std::string input = "You are such a rot-brain!";
-    std::string sanitized = fossil::io::Soap::sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(sanitized.c_str(), "You are such a *********!");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_sanitize_meme) {
-    std::string input = "That was so skibidi and rizz!";
-    std::string sanitized = fossil::io::Soap::sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(sanitized.c_str(), "That was so ******* and ****!");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_sanitize_mixed) {
-    std::string input = "You are a rotbrain and have rizz.";
-    std::string sanitized = fossil::io::Soap::sanitize(input);
-    ASSUME_ITS_EQUAL_CSTR(sanitized.c_str(), "You are a ******** and have ****.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_suggest_rotbrain) {
-    std::string input = "You are a rot-brain.";
-    std::string suggested = fossil::io::Soap::suggest(input);
-    ASSUME_ITS_EQUAL_CSTR(suggested.c_str(), "You are a stupid.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_suggest_meme) {
-    std::string input = "He has rizz and skibidi.";
-    std::string suggested = fossil::io::Soap::suggest(input);
-    ASSUME_ITS_EQUAL_CSTR(suggested.c_str(), "He has charisma and dance.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_suggest_grammar) {
-    std::string input = "I should of went.";
-    std::string suggested = fossil::io::Soap::suggest(input);
-    ASSUME_ITS_EQUAL_CSTR(suggested.c_str(), "I should of went.");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_detect_tone_formal) {
-    std::string input = "Dear Sir or Madam, I am writing to request information.";
-    std::string tone = fossil::io::Soap::detect_tone(input);
-    ASSUME_ITS_EQUAL_CSTR(tone.c_str(), "casual");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_detect_tone_sarcastic) {
-    std::string input = "Oh, great. Just what I needed.";
-    std::string tone = fossil::io::Soap::detect_tone(input);
-    ASSUME_ITS_EQUAL_CSTR(tone.c_str(), "casual");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_detect_tone_ragebait) {
-    std::string input = "This is outrageous and infuriating!";
-    std::string tone = fossil::io::Soap::detect_tone(input);
-    ASSUME_ITS_EQUAL_CSTR(tone.c_str(), "ragebait");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_detect_tone_casual) {
-    std::string input = "Hey, what's up?";
-    std::string tone = fossil::io::Soap::detect_tone(input);
-    ASSUME_ITS_EQUAL_CSTR(tone.c_str(), "casual");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_readability_score_easy) {
-    std::string input = "The cat sat on the mat.";
-    int score = fossil::io::Soap::readability_score(input);
-    ASSUME_ITS_TRUE(score >= 70);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_readability_score_complex) {
-    std::string input = "Notwithstanding the aforementioned stipulations, the contractual obligations remain in effect.";
-    int score = fossil::io::Soap::readability_score(input);
-    ASSUME_ITS_TRUE(score <= 40);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_readability_label_easy) {
-    std::string input = "The dog runs fast.";
-    std::string label = fossil::io::Soap::readability_label(input);
-    ASSUME_ITS_EQUAL_CSTR(label.c_str(), "easy");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_readability_label_complex) {
-    std::string input = "Insofar as the empirical evidence suggests, the paradigm shift is inevitable.";
-    std::string label = fossil::io::Soap::readability_label(input);
-    ASSUME_ITS_EQUAL_CSTR(label.c_str(), "complex");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_summarize_basic) {
-    std::string input = "This is the first sentence. Here is the second. And finally, the third.";
-    std::string summary = fossil::io::Soap::summarize(input);
-    ASSUME_ITS_TRUE(!summary.empty());
-    ASSUME_ITS_TRUE(summary.find("first sentence") != std::string::npos);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_extract_key_sentence_basic) {
-    std::string input = "Cats are great pets. They are independent and clean.";
-    std::string key = fossil::io::Soap::extract_key_sentence(input);
-    ASSUME_ITS_TRUE(!key.empty());
-    ASSUME_ITS_TRUE(key.find("They are independent and clean") != std::string::npos);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_analyze_style_concise) {
-    std::string input = "Go now. Finish quickly.";
-    std::string style = fossil::io::Soap::analyze_style(input);
-    ASSUME_ITS_EQUAL_CSTR(style.c_str(), "concise");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_analyze_style_verbose) {
-    std::string input = "It is with great pleasure that I inform you of the following details regarding our upcoming event.";
-    std::string style = fossil::io::Soap::analyze_style(input);
-    ASSUME_ITS_EQUAL_CSTR(style.c_str(), "neutral");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_passive_voice_ratio_none) {
-    std::string input = "The dog chased the ball.";
-    int ratio = fossil::io::Soap::passive_voice_ratio(input);
-    ASSUME_ITS_TRUE(ratio == 0);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_passive_voice_ratio_some) {
-    std::string input = "The ball was chased by the dog.";
-    int ratio = fossil::io::Soap::passive_voice_ratio(input);
-    ASSUME_ITS_TRUE(ratio > 0);
-}
-
-FOSSIL_TEST(cpp_test_io_soap_reflow_basic) {
-    std::string input = "This is a long sentence that should be wrapped to fit the width.";
-    std::string reflowed = fossil::io::Soap::reflow(input, 20);
+    std::string reflowed = fossil::io::Soap::reflow("This is a long line that should wrap.", 10);
     ASSUME_ITS_TRUE(!reflowed.empty());
-    ASSUME_ITS_TRUE(reflowed.find('\n') != std::string::npos);
 }
 
-FOSSIL_TEST(cpp_test_io_soap_normalize_whitespace) {
-    std::string input = "This   is   spaced   out.";
-    std::string normalized = fossil::io::Soap::normalize(input);
-    ASSUME_ITS_TRUE(!normalized.empty());
-    ASSUME_ITS_TRUE(normalized.find("This is spaced out.") != std::string::npos);
+FOSSIL_TEST(cpp_test_soap_split_empty) {
+    auto split = fossil::io::Soap::split("");
+    ASSUME_ITS_TRUE(split.empty());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_capitalize_sentence_case) {
-    std::string input = "hello world. this is fossil.";
-    std::string output = fossil::io::Soap::capitalize(input, 0);
-    ASSUME_ITS_TRUE(!output.empty());
-    ASSUME_ITS_TRUE(output.substr(0, 12) == "Hello world.");
+FOSSIL_TEST(cpp_test_soap_reflow_shorter_than_width) {
+    std::string reflowed = fossil::io::Soap::reflow("Short.", 20);
+    ASSUME_ITS_EQUAL_CSTR("Short.", reflowed.c_str());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_capitalize_title_case) {
-    std::string input = "hello world from fossil.";
-    std::string output = fossil::io::Soap::capitalize(input, 1);
-    ASSUME_ITS_TRUE(!output.empty());
-    ASSUME_ITS_TRUE(output.find("Hello World From Fossil.") != std::string::npos);
+FOSSIL_TEST(cpp_test_soap_capitalize_modes) {
+    std::string sent = fossil::io::Soap::capitalize("hello world. this is fossil.", 0);
+    ASSUME_ITS_TRUE(!sent.empty());
+    std::string title = fossil::io::Soap::capitalize("hello world", 1);
+    ASSUME_ITS_TRUE(!title.empty());
 }
 
-FOSSIL_TEST(cpp_test_io_soap_capitalize_uppercase) {
-    std::string input = "hello world";
-    std::string output = fossil::io::Soap::capitalize(input, 2);
-    ASSUME_ITS_TRUE(!output.empty());
-    ASSUME_ITS_TRUE(output == "HELLO WORLD");
-}
-
-FOSSIL_TEST(cpp_test_io_soap_capitalize_lowercase) {
-    std::string input = "HELLO WORLD";
-    std::string output = fossil::io::Soap::capitalize(input, 3);
-    ASSUME_ITS_TRUE(!output.empty());
-    ASSUME_ITS_TRUE(output == "hello world");
+FOSSIL_TEST(cpp_test_soap_capitalize_empty) {
+    std::string sent = fossil::io::Soap::capitalize("", 0);
+    ASSUME_ITS_EQUAL_CSTR("", sent.c_str());
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -398,78 +243,38 @@ FOSSIL_TEST(cpp_test_io_soap_capitalize_lowercase) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_soap_tests) {
-    // detect tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_ragebait_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_ragebait_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_clickbait_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_clickbait_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_spam_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_spam_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_woke_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_woke_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_bot_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_bot_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_sarcasm_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_sarcasm_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_formal_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_formal_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_snowflake_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_snowflake_false);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_offensive_true);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_offensive_false);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_basic);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_empty_and_null);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_suggest_basic);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_suggest_improvement);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_basic);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_short_text);
 
-    // filter tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_add_custom_filter);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_filter_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_filter_wildcard);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_filter_case_insensitive);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_emotional);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_formal);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_correct_grammar);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_correct_grammar_terminal_punctuation);
 
-    // grammer tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_check_grammar_clean);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_check_grammar_incorrect);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_check_grammar_multiple_errors);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_correct_grammar_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_correct_grammar_multiple);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_correct_grammar_no_change);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_short_text);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_long_text);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_multiline);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_readability_label);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_readability_label_boundaries);
 
-    // general tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_meme);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_sanitize_mixed);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_spam);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_clickbait);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_no_match);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_case_insensitive);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_bot_pattern);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_normalize_leet_and_case);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_normalize_null_and_empty);
 
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_rotbrain);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_meme);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_suggest_grammar);
-
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_formal);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_sarcastic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_ragebait);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_detect_tone_casual);
-
-    // readability and summary tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_readability_score_easy);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_readability_score_complex);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_readability_label_easy);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_readability_label_complex);
-
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_summarize_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_extract_key_sentence_basic);
-
-    // style and grammar analysis
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_analyze_style_concise);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_analyze_style_verbose);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_passive_voice_ratio_none);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_passive_voice_ratio_some);
-
-    // sentence and text manipulation
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_reflow_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_normalize_whitespace);
-
-    // capitalization tests
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_capitalize_sentence_case);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_capitalize_title_case);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_capitalize_uppercase);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_io_soap_capitalize_lowercase);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_and_reflow);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_empty);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_reflow_shorter_than_width);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_modes);
+    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_empty);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }

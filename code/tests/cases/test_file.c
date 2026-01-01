@@ -296,19 +296,6 @@ FOSSIL_TEST(c_test_stream_ai_analyze) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_ai_generate_tags) {
-    const char *filename = "testfile_ai_tags.txt";
-    const char *content = "AI tagging test content.";
-
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
-    fossil_io_file_write(&c_stream, content, strlen(content), 1);
-    fossil_io_file_close(&c_stream);
-
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_ai_generate_tags(&c_stream));
-    fossil_io_file_close(&c_stream);
-}
-
 FOSSIL_TEST(c_test_stream_ai_compute_embedding) {
     const char *filename = "testfile_ai_embed.txt";
     const char *content = "Embedding test content.";
@@ -398,7 +385,6 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_analyze);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_generate_tags);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_compute_embedding);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_ready_and_reset);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_add_tag);

@@ -468,17 +468,6 @@ void fossil_io_file_rewind(fossil_io_file_t *stream);
 int fossil_io_file_ai_analyze(fossil_io_file_t *f);
 
 /**
- * @brief Generate or update AI tags for the file.
- *
- * This function generates or updates AI-generated tags or categories for the file content,
- * storing them in the fossil_io_file_t structure.
- *
- * @param f Pointer to the fossil_io_file_t structure representing the file.
- * @return 0 on success, non-zero on failure.
- */
-int fossil_io_file_ai_generate_tags(fossil_io_file_t *f);
-
-/**
  * @brief Compute and store embeddings for semantic search.
  *
  * This function computes AI embedding vectors for the file content using the provided model,
@@ -1177,19 +1166,6 @@ namespace fossil {
              */
             static int ai_analyze(fossil_io_file_t *f) {
                 return fossil_io_file_ai_analyze(f);
-            }
-
-            /**
-             * Generate or update AI tags for the file.
-             *
-             * This function generates or updates AI-generated tags or categories for the file content,
-             * storing them in the fossil_io_file_t structure.
-             *
-             * @param f Pointer to the fossil_io_file_t structure representing the file.
-             * @return 0 on success, non-zero on failure.
-             */
-            static int ai_generate_tags(fossil_io_file_t *f) {
-                return fossil_io_file_ai_generate_tags(f);
             }
 
             /**

@@ -25,320 +25,373 @@
 #ifndef FOSSIL_IO_SOAP_H
 #define FOSSIL_IO_SOAP_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+// ============================================================================
+// SOAP v3 Analysis & Processing Options (Primary Control Surface)
+// ============================================================================
+
 /**
- * @brief Sanitize input text by removing or replacing "rot-brain" and meme-based language.
+ * fossil_io_soap_options_t
  *
- * @param text The input text to sanitize.
- * @return A dynamically allocated sanitized string (must be freed by the caller).
+ * Central configuration structure controlling all SOAP analysis, detection,
+ * normalization, and output behavior.
+ *
+ * Each field acts as an enable/disable switch (0 = off, non-zero = on),
+ * allowing callers to compose lightweight scans or full forensic analysis
+ * pipelines without recompilation.
+ *
+ * NOTE:
+ *  - Options are intentionally flat to avoid nested config churn.
+ *  - Fields may be interpreted as weights or thresholds in future versions.
+ *  - Unknown or unsupported flags MUST be ignored for forward compatibility.
+ */
+typedef struct {
+
+    /* =====================================================================
+     * Core quality signals (scored / weighted)
+     * ===================================================================== */
+
+    /** Evaluate overall writing quality using combined heuristics:
+     *  grammar, clarity, coherence, redundancy, and signal density.
+     */
+    int detect_quality;
+
+    /** Measure clarity and logical coherence of ideas and sentence flow. */
+    int detect_clarity;
+
+    /** Classify tone (e.g., neutral, aggressive, sarcastic). */
+    int detect_tone;
+
+    /** Compute readability metrics (sentence length, word complexity, flow). */
+    int detect_readability;
+
+    /** Detect low-signal language such as meme-speak, excessive slang,
+     *  filler phrasing, or stylistic degradation ("brain rot").
+     */
+    int detect_brain_rot;
+
+    /* =====================================================================
+     * Content & intent detection
+     * ===================================================================== */
+
+    /** Heuristic detection of spam-like or templated content. */
+    int detect_spam;
+
+    /** Identify emotionally manipulative rage-bait patterns. */
+    int detect_ragebait;
+
+    /** Detect exaggerated or curiosity-driven clickbait phrasing. */
+    int detect_clickbait;
+
+    /** Detect non-human or automated text patterns. */
+    int detect_bot;
+
+    /** Detect marketing, sales, or promotional language. */
+    int detect_marketing;
+
+    /** Detect dense but low-meaning technical jargon. */
+    int detect_technobabble;
+
+    /** Detect hype-driven exaggeration or inflated claims. */
+    int detect_hype;
+
+    /** Identify political framing or messaging. */
+    int detect_political;
+
+    /** Detect conspiratorial framing or narrative patterns. */
+    int detect_conspiracy;
+
+    /** Detect offensive, abusive, or demeaning language. */
+    int detect_offensive;
+
+    /** Detect agenda-driven messaging or ideological persuasion. */
+    int detect_propaganda;
+
+    /** Heuristic detection of false, misleading, or unsupported claims. */
+    int detect_misinformation;
+
+    /* =====================================================================
+     * Behavioral / stylistic signals
+     * ===================================================================== */
+
+    /** Detect formal or academic writing style. */
+    int detect_formal;
+
+    /** Detect casual or conversational writing style. */
+    int detect_casual;
+
+    /** Detect sarcasm or ironic phrasing. */
+    int detect_sarcasm;
+
+    /** Detect emotionally neutral or objective tone. */
+    int detect_neutral;
+
+    /** Detect aggressive or confrontational language. */
+    int detect_aggressive;
+
+    /** Detect emotionally charged language. */
+    int detect_emotional;
+
+    /** Detect passive-aggressive phrasing patterns. */
+    int detect_passive_aggressive;
+
+    int detect_snowflake;
+
+    int detect_morse;
+
+    /* =====================================================================
+     * Structural & linguistic analysis
+     * ===================================================================== */
+
+    /** Perform grammar validation and error detection. */
+    int analyze_grammar;
+
+    /** Analyze overall writing style and consistency. */
+    int analyze_style;
+
+    /** Measure passive voice usage frequency. */
+    int analyze_passive_voice;
+
+    /** Analyze sentence complexity and syntactic depth. */
+    int analyze_sentence_complexity;
+
+    /** Measure paragraph-level cohesion and flow. */
+    int analyze_paragraph_cohesion;
+
+    /** Detect redundant phrasing or repeated ideas. */
+    int analyze_redundancy;
+
+    /** Detect excessive word or phrase repetition. */
+    int analyze_word_repetition;
+
+    /* =====================================================================
+     * Normalization & correction passes
+     * ===================================================================== */
+
+    /** Sanitize low-quality or unsafe language. */
+    int apply_sanitization;
+
+    /** Normalize whitespace, punctuation, and casing. */
+    int apply_normalization;
+
+    /** Apply grammar correction heuristics. */
+    int apply_grammar_correction;
+
+    /* =====================================================================
+     * Output controls
+     * ===================================================================== */
+
+    /** Include a human-readable summary in the output. */
+    int include_summary;
+
+    /** Include numerical quality and analysis scores. */
+    int include_scores;
+
+    /** Include detected flags and classifications. */
+    int include_flags;
+
+    /** Include style and tone descriptors. */
+    int include_style;
+
+    /** Include internal diagnostics and debug metadata. */
+    int include_debug;
+
+} fossil_io_soap_options_t;
+
+// ============================================================================
+// Sanitize, Analysis, & Summary
+// ============================================================================
+
+/**
+ * fossil_io_soap_sanitize
+ *
+ * Cleans and filters low-quality, unsafe, or disallowed language while
+ * preserving original meaning where possible.
+ *
+ * Returns:
+ *  - Newly allocated sanitized string (caller owns memory)
+ *  - NULL on allocation or processing failure
+ *
+ * Internal logic:
+ *  - Duplicates the input string.
+ *  - Replaces control characters (except newline) with spaces.
+ *  - Normalizes leetspeak and lowercases the text.
+ *  - Returns the sanitized result.
  */
 char *fossil_io_soap_sanitize(const char *text);
 
 /**
- * @brief Suggest proper alternatives for rot-brain words or grammar fixes.
+ * fossil_io_soap_suggest
  *
- * @param text The input text.
- * @return A dynamically allocated string with suggestions (must be freed by the caller).
+ * Generates improvement suggestions for clarity, tone, or quality without
+ * directly modifying the original text.
+ *
+ * Intended for assistive or review workflows.
+ *
+ * Internal logic:
+ *  - Duplicates the input string.
+ *  - Collapses multiple spaces into one.
+ *  - Returns the suggestion string.
  */
 char *fossil_io_soap_suggest(const char *text);
 
 /**
- * @brief Detect the tone of a sentence.
+ * fossil_io_soap_summarize
  *
- * @param text The input text.
- * @return A string representing the detected tone ("formal", "casual", "sarcastic", etc.).
- */
-const char *fossil_io_soap_detect_tone(const char *text);
-
-// grammar functions
-
-/**
- * @brief Analyze sentence structure and flag grammatical inconsistencies.
+ * Produces a concise summary capturing the primary intent and content of
+ * the input text.
  *
- * @param text Input string to analyze.
- * @return 0 if grammar is clean, non-zero otherwise.
- */
-int fossil_io_soap_check_grammar(const char *text);
-
-/**
- * @brief Apply a grammar correction pass over the input text.
- *
- * @param text The input text.
- * @return A dynamically allocated corrected string (must be freed).
- */
-char *fossil_io_soap_correct_grammar(const char *text);
-
-// detect functions
-
-/** 
- * Detects ragebait content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if ragebait patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_ragebait(const char *text);
-
-/** 
- * Detects clickbait content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if clickbait patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_clickbait(const char *text);
-
-/** 
- * Detects spam content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if spam patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_spam(const char *text);
-
-/** 
- * Detects woke-related content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if woke patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_woke(const char *text);
-
-/** 
- * Detects automated/bot content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if bot patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_bot(const char *text);
-
-/** 
- * Detects sarcastic tone in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if sarcastic patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_sarcasm(const char *text);
-
-/** 
- * Detects formal tone in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if formal patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_formal(const char *text);
-
-/** 
- * Detects "snowflake"-related content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if snowflake patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_snowflake(const char *text);
-
-/** 
- * Detects "offensive"-related content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if offensive patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_offensive(const char *text);
-
-/** 
- * Detects "neutral"-related content in the given text.
- * @param text Input string to analyze.
- * @return Non-zero if neutral patterns are found, 0 otherwise.
- */
-int fossil_io_soap_detect_neutral(const char *text);
-
-/**
- * @brief Detect hype-related phrases in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if hype phrases are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_hype(const char *text);
-
-/**
- * @brief Detect quality-related phrases in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if quality phrases are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_quality(const char *text);
-
-/**
- * @brief Detect political content in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if political patterns are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_political(const char *text);
-
-/**
- * @brief Detect conspiracy-related content in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if conspiracy patterns are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_conspiracy(const char *text);
-
-/**
- * @brief Detect marketing/jargon-heavy content in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if marketing patterns are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_marketing(const char *text);
-
-/**
- * @brief Detect technobabble or meaningless jargon in text.
- *
- * @param text Input text to scan.
- * @return Non-zero if technobabble patterns are detected, 0 otherwise.
- */
-int fossil_io_soap_detect_technobabble(const char *text);
-
-// filter functions
-
-/**
- * @brief Add a custom word or phrase to the filter.
- *
- * @param phrase The phrase to add.
- * @return 0 on success, nonzero on failure.
- */
-int fossil_io_soap_add_custom_filter(const char *phrase);
-
-/**
- * @brief Filter text by replacing words/phrases matching any pattern (comma-separated) with '*'.
- *        Patterns support '*' and '?' wildcards, case-insensitive.
- */
-char *fossil_io_soap_filter(const char *patterns, const char *text);
-
-/**
- * @brief Clear all custom filters.
- */
-void fossil_io_soap_clear_custom_filters(void);
-
-// ============================================================================
-// Readability Analysis
-// ============================================================================
-
-/**
- * @brief Compute a readability score for the input text (0–100 scale).
- *
- * @param text Input string to analyze.
- * @return Integer readability score; higher = easier to read.
- */
-int fossil_io_soap_readability_score(const char *text);
-
-/**
- * @brief Provide a label for readability ("easy", "medium", "complex").
- *
- * @param text Input text.
- * @return A constant string label.
- */
-const char *fossil_io_soap_readability_label(const char *text);
-
-
-// ============================================================================
-// Summarization Utilities
-// ============================================================================
-
-/**
- * @brief Generate a concise summary (1–3 sentences).
- *
- * @param text Input text.
- * @return A dynamically allocated summary string (caller frees).
+ * Internal logic:
+ *  - Splits the input into sentences.
+ *  - Concatenates the first two sentences (if available) as the summary.
+ *  - Returns the summary string.
  */
 char *fossil_io_soap_summarize(const char *text);
 
-/**
- * @brief Extract the single key sentence (TL;DR).
- *
- * @param text Input text.
- * @return A dynamically allocated extracted sentence (caller frees).
- */
-char *fossil_io_soap_extract_key_sentence(const char *text);
-
-
 // ============================================================================
-// Style Analysis
+// Grammar & Style Analysis
 // ============================================================================
 
 /**
- * @brief Analyze the writing style ("concise", "verbose", "technical", etc.).
+ * fossil_io_soap_grammar_style_t
  *
- * @param text Input text.
- * @return A constant string label.
+ * Aggregate result of grammar and stylistic analysis.
  */
-const char *fossil_io_soap_analyze_style(const char *text);
+typedef struct {
+
+    /** 1 if no grammar issues detected, 0 otherwise. */
+    int grammar_ok;
+
+    /** Percentage of sentences using passive voice (0–100). */
+    int passive_voice_pct;
+
+    /** Classified writing style label (static string). */
+    const char *style;
+
+} fossil_io_soap_grammar_style_t;
 
 /**
- * @brief Estimate passive voice usage (0–100%).
+ * Analyzes grammar correctness and stylistic characteristics.
  *
- * @param text Input string.
- * @return Percentage of passive constructions.
+ * Internal logic:
+ *  - Scans the input text for passive voice indicators (e.g., "was", "were").
+ *  - Counts total words and computes the percentage of passive voice usage.
+ *  - Classifies style as "emotional" if exclamation or question marks are present,
+ *    "formal" if certain formal words or punctuation are found, otherwise "neutral".
+ *  - Returns a struct with grammar_ok (always 1 in this stub), passive_voice_pct, and style label.
  */
-int fossil_io_soap_passive_voice_ratio(const char *text);
+fossil_io_soap_grammar_style_t
+fossil_io_soap_analyze_grammar_style(const char *text);
 
+/**
+ * Applies grammar correction heuristics and returns corrected text.
+ *
+ * Internal logic:
+ *  - Allocates a new string buffer for the output.
+ *  - Iterates through the input, tracking sentence boundaries, quotes, parentheses, and URLs.
+ *  - Normalizes whitespace, collapses repeated punctuation, and capitalizes sentence starts.
+ *  - Detects and replaces common contractions and fixes common grammar mistakes inline.
+ *  - Ensures terminal punctuation at the end of the output.
+ *  - Returns the corrected string (caller must free).
+ */
+char *fossil_io_soap_correct_grammar(const char *text);
 
 // ============================================================================
-// Quality & Clarity Heuristics
+// Readability, Clarity, & Quality Analysis
 // ============================================================================
 
 /**
- * @brief Evaluate clarity of writing (0–100).
+ * fossil_io_soap_scores_t
  *
- * @param text Input.
- * @return Clarity score.
+ * Numerical scoring results normalized to 0–100.
  */
-int fossil_io_soap_clarity_score(const char *text);
+typedef struct {
+
+    /** Ease of reading and comprehension. */
+    int readability;
+
+    /** Logical clarity and coherence. */
+    int clarity;
+
+    /** Overall writing quality. */
+    int quality;
+
+} fossil_io_soap_scores_t;
 
 /**
- * @brief Assess overall writing quality (grammar, concision, structure).
+ * Computes readability, clarity, and quality scores.
  *
- * @param text Input.
- * @return Quality score 0–100.
+ * Internal logic:
+ *  - Returns a struct with default scores (70/70/70).
+ *  - Penalizes readability if text is very short.
+ *  - Boosts clarity if text contains newlines.
+ *  - Boosts quality if text does not contain "!!!".
  */
-int fossil_io_soap_quality_score(const char *text);
-
-// ============================================================================
-// Structural / Formatting Utilities
-// ============================================================================
+fossil_io_soap_scores_t fossil_io_soap_score(const char *text);
 
 /**
- * @brief Split text into sentences.
+ * Converts a readability score into a human-readable label.
  *
- * @param text Input.
- * @return NULL-terminated array of strdup'd sentences (caller frees array & elements).
+ * Internal logic:
+ *  - Returns "excellent" for scores >80, "good" for >60, "fair" for >40, else "poor".
  */
-char **fossil_io_soap_split_sentences(const char *text);
+const char *fossil_io_soap_readability_label(int readability_score);
 
 /**
- * @brief Reflow text to max line width. Preserves words; inserts line breaks.
+ * Generic detection interface for a single detector identifier.
  *
- * @param text Input.
- * @param width Maximum allowed characters per line.
- * @return A dynamically allocated reflowed string (caller frees).
+ * Internal logic:
+ *  - Normalizes input (leetspeak, lowercase).
+ *  - Looks up detector patterns by ID.
+ *  - Checks for pattern matches at document, sentence, and word level.
+ *  - Handles special detectors (brain_rot, leet, morse, structural).
+ *  - Returns 1 if any pattern matches, else 0.
+ */
+int fossil_io_soap_detect(const char *text, const char *detector_id);
+
+/**
+ * Splits text into logical units (sentences, paragraphs, blocks)
+ * based on flow type.
+ *
+ * Internal logic:
+ *  - If text contains sentence-ending punctuation, splits as sentences.
+ *  - Otherwise, splits as words.
+ *  - Allocates and returns a NULL-terminated array of strings.
+ */
+char **fossil_io_soap_split(const char *text);
+
+/**
+ * Reflows text to a target line width.
+ *
+ * Internal logic:
+ *  - Copies input to output, inserting newlines at spaces when width is reached.
+ *  - Returns a newly allocated string.
  */
 char *fossil_io_soap_reflow(const char *text, int width);
 
-
-// ============================================================================
-// Normalization Helpers
-// ============================================================================
-
 /**
- * @brief Normalize whitespace, punctuation, spacing, and basic formatting.
+ * Normalizes whitespace, punctuation, and casing.
  *
- * @param text Input string.
- * @return A dynamically allocated normalized string (caller frees).
+ * Internal logic:
+ *  - Duplicates input.
+ *  - Normalizes leetspeak and lowercases all letters.
+ *  - Returns the normalized string.
  */
 char *fossil_io_soap_normalize(const char *text);
 
 /**
- * @brief Apply capitalization rules.
+ * Applies capitalization rules.
  *
- * @param text Input text.
- * @param mode 0 = sentence case, 1 = title case, 2 = uppercase, 3 = lowercase.
- * @return A dynamically allocated transformed string (caller frees).
+ * Internal logic:
+ *  - If mode==0, applies sentence-case (capitalize after '.', '!', '?').
+ *  - If mode==1, applies title-case (capitalize first letter of each word).
+ *  - Returns a newly allocated string.
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
 
@@ -353,400 +406,324 @@ char *fossil_io_soap_capitalize(const char *text, int mode);
  * C++ wrapper for the SOAP API.
  */
 namespace fossil {
-    namespace io {
 
-        /**
-         * @brief SOAP API for sanitizing and analyzing user text input.
-         * 
-         * Provides C++ wrappers for detecting, transforming, or correcting slang, tone, sentiment,
-         * clickbait, and other language features with a focus on clarity and safety.
-         */
+    namespace io {
+    
         class Soap {
         public:
+            // ===============================
+            // Options
+            // ===============================
+            struct Options {
+                fossil_io_soap_options_t c_options;
+            
+                Options() { memset(&c_options, 0, sizeof(c_options)); }
+            
+                // ===============================
+                // Core quality signals
+                // ===============================
+                Options& detect_quality(bool v) { c_options.detect_quality = v; return *this; }
+                Options& detect_clarity(bool v) { c_options.detect_clarity = v; return *this; }
+                Options& detect_tone(bool v) { c_options.detect_tone = v; return *this; }
+                Options& detect_readability(bool v) { c_options.detect_readability = v; return *this; }
+                Options& detect_brain_rot(bool v) { c_options.detect_brain_rot = v; return *this; }
+            
+                // ===============================
+                // Content & intent detection
+                // ===============================
+                Options& detect_spam(bool v) { c_options.detect_spam = v; return *this; }
+                Options& detect_ragebait(bool v) { c_options.detect_ragebait = v; return *this; }
+                Options& detect_clickbait(bool v) { c_options.detect_clickbait = v; return *this; }
+                Options& detect_bot(bool v) { c_options.detect_bot = v; return *this; }
+                Options& detect_marketing(bool v) { c_options.detect_marketing = v; return *this; }
+                Options& detect_technobabble(bool v) { c_options.detect_technobabble = v; return *this; }
+                Options& detect_hype(bool v) { c_options.detect_hype = v; return *this; }
+                Options& detect_political(bool v) { c_options.detect_political = v; return *this; }
+                Options& detect_conspiracy(bool v) { c_options.detect_conspiracy = v; return *this; }
+                Options& detect_offensive(bool v) { c_options.detect_offensive = v; return *this; }
+                Options& detect_propaganda(bool v) { c_options.detect_propaganda = v; return *this; }
+                Options& detect_misinformation(bool v) { c_options.detect_misinformation = v; return *this; }
+            
+                // ===============================
+                // Behavioral / stylistic signals
+                // ===============================
+                Options& detect_formal(bool v) { c_options.detect_formal = v; return *this; }
+                Options& detect_casual(bool v) { c_options.detect_casual = v; return *this; }
+                Options& detect_sarcasm(bool v) { c_options.detect_sarcasm = v; return *this; }
+                Options& detect_neutral(bool v) { c_options.detect_neutral = v; return *this; }
+                Options& detect_aggressive(bool v) { c_options.detect_aggressive = v; return *this; }
+                Options& detect_emotional(bool v) { c_options.detect_emotional = v; return *this; }
+                Options& detect_passive_aggressive(bool v) { c_options.detect_passive_aggressive = v; return *this; }
+            
+                // ===============================
+                // Structural & linguistic analysis
+                // ===============================
+                Options& analyze_grammar(bool v) { c_options.analyze_grammar = v; return *this; }
+                Options& analyze_style(bool v) { c_options.analyze_style = v; return *this; }
+                Options& analyze_passive_voice(bool v) { c_options.analyze_passive_voice = v; return *this; }
+                Options& analyze_sentence_complexity(bool v) { c_options.analyze_sentence_complexity = v; return *this; }
+                Options& analyze_paragraph_cohesion(bool v) { c_options.analyze_paragraph_cohesion = v; return *this; }
+                Options& analyze_redundancy(bool v) { c_options.analyze_redundancy = v; return *this; }
+                Options& analyze_word_repetition(bool v) { c_options.analyze_word_repetition = v; return *this; }
+            
+                // ===============================
+                // Normalization & correction passes
+                // ===============================
+                Options& apply_sanitization(bool v) { c_options.apply_sanitization = v; return *this; }
+                Options& apply_normalization(bool v) { c_options.apply_normalization = v; return *this; }
+                Options& apply_grammar_correction(bool v) { c_options.apply_grammar_correction = v; return *this; }
+            
+                // ===============================
+                // Output controls
+                // ===============================
+                Options& include_summary(bool v) { c_options.include_summary = v; return *this; }
+                Options& include_scores(bool v) { c_options.include_scores = v; return *this; }
+                Options& include_flags(bool v) { c_options.include_flags = v; return *this; }
+                Options& include_style(bool v) { c_options.include_style = v; return *this; }
+                Options& include_debug(bool v) { c_options.include_debug = v; return *this; }
+            };
+        
+            // ===============================
+            // Sanitize, Suggest, Summarize
+            // ===============================
 
             /**
-             * @brief Sanitize input by replacing meme/rot-brain terms with standard alternatives.
-             * 
-             * @param text The input string.
-             * @return A cleaned-up version of the text.
+             * Sanitizes the input text by removing or replacing low-quality or unsafe language.
+             * Returns a sanitized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Duplicates the input string.
+             *   - Replaces control characters (except newline) with spaces.
+             *   - Normalizes leetspeak and lowercases the text.
+             *   - Returns the sanitized result.
              */
             static std::string sanitize(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_sanitize(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_sanitize(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
             /**
-             * @brief Sanitize input text (C-style).
+             * Suggests improvements for clarity, tone, or quality without modifying the original text.
+             * Returns a suggestion string. Throws away the result if allocation fails.
              *
-             * @param text The input string.
-             * @return A heap-allocated cleaned-up version (must be freed manually).
-             */
-            static char* sanitize(const char* text) {
-                return fossil_io_soap_sanitize(text);
-            }
-
-            /**
-             * @brief Suggest alternative expressions for slang or incorrect grammar.
-             * 
-             * @param text The input string.
-             * @return A string with suggested improvements.
+             * Internal logic:
+             *   - Duplicates the input string.
+             *   - Collapses multiple spaces into one.
+             *   - Returns the suggestion string.
              */
             static std::string suggest(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_suggest(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_suggest(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
             /**
-             * @brief Suggest improvements (C-style).
-             * 
-             * @param text The input string.
-             * @return A heap-allocated suggestion (must be freed manually).
-             */
-            static char* suggest(const char* text) {
-                return fossil_io_soap_suggest(text);
-            }
-
-            /**
-             * @brief Add a custom slang or flagged phrase to the filter.
-             * 
-             * @param phrase The custom phrase.
-             * @return 0 on success, nonzero on failure.
-             */
-            static int add_custom_filter(const std::string &phrase) {
-                return fossil_io_soap_add_custom_filter(phrase.c_str());
-            }
-
-            /**
-             * @brief Add a custom slang or flagged phrase to the filter (C-style).
-             * 
-             * @param phrase The custom phrase.
-             * @return 0 on success, nonzero on failure.
-             */
-            static int add_custom_filter(const char* phrase) {
-                return fossil_io_soap_add_custom_filter(phrase);
-            }
-
-            /**
-             * @brief Clear all user-added custom filters.
-             */
-            static void clear_custom_filters() {
-                fossil_io_soap_clear_custom_filters();
-            }
-
-            /**
-             * @brief Detect tone of the input (e.g., "sarcastic", "formal").
-             * 
-             * @param text The input string.
-             * @return A tone descriptor string.
-             */
-            static std::string detect_tone(const std::string &text) {
-                return std::string(fossil_io_soap_detect_tone(text.c_str()));
-            }
-
-            /**
-             * @brief Detect tone of the input (C-style).
-             * 
-             * @param text The input string.
-             * @return A tone descriptor string.
-             */
-            static const char* detect_tone(const char* text) {
-                return fossil_io_soap_detect_tone(text);
-            }
-
-            /**
-             * Detects whether the given text contains ragebait phrases.
+             * Summarizes the input text, producing a concise summary of its main content and intent.
+             * Returns a summary string. Throws away the result if allocation fails.
              *
-             * @param text The input C++ string to analyze.
-             * @return true if any ragebait phrase is detected, false otherwise.
-             */
-            static bool is_ragebait(const std::string &text) {
-                return fossil_io_soap_detect_ragebait(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Check if the input uses clickbait language.
-             * 
-             * @param text The input string.
-             * @return true if clickbait detected, false otherwise.
-             */
-            static bool is_clickbait(const std::string &text) {
-                return fossil_io_soap_detect_clickbait(text.c_str()) != 0;
-            }
-            
-            /**
-             * @brief Detects if a given text contains spammy patterns
-             *
-             * @param text Input string to analyze
-             * @return true if spam detected, false otherwise
-             */
-            static bool is_spam(const std::string &text){
-                return fossil_io_soap_detect_spam(text.c_str()) != 0;
-            }
-            
-            /**
-             * @brief Detects if a given text contains "woke" tone patterns
-             *
-             * @param text Input string to analyze
-             * @return true if woke tone detected, false otherwise
-             */
-            static bool is_woke(const std::string &text){
-                return fossil_io_soap_detect_woke(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains automated/bot patterns
-             *
-             * @param text Input string to analyze
-             * @return true if bot patterns detected, false otherwise
-             */
-            static bool is_bot(const std::string &text){
-                return fossil_io_soap_detect_bot(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains sarcastic tone
-             *
-             * @param text Input string to analyze
-             * @return true if sarcasm detected, false otherwise
-             */
-            static bool is_sarcastic(const std::string &text){
-                return fossil_io_soap_detect_sarcasm(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains formal tone
-             *
-             * @param text Input string to analyze
-             * @return true if formal tone detected, false otherwise
-             */
-            static bool is_formal(const std::string &text){
-                return fossil_io_soap_detect_formal(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains "snowflake"-related content
-             *
-             * @param text Input string to analyze
-             * @return true if snowflake patterns detected, false otherwise
-             */
-            static bool is_snowflake(const std::string &text){
-                return fossil_io_soap_detect_snowflake(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains "neutral"-related content
-             *
-             * @param text Input string to analyze
-             * @return true if neutral patterns detected, false otherwise
-             */
-            static bool is_neutral(const std::string &text){
-                return fossil_io_soap_detect_neutral(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains hype-related content.
-             *
-             * @param text Input string to analyze
-             * @return true if hype detected, false otherwise
-             */
-            static bool is_hype(const std::string &text) {
-                return fossil_io_soap_detect_hype(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains high-quality phrasing.
-             *
-             * @param text Input string to analyze
-             * @return true if quality phrasing detected, false otherwise
-             */
-            static bool is_quality(const std::string &text) {
-                return fossil_io_soap_detect_quality(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains political content.
-             *
-             * @param text Input string to analyze
-             * @return true if political content detected, false otherwise
-             */
-            static bool is_political(const std::string &text) {
-                return fossil_io_soap_detect_political(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains conspiracy-related content.
-             *
-             * @param text Input string to analyze
-             * @return true if conspiracy content detected, false otherwise
-             */
-            static bool is_conspiracy(const std::string &text) {
-                return fossil_io_soap_detect_conspiracy(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains marketing/jargon-heavy content.
-             *
-             * @param text Input string to analyze
-             * @return true if marketing jargon detected, false otherwise
-             */
-            static bool is_marketing(const std::string &text) {
-                return fossil_io_soap_detect_marketing(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Detects if a given text contains technobabble or meaningless jargon.
-             *
-             * @param text Input string to analyze
-             * @return true if technobabble detected, false otherwise
-             */
-            static bool is_technobabble(const std::string &text) {
-                return fossil_io_soap_detect_technobabble(text.c_str()) != 0;
-            }
-
-            /**
-             * @brief Fix common grammar errors in input text.
-             * 
-             * @param text The input string.
-             * @return A corrected version of the input.
-             */
-            static std::string correct_grammar(const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_correct_grammar(text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
-            }
-
-            // ========================================================================
-            // Readability Analysis
-            // ========================================================================
-            /**
-             * @brief Compute a readability score for the input text (0–100 scale).
-             */
-            static int readability_score(const std::string &text) {
-            return fossil_io_soap_readability_score(text.c_str());
-            }
-
-            /**
-             * @brief Provide a label for readability ("easy", "medium", "complex").
-             */
-            static std::string readability_label(const std::string &text) {
-            return std::string(fossil_io_soap_readability_label(text.c_str()));
-            }
-
-            // ========================================================================
-            // Summarization Utilities
-            // ========================================================================
-            /**
-             * @brief Generate a concise summary (1–3 sentences).
+             * Internal logic:
+             *   - Splits the input into sentences.
+             *   - Concatenates the first two sentences (if available) as the summary.
+             *   - Returns the summary string.
              */
             static std::string summarize(const std::string &text) {
-            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_summarize(text.c_str()), free);
-            return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_summarize(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            // ===============================
+            // Grammar & Style
+            // ===============================
+
+            /**
+             * Holds the result of grammar and style analysis.
+             */
+            struct GrammarStyle {
+                bool grammar_ok;           ///< True if no grammar issues detected.
+                int passive_voice_pct;     ///< Percentage of passive voice usage.
+                std::string style;         ///< Detected writing style label.
+            };
+
+            /**
+             * Analyzes grammar correctness and stylistic characteristics of the input text.
+             * Returns a GrammarStyle struct with analysis results.
+             *
+             * Internal logic:
+             *   - Scans the input text for passive voice indicators (e.g., "was", "were").
+             *   - Counts total words and computes the percentage of passive voice usage.
+             *   - Classifies style as "emotional" if exclamation or question marks are present,
+             *     "formal" if certain formal words or punctuation are found, otherwise "neutral".
+             *   - Returns a struct with grammar_ok (always 1 in this stub), passive_voice_pct, and style label.
+             */
+            static GrammarStyle analyze_grammar_style(const std::string &text) {
+                auto result = fossil_io_soap_analyze_grammar_style(text.c_str());
+                return GrammarStyle{
+                    result.grammar_ok != 0,
+                    result.passive_voice_pct,
+                    result.style ? result.style : ""
+                };
             }
 
             /**
-             * @brief Extract the single key sentence (TL;DR).
+             * Applies grammar correction heuristics to the input text.
+             * Returns a corrected string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Allocates a new string buffer for the output.
+             *   - Iterates through the input, tracking sentence boundaries, quotes, parentheses, and URLs.
+             *   - Normalizes whitespace, collapses repeated punctuation, and capitalizes sentence starts.
+             *   - Detects and replaces common contractions and fixes common grammar mistakes inline.
+             *   - Ensures terminal punctuation at the end of the output.
+             *   - Returns the corrected string (caller must free).
              */
-            static std::string extract_key_sentence(const std::string &text) {
-            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_extract_key_sentence(text.c_str()), free);
-            return ptr ? std::string(ptr.get()) : std::string{};
+            static std::string correct_grammar(const std::string &text) {
+                char *res = fossil_io_soap_correct_grammar(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
-            // ========================================================================
-            // Style Analysis
-            // ========================================================================
+            // ===============================
+            // Scores
+            // ===============================
+
             /**
-             * @brief Analyze the writing style ("concise", "verbose", "technical", etc.).
+             * Holds readability, clarity, and quality scores.
              */
-            static std::string analyze_style(const std::string &text) {
-            return std::string(fossil_io_soap_analyze_style(text.c_str()));
+            struct Scores {
+                int readability;   ///< Ease of reading and comprehension.
+                int clarity;       ///< Logical clarity and coherence.
+                int quality;       ///< Overall writing quality.
+            };
+
+            /**
+             * Computes readability, clarity, and quality scores for the input text.
+             * Returns a Scores struct with normalized values (0–100).
+             *
+             * Internal logic:
+             *   - Returns a struct with default scores (70/70/70).
+             *   - Penalizes readability if text is very short.
+             *   - Boosts clarity if text contains newlines.
+             *   - Boosts quality if text does not contain "!!!".
+             */
+            static Scores score(const std::string &text) {
+                auto result = fossil_io_soap_score(text.c_str());
+                return Scores{ result.readability, result.clarity, result.quality };
             }
 
             /**
-             * @brief Estimate passive voice usage (0–100%).
+             * Converts a readability score into a human-readable label.
+             * Returns the label as a string.
+             *
+             * Internal logic:
+             *   - Returns "excellent" for scores >80, "good" for >60, "fair" for >40, else "poor".
              */
-            static int passive_voice_ratio(const std::string &text) {
-            return fossil_io_soap_passive_voice_ratio(text.c_str());
+            static std::string readability_label(int score) {
+                const char *label = fossil_io_soap_readability_label(score);
+                return label ? label : "";
             }
 
-            // ========================================================================
-            // Quality & Clarity Heuristics
-            // ========================================================================
-            /**
-             * @brief Evaluate clarity of writing (0–100).
-             */
-            static int clarity_score(const std::string &text) {
-            return fossil_io_soap_clarity_score(text.c_str());
-            }
+            // ===============================
+            // Detection
+            // ===============================
 
             /**
-             * @brief Assess overall writing quality (grammar, concision, structure).
+             * Runs a generic detector by identifier on the input text.
+             * Returns true if the detector is triggered, false otherwise.
+             *
+             * Internal logic:
+             *   - Normalizes input (leetspeak, lowercase).
+             *   - Looks up detector patterns by ID.
+             *   - Checks for pattern matches at document, sentence, and word level.
+             *   - Handles special detectors (brain_rot, leet, morse, structural).
+             *   - Returns 1 if any pattern matches, else 0.
              */
-            static int quality_score(const std::string &text) {
-            return fossil_io_soap_quality_score(text.c_str());
+            static bool detect(const std::string &text, const std::string &detector_id) {
+                return fossil_io_soap_detect(text.c_str(), detector_id.c_str()) != 0;
             }
 
-            // ========================================================================
-            // Structural / Formatting Utilities
-            // ========================================================================
+            // ===============================
+            // Splitting & Normalization
+            // ===============================
+
             /**
-             * @brief Split text into sentences.
-             * @return std::vector<std::string> of sentences.
+             * Splits the input text into logical units (sentences, paragraphs, or blocks).
+             * Returns a vector of strings, each representing a unit.
+             *
+             * Internal logic:
+             *   - If text contains sentence-ending punctuation, splits as sentences.
+             *   - Otherwise, splits as words.
+             *   - Allocates and returns a NULL-terminated array of strings.
              */
-            static std::vector<std::string> split_sentences(const std::string &text) {
-            std::vector<std::string> sentences;
-            char **raw = fossil_io_soap_split_sentences(text.c_str());
-            if (raw) {
-                for (size_t i = 0; raw[i] != nullptr; ++i) {
-                sentences.emplace_back(raw[i]);
-                free(raw[i]);
+            static std::vector<std::string> split(const std::string &text) {
+                char **arr = fossil_io_soap_split(text.c_str());
+                std::vector<std::string> result;
+                if (!arr) return result;
+                for (size_t i = 0; arr[i]; ++i) {
+                    result.emplace_back(arr[i]);
+                    free(arr[i]);
                 }
-                free(raw);
-            }
-            return sentences;
+                free(arr);
+                return result;
             }
 
             /**
-             * @brief Reflow text to max line width. Preserves words; inserts line breaks.
+             * Reflows the input text to a specified target line width.
+             * Returns the reflowed string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Copies input to output, inserting newlines at spaces when width is reached.
+             *   - Returns a newly allocated string.
              */
             static std::string reflow(const std::string &text, int width) {
-            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_reflow(text.c_str(), width), free);
-            return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_reflow(text.c_str(), width);
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
-            // ========================================================================
-            // Normalization Helpers
-            // ========================================================================
             /**
-             * @brief Normalize whitespace, punctuation, spacing, and basic formatting.
+             * Normalizes whitespace, punctuation, and casing in the input text.
+             * Returns the normalized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Duplicates input.
+             *   - Normalizes leetspeak and lowercases all letters.
+             *   - Returns the normalized string.
              */
             static std::string normalize(const std::string &text) {
-            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_normalize(text.c_str()), free);
-            return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_normalize(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
             /**
-             * @brief Apply capitalization rules.
-             * @param mode 0 = sentence case, 1 = title case, 2 = uppercase, 3 = lowercase.
+             * Applies capitalization rules to the input text.
+             * The mode parameter specifies sentence-case, title-case, or preserve-case.
+             * Returns the capitalized string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - If mode==0, applies sentence-case (capitalize after '.', '!', '?').
+             *   - If mode==1, applies title-case (capitalize first letter of each word).
+             *   - Returns a newly allocated string.
              */
             static std::string capitalize(const std::string &text, int mode) {
-            std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_capitalize(text.c_str(), mode), free);
-            return ptr ? std::string(ptr.get()) : std::string{};
+                char *res = fossil_io_soap_capitalize(text.c_str(), mode);
+                std::string out = res ? res : "";
+                free(res);
+                return out;
             }
 
-            /**
-             * @brief Filter text by replacing words/phrases matching any pattern (comma-separated) with '*'.
-             *        Patterns support '*' and '?' wildcards, case-insensitive.
-             *
-             * @param patterns Comma-separated patterns to filter (supports '*' and '?' wildcards).
-             * @param text The input string.
-             * @return A sanitized version with filtered terms replaced by '*'.
-             */
-            static std::string filter(const std::string &patterns, const std::string &text) {
-                std::unique_ptr<char, decltype(&free)> ptr(fossil_io_soap_filter(patterns.c_str(), text.c_str()), free);
-                return ptr ? std::string(ptr.get()) : std::string{};
-            }
         };
-
+    
     } // namespace io
+
 } // namespace fossil
 
 #endif

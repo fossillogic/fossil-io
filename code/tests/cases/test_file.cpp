@@ -428,19 +428,6 @@ FOSSIL_TEST(cpp_test_stream_class_ai_analyze) {
     fossil::io::Stream::close(&cpp_stream);
 }
 
-FOSSIL_TEST(cpp_test_stream_class_ai_generate_tags) {
-    const char *filename = "testfile_ai_tags.txt";
-    const char *content = "AI tagging test content.";
-
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
-    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
-    fossil::io::Stream::close(&cpp_stream);
-
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::ai_generate_tags(&cpp_stream));
-    fossil::io::Stream::close(&cpp_stream);
-}
-
 FOSSIL_TEST(cpp_test_stream_class_ai_compute_embedding) {
     const char *filename = "testfile_ai_embed.txt";
     const char *content = "Embedding test content.";
@@ -542,7 +529,6 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_get_permissions);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_analyze);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_generate_tags);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_compute_embedding);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_ai_ready_and_reset);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_add_tag);
