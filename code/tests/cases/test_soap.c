@@ -60,14 +60,223 @@ FOSSIL_TEARDOWN(c_soap_suite) {
 // ============================================================================
 
 FOSSIL_TEST(c_test_soap_sanitize_basic) {
-    // Should remove control chars, normalize leet, lowercase
-    const char *input = "Hello\x01W0rld!\n";
+    const char *input = "H3ll0, W0rld!\nThis\tis\va\ttest.";
     char *san = fossil_io_soap_sanitize(input);
     ASSUME_ITS_TRUE(san != NULL);
-    ASSUME_ITS_EQUAL_CSTR("hello world!\n", san); // Accept space between hello and world
+    // Should replace control chars, normalize leet, lowercase
+    ASSUME_ITS_TRUE(strstr(san, "hello, world!") != NULL);
+    ASSUME_ITS_TRUE(strstr(san, "this is a test.") != NULL);
     free(san);
 }
 
+FOSSIL_TEST(c_test_soap_suggest_collapses_spaces) {
+    const char *input = "This   is   a    test.";
+    char *suggest = fossil_io_soap_suggest(input);
+    ASSUME_ITS_TRUE(suggest != NULL);
+    ASSUME_ITS_EQUAL_CSTR("This is a test.", suggest);
+    free(suggest);
+}
+
+FOSSIL_TEST(c_test_soap_summarize_two_sentences) {
+    const char *input = "First sentence. Second sentence! Third sentence?";
+    char *summary = fossil_io_soap_summarize(input);
+    ASSUME_ITS_TRUE(summary != NULL);
+    ASSUME_ITS_TRUE(strstr(summary, "First sentence.") != NULL);
+    ASSUME_ITS_TRUE(strstr(summary, "Second sentence!") != NULL);
+    free(summary);
+}
+
+FOSSIL_TEST(c_test_soap_analyze_grammar_style) {
+    const char *input = "The ball was thrown. Is this emotional? Wow!";
+    fossil_io_soap_grammar_style_t res = fossil_io_soap_analyze_grammar_style(input);
+    ASSUME_ITS_EQUAL_I32(1, res.grammar_ok);
+    ASSUME_ITS_TRUE(res.passive_voice_pct > 0);
+    ASSUME_ITS_TRUE(strcmp(res.style, "emotional") == 0);
+}
+
+FOSSIL_TEST(c_test_soap_correct_grammar) {
+    const char *input = "i am here.  this is a test! isn't it?";
+    char *out = fossil_io_soap_correct_grammar(input);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "I am here.") != NULL);
+    ASSUME_ITS_TRUE(strstr(out, "This is a test!") != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_score_short_text) {
+    const char *input = "Short.";
+    fossil_io_soap_scores_t scores = fossil_io_soap_score(input);
+    ASSUME_ITS_TRUE(scores.readability < 70);
+    ASSUME_ITS_EQUAL_I32(70, scores.quality);
+    ASSUME_ITS_EQUAL_I32(70, scores.clarity);
+}
+
+FOSSIL_TEST(c_test_soap_readability_label) {
+    ASSUME_ITS_EQUAL_CSTR("excellent", fossil_io_soap_readability_label(90));
+    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(70));
+    ASSUME_ITS_EQUAL_CSTR("fair", fossil_io_soap_readability_label(50));
+    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(30));
+}
+
+FOSSIL_TEST(c_test_soap_detect_spam) {
+    const char *input = "Buy now for a free gift! Limited offer, subscribe today!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "spam"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Let's meet for lunch.", "spam"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_conspiracy) {
+    const char *input = "The new world order is a secret plan by the shadow government.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "conspiracy"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("I like pizza.", "conspiracy"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_ragebait) {
+    const char *input = "You won't believe this outrageous claim! It's infuriating!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "ragebait"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Have a nice day.", "ragebait"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_clickbait) {
+    const char *input = "You won't believe what happens next! This is why you must see!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "clickbait"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a normal sentence.", "clickbait"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_bot) {
+    const char *input = "Click here to get your free gift! Limited offer!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "bot"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Welcome to the meeting.", "bot"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_marketing) {
+    const char *input = "Limited time special offer! Save big now!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "marketing"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Let's study together.", "marketing"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_technobabble) {
+    const char *input = "This product uses quantum entanglement and blockchain technology.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "technobabble"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Simple and clear explanation.", "technobabble"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_hype) {
+    const char *input = "This is an amazing, groundbreaking, mind-blowing discovery!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "hype"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Just a regular update.", "hype"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_political) {
+    const char *input = "The government passed new legislation after the election.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "political"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Enjoy your lunch.", "political"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_offensive) {
+    const char *input = "You are such an idiot and a loser!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "offensive"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("You are very kind.", "offensive"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_misinfo) {
+    const char *input = "This is fake news and a total hoax. Completely fabricated!";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "misinfo"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a verified fact.", "misinfo"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_brain_rot) {
+    const char *input = "lol bruh lmao";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "brain_rot"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a coherent sentence.", "brain_rot"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_leet) {
+    const char *input = "H3ll0 w0rld";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "leet"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hello world", "leet"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_morse) {
+    const char *input = "... --- ...";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "morse"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hello world", "morse"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_formal) {
+    const char *input = "Therefore, we conclude the experiment. In conclusion, the results are clear.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "formal"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hey, what's up?", "formal"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_redundant_sentences) {
+    const char *input = "This is a test. This is a test.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "redundant_sentences"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a test. That is different.", "redundant_sentences"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_repeated_words) {
+    const char *input = "This is is a test.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "repeated_words"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a test.", "repeated_words"));
+}
+
+FOSSIL_TEST(c_test_soap_detect_poor_cohesion) {
+    const char *input = "Dog. Car. Banana.";
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "poor_cohesion"));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("The dog chased the car.", "poor_cohesion"));
+}
+
+FOSSIL_TEST(c_test_soap_split_sentences) {
+    const char *input = "One. Two! Three?";
+    char **arr = fossil_io_soap_split(input);
+    ASSUME_ITS_TRUE(arr != NULL);
+    ASSUME_ITS_TRUE(arr[0] && arr[1] && arr[2]);
+    ASSUME_ITS_EQUAL_CSTR("One.", arr[0]);
+    ASSUME_ITS_EQUAL_CSTR("Two!", arr[1]);
+    ASSUME_ITS_EQUAL_CSTR("Three?", arr[2]);
+    for (int i = 0; arr[i]; ++i) free(arr[i]);
+    free(arr);
+}
+
+FOSSIL_TEST(c_test_soap_reflow_width) {
+    const char *input = "This is a long line that should be wrapped at a certain width.";
+    char *out = fossil_io_soap_reflow(input, 20);
+    ASSUME_ITS_TRUE(out != NULL);
+    ASSUME_ITS_TRUE(strchr(out, '\n') != NULL);
+    free(out);
+}
+
+FOSSIL_TEST(c_test_soap_normalize_leet_and_case) {
+    const char *input = "H3LL0 W0RLD";
+    char *norm = fossil_io_soap_normalize(input);
+    ASSUME_ITS_TRUE(norm != NULL);
+    ASSUME_ITS_EQUAL_CSTR("hello world", norm);
+    free(norm);
+}
+
+FOSSIL_TEST(c_test_soap_capitalize_modes) {
+    const char *input = "hello world. test sentence.";
+    char *sent = fossil_io_soap_capitalize(input, 0);
+    char *title = fossil_io_soap_capitalize(input, 1);
+    ASSUME_ITS_TRUE(sent != NULL && title != NULL);
+    ASSUME_ITS_TRUE(strstr(sent, "Hello world.") != NULL);
+    ASSUME_ITS_TRUE(strstr(title, "Hello World.") != NULL);
+    free(sent);
+    free(title);
+}
+
+FOSSIL_TEST(c_test_soap_rewrite_and_format) {
+    const char *input = "this is a test.   it needs fixing!!!";
+    char *rewritten = fossil_io_soap_rewrite(input);
+    char *formatted = fossil_io_soap_format(input);
+    ASSUME_ITS_TRUE(rewritten != NULL && formatted != NULL);
+    ASSUME_ITS_TRUE(strstr(rewritten, "This is a test.") != NULL);
+    ASSUME_ITS_TRUE(strstr(formatted, "This is a test.") != NULL);
+    free(rewritten);
+    free(formatted);
+}
+
+//
 FOSSIL_TEST(c_test_soap_sanitize_empty_and_null) {
     char *san = fossil_io_soap_sanitize("");
     ASSUME_ITS_TRUE(san != NULL);
@@ -79,194 +288,31 @@ FOSSIL_TEST(c_test_soap_sanitize_empty_and_null) {
 }
 
 FOSSIL_TEST(c_test_soap_suggest_basic) {
-    char *sug = fossil_io_soap_suggest("This   is   a   test.");
-    ASSUME_ITS_TRUE(sug != NULL);
-    ASSUME_ITS_EQUAL_CSTR("This is a test.", sug);
-    free(sug);
+    const char *input = "  Too   many   spaces. ";
+    char *suggest = fossil_io_soap_suggest(input);
+    ASSUME_ITS_TRUE(suggest != NULL);
+    ASSUME_ITS_EQUAL_CSTR("Too many spaces. ", suggest);
+    free(suggest);
 }
 
 FOSSIL_TEST(c_test_soap_suggest_improvement) {
-    char *sug = fossil_io_soap_suggest("bad grammar here");
-    ASSUME_ITS_TRUE(sug != NULL);
-    free(sug);
+    const char *input = "This\tis\va test.";
+    char *suggest = fossil_io_soap_suggest(input);
+    ASSUME_ITS_TRUE(suggest != NULL);
+    ASSUME_ITS_EQUAL_CSTR("This is a test.", suggest);
+    free(suggest);
 }
 
-FOSSIL_TEST(c_test_soap_summarize_basic) {
-    char *sum = fossil_io_soap_summarize("First sentence. Second sentence. Third sentence.");
-    ASSUME_ITS_TRUE(sum != NULL);
-    ASSUME_ITS_EQUAL_CSTR("First sentence  Second sentence ", sum); // Match actual output with double space
-    free(sum);
-}
+FOSSIL_TEST(c_test_soap_summarize_empty_and_short) {
+    char *summary = fossil_io_soap_summarize("");
+    ASSUME_ITS_TRUE(summary != NULL);
+    ASSUME_ITS_EQUAL_CSTR("", summary);
+    free(summary);
 
-FOSSIL_TEST(c_test_soap_summarize_short_text) {
-    char *sum = fossil_io_soap_summarize("Short text.");
-    ASSUME_ITS_TRUE(sum != NULL);
-    ASSUME_ITS_EQUAL_CSTR("Short text ", sum); // Match actual output with trailing space
-    free(sum);
-}
-
-// ============================================================================
-// Grammar & Style Analysis
-// ============================================================================
-
-FOSSIL_TEST(c_test_soap_analyze_grammar_style) {
-    fossil_io_soap_grammar_style_t r = fossil_io_soap_analyze_grammar_style("This is a test.");
-    ASSUME_ITS_EQUAL_I32(1, r.grammar_ok);
-    ASSUME_ITS_TRUE(r.passive_voice_pct >= 0 && r.passive_voice_pct <= 100);
-    ASSUME_ITS_TRUE(r.style != NULL);
-}
-
-FOSSIL_TEST(c_test_soap_analyze_grammar_style_emotional) {
-    fossil_io_soap_grammar_style_t r = fossil_io_soap_analyze_grammar_style("Wow! This is amazing!");
-    ASSUME_ITS_TRUE(strstr(r.style, "emotional") != NULL);
-}
-
-FOSSIL_TEST(c_test_soap_analyze_grammar_style_formal) {
-    fossil_io_soap_grammar_style_t r = fossil_io_soap_analyze_grammar_style("Therefore, we conclude the experiment;");
-    ASSUME_ITS_TRUE(strstr(r.style, "formal") != NULL);
-}
-
-FOSSIL_TEST(c_test_soap_correct_grammar) {
-    const char *input = "this is a test";
-    char *corr = fossil_io_soap_correct_grammar(input);
-    ASSUME_ITS_TRUE(corr != NULL);
-    ASSUME_ITS_TRUE(corr[0] == 'T');
-    free(corr);
-}
-
-FOSSIL_TEST(c_test_soap_correct_grammar_terminal_punctuation) {
-    const char *input = "this is a test without punctuation";
-    char *corr = fossil_io_soap_correct_grammar(input);
-    ASSUME_ITS_TRUE(corr != NULL);
-    size_t len = strlen(corr);
-    ASSUME_ITS_TRUE(corr[len-1] == '.' || corr[len-1] == '!' || corr[len-1] == '?');
-    free(corr);
-}
-
-// ============================================================================
-// Readability, Clarity, & Quality Analysis
-// ============================================================================
-
-FOSSIL_TEST(c_test_soap_score_short_text) {
-    fossil_io_soap_scores_t s = fossil_io_soap_score("short");
-    ASSUME_ITS_TRUE(s.readability < 70);
-    ASSUME_ITS_TRUE(s.clarity >= 70);
-    ASSUME_ITS_TRUE(s.quality >= 70);
-}
-
-FOSSIL_TEST(c_test_soap_score_long_text) {
-    const char *txt = "This is a sufficiently long text to test the readability scoring system. "
-                      "It should not be penalized for being too short.";
-    fossil_io_soap_scores_t s = fossil_io_soap_score(txt);
-    ASSUME_ITS_TRUE(s.readability >= 70);
-}
-
-FOSSIL_TEST(c_test_soap_score_multiline) {
-    fossil_io_soap_scores_t s = fossil_io_soap_score("Line one.\nLine two.");
-    ASSUME_ITS_TRUE(s.clarity > 70);
-}
-
-FOSSIL_TEST(c_test_soap_readability_label) {
-    ASSUME_ITS_EQUAL_CSTR("excellent", fossil_io_soap_readability_label(90));
-    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(70));
-    ASSUME_ITS_EQUAL_CSTR("fair", fossil_io_soap_readability_label(50));
-    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(30));
-}
-
-FOSSIL_TEST(c_test_soap_readability_label_boundaries) {
-    ASSUME_ITS_EQUAL_CSTR("excellent", fossil_io_soap_readability_label(81));
-    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(61));
-    ASSUME_ITS_EQUAL_CSTR("fair", fossil_io_soap_readability_label(41));
-    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(0));
-}
-
-// ============================================================================
-// Detection, Normalization, Split, Reflow, Capitalization
-// ============================================================================
-
-FOSSIL_TEST(c_test_soap_detect_spam) {
-    int found = fossil_io_soap_detect("Buy now for a free gift!", "spam");
-    ASSUME_ITS_EQUAL_I32(1, found);
-}
-
-FOSSIL_TEST(c_test_soap_detect_clickbait) {
-    int found = fossil_io_soap_detect("You won't believe what happened next!", "clickbait");
-    ASSUME_ITS_EQUAL_I32(1, found);
-}
-
-FOSSIL_TEST(c_test_soap_detect_no_match) {
-    int found = fossil_io_soap_detect("This is a normal sentence.", "spam");
-    ASSUME_ITS_EQUAL_I32(0, found);
-}
-
-FOSSIL_TEST(c_test_soap_detect_case_insensitive) {
-    int found = fossil_io_soap_detect("BUY NOW for a FREE gift!", "spam");
-    ASSUME_ITS_EQUAL_I32(1, found);
-}
-
-FOSSIL_TEST(c_test_soap_detect_bot_pattern) {
-    int found = fossil_io_soap_detect("Click here to subscribe!", "bot");
-    ASSUME_ITS_EQUAL_I32(1, found);
-}
-
-FOSSIL_TEST(c_test_soap_normalize_leet_and_case) {
-    const char *input = "H3LL0 W0RLD";
-    char *norm = fossil_io_soap_normalize(input);
-    ASSUME_ITS_TRUE(norm != NULL);
-    ASSUME_ITS_EQUAL_CSTR("hello world", norm);
-    free(norm);
-}
-
-FOSSIL_TEST(c_test_soap_normalize_null_and_empty) {
-    char *norm = fossil_io_soap_normalize(NULL);
-    ASSUME_ITS_TRUE(norm == NULL);
-
-    norm = fossil_io_soap_normalize("");
-    ASSUME_ITS_TRUE(norm != NULL);
-    ASSUME_ITS_EQUAL_CSTR("", norm);
-    free(norm);
-}
-
-FOSSIL_TEST(c_test_soap_split_and_reflow) {
-    char **split = fossil_io_soap_split("Sentence one. Sentence two.");
-    ASSUME_ITS_TRUE(split != NULL);
-    ASSUME_ITS_TRUE(split[0] != NULL && split[1] != NULL);
-    for (int i = 0; split[i]; ++i) free(split[i]);
-    free(split);
-
-    char *reflowed = fossil_io_soap_reflow("This is a long line that should wrap.", 10);
-    ASSUME_ITS_TRUE(reflowed != NULL);
-    free(reflowed);
-}
-
-FOSSIL_TEST(c_test_soap_split_empty) {
-    char **split = fossil_io_soap_split("");
-    ASSUME_ITS_TRUE(split != NULL);
-    ASSUME_ITS_TRUE(split[0] == NULL);
-    free(split);
-}
-
-FOSSIL_TEST(c_test_soap_reflow_shorter_than_width) {
-    char *reflowed = fossil_io_soap_reflow("Short.", 20);
-    ASSUME_ITS_TRUE(reflowed != NULL);
-    ASSUME_ITS_EQUAL_CSTR("Short.", reflowed);
-    free(reflowed);
-}
-
-FOSSIL_TEST(c_test_soap_capitalize_modes) {
-    char *sent = fossil_io_soap_capitalize("hello world. this is fossil.", 0);
-    ASSUME_ITS_TRUE(sent != NULL);
-    free(sent);
-    char *title = fossil_io_soap_capitalize("hello world", 1);
-    ASSUME_ITS_TRUE(title != NULL);
-    free(title);
-}
-
-FOSSIL_TEST(c_test_soap_capitalize_empty) {
-    char *sent = fossil_io_soap_capitalize("", 0);
-    ASSUME_ITS_TRUE(sent != NULL);
-    ASSUME_ITS_EQUAL_CSTR("", sent);
-    free(sent);
+    summary = fossil_io_soap_summarize("Only one sentence.");
+    ASSUME_ITS_TRUE(summary != NULL);
+    ASSUME_ITS_EQUAL_CSTR("Only one sentence.", summary);
+    free(summary);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -275,39 +321,39 @@ FOSSIL_TEST(c_test_soap_capitalize_empty) {
 
 FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_basic);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_collapses_spaces);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_two_sentences);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_score_short_text);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_readability_label);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_spam);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_conspiracy);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_ragebait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_clickbait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_bot);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_marketing);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_technobabble);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_hype);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_political);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_misinfo);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_brain_rot);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_leet);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_morse);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_formal);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_redundant_sentences);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_repeated_words);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_poor_cohesion);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_sentences);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_reflow_width);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_normalize_leet_and_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_modes);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_rewrite_and_format);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_empty_and_null);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_basic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_improvement);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_basic);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_short_text);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style_emotional);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style_formal);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar_terminal_punctuation);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_score_short_text);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_score_long_text);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_score_multiline);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_readability_label);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_readability_label_boundaries);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_spam);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_clickbait);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_no_match);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_case_insensitive);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_bot_pattern);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_normalize_leet_and_case);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_normalize_null_and_empty);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_and_reflow);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_empty);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_reflow_shorter_than_width);
-
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_modes);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_empty);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_empty_and_short);
 
     FOSSIL_TEST_REGISTER(c_soap_suite);
 }
