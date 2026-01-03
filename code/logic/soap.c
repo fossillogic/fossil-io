@@ -29,314 +29,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
-/* ============================================================================
- * Internal helpers
- * ============================================================================ */
-
-static char *dupstr(const char *s) {
-    if (!s) return NULL;
-    size_t n = strlen(s);
-    char *r = (char*)malloc(n + 1);
-    if (r) memcpy(r, s, n + 1);
-    return r;
-}
-
-static void strtolower(char *s) {
-    if (!s) return;
-    for (; *s; s++) *s = (char)tolower((unsigned char)*s);
-}
-
-static int soap_is_abbrev(const char *s) {
-    static const char *abbr[] = {
-        "mr.", "mrs.", "dr.", "vs.", "etc.", "e.g.", "i.e.", NULL
-    };
-    for (int i = 0; abbr[i]; i++)
-        if (strcasecmp(s, abbr[i]) == 0)
-            return 1;
-    return 0;
-}
-
-/* ============================================================================
- * Leetspeak normalization
- * ============================================================================ */
-
-static char leet_map(char c) {
-    switch(c) {
-        case '4': case '@': return 'a';
-        case '3': return 'e';
-        case '1': return 'i';
-        case '0': return 'o';
-        case '5': case '$': return 's';
-        case '7': return 't';
-        default: return c;
-    }
-}
-
-static void normalize_leet(char *s) {
-    if (!s) return;
-    for (; *s; s++) *s = leet_map(*s);
-}
-
-/* ============================================================================
- * Morse decoding (basic)
- * ============================================================================ */
-
-typedef struct { const char *code; char c; } morse_t;
-
-static const morse_t morse_table[] = {
-    {".-", 'a'}, {"-...", 'b'}, {"-.-.", 'c'}, {"-..", 'd'},
-    {".", 'e'}, {"..-.", 'f'}, {"--.", 'g'}, {"....", 'h'},
-    {"..", 'i'}, {".---", 'j'}, {"-.-", 'k'}, {".-..", 'l'},
-    {"--", 'm'}, {"-.", 'n'}, {"---", 'o'}, {".--.", 'p'},
-    {"--.-", 'q'}, {".-.", 'r'}, {"...", 's'}, {"-", 't'},
-    {"..-", 'u'}, {"...-", 'v'}, {".--", 'w'}, {"-..-", 'x'},
-    {"-.--", 'y'}, {"--..", 'z'}, {NULL, 0}
-};
-
-static char morse_lookup(const char *code) {
-    for (int i=0; morse_table[i].code; i++)
-        if (strcmp(morse_table[i].code, code)==0) return morse_table[i].c;
-    return '?';
-}
-
-static char *decode_morse(const char *text) {
-    if (!text) return NULL;
-    char *out = (char*)malloc(strlen(text)+1);
-    size_t oi=0, bi=0;
-    char buf[8];
-    for (const char *p=text;;p++) {
-        if (*p=='.'||*p=='-') buf[bi++]=*p;
-        else {
-            if(bi){buf[bi]=0; out[oi++]=morse_lookup(buf); bi=0;}
-            if(*p==' '||*p=='/') out[oi++]=' ';
-            if(!*p) break;
-        }
-    }
-    out[oi]=0;
-    return out;
-}
-
-/* ============================================================================
- * Sanitization
- * ============================================================================ */
-
-char *fossil_io_soap_normalize(const char *text) {
-    if (!text) return NULL;
-    char *s = dupstr(text);
-    normalize_leet(s);
-    strtolower(s);
-    return s;
-}
-
-char *fossil_io_soap_sanitize(const char *text) {
-    if (!text) return NULL;
-    char *s = dupstr(text);
-    for(char *p=s; *p; p++) if((unsigned char)*p<32 && *p!='\n') *p=' ';
-    char *norm = fossil_io_soap_normalize(s);
-    free(s);
-    return norm;
-}
-
-/* ============================================================================
- * Grammar & style analysis
- * ============================================================================ */
-
-fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text) {
-    fossil_io_soap_grammar_style_t r = {1,0,"neutral"};
-    if(!text) return r;
-    int passive=0, words=0;
-    const char *p=text;
-    while(*p){
-        if(isspace((unsigned char)*p)) words++;
-        if(!strncmp(p,"was ",4)||!strncmp(p,"were ",5)) passive++;
-        p++;
-    }
-    if(words) r.passive_voice_pct = (passive*100)/words;
-    if(strstr(text,"!")||strstr(text,"?")) r.style="emotional";
-    else if(strstr(text,"therefore")||strstr(text,";")) r.style="formal";
-    return r;
-}
-
-char *fossil_io_soap_correct_grammar(const char *text)
-{
-    if (!text) return NULL;
-
-    // --- Begin context-aware grammar correction ---
-    char *out = malloc(strlen(text) * 2 + 4);
-    if (!out) return NULL;
-
-    const char *p = text;
-    char *q = out;
-
-    int new_sentence = 1;
-    int last_space = 0;
-    char last_char = 0;
-
-    int in_quote = 0;
-    int in_paren = 0;
-    int in_url = 0;
-    int word_start = 1;
-
-    // For abbreviation detection
-    char prev_word[32] = {0};
-    int prev_word_len = 0;
-
-    struct {
-        const char *from;
-        const char *to;
-    } contractions[] = {
-        {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
-        {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
-        {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
-        {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
-        {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
-        {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
-        {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
-        {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
-        {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
-        {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
-        {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
-        {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
-        {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
-        {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
-        {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
-        {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
-        {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
-        {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
-        {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
-        {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
-    };
-
-    while (*p) {
-        char c = *p++;
-
-        // Track quote and paren state
-        if (c == '"' || c == '\'') in_quote ^= 1;
-        if (c == '(') in_paren++;
-        if (c == ')') if (in_paren > 0) in_paren--;
-
-        // URL detection (cheap, no regex)
-        if (!in_url && (strncmp(p - 1, "http://", 7) == 0 ||
-                        strncmp(p - 1, "https://", 8) == 0))
-            in_url = 1;
-        if (in_url && isspace((unsigned char)c))
-            in_url = 0;
-
-        // Normalize whitespace
-        if (isspace((unsigned char)c)) {
-            if (!last_space) {
-                *q++ = ' ';
-                last_space = 1;
-            }
-            word_start = 1;
-            continue;
-        }
-        last_space = 0;
-
-        // Word boundary and sentence word count
-        if (isalpha((unsigned char)c) && word_start) {
-            word_start = 0;
-        }
-        if (!isalpha((unsigned char)c))
-            word_start = 1;
-
-        // Abbreviation detection (look back for word before '.')
-        if (c == '.' && prev_word_len > 0) {
-            prev_word[prev_word_len] = 0;
-        }
-
-        // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
-        int is_abbrev = 0;
-        if (new_sentence && isalpha((unsigned char)c)) {
-            // Check for abbreviation before
-            if (prev_word_len > 0 && soap_is_abbrev(prev_word))
-                is_abbrev = 1;
-            if (!is_abbrev)
-                c = (char)toupper((unsigned char)c);
-            new_sentence = 0;
-        }
-
-        // Punctuation collapse, but smarter
-        if (ispunct((unsigned char)c) && c == last_char) {
-            if (c == '.' || c == '!' || c == '?')
-                continue; // collapse
-        }
-
-        // Sentence boundary detection (punctuation-aware)
-        if ((c == '.' || c == '!' || c == '?') && !in_quote) {
-            // Decimal number: don't end sentence
-            if (c == '.' && isdigit((unsigned char)*p))
-                ;
-            // Abbreviation: don't end sentence
-            else if (is_abbrev)
-                ;
-            // Ellipsis: don't end sentence
-            else if (c == '.' && *p == '.' && *(p+1) == '.')
-                ;
-            else
-                new_sentence = 1;
-        }
-
-        // Context-aware contraction replacement (inline, not global)
-        if (!in_quote && !in_url && !in_paren) {
-            for (int i = 0; contractions[i].from; i++) {
-                size_t len = strlen(contractions[i].from);
-                if (strncmp(p - 1, contractions[i].from, len) == 0) {
-                    memcpy(q - 1, contractions[i].to, strlen(contractions[i].to));
-                    p += len - 1;
-                    q += strlen(contractions[i].to) - 1;
-                    break;
-                }
-            }
-        }
-
-        *q++ = c;
-        last_char = c;
-
-        // Track previous word for abbreviation check
-        if (isalpha((unsigned char)c)) {
-            if (prev_word_len < (int)sizeof(prev_word) - 1)
-                prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
-        } else {
-            prev_word_len = 0;
-        }
-    }
-
-    // Ensure terminal punctuation
-    if (q > out && !ispunct((unsigned char)q[-1])) {
-        *q++ = '.';
-    }
-
-    *q = '\0';
-
-    // --- End context-aware grammar correction ---
-    return out;
-}
-
-/* ============================================================================
- * Readability / scoring
- * ============================================================================ */
-
-fossil_io_soap_scores_t fossil_io_soap_score(const char *text){
-    fossil_io_soap_scores_t s={70,70,70};
-    if(!text) return s;
-    size_t len = strlen(text);
-    if(len<40) s.readability-=10;
-    if(strchr(text,'\n')) s.clarity+=10;
-    if(!strstr(text,"!!!")) s.quality+=10;
-    return s;
-}
-
-const char *fossil_io_soap_readability_label(int score){
-    if(score>80) return "excellent";
-    if(score>60) return "good";
-    if(score>40) return "fair";
-    return "poor";
-}
-
-/* ============================================================================
- * Detector
- * ============================================================================ */
+// LOOKUP MAP
 
 typedef struct {
     char *processed_text;                  // sanitized / normalized / grammar-corrected
@@ -801,6 +494,315 @@ static const pattern_t brain_rot_patterns[] = {
     {"no chill"}, {"deadass"}, {"facts"}, {"big facts"}, {"periodt"}, {"period"}, {"sis"}, {"sis bro"}, {"sis fam"}, {"sis queen"},
     {NULL}
 };
+
+/* ============================================================================
+ * Internal helpers
+ * ============================================================================ */
+
+static char *dupstr(const char *s) {
+    if (!s) return NULL;
+    size_t n = strlen(s);
+    char *r = (char*)malloc(n + 1);
+    if (r) memcpy(r, s, n + 1);
+    return r;
+}
+
+static void strtolower(char *s) {
+    if (!s) return;
+    for (; *s; s++) *s = (char)tolower((unsigned char)*s);
+}
+
+static int soap_is_abbrev(const char *s) {
+    static const char *abbr[] = {
+        "mr.", "mrs.", "dr.", "vs.", "etc.", "e.g.", "i.e.", NULL
+    };
+    for (int i = 0; abbr[i]; i++)
+        if (strcasecmp(s, abbr[i]) == 0)
+            return 1;
+    return 0;
+}
+
+/* ============================================================================
+ * Leetspeak normalization
+ * ============================================================================ */
+
+static char leet_map(char c) {
+    switch(c) {
+        case '4': case '@': return 'a';
+        case '3': return 'e';
+        case '1': return 'i';
+        case '0': return 'o';
+        case '5': case '$': return 's';
+        case '7': return 't';
+        default: return c;
+    }
+}
+
+static void normalize_leet(char *s) {
+    if (!s) return;
+    for (; *s; s++) *s = leet_map(*s);
+}
+
+/* ============================================================================
+ * Morse decoding (basic)
+ * ============================================================================ */
+
+typedef struct { const char *code; char c; } morse_t;
+
+static const morse_t morse_table[] = {
+    {".-", 'a'}, {"-...", 'b'}, {"-.-.", 'c'}, {"-..", 'd'},
+    {".", 'e'}, {"..-.", 'f'}, {"--.", 'g'}, {"....", 'h'},
+    {"..", 'i'}, {".---", 'j'}, {"-.-", 'k'}, {".-..", 'l'},
+    {"--", 'm'}, {"-.", 'n'}, {"---", 'o'}, {".--.", 'p'},
+    {"--.-", 'q'}, {".-.", 'r'}, {"...", 's'}, {"-", 't'},
+    {"..-", 'u'}, {"...-", 'v'}, {".--", 'w'}, {"-..-", 'x'},
+    {"-.--", 'y'}, {"--..", 'z'}, {NULL, 0}
+};
+
+static char morse_lookup(const char *code) {
+    for (int i=0; morse_table[i].code; i++)
+        if (strcmp(morse_table[i].code, code)==0) return morse_table[i].c;
+    return '?';
+}
+
+static char *decode_morse(const char *text) {
+    if (!text) return NULL;
+    char *out = (char*)malloc(strlen(text)+1);
+    size_t oi=0, bi=0;
+    char buf[8];
+    for (const char *p=text;;p++) {
+        if (*p=='.'||*p=='-') buf[bi++]=*p;
+        else {
+            if(bi){buf[bi]=0; out[oi++]=morse_lookup(buf); bi=0;}
+            if(*p==' '||*p=='/') out[oi++]=' ';
+            if(!*p) break;
+        }
+    }
+    out[oi]=0;
+    return out;
+}
+
+/* ============================================================================
+ * Sanitization
+ * ============================================================================ */
+
+char *fossil_io_soap_normalize(const char *text) {
+    if (!text) return NULL;
+    char *s = dupstr(text);
+    normalize_leet(s);
+    strtolower(s);
+    return s;
+}
+
+char *fossil_io_soap_sanitize(const char *text) {
+    if (!text) return NULL;
+    char *s = dupstr(text);
+    for(char *p=s; *p; p++) if((unsigned char)*p<32 && *p!='\n') *p=' ';
+    char *norm = fossil_io_soap_normalize(s);
+    free(s);
+    return norm;
+}
+
+/* ============================================================================
+ * Grammar & style analysis
+ * ============================================================================ */
+
+fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text) {
+    fossil_io_soap_grammar_style_t r = {1,0,"neutral"};
+    if(!text) return r;
+    int passive=0, words=0;
+    const char *p=text;
+    while(*p){
+        if(isspace((unsigned char)*p)) words++;
+        if(!strncmp(p,"was ",4)||!strncmp(p,"were ",5)) passive++;
+        p++;
+    }
+    if(words) r.passive_voice_pct = (passive*100)/words;
+    if(strstr(text,"!")||strstr(text,"?")) r.style="emotional";
+    else if(strstr(text,"therefore")||strstr(text,";")) r.style="formal";
+    return r;
+}
+
+char *fossil_io_soap_correct_grammar(const char *text)
+{
+    if (!text) return NULL;
+
+    // --- Begin context-aware grammar correction ---
+    char *out = malloc(strlen(text) * 2 + 4);
+    if (!out) return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    int new_sentence = 1;
+    int last_space = 0;
+    char last_char = 0;
+
+    int in_quote = 0;
+    int in_paren = 0;
+    int in_url = 0;
+    int word_start = 1;
+
+    // For abbreviation detection
+    char prev_word[32] = {0};
+    int prev_word_len = 0;
+
+    struct {
+        const char *from;
+        const char *to;
+    } contractions[] = {
+        {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
+        {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
+        {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
+        {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
+        {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
+        {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
+        {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
+        {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
+        {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
+        {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
+        {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
+        {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
+        {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
+        {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
+        {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
+        {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
+        {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
+        {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
+    };
+
+    while (*p) {
+        char c = *p++;
+
+        // Track quote and paren state
+        if (c == '"' || c == '\'') in_quote ^= 1;
+        if (c == '(') in_paren++;
+        if (c == ')') if (in_paren > 0) in_paren--;
+
+        // URL detection (cheap, no regex)
+        if (!in_url && (strncmp(p - 1, "http://", 7) == 0 ||
+                        strncmp(p - 1, "https://", 8) == 0))
+            in_url = 1;
+        if (in_url && isspace((unsigned char)c))
+            in_url = 0;
+
+        // Normalize whitespace
+        if (isspace((unsigned char)c)) {
+            if (!last_space) {
+                *q++ = ' ';
+                last_space = 1;
+            }
+            word_start = 1;
+            continue;
+        }
+        last_space = 0;
+
+        // Word boundary and sentence word count
+        if (isalpha((unsigned char)c) && word_start) {
+            word_start = 0;
+        }
+        if (!isalpha((unsigned char)c))
+            word_start = 1;
+
+        // Abbreviation detection (look back for word before '.')
+        if (c == '.' && prev_word_len > 0) {
+            prev_word[prev_word_len] = 0;
+        }
+
+        // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
+        int is_abbrev = 0;
+        if (new_sentence && isalpha((unsigned char)c)) {
+            // Check for abbreviation before
+            if (prev_word_len > 0 && soap_is_abbrev(prev_word))
+                is_abbrev = 1;
+            if (!is_abbrev)
+                c = (char)toupper((unsigned char)c);
+            new_sentence = 0;
+        }
+
+        // Punctuation collapse, but smarter
+        if (ispunct((unsigned char)c) && c == last_char) {
+            if (c == '.' || c == '!' || c == '?')
+                continue; // collapse
+        }
+
+        // Sentence boundary detection (punctuation-aware)
+        if ((c == '.' || c == '!' || c == '?') && !in_quote) {
+            // Decimal number: don't end sentence
+            if (c == '.' && isdigit((unsigned char)*p))
+                ;
+            // Abbreviation: don't end sentence
+            else if (is_abbrev)
+                ;
+            // Ellipsis: don't end sentence
+            else if (c == '.' && *p == '.' && *(p+1) == '.')
+                ;
+            else
+                new_sentence = 1;
+        }
+
+        // Context-aware contraction replacement (inline, not global)
+        if (!in_quote && !in_url && !in_paren) {
+            for (int i = 0; contractions[i].from; i++) {
+                size_t len = strlen(contractions[i].from);
+                if (strncmp(p - 1, contractions[i].from, len) == 0) {
+                    memcpy(q - 1, contractions[i].to, strlen(contractions[i].to));
+                    p += len - 1;
+                    q += strlen(contractions[i].to) - 1;
+                    break;
+                }
+            }
+        }
+
+        *q++ = c;
+        last_char = c;
+
+        // Track previous word for abbreviation check
+        if (isalpha((unsigned char)c)) {
+            if (prev_word_len < (int)sizeof(prev_word) - 1)
+                prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
+        } else {
+            prev_word_len = 0;
+        }
+    }
+
+    // Ensure terminal punctuation
+    if (q > out && !ispunct((unsigned char)q[-1])) {
+        *q++ = '.';
+    }
+
+    *q = '\0';
+
+    // --- End context-aware grammar correction ---
+    return out;
+}
+
+/* ============================================================================
+ * Readability / scoring
+ * ============================================================================ */
+
+fossil_io_soap_scores_t fossil_io_soap_score(const char *text){
+    fossil_io_soap_scores_t s={70,70,70};
+    if(!text) return s;
+    size_t len = strlen(text);
+    if(len<40) s.readability-=10;
+    if(strchr(text,'\n')) s.clarity+=10;
+    if(!strstr(text,"!!!")) s.quality+=10;
+    return s;
+}
+
+const char *fossil_io_soap_readability_label(int score){
+    if(score>80) return "excellent";
+    if(score>60) return "good";
+    if(score>40) return "fair";
+    return "poor";
+}
+
+/* ============================================================================
+ * Detector
+ * ============================================================================ */
 
 typedef struct {
     const char *id;
