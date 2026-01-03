@@ -91,6 +91,10 @@ typedef struct {
 
     /** Detect non-human or automated text patterns. */
     int detect_bot;
+    
+    int detect_gamer;
+    
+    int detect_snowflak;
 
     /** Detect marketing, sales, or promotional language. */
     int detect_marketing;
@@ -111,7 +115,7 @@ typedef struct {
     int detect_offensive;
 
     /** Detect agenda-driven messaging or ideological persuasion. */
-    int detect_propaganda;
+    int detect_fakenews;
 
     /** Heuristic detection of false, misleading, or unsupported claims. */
     int detect_misinformation;
@@ -140,10 +144,6 @@ typedef struct {
 
     /** Detect passive-aggressive phrasing patterns. */
     int detect_passive_aggressive;
-
-    int detect_snowflake;
-
-    int detect_morse;
 
     /* =====================================================================
      * Structural & linguistic analysis
