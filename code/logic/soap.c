@@ -846,7 +846,7 @@ char *fossil_io_soap_correct_grammar(const char *text)
 
         // Normalize whitespace (collapse multiple spaces/tabs)
         if (isspace((unsigned char)c)) {
-            if (!last_space) {
+            if (!last_space && !after_punct) {
                 *q++ = ' ';
                 last_space = 1;
             }
@@ -855,6 +855,7 @@ char *fossil_io_soap_correct_grammar(const char *text)
             continue;
         }
         last_space = 0;
+        after_punct = 0;   // ← RESET HERE
 
         // Word boundary and sentence word count
         if (isalpha((unsigned char)c) && word_start) {
@@ -868,15 +869,17 @@ char *fossil_io_soap_correct_grammar(const char *text)
             prev_word[prev_word_len] = 0;
         }
 
-        // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
+        // Capitalize start of sentences
         int is_abbrev = 0;
         if (new_sentence && isalpha((unsigned char)c)) {
-            // Check for abbreviation before
             if (prev_word_len > 0 && soap_is_abbrev(prev_word))
                 is_abbrev = 1;
-            if (!is_abbrev)
+        
+            if (!is_abbrev && !ellipsis)
                 c = (char)toupper((unsigned char)c);
+        
             new_sentence = 0;
+            ellipsis = 0;   // ← RESET HERE
         }
 
         // Punctuation collapse, but smarter
@@ -898,7 +901,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
             // Abbreviation: don't end sentence
             else if (is_abbrev)
                 ;
-            // Ellipsis: don't end sentence
             else if (c == '.' && *(p+1) == '.' && *(p+2) == '.') {
                 ellipsis = 1;
             }
@@ -1045,6 +1047,9 @@ char *fossil_io_soap_correct_grammar(const char *text)
 
     // Remove trailing spaces
     while (q > out && isspace((unsigned char)q[-1])) *(--q) = 0;
+
+    (void)ellipsis;
+    (void)after_punct;
 
     return out;
 }
@@ -1249,7 +1254,7 @@ static int detect_redundant_sentences(char **sentences) {
 }
 
 static int detect_repeated_words(char **words) {
-    if (!words) return 0;p
+    if (!words) return 0;
     for (size_t i = 0; words[i]; i++) {
         if (strlen(words[i]) == 0) continue;
         for (size_t j = i + 1; words[j]; j++) {
