@@ -800,9 +800,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
     char prev_word[32] = {0};
     int prev_word_len = 0;
 
-    // For ellipsis detection
-    int ellipsis = 0;
-
     struct {
         const char *from;
         const char *to;
@@ -828,9 +825,6 @@ char *fossil_io_soap_correct_grammar(const char *text)
         {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
         {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
     };
-
-    // For smart punctuation spacing
-    int after_punct = 0;
 
     while (*p) {
         char c = *p;
@@ -1252,8 +1246,7 @@ static int detect_redundant_sentences(char **sentences) {
 }
 
 static int detect_repeated_words(char **words) {
-    if (!words) return 0;
-    // Use a simple hash set approach for efficiency on larger texts
+    if (!words) return 0;p
     for (size_t i = 0; words[i]; i++) {
         if (strlen(words[i]) == 0) continue;
         for (size_t j = i + 1; words[j]; j++) {
