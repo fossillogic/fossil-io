@@ -1120,7 +1120,6 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
         while (*p && isspace((unsigned char)*p)) p++;
         if (!*p) break;
         int cap = 1, lenw = 0;
-        const char *w = p;
         while (*p && !isspace((unsigned char)*p)) {
             if (islower((unsigned char)*p)) cap = 0;
             lenw++;
