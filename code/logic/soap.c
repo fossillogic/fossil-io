@@ -799,6 +799,9 @@ char *fossil_io_soap_correct_grammar(const char *text)
     // For abbreviation detection
     char prev_word[32] = {0};
     int prev_word_len = 0;
+    
+    int ellipsis = 0;
+    int after_punct = 0;
 
     struct {
         const char *from;
