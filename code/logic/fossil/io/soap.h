@@ -296,6 +296,41 @@ char *fossil_io_soap_rewrite(const char *text);
  */
 char *fossil_io_soap_format(const char *text);
 
+/*
+ * Declutter text by repairing word boundaries and whitespace.
+ *
+ * - Splits camelCase / PascalCase words
+ * - Normalizes excessive whitespace
+ * - Preserves numbers and symbols
+ *
+ * Parameters:
+ *   text  - Input UTF-8 / ASCII text (NULL-safe)
+ *
+ * Returns:
+ *   Newly allocated NUL-terminated string.
+ *   Caller owns the memory and must free().
+ *   Returns NULL on allocation failure or if text is NULL.
+ */
+char *fossil_io_soap_declutter(const char *text);
+
+/*
+ * Normalize punctuation and sentence structure.
+ *
+ * - Collapses repeated punctuation (!!!??? → !)
+ * - Normalizes ellipsis (...)
+ * - Capitalizes sentence starts
+ * - Ensures terminal punctuation
+ *
+ * Parameters:
+ *   text  - Input UTF-8 / ASCII text (NULL-safe)
+ *
+ * Returns:
+ *   Newly allocated NUL-terminated string.
+ *   Caller owns the memory and must free().
+ *   Returns NULL on allocation failure or if text is NULL.
+ */
+char *fossil_io_soap_punctuate(const char *text);
+
 #ifdef __cplusplus
 }
 
