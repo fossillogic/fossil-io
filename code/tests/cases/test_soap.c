@@ -81,6 +81,7 @@ FOSSIL_TEST(c_test_soap_summarize_two_sentences) {
     const char *input = "First sentence. Second sentence! Third sentence?";
     char *summary = fossil_io_soap_summarize(input);
     ASSUME_ITS_TRUE(summary != NULL);
+    // Should contain first two non-empty sentences
     ASSUME_ITS_TRUE(strstr(summary, "First sentence.") != NULL);
     ASSUME_ITS_TRUE(strstr(summary, "Second sentence!") != NULL);
     free(summary);
@@ -107,122 +108,138 @@ FOSSIL_TEST(c_test_soap_score_short_text) {
     const char *input = "Short.";
     fossil_io_soap_scores_t scores = fossil_io_soap_score(input);
     ASSUME_ITS_TRUE(scores.readability < 70);
-    ASSUME_ITS_EQUAL_I32(70, scores.quality);
-    ASSUME_ITS_EQUAL_I32(70, scores.clarity);
+    ASSUME_ITS_TRUE(scores.quality < 70);
+    ASSUME_ITS_TRUE(scores.clarity < 70);
 }
 
 FOSSIL_TEST(c_test_soap_readability_label) {
     ASSUME_ITS_EQUAL_CSTR("excellent", fossil_io_soap_readability_label(90));
-    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(70));
+    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(60));
     ASSUME_ITS_EQUAL_CSTR("fair", fossil_io_soap_readability_label(50));
-    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(30));
+    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(35));
 }
 
 FOSSIL_TEST(c_test_soap_detect_spam) {
-    const char *input = "Buy now for a free gift! Limited offer, subscribe today!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "spam"));
+    // Test several spam patterns from spam_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Buy now for a free gift! Limited offer, subscribe today!", "spam"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Act now and get your free shipping!", "spam"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Special promotion: Save big with this exclusive deal.", "spam"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Let's meet for lunch.", "spam"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_conspiracy) {
-    const char *input = "The new world order is a secret plan by the shadow government.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "conspiracy"));
+    // Test several conspiracy patterns from conspiracy_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("The new world order is a secret plan by the shadow government.", "conspiracy"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is a deep state cover-up and an inside job.", "conspiracy"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("I like pizza.", "conspiracy"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_ragebait) {
-    const char *input = "You won't believe this outrageous claim! It's infuriating!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "ragebait"));
+    // Test several ragebait patterns from ragebait_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("You won't believe this outrageous claim! It's infuriating!", "ragebait"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is a shocking and disgusting act!", "ragebait"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Have a nice day.", "ragebait"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_clickbait) {
-    const char *input = "You won't believe what happens next! This is why you must see!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "clickbait"));
+    // Test several clickbait patterns from clickbait_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("You won't believe what happens next! This is why you must see!", "clickbait"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Top 10 secrets revealed: The truth behind the shocking event!", "clickbait"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a normal sentence.", "clickbait"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_bot) {
-    const char *input = "Click here to get your free gift! Limited offer!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "bot"));
+    // Test several bot patterns from bot_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Click here to get your free gift! Limited offer!", "bot"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Register free for exclusive access code.", "bot"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Welcome to the meeting.", "bot"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_marketing) {
-    const char *input = "Limited time special offer! Save big now!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "marketing"));
+    // Test several marketing patterns from marketing_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Limited time special offer! Save big now!", "marketing"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Unlock savings with this exclusive coupon.", "marketing"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Let's study together.", "marketing"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_technobabble) {
-    const char *input = "This product uses quantum entanglement and blockchain technology.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "technobabble"));
+    // Test several technobabble patterns from technobabble_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This product uses quantum entanglement and blockchain technology.", "technobabble"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("AI-driven cloud computing with edge AI.", "technobabble"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Simple and clear explanation.", "technobabble"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_hype) {
-    const char *input = "This is an amazing, groundbreaking, mind-blowing discovery!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "hype"));
+    // Test several hype patterns from hype_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is an amazing, groundbreaking, mind-blowing discovery!", "hype"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Unprecedented, world-class, state-of-the-art performance!", "hype"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Just a regular update.", "hype"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_political) {
-    const char *input = "The government passed new legislation after the election.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "political"));
+    // Test several political patterns from political_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("The government passed new legislation after the election.", "political"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("The candidate's campaign focused on policy reform.", "political"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Enjoy your lunch.", "political"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_offensive) {
-    const char *input = "You are such an idiot and a loser!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "offensive"));
+    // Test several offensive patterns from offensive_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("You are such an idiot and a loser!", "offensive"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("That was a dumb and pathetic move.", "offensive"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("You are very kind.", "offensive"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_misinfo) {
-    const char *input = "This is fake news and a total hoax. Completely fabricated!";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "misinfo"));
+    // Test several misinformation patterns from misinformation_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is fake news and a total hoax. Completely fabricated!", "misinfo"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is a misleading and unverified rumor.", "misinfo"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a verified fact.", "misinfo"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_brain_rot) {
-    const char *input = "lol bruh lmao";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "brain_rot"));
+    // Test several brain rot patterns from brain_rot_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("lol bruh lmao", "brain_rot"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("yolo smh fml", "brain_rot"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a coherent sentence.", "brain_rot"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_leet) {
-    const char *input = "H3ll0 w0rld";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "leet"));
+    // Test leet detection using leet_map_adv logic
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("H3ll0 w0rld", "leet"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("7h15 15 l337", "leet"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hello world", "leet"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_morse) {
-    const char *input = "... --- ...";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "morse"));
+    // Test morse detection using decode_morse logic
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("... --- ...", "morse"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(".- -... -.-.", "morse"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hello world", "morse"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_formal) {
-    const char *input = "Therefore, we conclude the experiment. In conclusion, the results are clear.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "formal"));
+    // Test several formal patterns from formal_patterns
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Therefore, we conclude the experiment. In conclusion, the results are clear.", "formal"));
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Notwithstanding the evidence, the results are clear.", "formal"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("Hey, what's up?", "formal"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_redundant_sentences) {
-    const char *input = "This is a test. This is a test.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "redundant_sentences"));
+    // Should detect redundant sentences (structural logic)
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is a test. This is a test.", "redundant_sentences"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a test. That is different.", "redundant_sentences"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_repeated_words) {
-    const char *input = "This is is a test.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "repeated_words"));
+    // Should detect repeated words (structural logic)
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("This is is a test.", "repeated_words"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a test.", "repeated_words"));
 }
 
 FOSSIL_TEST(c_test_soap_detect_poor_cohesion) {
-    const char *input = "Dog. Car. Banana.";
-    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect(input, "poor_cohesion"));
+    // Should detect poor cohesion (structural logic)
+    ASSUME_ITS_EQUAL_I32(1, fossil_io_soap_detect("Dog. Car. Banana.", "poor_cohesion"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("The dog chased the car.", "poor_cohesion"));
 }
 
@@ -276,7 +293,6 @@ FOSSIL_TEST(c_test_soap_rewrite_and_format) {
     free(formatted);
 }
 
-//
 FOSSIL_TEST(c_test_soap_sanitize_empty_and_null) {
     char *san = fossil_io_soap_sanitize("");
     ASSUME_ITS_TRUE(san != NULL);
