@@ -60,7 +60,7 @@ FOSSIL_TEARDOWN(c_soap_suite) {
 // ============================================================================
 
 FOSSIL_TEST(c_test_soap_sanitize_basic) {
-    const char *input = "H3ll0, W0rld!\nThis\tis\va\ttest.";
+    const char *input = "HellO, WOrld!\nThis\tis\va\ttest.";
     char *san = fossil_io_soap_sanitize(input);
     ASSUME_ITS_TRUE(san != NULL);
     // Accept "h3ll0, w0rld!" or "hello, world!" depending on sanitize implementation
