@@ -658,8 +658,8 @@ char *fossil_io_soap_sanitize(const char *text) {
     while (j > 0 && isspace((unsigned char)tmp[j-1]) && tmp[j-1] != '\n') j--;
     tmp[j] = 0;
 
-    // Normalize leet and lowercase
-    normalize_leet(tmp);
+    // Normalize lowercase
+    // normalize_leet(tmp);
     strtolower(tmp);
 
     // Remove punctuation except sentence-ending, intra-word apostrophes, and properly used commas
