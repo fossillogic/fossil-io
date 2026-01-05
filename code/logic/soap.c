@@ -564,8 +564,15 @@ static char *decode_morse(const char *text) {
 
 char *fossil_io_soap_normalize(const char *text) {
     if (!text) return NULL;
-    // Remove leading/trailing whitespace, collapse multiple spaces, advanced leet normalization, lowercase
     size_t len = strlen(text);
+    if (len == 0) {
+        // Return empty string for empty input
+        char *empty = (char *)malloc(1);
+        if (empty) empty[0] = 0;
+        return empty;
+    }
+
+    // Remove leading/trailing whitespace, collapse multiple spaces, advanced leet normalization, lowercase
     char *tmp = (char *)malloc(len + 2);
     if (!tmp) return NULL;
     size_t j = 0;
@@ -609,13 +616,21 @@ char *fossil_io_soap_normalize(const char *text) {
     out[k] = 0;
     free(tmp);
 
+    // Remove trailing spaces again (for cases like "Only one sentence. ")
+    while (k > 0 && isspace((unsigned char)out[k-1]) && out[k-1] != '\n') out[--k] = 0;
+
     return out;
 }
 
 char *fossil_io_soap_sanitize(const char *text) {
     if (!text) return NULL;
-    // Remove control chars except newline, trim leading/trailing whitespace, collapse multiple spaces
     size_t len = strlen(text);
+    if (len == 0) {
+        char *empty = (char *)malloc(1);
+        if (empty) empty[0] = 0;
+        return empty;
+    }
+    // Remove control chars except newline, trim leading/trailing whitespace, collapse multiple spaces
     char *tmp = (char *)malloc(len + 2);
     if (!tmp) return NULL;
     size_t j = 0;
@@ -625,7 +640,12 @@ char *fossil_io_soap_sanitize(const char *text) {
     while (isspace((unsigned char)text[i]) && text[i] != '\n') i++;
     for (; text[i]; i++) {
         unsigned char c = (unsigned char)text[i];
-        if (c < 32 && c != '\n') continue; // skip control chars except newline
+        if (c < 32 && c != '\n') {
+            // Replace control chars (except newline) with space
+            if (!last_space) tmp[j++] = ' ';
+            last_space = 1;
+            continue;
+        }
         if (isspace(c) && c != '\n') {
             if (!last_space) tmp[j++] = ' ';
             last_space = 1;
@@ -658,7 +678,6 @@ fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *
     const char *style_incons[16] = {NULL};
     int grammar_err_idx = 0, style_incons_idx = 0;
 
-    // Passive voice detection (improved: look for "was|were|is|are|been|being" + past participle)
     const char *p = text;
     while (*p) {
         // Count words
@@ -1065,7 +1084,7 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
     size_t len = strlen(text);
 
     // Readability: penalize short or very long text
-    if (len < 40) s.readability -= 20;
+    if (len < 40) s.readability -= 40;
     else if (len > 1000) s.readability -= 10;
 
     // Readability: penalize long sentences
@@ -1137,6 +1156,14 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
     if (s.readability < 0) s.readability = 0;
     if (s.clarity < 0) s.clarity = 0;
     if (s.quality < 0) s.quality = 0;
+
+    // For very short text, also penalize clarity and quality
+    if (len < 40) {
+        s.clarity -= 30;
+        s.quality -= 30;
+        if (s.clarity < 0) s.clarity = 0;
+        if (s.quality < 0) s.quality = 0;
+    }
 
     return s;
 }
@@ -1462,12 +1489,12 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     }
 
     // Cleanup
-    if (sentences && sentences != words) {
+    if (sentences) {
         for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
         free(sentences);
     }
 
-    if (words && words != sentences) {
+    if (words) {
         for (size_t i = 0; words[i]; i++) free(words[i]);
         free(words);
     }
@@ -1520,13 +1547,13 @@ char **fossil_io_soap_split(const char *text) {
     // Second pass: extract segments
     p = text;
     while (*p) {
-        // Skip leading whitespace
-        while (isspace((unsigned char)*p)) p++;
+        // Skip leading whitespace and control chars
+        while (*p && (isspace((unsigned char)*p) || ((unsigned char)*p < 32 && *p != '\n'))) p++;
         if (!*p) break;
         const char *start = p;
         if (!is_sentence) {
             // Word mode
-            while (*p && !isspace((unsigned char)*p)) p++;
+            while (*p && !isspace((unsigned char)*p) && ((unsigned char)*p >= 32 || *p == '\n')) p++;
         } else {
             // Sentence mode
             int in_quote = 0;
@@ -1540,9 +1567,9 @@ char **fossil_io_soap_split(const char *text) {
             }
         }
         size_t len = p - start;
+        // Trim trailing whitespace and control chars
+        while (len > 0 && (isspace((unsigned char)start[len-1]) || ((unsigned char)start[len-1] < 32 && start[len-1] != '\n'))) len--;
         if (len > 0) {
-            // Trim trailing whitespace
-            while (len > 0 && isspace((unsigned char)start[len-1])) len--;
             char *s = (char*)malloc(len + 1);
             if (s) {
                 strncpy(s, start, len);
@@ -1565,37 +1592,50 @@ char *fossil_io_soap_reflow(const char *text, int width) {
     int col = 0;
     size_t oi = 0;
     const char *p = text;
-    int last_space_idx = -1;
-    size_t last_space_oi = 0;
+    int last_space_oi = -1;
+    int last_space_col = 0;
 
     while (*p) {
         if (*p == '\n') {
             out[oi++] = *p++;
             col = 0;
-            last_space_idx = -1;
+            last_space_oi = -1;
             continue;
         }
         if (isspace((unsigned char)*p)) {
-            last_space_idx = (int)(p - text);
-            last_space_oi = oi;
-            out[oi++] = *p++;
-            col++;
+            // collapse multiple spaces/tabs to a single space
+            if (oi > 0 && out[oi-1] != ' ' && out[oi-1] != '\n') {
+                out[oi++] = ' ';
+                col++;
+                last_space_oi = (int)oi - 1;
+                last_space_col = col - 1;
+            }
+            // skip all consecutive whitespace
+            while (isspace((unsigned char)*p)) ++p;
             continue;
         }
         out[oi++] = *p++;
         col++;
         if (col >= width) {
             // Try to break at last space
-            if (last_space_idx >= 0 && last_space_oi > 0) {
+            if (last_space_oi >= 0) {
                 out[last_space_oi] = '\n';
+                // recalc col: chars since last_space_oi
                 col = (int)(oi - last_space_oi - 1);
-                last_space_idx = -1;
+                last_space_oi = -1;
             } else {
                 out[oi++] = '\n';
                 col = 0;
             }
         }
+        // update last_space_oi if this char is a space (for next round)
+        if (oi > 0 && out[oi-1] == ' ') {
+            last_space_oi = (int)oi - 1;
+            last_space_col = col - 1;
+        }
     }
+    // Remove trailing space before final newline
+    while (oi > 0 && out[oi-1] == ' ') oi--;
     out[oi] = 0;
     return out;
 }
@@ -1621,7 +1661,8 @@ char *fossil_io_soap_capitalize(const char *text, int mode) {
                 if (*p == '.' && *(p+1) == '.' && *(p+2) == '.') {
                     p += 2; // skip ellipsis
                 }
-                cap = 1;
+                // Only set cap if not at end of string
+                if (*(p+1)) cap = 1;
             }
             // Also capitalize after line breaks
             if (*p == '\n') cap = 1;
@@ -1648,17 +1689,16 @@ char *fossil_io_soap_capitalize(const char *text, int mode) {
 char *fossil_io_soap_suggest(const char *text) {
     if (!text) return NULL;
 
-    // Start with a sanitized and normalized copy
     char *norm = fossil_io_soap_sanitize(text);
     if (!norm) return NULL;
 
-    // Apply grammar correction
     char *corrected = fossil_io_soap_correct_grammar(norm);
     free(norm);
     if (!corrected) return NULL;
 
-    // Remove excessive whitespace
-    char *out = malloc(strlen(corrected) + 1);
+    // Collapse multiple spaces, but preserve trailing space if present in input
+    size_t len = strlen(corrected);
+    char *out = malloc(len + 2);
     if (!out) { free(corrected); return NULL; }
     char *p = corrected, *q = out;
     int last_space = 0;
@@ -1674,23 +1714,63 @@ char *fossil_io_soap_suggest(const char *text) {
     }
     *q = 0;
 
+    // If input had trailing space, preserve it
+    if (len > 0 && isspace((unsigned char)corrected[len-1]) && q > out && out[q-out-1] != ' ') {
+        *q++ = ' ';
+        *q = 0;
+    }
+
     free(corrected);
 
-    // Optionally, capitalize the first letter of each sentence
+    // Capitalize the first letter of each sentence
     char *final = fossil_io_soap_capitalize(out, 0);
     free(out);
 
     return final;
 }
 
-char *fossil_io_soap_summarize(const char *text){
+char *fossil_io_soap_summarize(const char *text) {
     if (!text) return NULL;
+    size_t textlen = strlen(text);
+    if (textlen == 0) return dupstr("");
+
     char **sentences = fossil_io_soap_split(text);
     if (!sentences) return dupstr(text);
 
-    // Find the most informative sentences (first non-empty, and next with most keywords)
+    // Count non-empty sentences
+    int nonempty = 0;
+    for (int i = 0; sentences[i]; i++) {
+        char *s = sentences[i];
+        int non_ws = 0;
+        for (char *p = s; *p; p++) if (!isspace((unsigned char)*p)) { non_ws = 1; break; }
+        if (non_ws) nonempty++;
+    }
+
+    // If only one non-empty sentence, return it as summary
+    if (nonempty == 1) {
+        char *result = NULL;
+        for (int i = 0; sentences[i]; i++) {
+            char *s = sentences[i];
+            int non_ws = 0;
+            for (char *p = s; *p; p++) if (!isspace((unsigned char)*p)) { non_ws = 1; break; }
+            if (non_ws) {
+                result = dupstr(s);
+                break;
+            }
+        }
+        for (int i = 0; sentences[i]; i++) free(sentences[i]);
+        free(sentences);
+        return result ? result : dupstr("");
+    }
+
+    // Otherwise, summarize with up to two non-empty sentences
     int max_sentences = 2;
     char *out = malloc(1024);
+    if (!out) {
+        for (int i = 0; sentences[i]; i++) free(sentences[i]);
+        free(sentences);
+        return NULL;
+    }
     out[0] = 0;
 
     int count = 0;
@@ -1703,7 +1783,8 @@ char *fossil_io_soap_summarize(const char *text){
 
         // Add sentence to summary
         strcat(out, s);
-        if (s[strlen(s)-1] != '.' && s[strlen(s)-1] != '!' && s[strlen(s)-1] != '?')
+        size_t slen = strlen(s);
+        if (slen == 0 || (s[slen-1] != '.' && s[slen-1] != '!' && s[slen-1] != '?'))
             strcat(out, ".");
         strcat(out, " ");
         count++;
