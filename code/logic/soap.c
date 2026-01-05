@@ -591,6 +591,19 @@ static int soap_is_abbrev(const char *s) {
     return 0;
 }
 
+static int soap_is_sentence_end(char c) {
+    return c == '.' || c == '!' || c == '?';
+}
+
+static int soap_is_word_char(char c) {
+    return isalnum((unsigned char)c) || c == '\'';
+}
+
+static int soap_case_split(char prev, char curr) {
+    return islower((unsigned char)prev) &&
+           isupper((unsigned char)curr);
+}
+
 /* ============================================================================
  * Leetspeak normalization
  * ============================================================================ */
