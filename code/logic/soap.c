@@ -1593,8 +1593,6 @@ char *fossil_io_soap_reflow(const char *text, int width) {
     size_t oi = 0;
     const char *p = text;
     int last_space_oi = -1;
-    int last_space_col = 0;
-
     while (*p) {
         if (*p == '\n') {
             out[oi++] = *p++;
@@ -1608,7 +1606,6 @@ char *fossil_io_soap_reflow(const char *text, int width) {
                 out[oi++] = ' ';
                 col++;
                 last_space_oi = (int)oi - 1;
-                last_space_col = col - 1;
             }
             // skip all consecutive whitespace
             while (isspace((unsigned char)*p)) ++p;
@@ -1631,7 +1628,6 @@ char *fossil_io_soap_reflow(const char *text, int width) {
         // update last_space_oi if this char is a space (for next round)
         if (oi > 0 && out[oi-1] == ' ') {
             last_space_oi = (int)oi - 1;
-            last_space_col = col - 1;
         }
     }
     // Remove trailing space before final newline
