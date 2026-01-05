@@ -64,9 +64,9 @@ FOSSIL_TEST(c_test_soap_sanitize_basic) {
     char *san = fossil_io_soap_sanitize(input);
     ASSUME_ITS_TRUE(san != NULL);
     // Accept "h3ll0, w0rld!" or "hello, world!" depending on sanitize implementation
-    ASSUME_ITS_TRUE(strstr(san, "hello, world!") != NULL || strstr(san, "h3ll0, w0rld!") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(san, "hello, world!");
     // Accept "this is a test." or "this is a test" depending on sanitize implementation
-    ASSUME_ITS_TRUE(strstr(san, "this is a test.") != NULL || strstr(san, "this is a test") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(san, "this is a test.");
     free(san);
 }
 
@@ -74,7 +74,7 @@ FOSSIL_TEST(c_test_soap_suggest_collapses_spaces) {
     const char *input = "This   is   a    test.";
     char *suggest = fossil_io_soap_suggest(input);
     ASSUME_ITS_TRUE(suggest != NULL);
-    ASSUME_ITS_EQUAL_CSTR("This is a test.", suggest);
+    ASSUME_ITS_EQUAL_CSTR(suggest, "This is a test.");
     free(suggest);
 }
 
@@ -83,8 +83,8 @@ FOSSIL_TEST(c_test_soap_summarize_two_sentences) {
     char *summary = fossil_io_soap_summarize(input);
     ASSUME_ITS_TRUE(summary != NULL);
     // Should contain first two non-empty sentences
-    ASSUME_ITS_TRUE(strstr(summary, "First sentence.") != NULL);
-    ASSUME_ITS_TRUE(strstr(summary, "Second sentence!") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(summary, "First sentence.");
+    ASSUME_ITS_CSTR_CONTAINS(summary, "Second sentence!");
     free(summary);
 }
 
@@ -92,8 +92,8 @@ FOSSIL_TEST(c_test_soap_correct_grammar) {
     const char *input = "i am here.  this is a test! isn't it?";
     char *out = fossil_io_soap_correct_grammar(input);
     ASSUME_ITS_TRUE(out != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "I am here.") != NULL);
-    ASSUME_ITS_TRUE(strstr(out, "This is a test!") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(out, "I am here.");
+    ASSUME_ITS_CSTR_CONTAINS(out, "This is a test!");
     free(out);
 }
 
@@ -108,10 +108,10 @@ FOSSIL_TEST(c_test_soap_score_short_text) {
 }
 
 FOSSIL_TEST(c_test_soap_readability_label) {
-    ASSUME_ITS_EQUAL_CSTR("excellent", fossil_io_soap_readability_label(90));
-    ASSUME_ITS_EQUAL_CSTR("good", fossil_io_soap_readability_label(60));
-    ASSUME_ITS_EQUAL_CSTR("fair", fossil_io_soap_readability_label(50));
-    ASSUME_ITS_EQUAL_CSTR("poor", fossil_io_soap_readability_label(35));
+    ASSUME_ITS_EQUAL_CSTR(fossil_io_soap_readability_label(90), "excellent");
+    ASSUME_ITS_EQUAL_CSTR(fossil_io_soap_readability_label(60), "good");
+    ASSUME_ITS_EQUAL_CSTR(fossil_io_soap_readability_label(50), "fair");
+    ASSUME_ITS_EQUAL_CSTR(fossil_io_soap_readability_label(35), "poor");
 }
 
 FOSSIL_TEST(c_test_soap_detect_spam) {
@@ -248,9 +248,9 @@ FOSSIL_TEST(c_test_soap_split_sentences) {
     char **arr = fossil_io_soap_split(input);
     ASSUME_ITS_TRUE(arr != NULL);
     ASSUME_ITS_TRUE(arr[0] && arr[1] && arr[2]);
-    ASSUME_ITS_EQUAL_CSTR("One.", arr[0]);
-    ASSUME_ITS_EQUAL_CSTR("Two!", arr[1]);
-    ASSUME_ITS_EQUAL_CSTR("Three?", arr[2]);
+    ASSUME_ITS_EQUAL_CSTR(arr[0], "One.");
+    ASSUME_ITS_EQUAL_CSTR(arr[1], "Two!");
+    ASSUME_ITS_EQUAL_CSTR(arr[2], "Three?");
     for (int i = 0; arr[i]; ++i) free(arr[i]);
     free(arr);
 }
@@ -267,7 +267,7 @@ FOSSIL_TEST(c_test_soap_normalize_leet_and_case) {
     const char *input = "H3LL0 W0RLD";
     char *norm = fossil_io_soap_normalize(input);
     ASSUME_ITS_TRUE(norm != NULL);
-    ASSUME_ITS_EQUAL_CSTR("hello world", norm);
+    ASSUME_ITS_EQUAL_CSTR(norm, "hello world");
     free(norm);
 }
 
@@ -276,8 +276,8 @@ FOSSIL_TEST(c_test_soap_capitalize_modes) {
     char *sent = fossil_io_soap_capitalize(input, 0);
     char *title = fossil_io_soap_capitalize(input, 1);
     ASSUME_ITS_TRUE(sent != NULL && title != NULL);
-    ASSUME_ITS_TRUE(strstr(sent, "Hello world.") != NULL);
-    ASSUME_ITS_TRUE(strstr(title, "Hello World.") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(sent, "Hello world.");
+    ASSUME_ITS_CSTR_CONTAINS(title, "Hello World.");
     free(sent);
     free(title);
 }
@@ -287,8 +287,8 @@ FOSSIL_TEST(c_test_soap_rewrite_and_format) {
     char *rewritten = fossil_io_soap_rewrite(input);
     char *formatted = fossil_io_soap_format(input);
     ASSUME_ITS_TRUE(rewritten != NULL && formatted != NULL);
-    ASSUME_ITS_TRUE(strstr(rewritten, "This is a test.") != NULL);
-    ASSUME_ITS_TRUE(strstr(formatted, "This is a test.") != NULL);
+    ASSUME_ITS_CSTR_CONTAINS(rewritten, "This is a test.");
+    ASSUME_ITS_CSTR_CONTAINS(formatted, "This is a test.");
     free(rewritten);
     free(formatted);
 }
@@ -296,7 +296,7 @@ FOSSIL_TEST(c_test_soap_rewrite_and_format) {
 FOSSIL_TEST(c_test_soap_sanitize_empty_and_null) {
     char *san = fossil_io_soap_sanitize("");
     ASSUME_ITS_TRUE(san != NULL);
-    ASSUME_ITS_EQUAL_CSTR("", san);
+    ASSUME_ITS_EQUAL_CSTR(san, "");
     free(san);
 
     san = fossil_io_soap_sanitize(NULL);
@@ -316,19 +316,19 @@ FOSSIL_TEST(c_test_soap_suggest_improvement) {
     const char *input = "This\tis\va test.";
     char *suggest = fossil_io_soap_suggest(input);
     ASSUME_ITS_TRUE(suggest != NULL);
-    ASSUME_ITS_EQUAL_CSTR("This is a test.", suggest);
+    ASSUME_ITS_EQUAL_CSTR(suggest, "This is a test.");
     free(suggest);
 }
 
 FOSSIL_TEST(c_test_soap_summarize_empty_and_short) {
     char *summary = fossil_io_soap_summarize("");
     ASSUME_ITS_TRUE(summary != NULL);
-    ASSUME_ITS_EQUAL_CSTR("", summary);
+    ASSUME_ITS_EQUAL_CSTR(summary, "");
     free(summary);
 
     summary = fossil_io_soap_summarize("Only one sentence.");
     ASSUME_ITS_TRUE(summary != NULL);
-    ASSUME_ITS_EQUAL_CSTR("Only one sentence.", summary);
+    ASSUME_ITS_EQUAL_CSTR(summary, "Only one sentence.");
     free(summary);
 }
 
