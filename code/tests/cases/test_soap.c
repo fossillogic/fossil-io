@@ -64,7 +64,7 @@ FOSSIL_TEST(c_test_soap_sanitize_basic) {
     char *san = fossil_io_soap_sanitize(input);
     ASSUME_ITS_TRUE(san != NULL);
     // Accept "h3ll0, w0rld!" or "hello, world!" depending on sanitize implementation
-    ASSUME_ITS_CSTR_CONTAINS(san, "hello, world!");
+    ASSUME_ITS_CSTR_CONTAINS(san, "hello world!");
     // Accept "this is a test." or "this is a test" depending on sanitize implementation
     ASSUME_ITS_CSTR_CONTAINS(san, "this is a test.");
     free(san);

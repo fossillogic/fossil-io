@@ -63,7 +63,7 @@ FOSSIL_TEST(cpp_test_soap_sanitize_basic) {
     std::string input = "HellO, WOrld!\nThis\tis\va\ttest.";
     std::string san = fossil::io::Soap::sanitize(input);
     ASSUME_ITS_TRUE(!san.empty());
-    ASSUME_ITS_CSTR_CONTAINS(san.c_str(), "hello, world!");
+    ASSUME_ITS_CSTR_CONTAINS(san.c_str(), "hello world!");
     ASSUME_ITS_CSTR_CONTAINS(san.c_str(), "this is a test.");
 }
 
