@@ -658,9 +658,35 @@ char *fossil_io_soap_sanitize(const char *text) {
     while (j > 0 && isspace((unsigned char)tmp[j-1]) && tmp[j-1] != '\n') j--;
     tmp[j] = 0;
 
-    char *norm = fossil_io_soap_normalize(tmp);
+    // Normalize leet and lowercase
+    normalize_leet(tmp);
+    strtolower(tmp);
+
+    // Remove punctuation except sentence-ending and intra-word apostrophes
+    char *out = (char *)malloc(strlen(tmp) + 1);
+    if (!out) { free(tmp); return NULL; }
+    size_t k = 0;
+    for (size_t m = 0; tmp[m]; m++) {
+        char c = tmp[m];
+        if (isalnum((unsigned char)c) || c == ' ' || c == '\n' ||
+            c == '.' || c == '!' || c == '?' ||
+            (c == '\'' && m > 0 && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1]))) {
+            out[k++] = c;
+        }
+    }
+    out[k] = 0;
     free(tmp);
-    return norm;
+
+    // Remove trailing spaces again
+    while (k > 0 && isspace((unsigned char)out[k-1]) && out[k-1] != '\n') out[--k] = 0;
+
+    // Ensure sentence ends with punctuation if not already
+    if (k > 0 && !strchr(".!?", out[k-1])) {
+        out[k++] = '.';
+        out[k] = 0;
+    }
+
+    return out;
 }
 
 /* ============================================================================
