@@ -662,7 +662,7 @@ char *fossil_io_soap_sanitize(const char *text) {
     normalize_leet(tmp);
     strtolower(tmp);
 
-    // Remove punctuation except sentence-ending and intra-word apostrophes
+    // Remove punctuation except sentence-ending, intra-word apostrophes, and properly used commas
     char *out = (char *)malloc(strlen(tmp) + 1);
     if (!out) { free(tmp); return NULL; }
     size_t k = 0;
@@ -670,6 +670,7 @@ char *fossil_io_soap_sanitize(const char *text) {
         char c = tmp[m];
         if (isalnum((unsigned char)c) || c == ' ' || c == '\n' ||
             c == '.' || c == '!' || c == '?' ||
+            (c == ',' && m > 0 && isalnum((unsigned char)tmp[m-1]) && isalnum((unsigned char)tmp[m+1])) ||
             (c == '\'' && m > 0 && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1]))) {
             out[k++] = c;
         }
