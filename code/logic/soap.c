@@ -30,6 +30,164 @@
 #include <time.h>
 #include <stdio.h>
 
+/* ============================================================================
+ * Internal regex logic
+ * ============================================================================ */
+
+static inline int is_word_char(char c) {
+    return isalnum((unsigned char)c) || c == '\'';
+}
+
+static inline int is_sentence_punct(char c) {
+    return c == '.' || c == '!' || c == '?';
+}
+
+static inline int is_inner_punct(char c) {
+    return c == ',' || c == ':' || c == ';';
+}
+
+static inline int is_boundary(char prev, char curr) {
+    return is_word_char(prev) && !is_word_char(curr);
+}
+
+static int match_word_pattern(const char *text, size_t pos, const char *pat) {
+    size_t plen = strlen(pat);
+
+    if (strncasecmp(text + pos, pat, plen) != 0)
+        return 0;
+
+    char before = (pos == 0) ? ' ' : text[pos - 1];
+    char after  = text[pos + plen];
+
+    if (is_word_char(before)) return 0;
+    if (is_word_char(after))  return 0;
+
+    return 1;
+}
+
+typedef struct {
+    const char *from;
+    const char *to;
+} rewrite_rule_t;
+
+static char *soap_rewrite_stream(
+    const char *text,
+    const rewrite_rule_t *rules
+) {
+    size_t cap = strlen(text) * 2 + 64;
+    char *out = malloc(cap);
+    if (!out) return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    while (*p) {
+        int replaced = 0;
+
+        for (int i = 0; rules[i].from; i++) {
+            size_t len = strlen(rules[i].from);
+
+            if (strncasecmp(p, rules[i].from, len) == 0) {
+                memcpy(q, rules[i].to, strlen(rules[i].to));
+                q += strlen(rules[i].to);
+                p += len;
+                replaced = 1;
+                break;
+            }
+        }
+
+        if (!replaced)
+            *q++ = *p++;
+    }
+
+    *q = 0;
+    return out;
+}
+
+static int is_case_split(char prev, char curr) {
+    return islower((unsigned char)prev) &&
+           isupper((unsigned char)curr);
+}
+
+static int looks_like_word(const char *s, int len) {
+    return len >= 3 && len <= 20;
+}
+
+char *soap_decluster_words(const char *text) {
+    size_t cap = strlen(text) * 2 + 32;
+    char *out = malloc(cap);
+    if (!out) return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+
+    while (*p) {
+        if (prev &&
+            isalpha((unsigned char)prev) &&
+            isalpha((unsigned char)*p) &&
+            is_case_split(prev, *p)) {
+            *q++ = ' ';
+        }
+
+        *q++ = *p;
+        prev = *p++;
+    }
+
+    *q = 0;
+    return out;
+}
+
+static int should_split_sentence(char prev, char curr) {
+    if (!isalpha((unsigned char)prev) || !isupper((unsigned char)curr))
+        return 0;
+
+    return 1;
+}
+
+static void normalize_punctuation(const char *in, char *out) {
+    char prev = 0;
+    int dots = 0;
+
+    while (*in) {
+        if (*in == '.') {
+            dots++;
+            if (dots <= 3)
+                *out++ = '.';
+        } else {
+            dots = 0;
+            if (*in == '!' || *in == '?') {
+                if (*in != prev)
+                    *out++ = *in;
+            } else {
+                *out++ = *in;
+            }
+        }
+        prev = *in++;
+    }
+    *out = 0;
+}
+
+static void finalize_sentences(char *s) {
+    for (size_t i = 0; s[i]; i++) {
+        if (i == 0 && isalpha((unsigned char)s[i]))
+            s[i] = toupper((unsigned char)s[i]);
+
+        if (is_sentence_punct(s[i]) && s[i+1] == ' ')
+            if (isalpha((unsigned char)s[i+2]))
+                s[i+2] = toupper((unsigned char)s[i+2]);
+    }
+
+    size_t len = strlen(s);
+    if (len && !is_sentence_punct(s[len-1])) {
+        s[len++] = '.';
+        s[len] = 0;
+    }
+}
+
+
+
 // LOOKUP MAP
 
 typedef struct { const char *pattern; } pattern_t;
@@ -1876,4 +2034,120 @@ char *fossil_io_soap_format(const char *text) {
     free(capitalized);
 
     return formatted;
+}
+
+char *fossil_io_soap_declutter(const char *text) {
+    if (!text)
+        return NULL;
+
+    size_t len = strlen(text);
+    size_t cap = len * 2 + 32;
+
+    char *out = (char *)malloc(cap);
+    if (!out)
+        return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+    int space_pending = 0;
+
+    while (*p) {
+        char c = *p;
+
+        /* normalize whitespace */
+        if (isspace((unsigned char)c)) {
+            space_pending = 1;
+            p++;
+            continue;
+        }
+
+        /* camelCase / word boundary split */
+        if (prev &&
+            soap_is_word_char(prev) &&
+            soap_is_word_char(c) &&
+            soap_case_split(prev, c)) {
+            *q++ = ' ';
+        }
+        else if (space_pending && q > out && q[-1] != ' ') {
+            *q++ = ' ';
+        }
+
+        *q++ = c;
+        prev = c;
+        space_pending = 0;
+        p++;
+    }
+
+    /* trim trailing space */
+    if (q > out && q[-1] == ' ')
+        q--;
+
+    *q = '\0';
+    return out;
+}
+
+char *fossil_io_soap_punctuate(const char *text) {
+    if (!text)
+        return NULL;
+
+    size_t len = strlen(text);
+    size_t cap = len * 2 + 32;
+
+    char *out = (char *)malloc(cap);
+    if (!out)
+        return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+    int dots = 0;
+    int sentence_start = 1;
+
+    while (*p) {
+        char c = *p++;
+
+        /* normalize ellipsis */
+        if (c == '.') {
+            dots++;
+            if (dots <= 3)
+                *q++ = '.';
+            prev = '.';
+            continue;
+        } else {
+            dots = 0;
+        }
+
+        /* collapse repeated ! or ? */
+        if ((c == '!' || c == '?') && c == prev)
+            continue;
+
+        /* auto-space after sentence punctuation */
+        if (soap_is_sentence_end(prev) && c != ' ') {
+            *q++ = ' ';
+            sentence_start = 1;
+        }
+
+        /* capitalize sentence start */
+        if (sentence_start && isalpha((unsigned char)c)) {
+            c = (char)toupper((unsigned char)c);
+            sentence_start = 0;
+        }
+
+        if (soap_is_sentence_end(c))
+            sentence_start = 1;
+
+        *q++ = c;
+        prev = c;
+    }
+
+    /* ensure terminal punctuation */
+    if (q > out && !soap_is_sentence_end(q[-1])) {
+        *q++ = '.';
+    }
+
+    *q = '\0';
+    return out;
 }
