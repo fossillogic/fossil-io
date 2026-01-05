@@ -203,9 +203,6 @@ FOSSIL_TEST(cpp_test_soap_detect_redundant_sentences) {
 
 FOSSIL_TEST(cpp_test_soap_detect_repeated_words) {
     int repeated = fossil::io::Soap::detect("This is is a test.", "repeated_words");
-    if (repeated != 1) {
-        printf("Warning: repeated_words not detected as expected\n");
-    }
     ASSUME_ITS_TRUE(repeated == 1 || repeated == 0);
     ASSUME_ITS_EQUAL_I32(0, fossil::io::Soap::detect("This is a test.", "repeated_words"));
 }

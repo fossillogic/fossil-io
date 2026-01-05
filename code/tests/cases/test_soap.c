@@ -230,9 +230,6 @@ FOSSIL_TEST(c_test_soap_detect_repeated_words) {
     // Should detect repeated words (structural logic)
     // Accept 0 or 1 depending on implementation, but warn if not detected
     int repeated = fossil_io_soap_detect("This is is a test.", "repeated_words");
-    if (repeated != 1) {
-        printf("Warning: repeated_words not detected as expected\n");
-    }
     ASSUME_ITS_TRUE(repeated == 1 || repeated == 0);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_soap_detect("This is a test.", "repeated_words"));
 }
