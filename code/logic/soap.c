@@ -66,52 +66,9 @@ static int match_word_pattern(const char *text, size_t pos, const char *pat) {
     return 1;
 }
 
-typedef struct {
-    const char *from;
-    const char *to;
-} rewrite_rule_t;
-
-static char *soap_rewrite_stream(
-    const char *text,
-    const rewrite_rule_t *rules
-) {
-    size_t cap = strlen(text) * 2 + 64;
-    char *out = malloc(cap);
-    if (!out) return NULL;
-
-    const char *p = text;
-    char *q = out;
-
-    while (*p) {
-        int replaced = 0;
-
-        for (int i = 0; rules[i].from; i++) {
-            size_t len = strlen(rules[i].from);
-
-            if (strncasecmp(p, rules[i].from, len) == 0) {
-                memcpy(q, rules[i].to, strlen(rules[i].to));
-                q += strlen(rules[i].to);
-                p += len;
-                replaced = 1;
-                break;
-            }
-        }
-
-        if (!replaced)
-            *q++ = *p++;
-    }
-
-    *q = 0;
-    return out;
-}
-
 static int is_case_split(char prev, char curr) {
     return islower((unsigned char)prev) &&
            isupper((unsigned char)curr);
-}
-
-static int looks_like_word(const char *s, int len) {
-    return len >= 3 && len <= 20;
 }
 
 char *soap_decluster_words(const char *text) {
@@ -138,13 +95,6 @@ char *soap_decluster_words(const char *text) {
 
     *q = 0;
     return out;
-}
-
-static int should_split_sentence(char prev, char curr) {
-    if (!isalpha((unsigned char)prev) || !isupper((unsigned char)curr))
-        return 0;
-
-    return 1;
 }
 
 static void normalize_punctuation(const char *in, char *out) {
@@ -1231,7 +1181,6 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
         while (*p && !is_word_char(*p)) p++;
         if (!*p) break;
         int cap = 1, lenw = 0;
-        const char *start = p;
         while (*p && is_word_char(*p)) {
             if (islower((unsigned char)*p)) cap = 0;
             lenw++;
