@@ -108,7 +108,7 @@ typedef struct {
  * Internal logic:
  *  - Duplicates the input string.
  *  - Replaces control characters (except newline) with spaces.
- *  - Normalizes leetspeak and lowercases the text.
+ *  - Lowercases the text.
  *  - Returns the sanitized result.
  */
 char *fossil_io_soap_sanitize(const char *text);
@@ -198,10 +198,10 @@ const char *fossil_io_soap_readability_label(int readability_score);
  * Generic detection interface for a single detector identifier.
  *
  * Internal logic:
- *  - Normalizes input (leetspeak, lowercase).
+ *  - Lowercases input.
  *  - Looks up detector patterns by ID.
  *  - Checks for pattern matches at document, sentence, and word level.
- *  - Handles special detectors (brain_rot, leet, morse, structural).
+ *  - Handles special detectors (brain_rot, structural).
  *  - Returns 1 if any pattern matches, else 0.
  * 
  * Available detector options:
@@ -217,17 +217,15 @@ const char *fossil_io_soap_readability_label(int readability_score);
  *   - "offensive"
  *   - "misinfo"
  *   - "brain_rot"
- *   - "leet"
- *   - "morse"
  *   - "formal"
  *   - "casual"
  *   - "sarcasm"
  *   - "neutral"
  *   - "aggressive"
  *   - "emotional"
- *   - "passive_aggressive"
+ *   - "passive"
  *   - "snowflake"
- *   - "redundant_sentences"
+ *   - "redundant"
  *   - "poor_cohesion"
  *   - "repeated_words"
  */
@@ -258,7 +256,7 @@ char *fossil_io_soap_reflow(const char *text, int width);
  *
  * Internal logic:
  *  - Duplicates input.
- *  - Normalizes leetspeak and lowercases all letters.
+ *  - Lowercases all letters.
  *  - Returns the normalized string.
  */
 char *fossil_io_soap_normalize(const char *text);
@@ -330,6 +328,26 @@ char *fossil_io_soap_declutter(const char *text);
  *   Returns NULL on allocation failure or if text is NULL.
  */
 char *fossil_io_soap_punctuate(const char *text);
+
+/**
+ * fossil_io_soap_process
+ *
+ * Performs a full processing pipeline on the input text, including sanitization,
+ * normalization, grammar correction, capitalization, and formatting.
+ *
+ * Returns:
+ *  - Newly allocated processed string (caller owns memory)
+ *  - NULL on allocation or processing failure
+ *
+ * Internal logic:
+ *  - Sanitizes the input text.
+ *  - Normalizes whitespace and punctuation.
+ *  - Corrects grammar.
+ *  - Applies sentence capitalization.
+ *  - Formats the text for consistent indentation and line breaks.
+ *  - Returns the processed result.
+ */
+char *fossil_io_soap_process(const char *text);
 
 #ifdef __cplusplus
 }
@@ -528,9 +546,9 @@ namespace fossil {
              *   - "neutral"
              *   - "aggressive"
              *   - "emotional"
-             *   - "passive_aggressive"
+             *   - "passive"
              *   - "snowflake"
-             *   - "redundant_sentences"
+             *   - "redundant"
              *   - "poor_cohesion"
              *   - "repeated_words"
              */
@@ -641,6 +659,60 @@ namespace fossil {
              */
             static std::string format(const std::string &text) {
                 char *res = fossil_io_soap_format(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Declutters the input text by repairing word boundaries and whitespace.
+             * Splits camelCase/PascalCase words, normalizes excessive whitespace, and preserves numbers/symbols.
+             * Returns the decluttered string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Splits camelCase / PascalCase words
+             *   - Normalizes excessive whitespace
+             *   - Preserves numbers and symbols
+             */
+            static std::string declutter(const std::string &text) {
+                char *res = fossil_io_soap_declutter(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Normalizes punctuation and sentence structure in the input text.
+             * Collapses repeated punctuation, normalizes ellipsis, capitalizes sentence starts, and ensures terminal punctuation.
+             * Returns the punctuated string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Collapses repeated punctuation (!!!??? → !)
+             *   - Normalizes ellipsis (...)
+             *   - Capitalizes sentence starts
+             *   - Ensures terminal punctuation
+             */
+            static std::string punctuate(const std::string &text) {
+                char *res = fossil_io_soap_punctuate(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Performs a full processing pipeline on the input text, including sanitization, normalization,
+             * grammar correction, capitalization, and formatting.
+             * Returns the processed string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Sanitizes the input text.
+             *   - Normalizes whitespace and punctuation.
+             *   - Corrects grammar.
+             *   - Applies sentence capitalization.
+             *   - Formats the text for consistent indentation and line breaks.
+             */
+            static std::string process(const std::string &text) {
+                char *res = fossil_io_soap_process(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;

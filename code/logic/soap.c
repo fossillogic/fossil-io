@@ -453,7 +453,7 @@ static const pattern_t emotional_patterns[] = {
     { NULL }
 };
 
-static const pattern_t passive_aggressive_patterns[] = {
+static const pattern_t passive_patterns[] = {
     { "sure" }, { "whatever" }, { "fine" }, { "if you say so" }, { "okay then" },
     { "no problem" }, { "as you wish" }, { "right" }, { "yeah, sure" },
     { "if that's what you want" }, { "I guess" }, { "if you insist" },
@@ -1257,11 +1257,11 @@ static const detector_map_t detector_map[] = {
     {"neutral", neutral_patterns},
     {"aggressive", aggressive_patterns},
     {"emotional", emotional_patterns},
-    {"passive_aggressive", passive_aggressive_patterns},
+    {"passive", passive_patterns},
     {"snowflake", snowflake_patterns},
 
     /* Structural (logic handled separately) */
-    {"redundant_sentences", NULL},
+    {"redundant", NULL},
     {"poor_cohesion", NULL},
     {"repeated_words", NULL},
 
@@ -1283,7 +1283,7 @@ static const pattern_t *get_patterns(const char *detector_id) {
  * Structural detection helpers
  * ============================================================================ */
 
-static int detect_redundant_sentences(char **sentences) {
+static int detect_redundant(char **sentences) {
     if (!sentences) return 0;
     for (size_t i = 0; sentences[i]; i++) {
         // Normalize sentence i
@@ -1505,8 +1505,8 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
 
     // Structural detection
     if (!result) {
-        if (strcmp(detector_id, "redundant_sentences") == 0) {
-            result = detect_redundant_sentences(sentences);
+        if (strcmp(detector_id, "redundant") == 0) {
+            result = detect_redundant(sentences);
         } else if (strcmp(detector_id, "repeated_words") == 0) {
             result = detect_repeated_words(words);
         } else if (strcmp(detector_id, "poor_cohesion") == 0) {
@@ -2013,4 +2013,40 @@ char *fossil_io_soap_punctuate(const char *text) {
 
     *q = '\0';
     return out;
+}
+
+char *fossil_io_soap_process(const char *text) {
+    if (!text)
+        return NULL;
+
+    // Step 1: Sanitize the input text
+    char *sanitized = fossil_io_soap_sanitize(text);
+    if (!sanitized)
+        return NULL;
+
+    // Step 2: Normalize whitespace and punctuation
+    char *normalized = fossil_io_soap_punctuate(sanitized);
+    free(sanitized);
+    if (!normalized)
+        return NULL;
+
+    // Step 3: Correct grammar
+    char *corrected = fossil_io_soap_correct_grammar(normalized);
+    free(normalized);
+    if (!corrected)
+        return NULL;
+
+    // Step 4: Capitalize sentences
+    char *capitalized = fossil_io_soap_capitalize(corrected, 0);
+    free(corrected);
+    if (!capitalized)
+        return NULL;
+
+    // Step 5: Format the text for consistent indentation and line breaks
+    char *formatted = fossil_io_soap_format(capitalized);
+    free(capitalized);
+    if (!formatted)
+        return NULL;
+
+    return formatted;
 }
