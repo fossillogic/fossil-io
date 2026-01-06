@@ -599,6 +599,9 @@ char *fossil_io_soap_normalize(const char *text) {
     // Remove trailing spaces again (for cases like "Only one sentence. ")
     while (k > 0 && isspace((unsigned char)out[k-1]) && out[k-1] != '\n') out[--k] = 0;
 
+    // Defensive: check for NULL before returning
+    if (!out) return NULL;
+
     return out;
 }
 
@@ -645,17 +648,18 @@ char *fossil_io_soap_sanitize(const char *text) {
     char *out = (char *)malloc(strlen(tmp) + 1);
     if (!out) { free(tmp); return NULL; }
     size_t k = 0;
-    for (size_t m = 0; tmp[m]; m++) {
+    size_t tmplen = strlen(tmp);
+    for (size_t m = 0; m < tmplen; m++) {
         char c = tmp[m];
         if (
             is_word_char(c) ||
             c == ' ' || c == '\n' ||
             is_sentence_punct(c) ||
-            (is_inner_punct(c) && m > 0 && is_word_char(tmp[m-1]) && is_word_char(tmp[m+1]))
+            (is_inner_punct(c) && m > 0 && m + 1 < tmplen && is_word_char(tmp[m-1]) && is_word_char(tmp[m+1]))
         ) {
             // Only allow apostrophe if surrounded by alpha (intra-word)
             if (c == '\'') {
-                if (!(m > 0 && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1])))
+                if (!(m > 0 && m + 1 < tmplen && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1])))
                     continue;
             }
             out[k++] = c;
@@ -760,38 +764,44 @@ fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *
     // Grammar error: double spaces
     if (strstr(text, "  ")) {
         grammar_errors++;
-        grammar_errs[grammar_err_idx++] = "Double space detected";
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Double space detected";
         r.grammar_ok = 0;
     }
     // Grammar error: repeated punctuation (e.g. "!!", "??", "...")
     if (strstr(text, "!!") || strstr(text, "??") || strstr(text, "...")) {
         grammar_errors++;
-        grammar_errs[grammar_err_idx++] = "Repeated punctuation";
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Repeated punctuation";
         r.grammar_ok = 0;
     }
     // Grammar error: missing terminal punctuation
     size_t len = strlen(text);
     if (len > 0 && !is_sentence_punct(text[len-1])) {
         grammar_errors++;
-        grammar_errs[grammar_err_idx++] = "Missing terminal punctuation";
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Missing terminal punctuation";
         r.grammar_ok = 0;
     }
     // Grammar error: all lowercase sentence start
     if (is_word_char(text[0]) && islower((unsigned char)text[0])) {
         grammar_errors++;
-        grammar_errs[grammar_err_idx++] = "Sentence does not start with a capital letter";
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Sentence does not start with a capital letter";
         r.grammar_ok = 0;
     }
 
     // Style inconsistency: mix of "!" and "."
     if (has_exclaim && strchr(text, '.')) {
         style_inconsistencies++;
-        style_incons[style_incons_idx++] = "Mixed emotional and neutral punctuation";
+        if (style_incons_idx < 16)
+            style_incons[style_incons_idx++] = "Mixed emotional and neutral punctuation";
     }
     // Style inconsistency: mix of formal and casual
     if (has_formal && has_casual) {
         style_inconsistencies++;
-        style_incons[style_incons_idx++] = "Mix of formal and casual language";
+        if (style_incons_idx < 16)
+            style_incons[style_incons_idx++] = "Mix of formal and casual language";
     }
     // Style inconsistency: excessive capitalization
     if (has_caps && strlen(text) > 10) {
@@ -804,7 +814,8 @@ fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *
         }
         if (total > 0 && cap_count * 2 > total) {
             style_inconsistencies++;
-            style_incons[style_incons_idx++] = "Excessive capitalization";
+            if (style_incons_idx < 16)
+                style_incons[style_incons_idx++] = "Excessive capitalization";
         }
     }
 
@@ -818,8 +829,7 @@ fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *
     return r;
 }
 
-char *fossil_io_soap_correct_grammar(const char *text)
-{
+char *fossil_io_soap_correct_grammar(const char *text) {
     if (!text) return NULL;
 
     // --- Begin enhanced context-aware grammar correction ---
@@ -829,6 +839,8 @@ char *fossil_io_soap_correct_grammar(const char *text)
 
     const char *p = text;
     char *q = out;
+
+    if (!text || !out) return NULL;
 
     int new_sentence = 1;
     int last_space = 0;
@@ -1075,7 +1087,10 @@ char *fossil_io_soap_correct_grammar(const char *text)
             size_t used = q - out;
             outcap *= 2;
             char *newout = realloc(out, outcap);
-            if (!newout) { free(out); return NULL; }
+            if (!newout) {
+                free(out);
+                return NULL;
+            }
             out = newout;
             q = out + used;
         }
@@ -1116,13 +1131,17 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
     int long_sent = 0, total_sent = 0;
     if (sentences) {
         for (int i = 0; sentences[i]; i++) {
-            size_t slen = strlen(sentences[i]);
-            if (slen > 120) long_sent++;
-            total_sent++;
+            if (sentences[i]) {
+                size_t slen = strlen(sentences[i]);
+                if (slen > 120) long_sent++;
+                total_sent++;
+            }
         }
         if (total_sent > 0 && long_sent * 2 > total_sent)
             s.readability -= 10;
-        for (int i = 0; sentences[i]; i++) free(sentences[i]);
+        for (int i = 0; sentences[i]; i++) {
+            if (sentences[i]) free(sentences[i]);
+        }
         free(sentences);
     }
 
@@ -1140,10 +1159,9 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
     int repeated = 0;
     if (words) {
         for (int i = 1; words[i]; i++) {
-            // Compare words using is_word_char logic
             const char *w1 = words[i-1];
             const char *w2 = words[i];
-            // Skip if either is not a word
+            if (!w1 || !w2) continue;
             int isw1 = 0, isw2 = 0;
             for (const char *c = w1; *c; c++) if (is_word_char(*c)) { isw1 = 1; break; }
             for (const char *c = w2; *c; c++) if (is_word_char(*c)) { isw2 = 1; break; }
@@ -1151,7 +1169,9 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
             if (strcasecmp(w1, w2) == 0) repeated++;
         }
         if (repeated > 0) s.clarity -= 5;
-        for (int i = 0; words[i]; i++) free(words[i]);
+        for (int i = 0; words[i]; i++) {
+            if (words[i]) free(words[i]);
+        }
         free(words);
     }
 
@@ -1428,6 +1448,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
 
     // Document-level normalization using advanced leet normalization
     char *norm = dupstr(text);
+    if (!norm) return 0;
     strtolower(norm);
 
     const pattern_t *patterns = get_patterns(detector_id);
@@ -1451,6 +1472,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (sentences && !result) {
         for (size_t i = 0; sentences[i]; i++) {
             char *s_norm = dupstr(sentences[i]);
+            if (!s_norm) continue;
             strtolower(s_norm);
 
             if (patterns) {
@@ -1475,6 +1497,7 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (words && !result) {
         for (size_t i = 0; words[i]; i++) {
             char *w_norm = dupstr(words[i]);
+            if (!w_norm) continue;
             strtolower(w_norm);
 
             if (strcmp(detector_id, "brain_rot") == 0) {
@@ -1568,7 +1591,14 @@ char **fossil_io_soap_split(const char *text) {
         p++;
     }
 
-    char **arr = (char**)malloc(sizeof(char*) * (count + 1));
+    char **arr = NULL;
+    if (count == 0) {
+        arr = (char**)malloc(sizeof(char*) * 1);
+        if (!arr) return NULL;
+        arr[0] = NULL;
+        return arr;
+    }
+    arr = (char**)malloc(sizeof(char*) * (count + 1));
     if (!arr) return NULL;
     size_t idx = 0;
 
@@ -1622,6 +1652,15 @@ char *fossil_io_soap_reflow(const char *text, int width) {
     const char *p = text;
     int last_space_oi = -1;
     while (*p) {
+        if (oi >= len * 2) { // Prevent buffer overflow
+            size_t newcap = len * 4 + 2;
+            char *newout = realloc(out, newcap);
+            if (!newout) {
+                free(out);
+                return NULL;
+            }
+            out = newout;
+        }
         if (*p == '\n') {
             out[oi++] = *p++;
             col = 0;
@@ -1647,7 +1686,7 @@ char *fossil_io_soap_reflow(const char *text, int width) {
         col++;
         if (col >= width) {
             // Try to break at last space
-            if (last_space_oi >= 0) {
+            if (last_space_oi >= 0 && last_space_oi < (int)oi) {
                 out[last_space_oi] = '\n';
                 // recalc col: chars since last_space_oi
                 col = (int)(oi - last_space_oi - 1);
@@ -1685,12 +1724,12 @@ char *fossil_io_soap_capitalize(const char *text, int mode) {
             }
             // Sentence end: ., !, ? (not inside quotes)
             if (!in_quote && (*p == '.' || *p == '!' || *p == '?')) {
-                // Look ahead for ellipsis
-                if (*p == '.' && *(p+1) == '.' && *(p+2) == '.') {
+                // Look ahead for ellipsis, ensure bounds
+                if (*p == '.' && *(p+1) && *(p+2) && *(p+1) == '.' && *(p+2) == '.') {
                     p += 2; // skip ellipsis
                 }
                 // Only set cap if not at end of string
-                if (*(p+1)) cap = 1;
+                if (*(p+1) != '\0') cap = 1;
             }
             // Also capitalize after line breaks
             if (*p == '\n') cap = 1;
@@ -1727,7 +1766,10 @@ char *fossil_io_soap_suggest(const char *text) {
     // Collapse multiple spaces using is_word_char for word boundaries
     size_t len = strlen(corrected);
     char *out = malloc(len + 2);
-    if (!out) { free(corrected); return NULL; }
+    if (!out) {
+        free(corrected);
+        return NULL;
+    }
     char *p = corrected, *q = out;
     int last_space = 0;
     while (*p) {
@@ -1748,11 +1790,10 @@ char *fossil_io_soap_suggest(const char *text) {
         *q = 0;
     }
 
-    free(corrected);
-
     // Capitalize the first letter of each sentence using fossil_io_soap_capitalize
     char *final = fossil_io_soap_capitalize(out, 0);
     free(out);
+    free(corrected);
 
     return final;
 }
@@ -1854,27 +1895,27 @@ char *fossil_io_soap_rewrite(const char *text) {
 
     // Decluster camelCase words using is_case_split and is_word_char
     char *declustered = soap_decluster_words(norm);
-    free(norm);
+    if (norm) free(norm);
     if (!declustered) return NULL;
 
     // Correct grammar
     char *corrected = fossil_io_soap_correct_grammar(declustered);
-    free(declustered);
+    if (declustered) free(declustered);
     if (!corrected) return NULL;
 
     // Normalize punctuation using is_sentence_punct and is_inner_punct
     size_t clen = strlen(corrected);
     char *punct_norm = malloc(clen + 8);
-    if (!punct_norm) { free(corrected); return NULL; }
+    if (!punct_norm) { if (corrected) free(corrected); return NULL; }
     normalize_punctuation(corrected, punct_norm);
-    free(corrected);
+    if (corrected) free(corrected);
 
     // Capitalize sentences using finalize_sentences and is_sentence_punct
     finalize_sentences(punct_norm);
 
     // Reflow to 80 columns
     char *reflowed = fossil_io_soap_reflow(punct_norm, 80);
-    free(punct_norm);
+    if (punct_norm) free(punct_norm);
 
     return reflowed;
 }
@@ -1890,11 +1931,16 @@ char *fossil_io_soap_format(const char *text) {
     // Capitalize sentences
     char *capitalized = fossil_io_soap_capitalize(norm, 0);
     free(norm);
-    if (!capitalized) return NULL;
+    if (!capitalized) {
+        return NULL;
+    }
 
     // Reflow to 72 columns for formatting
     char *formatted = fossil_io_soap_reflow(capitalized, 72);
     free(capitalized);
+    if (!formatted) {
+        return NULL;
+    }
 
     return formatted;
 }
