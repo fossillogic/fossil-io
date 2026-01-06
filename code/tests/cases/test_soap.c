@@ -195,83 +195,83 @@ FOSSIL_TEST(c_test_soap_readability_label) {
     ASSUME_ITS_EQUAL_CSTR(fossil_io_soap_readability_label(10), "unreadable");
 }
 
-// FOSSIL_TEST(c_test_soap_detect_spam) {
-//     const char *input = "Buy now! Limited offer!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "spam"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "spam"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_spam) {
+    const char *input = "Buy now! Limited offer!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "spam"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "spam"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_conspiracy) {
-//     const char *input = "The shadow government has a secret plan.";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "conspiracy"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "conspiracy"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_conspiracy) {
+    const char *input = "The shadow government has a secret plan.";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "conspiracy"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "conspiracy"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_ragebait) {
-//     const char *input = "You won't believe this outrageous claim!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "ragebait"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Calm discussion.", "ragebait"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_ragebait) {
+    const char *input = "You won't believe this outrageous claim!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "ragebait"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Calm discussion.", "ragebait"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_clickbait) {
-//     const char *input = "You won't believe what happened next!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "clickbait"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Ordinary news.", "clickbait"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_clickbait) {
+    const char *input = "You won't believe what happened next!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "clickbait"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Ordinary news.", "clickbait"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_bot) {
-//     const char *input = "Subscribe for a free gift!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "bot"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Welcome to the forum.", "bot"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_bot) {
+    const char *input = "Subscribe for a free gift!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "bot"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Welcome to the forum.", "bot"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_marketing) {
-//     const char *input = "Limited time offer! Save big!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "marketing"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("General information.", "marketing"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_marketing) {
+    const char *input = "Limited time offer! Save big!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "marketing"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("General information.", "marketing"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_technobabble) {
-//     const char *input = "Our AI-driven blockchain solution uses quantum entanglement.";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "technobabble"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Simple explanation.", "technobabble"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_technobabble) {
+    const char *input = "Our AI-driven blockchain solution uses quantum entanglement.";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "technobabble"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Simple explanation.", "technobabble"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_hype) {
-//     const char *input = "This is a groundbreaking, mind-blowing discovery!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "hype"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Routine update.", "hype"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_hype) {
+    const char *input = "This is a groundbreaking, mind-blowing discovery!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "hype"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Routine update.", "hype"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_political) {
-//     const char *input = "The government passed new legislation.";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "political"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("No politics here.", "political"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_political) {
+    const char *input = "The government passed new legislation.";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "political"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("No politics here.", "political"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_offensive) {
-//     const char *input = "You are such an idiot!";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "offensive"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Polite conversation.", "offensive"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_offensive) {
+    const char *input = "You are such an idiot!";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "offensive"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Polite conversation.", "offensive"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_misinfo) {
-//     const char *input = "This is fake news and a hoax.";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "misinfo"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Verified facts.", "misinfo"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_misinfo) {
+    const char *input = "This is fake news and a hoax.";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "misinfo"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Verified facts.", "misinfo"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_brain_rot) {
-//     const char *input = "asdfasdfasdf";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "brain_rot"), 0);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Normal sentence.", "brain_rot"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_brain_rot) {
+    const char *input = "asdfasdfasdf";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "brain_rot"), 0);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Normal sentence.", "brain_rot"), 0);
+}
 
-// FOSSIL_TEST(c_test_soap_detect_formal) {
-//     const char *input = "Therefore, we must proceed accordingly.";
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "formal"), 1);
-//     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hey, what's up?", "formal"), 0);
-// }
+FOSSIL_TEST(c_test_soap_detect_formal) {
+    const char *input = "Therefore, we must proceed accordingly.";
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "formal"), 1);
+    ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hey, what's up?", "formal"), 0);
+}
 
 // FOSSIL_TEST(c_test_soap_split_sentences) {
 //     const char *input = "First. Second! Third?";
@@ -490,19 +490,19 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_correct_grammar_basic);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_score_short_text);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_readability_label);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_spam);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_conspiracy);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_ragebait);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_clickbait);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_bot);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_marketing);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_technobabble);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_hype);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_political);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_offensive);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_misinfo);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_brain_rot);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_formal);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_spam);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_conspiracy);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_ragebait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_clickbait);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_bot);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_marketing);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_technobabble);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_hype);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_political);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_offensive);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_misinfo);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_brain_rot);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_formal);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_sentences);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_reflow_width);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_sentence_and_title);
