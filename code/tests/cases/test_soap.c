@@ -273,91 +273,91 @@ FOSSIL_TEST(c_test_soap_detect_formal) {
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hey, what's up?", "formal"), 0);
 }
 
-// FOSSIL_TEST(c_test_soap_split_sentences) {
-//     const char *input = "First. Second! Third?";
-//     char **split = fossil_io_soap_split(input);
-//     ASSUME_ITS_TRUE(split != NULL);
-//     if (split != NULL) {
-//         ASSUME_ITS_TRUE(split[0] != NULL && split[1] != NULL);
-//         for (int i = 0; split[i] != NULL; ++i) free(split[i]);
-//         free(split);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_split_sentences) {
+    const char *input = "First. Second! Third?";
+    char **split = fossil_io_soap_split(input);
+    ASSUME_ITS_TRUE(split != NULL);
+    if (split != NULL) {
+        ASSUME_ITS_TRUE(split[0] != NULL && split[1] != NULL);
+        for (int i = 0; split[i] != NULL; ++i) free(split[i]);
+        free(split);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_reflow_width) {
-//     const char *input = "This is a long line that should be wrapped at a certain width.";
-//     char *reflowed = fossil_io_soap_reflow(input, 20);
-//     ASSUME_ITS_TRUE(reflowed != NULL);
-//     if (reflowed != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(reflowed, "\n");
-//         free(reflowed);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_reflow_width) {
+    const char *input = "This is a long line that should be wrapped at a certain width.";
+    char *reflowed = fossil_io_soap_reflow(input, 20);
+    ASSUME_ITS_TRUE(reflowed != NULL);
+    if (reflowed != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(reflowed, "\n");
+        free(reflowed);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_capitalize_sentence_and_title) {
-//     const char *input = "this is a test. another sentence.";
-//     char *sentence_case = fossil_io_soap_capitalize(input, 0);
-//     char *title_case = fossil_io_soap_capitalize(input, 1);
-//     ASSUME_ITS_TRUE(sentence_case != NULL && title_case != NULL);
-//     if (sentence_case != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(sentence_case, "This is a test.");
-//         free(sentence_case);
-//     }
-//     if (title_case != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(title_case, "This Is A Test.");
-//         free(title_case);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_capitalize_sentence_and_title) {
+    const char *input = "this is a test. another sentence.";
+    char *sentence_case = fossil_io_soap_capitalize(input, 0);
+    char *title_case = fossil_io_soap_capitalize(input, 1);
+    ASSUME_ITS_TRUE(sentence_case != NULL && title_case != NULL);
+    if (sentence_case != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(sentence_case, "This is a test.");
+        free(sentence_case);
+    }
+    if (title_case != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(title_case, "This Is A Test.");
+        free(title_case);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_rewrite_pipeline) {
-//     const char *input = "tHiS is a tESt.   it works!!!";
-//     char *rewritten = fossil_io_soap_rewrite(input);
-//     ASSUME_ITS_TRUE(rewritten != NULL);
-//     if (rewritten != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(rewritten, "This is a test.");
-//         free(rewritten);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_rewrite_pipeline) {
+    const char *input = "tHiS is a tESt.   it works!!!";
+    char *rewritten = fossil_io_soap_rewrite(input);
+    ASSUME_ITS_TRUE(rewritten != NULL);
+    if (rewritten != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(rewritten, "This is a test.");
+        free(rewritten);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_format_pretty) {
-//     const char *input = "this is a test.   it should be formatted nicely.";
-//     char *formatted = fossil_io_soap_format(input);
-//     ASSUME_ITS_TRUE(formatted != NULL);
-//     if (formatted != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(formatted, "This is a test.");
-//         free(formatted);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_format_pretty) {
+    const char *input = "this is a test.   it should be formatted nicely.";
+    char *formatted = fossil_io_soap_format(input);
+    ASSUME_ITS_TRUE(formatted != NULL);
+    if (formatted != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(formatted, "This is a test.");
+        free(formatted);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_declutter_camel_case) {
-//     const char *input = "ThisIsCamelCase and PascalCaseTest";
-//     char *decluttered = fossil_io_soap_declutter(input);
-//     ASSUME_ITS_TRUE(decluttered != NULL);
-//     if (decluttered != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(decluttered, "This Is Camel Case");
-//         free(decluttered);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_declutter_camel_case) {
+    const char *input = "ThisIsCamelCase and PascalCaseTest";
+    char *decluttered = fossil_io_soap_declutter(input);
+    ASSUME_ITS_TRUE(decluttered != NULL);
+    if (decluttered != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(decluttered, "This Is Camel Case");
+        free(decluttered);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_punctuate_repeated) {
-//     const char *input = "Wow!!! Really???";
-//     char *punctuated = fossil_io_soap_punctuate(input);
-//     ASSUME_ITS_TRUE(punctuated != NULL);
-//     if (punctuated != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(punctuated, "Wow! Really?");
-//         free(punctuated);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_punctuate_repeated) {
+    const char *input = "Wow!!! Really???";
+    char *punctuated = fossil_io_soap_punctuate(input);
+    ASSUME_ITS_TRUE(punctuated != NULL);
+    if (punctuated != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(punctuated, "Wow! Really?");
+        free(punctuated);
+    }
+}
 
-// FOSSIL_TEST(c_test_soap_process_full_pipeline) {
-//     const char *input = "tHiS is a tESt.   it works!!!";
-//     char *processed = fossil_io_soap_process(input);
-//     ASSUME_ITS_TRUE(processed != NULL);
-//     if (processed != NULL) {
-//         ASSUME_ITS_CSTR_CONTAINS(processed, "This is a test.");
-//         free(processed);
-//     }
-// }
+FOSSIL_TEST(c_test_soap_process_full_pipeline) {
+    const char *input = "tHiS is a tESt.   it works!!!";
+    char *processed = fossil_io_soap_process(input);
+    ASSUME_ITS_TRUE(processed != NULL);
+    if (processed != NULL) {
+        ASSUME_ITS_CSTR_CONTAINS(processed, "This is a test.");
+        free(processed);
+    }
+}
 
 // //
 // FOSSIL_TEST(c_test_soap_sanitize_null_input) {
@@ -503,14 +503,14 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_misinfo);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_brain_rot);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_detect_formal);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_sentences);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_reflow_width);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_sentence_and_title);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_rewrite_pipeline);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_format_pretty);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_declutter_camel_case);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_punctuate_repeated);
-    // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_full_pipeline);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_split_sentences);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_reflow_width);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_capitalize_sentence_and_title);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_rewrite_pipeline);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_format_pretty);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_declutter_camel_case);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_punctuate_repeated);
+    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_process_full_pipeline);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_null_input);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_empty_string);
     // FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_null_input);
