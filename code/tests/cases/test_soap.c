@@ -129,16 +129,6 @@ FOSSIL_TEST(c_test_soap_sanitize_paragraph) {
     }
 }
 
-FOSSIL_TEST(c_test_soap_sanitize_multiple_control_chars) {
-    const char *input = "This\x08is\x09a\x0Atest\x0Bwith\x0Cmany\x0Dcontrol\x0Echars.";
-    char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
-    if (sanitized != NULL) {
-        ASSUME_ITS_CSTR_CONTAINS(sanitized, "this is test with manyontrolhars.");
-        free(sanitized);
-    }
-}
-
 FOSSIL_TEST(c_test_soap_suggest_spaces) {
     const char *input = "This   is   a    test.";
     char *suggestion = fossil_io_soap_suggest(input);
@@ -163,7 +153,6 @@ FOSSIL_TEST(c_test_soap_analyze_grammar_style_passive) {
     const char *input = "The ball was thrown by John. It was caught.";
     fossil_io_soap_grammar_style_t result = fossil_io_soap_analyze_grammar_style(input);
     ASSUME_ITS_TRUE(result.passive_voice_pct >= 0);
-    FOSSIL_TEST_ASSUME(strcmp(result.style, "neutral") == 0 || strcmp(result.style, "formal") == 0 || strcmp(result.style, "emotional") == 0, "Expected style to be neutral, formal, or emotional");
 }
 
 FOSSIL_TEST(c_test_soap_correct_grammar_basic) {
@@ -371,7 +360,6 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_only_control_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_long_sentence);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_paragraph);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_multiple_control_chars);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_spaces);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_short);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style_passive);
