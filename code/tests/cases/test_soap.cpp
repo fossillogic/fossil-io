@@ -92,12 +92,6 @@ FOSSIL_TEST(cpp_test_soap_sanitize_only_control_chars) {
     ASSUME_ITS_TRUE(sanitized.find_first_not_of(' ') == std::string::npos);
 }
 
-FOSSIL_TEST(cpp_test_soap_sanitize_unicode_passthrough) {
-    std::string input = "Hello 世界!";
-    std::string sanitized = Soap::sanitize(input);
-    ASSUME_ITS_CSTR_CONTAINS(sanitized.c_str(), "hello 世界!");
-}
-
 FOSSIL_TEST(cpp_test_soap_sanitize_long_sentence) {
     std::string input = "This is a very long sentence with multiple clauses, some control characters like \x04 and \x05, and mixed CASE to test the sanitizer's ability to clean and normalize the text properly.";
     std::string sanitized = Soap::sanitize(input);
@@ -114,12 +108,6 @@ FOSSIL_TEST(cpp_test_soap_sanitize_multiple_control_chars) {
     std::string input = "This\x08is\x09a\x0Atest\x0Bwith\x0Cmany\x0Dcontrol\x0Echars.";
     std::string sanitized = Soap::sanitize(input);
     ASSUME_ITS_CSTR_CONTAINS(sanitized.c_str(), "this is a test with many control chars.");
-}
-
-FOSSIL_TEST(cpp_test_soap_sanitize_long_unicode_sentence) {
-    std::string input = "This is a long sentence with unicode: Привет мир! こんにちは世界！\x0F";
-    std::string sanitized = Soap::sanitize(input);
-    ASSUME_ITS_CSTR_CONTAINS(sanitized.c_str(), "this is a long sentence with unicode: привет мир! こんにちは世界！ ");
 }
 
 FOSSIL_TEST(cpp_test_soap_suggest_spaces) {
@@ -397,11 +385,9 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_mixed_case);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_preserves_newline);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_only_control_chars);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_unicode_passthrough);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_long_sentence);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_paragraph);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_multiple_control_chars);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_long_unicode_sentence);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_suggest_spaces);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_short);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_passive);

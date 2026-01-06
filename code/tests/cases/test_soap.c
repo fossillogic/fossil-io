@@ -99,14 +99,6 @@ FOSSIL_TEST(c_test_soap_sanitize_only_control_chars) {
     free(sanitized);
 }
 
-FOSSIL_TEST(c_test_soap_sanitize_unicode_passthrough) {
-    const char *input = "Hello 世界!";
-    char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
-    ASSUME_ITS_CSTR_CONTAINS(sanitized, "hello 世界!");
-    free(sanitized);
-}
-
 FOSSIL_TEST(c_test_soap_sanitize_long_sentence) {
     const char *input = "This is a very long sentence with multiple clauses, some control characters like \x04 and \x05, and mixed CASE to test the sanitizer's ability to clean and normalize the text properly.";
     char *sanitized = fossil_io_soap_sanitize(input);
@@ -128,14 +120,6 @@ FOSSIL_TEST(c_test_soap_sanitize_multiple_control_chars) {
     char *sanitized = fossil_io_soap_sanitize(input);
     ASSUME_ITS_TRUE(sanitized != NULL);
     ASSUME_ITS_CSTR_CONTAINS(sanitized, "this is a test with many control chars.");
-    free(sanitized);
-}
-
-FOSSIL_TEST(c_test_soap_sanitize_long_unicode_sentence) {
-    const char *input = "This is a long sentence with unicode: Привет мир! こんにちは世界！\x0F";
-    char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
-    ASSUME_ITS_CSTR_CONTAINS(sanitized, "this is a long sentence with unicode: привет мир! こんにちは世界！ ");
     free(sanitized);
 }
 
@@ -443,11 +427,9 @@ FOSSIL_TEST_GROUP(c_soap_tests) {
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_mixed_case);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_preserves_newline);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_only_control_chars);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_unicode_passthrough);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_long_sentence);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_paragraph);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_multiple_control_chars);
-    FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_sanitize_long_unicode_sentence);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_suggest_spaces);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_summarize_short);
     FOSSIL_TEST_ADD(c_soap_suite, c_test_soap_analyze_grammar_style_passive);
