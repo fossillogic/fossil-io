@@ -47,10 +47,6 @@ static inline int is_inner_punct(char c) {
     return c == ',' || c == ':' || c == ';';
 }
 
-static inline int is_boundary(char prev, char curr) {
-    return is_word_char(prev) && !is_word_char(curr);
-}
-
 static int match_word_pattern(const char *text, size_t pos, const char *pat) {
     size_t plen = strlen(pat);
 
@@ -1424,14 +1420,6 @@ static int match_brain_rot(const char *word) {
 /* ============================================================================
  * Refactored fossil_io_soap_detect with Morse, BrainRot, Leet, and Structural
  * ============================================================================ */
-/* Helper: match_patterns implementation */
-static int match_patterns(const char *text, const pattern_t *patterns) {
-    if (!text || !patterns) return 0;
-    for (int i = 0; patterns[i].pattern; i++) {
-        if (strstr(text, patterns[i].pattern)) return 1;
-    }
-    return 0;
-}
 
 int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (!text || !detector_id) return 0;
