@@ -176,7 +176,7 @@ void fossil_io_putchar(char c);
  * @param stream The output stream where the string should be printed. This should be a valid pointer to a `FILE` object.
  * @param str The string to be printed. This should be a null-terminated string.
  */
-void fossil_io_fputs(fossil_io_file_t *stream, ccstring str);
+void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
 
 /**
  * Prints a formatted string to the specified output stream.

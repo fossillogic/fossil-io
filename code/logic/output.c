@@ -452,7 +452,7 @@ void fossil_io_printf(ccstring format, ...) {
 }
 
 // Function to print a sanitized string to a specific file stream
-void fossil_io_fputs(fossil_io_file_t *stream, ccstring str) {
+void fossil_io_fputs(fossil_io_file_t *stream, const char *str) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
