@@ -360,10 +360,18 @@ void fossil_io_print_with_at_attributes(ccstring str) {
                 char *saveptr = NULL;
                 char *token = strtok_r(attrbuf, ",", &saveptr);
                 while (token) {
-                    // Remove leading/trailing whitespace
-                    while (*token == ' ') ++token;
+                    // Remove leading whitespace
+                    while (*token == ' ' || *token == '\t') ++token;
+                    if (*token == '\0') {
+                        token = strtok_r(NULL, ",", &saveptr);
+                        continue;
+                    }
+                    // Remove trailing whitespace
                     char *end = token + strlen(token) - 1;
-                    while (end > token && (*end == ' ' || *end == '\t')) *end-- = '\0';
+                    while (end > token && (*end == ' ' || *end == '\t')) {
+                        *end = '\0';
+                        --end;
+                    }
 
                     // Parse attribute: type:value or just type
                     char *colon = strchr(token, ':');
@@ -390,7 +398,7 @@ void fossil_io_print_with_at_attributes(ccstring str) {
                             fossil_io_apply_attribute("normal");
                             if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_color("reset");
                             if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color("reset");
-                        } else {
+                        } else if (*token != '\0') {
                             fossil_io_apply_attribute(token);
                         }
                     }
