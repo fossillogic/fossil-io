@@ -23,370 +23,122 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/soap.h"
+#include "fossil/io/cstring.h"
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <time.h>
 #include <stdio.h>
 
 /* ============================================================================
- * Internal helpers
+ * Internal regex logic
  * ============================================================================ */
 
-static char *dupstr(const char *s) {
-    if (!s) return NULL;
-    size_t n = strlen(s);
-    char *r = (char*)malloc(n + 1);
-    if (r) memcpy(r, s, n + 1);
-    return r;
+static inline int is_word_char(char c) {
+    return isalnum((unsigned char)c) || c == '\'';
 }
 
-static void strtolower(char *s) {
-    if (!s) return;
-    for (; *s; s++) *s = (char)tolower((unsigned char)*s);
+static inline int is_sentence_punct(char c) {
+    return c == '.' || c == '!' || c == '?';
 }
 
-static int soap_is_abbrev(const char *s) {
-    static const char *abbr[] = {
-        "mr.", "mrs.", "dr.", "vs.", "etc.", "e.g.", "i.e.", NULL
-    };
-    for (int i = 0; abbr[i]; i++)
-        if (strcasecmp(s, abbr[i]) == 0)
-            return 1;
-    return 0;
+static inline int is_inner_punct(char c) {
+    return c == ',' || c == ':' || c == ';';
 }
 
-/* ============================================================================
- * Leetspeak normalization
- * ============================================================================ */
+static int match_word_pattern(const char *text, size_t pos, const char *pat) {
+    size_t plen = strlen(pat);
 
-static char leet_map(char c) {
-    switch(c) {
-        case '4': case '@': return 'a';
-        case '3': return 'e';
-        case '1': return 'i';
-        case '0': return 'o';
-        case '5': case '$': return 's';
-        case '7': return 't';
-        default: return c;
-    }
+    if (strncasecmp(text + pos, pat, plen) != 0)
+        return 0;
+
+    char before = (pos == 0) ? ' ' : text[pos - 1];
+    char after  = text[pos + plen];
+
+    if (is_word_char(before)) return 0;
+    if (is_word_char(after))  return 0;
+
+    return 1;
 }
 
-static void normalize_leet(char *s) {
-    if (!s) return;
-    for (; *s; s++) *s = leet_map(*s);
+static int is_case_split(char prev, char curr) {
+    return islower((unsigned char)prev) &&
+           isupper((unsigned char)curr);
 }
 
-/* ============================================================================
- * Morse decoding (basic)
- * ============================================================================ */
-
-typedef struct { const char *code; char c; } morse_t;
-
-static const morse_t morse_table[] = {
-    {".-", 'a'}, {"-...", 'b'}, {"-.-.", 'c'}, {"-..", 'd'},
-    {".", 'e'}, {"..-.", 'f'}, {"--.", 'g'}, {"....", 'h'},
-    {"..", 'i'}, {".---", 'j'}, {"-.-", 'k'}, {".-..", 'l'},
-    {"--", 'm'}, {"-.", 'n'}, {"---", 'o'}, {".--.", 'p'},
-    {"--.-", 'q'}, {".-.", 'r'}, {"...", 's'}, {"-", 't'},
-    {"..-", 'u'}, {"...-", 'v'}, {".--", 'w'}, {"-..-", 'x'},
-    {"-.--", 'y'}, {"--..", 'z'}, {NULL, 0}
-};
-
-static char morse_lookup(const char *code) {
-    for (int i=0; morse_table[i].code; i++)
-        if (strcmp(morse_table[i].code, code)==0) return morse_table[i].c;
-    return '?';
-}
-
-static char *decode_morse(const char *text) {
-    if (!text) return NULL;
-    char *out = (char*)malloc(strlen(text)+1);
-    size_t oi=0, bi=0;
-    char buf[8];
-    for (const char *p=text;;p++) {
-        if (*p=='.'||*p=='-') buf[bi++]=*p;
-        else {
-            if(bi){buf[bi]=0; out[oi++]=morse_lookup(buf); bi=0;}
-            if(*p==' '||*p=='/') out[oi++]=' ';
-            if(!*p) break;
-        }
-    }
-    out[oi]=0;
-    return out;
-}
-
-/* ============================================================================
- * Sanitization
- * ============================================================================ */
-
-char *fossil_io_soap_normalize(const char *text) {
-    if (!text) return NULL;
-    char *s = dupstr(text);
-    normalize_leet(s);
-    strtolower(s);
-    return s;
-}
-
-char *fossil_io_soap_sanitize(const char *text) {
-    if (!text) return NULL;
-    char *s = dupstr(text);
-    for(char *p=s; *p; p++) if((unsigned char)*p<32 && *p!='\n') *p=' ';
-    char *norm = fossil_io_soap_normalize(s);
-    free(s);
-    return norm;
-}
-
-/* ============================================================================
- * Grammar & style analysis
- * ============================================================================ */
-
-fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text) {
-    fossil_io_soap_grammar_style_t r = {1,0,"neutral"};
-    if(!text) return r;
-    int passive=0, words=0;
-    const char *p=text;
-    while(*p){
-        if(isspace((unsigned char)*p)) words++;
-        if(!strncmp(p,"was ",4)||!strncmp(p,"were ",5)) passive++;
-        p++;
-    }
-    if(words) r.passive_voice_pct = (passive*100)/words;
-    if(strstr(text,"!")||strstr(text,"?")) r.style="emotional";
-    else if(strstr(text,"therefore")||strstr(text,";")) r.style="formal";
-    return r;
-}
-
-char *fossil_io_soap_correct_grammar(const char *text)
-{
-    if (!text) return NULL;
-
-    // --- Begin context-aware grammar correction ---
-    char *out = malloc(strlen(text) * 2 + 4);
+char *soap_decluster_words(const char *text) {
+    size_t cap = strlen(text) * 2 + 32;
+    char *out = malloc(cap);
     if (!out) return NULL;
 
     const char *p = text;
     char *q = out;
 
-    int new_sentence = 1;
-    int last_space = 0;
-    char last_char = 0;
-
-    int in_quote = 0;
-    int in_paren = 0;
-    int in_url = 0;
-    int word_start = 1;
-
-    // For abbreviation detection
-    char prev_word[32] = {0};
-    int prev_word_len = 0;
-
-    struct {
-        const char *from;
-        const char *to;
-    } contractions[] = {
-        {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
-        {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
-        {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
-        {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
-        {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
-        {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
-        {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
-        {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
-        {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
-        {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
-        {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
-        {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
-        {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
-        {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
-        {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
-        {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
-        {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
-        {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
-        {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
-        {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
-    };
+    char prev = 0;
 
     while (*p) {
-        char c = *p++;
-
-        // Track quote and paren state
-        if (c == '"' || c == '\'') in_quote ^= 1;
-        if (c == '(') in_paren++;
-        if (c == ')') if (in_paren > 0) in_paren--;
-
-        // URL detection (cheap, no regex)
-        if (!in_url && (strncmp(p - 1, "http://", 7) == 0 ||
-                        strncmp(p - 1, "https://", 8) == 0))
-            in_url = 1;
-        if (in_url && isspace((unsigned char)c))
-            in_url = 0;
-
-        // Normalize whitespace
-        if (isspace((unsigned char)c)) {
-            if (!last_space) {
-                *q++ = ' ';
-                last_space = 1;
-            }
-            word_start = 1;
-            continue;
-        }
-        last_space = 0;
-
-        // Word boundary and sentence word count
-        if (isalpha((unsigned char)c) && word_start) {
-            word_start = 0;
-        }
-        if (!isalpha((unsigned char)c))
-            word_start = 1;
-
-        // Abbreviation detection (look back for word before '.')
-        if (c == '.' && prev_word_len > 0) {
-            prev_word[prev_word_len] = 0;
+        if (prev &&
+            isalpha((unsigned char)prev) &&
+            isalpha((unsigned char)*p) &&
+            is_case_split(prev, *p)) {
+            *q++ = ' ';
         }
 
-        // Capitalize start of sentences (with abbreviation/ellipsis/number awareness)
-        int is_abbrev = 0;
-        if (new_sentence && isalpha((unsigned char)c)) {
-            // Check for abbreviation before
-            if (prev_word_len > 0 && soap_is_abbrev(prev_word))
-                is_abbrev = 1;
-            if (!is_abbrev)
-                c = (char)toupper((unsigned char)c);
-            new_sentence = 0;
-        }
-
-        // Punctuation collapse, but smarter
-        if (ispunct((unsigned char)c) && c == last_char) {
-            if (c == '.' || c == '!' || c == '?')
-                continue; // collapse
-        }
-
-        // Sentence boundary detection (punctuation-aware)
-        if ((c == '.' || c == '!' || c == '?') && !in_quote) {
-            // Decimal number: don't end sentence
-            if (c == '.' && isdigit((unsigned char)*p))
-                ;
-            // Abbreviation: don't end sentence
-            else if (is_abbrev)
-                ;
-            // Ellipsis: don't end sentence
-            else if (c == '.' && *p == '.' && *(p+1) == '.')
-                ;
-            else
-                new_sentence = 1;
-        }
-
-        // Context-aware contraction replacement (inline, not global)
-        if (!in_quote && !in_url && !in_paren) {
-            for (int i = 0; contractions[i].from; i++) {
-                size_t len = strlen(contractions[i].from);
-                if (strncmp(p - 1, contractions[i].from, len) == 0) {
-                    memcpy(q - 1, contractions[i].to, strlen(contractions[i].to));
-                    p += len - 1;
-                    q += strlen(contractions[i].to) - 1;
-                    break;
-                }
-            }
-        }
-
-        *q++ = c;
-        last_char = c;
-
-        // Track previous word for abbreviation check
-        if (isalpha((unsigned char)c)) {
-            if (prev_word_len < (int)sizeof(prev_word) - 1)
-                prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
-        } else {
-            prev_word_len = 0;
-        }
+        *q++ = *p;
+        prev = *p++;
     }
 
-    // Ensure terminal punctuation
-    if (q > out && !ispunct((unsigned char)q[-1])) {
-        *q++ = '.';
-    }
-
-    *q = '\0';
-
-    // --- End context-aware grammar correction ---
+    *q = 0;
     return out;
 }
 
-/* ============================================================================
- * Readability / scoring
- * ============================================================================ */
+static void normalize_punctuation(const char *in, char *out) {
+    char prev = 0;
+    int dots = 0;
 
-fossil_io_soap_scores_t fossil_io_soap_score(const char *text){
-    fossil_io_soap_scores_t s={70,70,70};
-    if(!text) return s;
-    size_t len = strlen(text);
-    if(len<40) s.readability-=10;
-    if(strchr(text,'\n')) s.clarity+=10;
-    if(!strstr(text,"!!!")) s.quality+=10;
-    return s;
+    while (*in) {
+        if (*in == '.') {
+            dots++;
+            if (dots <= 3)
+                *out++ = '.';
+        } else {
+            dots = 0;
+            if (*in == '!' || *in == '?') {
+                if (*in != prev)
+                    *out++ = *in;
+            } else {
+                *out++ = *in;
+            }
+        }
+        prev = *in++;
+    }
+    *out = 0;
 }
 
-const char *fossil_io_soap_readability_label(int score){
-    if(score>80) return "excellent";
-    if(score>60) return "good";
-    if(score>40) return "fair";
-    return "poor";
+static void finalize_sentences(char *s) {
+    for (size_t i = 0; s[i]; i++) {
+        if (i == 0 && isalpha((unsigned char)s[i]))
+            s[i] = toupper((unsigned char)s[i]);
+
+        if (is_sentence_punct(s[i]) && s[i+1] == ' ')
+            if (isalpha((unsigned char)s[i+2]))
+                s[i+2] = toupper((unsigned char)s[i+2]);
+    }
+
+    size_t len = strlen(s);
+    if (len && !is_sentence_punct(s[len-1])) {
+        s[len++] = '.';
+        s[len] = 0;
+    }
 }
 
-/* ============================================================================
- * Detector
- * ============================================================================ */
 
-typedef struct {
-    char *processed_text;                  // sanitized / normalized / grammar-corrected
-    char *summary;                         // optional summary
-    fossil_io_soap_scores_t scores;        // readability / clarity / quality
-    fossil_io_soap_grammar_style_t style;  // grammar / style
 
-    /* ================= Detectors ================= */
-    struct {
-        /* word-level */
-        int brain_rot;
-        int leet;
-
-        /* sentence-level */
-        int spam;
-        int ragebait;
-        int clickbait;
-        int bot;
-        int marketing;
-        int technobabble;
-        int hype;
-        int political;
-        int offensive;
-        int misinfo;      // shorthand for misinformation
-        int morse;
-
-        /* document-level */
-        int propaganda;
-        int conspiracy;
-
-        /* stylistic / behavioral */
-        int formal;
-        int casual;
-        int sarcasm;
-        int neutral;
-        int aggressive;
-        int emotional;
-        int passive_aggressive;
-
-        /* structural analysis (redundancy, cohesion, repetition) */
-        int redundant_sentences;
-        int poor_cohesion;
-        int repeated_words;
-
-    } flags;
-} fossil_io_soap_result_verbose_t;
+// LOOKUP MAP
 
 typedef struct { const char *pattern; } pattern_t;
 
-// ========================= SPAM PATTERNS =========================
 static const pattern_t spam_patterns[] = {
     { "buy now" }, { "click here" }, { "free gift" }, { "subscribe" },
     { "limited offer" }, { "act now" }, { "instant access" },
@@ -423,7 +175,6 @@ static const pattern_t spam_patterns[] = {
     { NULL }
 };
 
-// ========================= RAGEBAIT PATTERNS =========================
 static const pattern_t ragebait_patterns[] = {
     { "you won't believe" }, { "shocking" }, { "outrageous" }, { "unbelievable" }, { "infuriating" },
     { "angry" }, { "furious" }, { "disgusting" }, { "ridiculous" }, { "scandal" },
@@ -451,7 +202,6 @@ static const pattern_t ragebait_patterns[] = {
     { "ridiculous content" }, { "infuriating post" }, { "triggered tweet" }, { NULL }
 };
 
-// ========================= CLICKBAIT PATTERNS (MAXIMIZED) =========================
 static const pattern_t clickbait_patterns[] = {
     { "you won't believe" }, { "this is why" }, { "what happens next" },
     { "the reason is" }, { "will shock you" }, { "revealed" }, { "top 10" },
@@ -477,15 +227,9 @@ static const pattern_t clickbait_patterns[] = {
     { "the secret ingredient" }, { "the secret formula" }, { "the secret weapon" },
     { "the secret behind the success" }, { "the shocking confession" }, { "the shocking admission" },
     { "the shocking revelation" }, { "the shocking expose" }, { "the shocking expose revealed" },
-    { "the shocking expose exposed" }, { "the shocking expose uncovered" }, { "the shocking expose unmasked" },
-    { "the shocking expose unmasked revealed" }, { "the shocking expose unmasked exposed" },
-    { "the shocking expose unmasked uncovered" }, { "the shocking expose unmasked unmasked" },
-    { "the shocking expose unmasked unmasked revealed" }, { "the shocking expose unmasked unmasked exposed" },
-    { "the shocking expose unmasked unmasked uncovered" }, { "the shocking expose unmasked unmasked unmasked" },
     { NULL }
 };
 
-// ========================= BOT PATTERNS (MAXIMIZED) =========================
 static const pattern_t bot_patterns[] = {
     { "buy now" }, { "click here" }, { "subscribe" }, { "free gift" },
     { "limited offer" }, { "act now" }, { "instant access" }, { "order today" },
@@ -517,7 +261,6 @@ static const pattern_t bot_patterns[] = {
     { NULL }
 };
 
-// ========================= MARKETING PATTERNS (MAXIMIZED) =========================
 static const pattern_t marketing_patterns[] = {
     { "limited time" }, { "special offer" }, { "act now" }, { "exclusive" },
     { "sale ends soon" }, { "best deal" }, { "discount" }, { "save now" },
@@ -546,7 +289,6 @@ static const pattern_t marketing_patterns[] = {
     { "super discount" }, { NULL }
 };
 
-// ========================= TECHNOBABBLE PATTERNS (MAXIMIZED) =========================
 static const pattern_t technobabble_patterns[] = {
     { "quantum entanglement" }, { "machine learning" }, { "deep neural network" },
     { "blockchain" }, { "AI-driven" }, { "cloud computing" }, { "hyperconverged" },
@@ -565,7 +307,6 @@ static const pattern_t technobabble_patterns[] = {
     { NULL }
 };
 
-// ========================= HYPE PATTERNS (MAXIMIZED) =========================
 static const pattern_t hype_patterns[] = {
     { "amazing" }, { "incredible" }, { "epic" }, { "unbelievable" }, { "mind-blowing" },
     { "groundbreaking" }, { "revolutionary" }, { "next level" }, { "must see" },
@@ -581,7 +322,6 @@ static const pattern_t hype_patterns[] = {
     { NULL }
 };
 
-// ========================= POLITICAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t political_patterns[] = {
     { "vote" }, { "policy" }, { "government" }, { "election" }, { "legislation" },
     { "reform" }, { "candidate" }, { "campaign" }, { "democracy" }, { "party" },
@@ -597,7 +337,6 @@ static const pattern_t political_patterns[] = {
     { NULL }
 };
 
-// ========================= OFFENSIVE PATTERNS (MAXIMIZED) =========================
 static const pattern_t offensive_patterns[] = {
     { "idiot" }, { "stupid" }, { "dumb" }, { "fool" }, { "loser" },
     { "moron" }, { "hate" }, { "jerk" }, { "trash" }, { "scum" },
@@ -612,21 +351,6 @@ static const pattern_t offensive_patterns[] = {
     { NULL }
 };
 
-// ========================= PROPAGANDA PATTERNS (MAXIMIZED) =========================
-static const pattern_t propaganda_patterns[] = {
-    { "truth" }, { "freedom" }, { "patriot" }, { "justice" }, { "liberty" },
-    { "hero" }, { "enemy" }, { "threat" }, { "corruption" }, { "defend" },
-    { "protect" }, { "powerful" }, { "nation" }, { "agenda" }, { "righteous" },
-    { "traitor" }, { "evil" }, { "glory" }, { "sacrifice" }, { "martyr" },
-    { "victory" }, { "defeat" }, { "mission" }, { "cause" }, { "movement" },
-    { "revolution" }, { "uprising" }, { "resistance" }, { "regime" }, { "dictator" },
-    { "oppression" }, { "liberation" }, { "sovereignty" }, { "unity" }, { "solidarity" },
-    { "loyalty" }, { "allegiance" }, { "honor" }, { "duty" }, { "sacred" },
-    { "destiny" }, { "manifesto" }, { "propaganda" }, { "indoctrinate" }, { "brainwash" },
-    { NULL }
-};
-
-// ========================= MISINFORMATION PATTERNS (MAXIMIZED) =========================
 static const pattern_t misinformation_patterns[] = {
     { "fake news" }, { "hoax" }, { "false" }, { "misleading" }, { "rumor" },
     { "conspiracy" }, { "unverified" }, { "scam" }, { "fraud" }, { "deceptive" },
@@ -640,7 +364,6 @@ static const pattern_t misinformation_patterns[] = {
     { NULL }
 };
 
-// ========================= CONSPIRACY PATTERNS (MAXIMIZED) =========================
 static const pattern_t conspiracy_patterns[] = {
     { "hidden agenda" }, { "secret plan" }, { "shadow government" }, { "cover-up" },
     { "inside job" }, { "elite" }, { "controlled opposition" }, { "false flag" },
@@ -655,7 +378,6 @@ static const pattern_t conspiracy_patterns[] = {
     { NULL }
 };
 
-// ========================= FORMAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t formal_patterns[] = {
     { "therefore" }, { "moreover" }, { "hence" }, { "thus" }, { "accordingly" },
     { "in conclusion" }, { "furthermore" }, { "consequently" }, { "as a result" }, { "in addition" },
@@ -670,7 +392,6 @@ static const pattern_t formal_patterns[] = {
     { NULL }
 };
 
-// ========================= CASUAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t casual_patterns[] = {
     { "hey" }, { "lol" }, { "omg" }, { "btw" }, { "idk" },
     { "yep" }, { "nah" }, { "cool" }, { "awesome" }, { "what's up" },
@@ -686,7 +407,6 @@ static const pattern_t casual_patterns[] = {
     { NULL }
 };
 
-// ========================= SARCASM PATTERNS (MAXIMIZED) =========================
 static const pattern_t sarcasm_patterns[] = {
     { "yeah right" }, { "as if" }, { "sure" }, { "oh great" }, { "fantastic" },
     { "brilliant" }, { "wow" }, { "amazing" }, { "just perfect" }, { "totally" },
@@ -698,7 +418,6 @@ static const pattern_t sarcasm_patterns[] = {
     { NULL }
 };
 
-// ========================= NEUTRAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t neutral_patterns[] = {
     { "okay" }, { "alright" }, { "yes" }, { "no" }, { "maybe" },
     { "fine" }, { "good" }, { "bad" }, { "average" }, { "normal" },
@@ -710,7 +429,6 @@ static const pattern_t neutral_patterns[] = {
     { NULL }
 };
 
-// ========================= AGGRESSIVE PATTERNS (MAXIMIZED) =========================
 static const pattern_t aggressive_patterns[] = {
     { "attack" }, { "destroy" }, { "fight" }, { "kill" }, { "smash" },
     { "crush" }, { "annihilate" }, { "rage" }, { "strike" }, { "obliterate" },
@@ -723,7 +441,6 @@ static const pattern_t aggressive_patterns[] = {
     { NULL }
 };
 
-// ========================= EMOTIONAL PATTERNS (MAXIMIZED) =========================
 static const pattern_t emotional_patterns[] = {
     { "happy" }, { "sad" }, { "angry" }, { "excited" }, { "fear" },
     { "joy" }, { "love" }, { "hate" }, { "surprised" }, { "ecstatic" },
@@ -736,8 +453,7 @@ static const pattern_t emotional_patterns[] = {
     { NULL }
 };
 
-// ========================= PASSIVE_AGGRESSIVE PATTERNS (MAXIMIZED) =========================
-static const pattern_t passive_aggressive_patterns[] = {
+static const pattern_t passive_patterns[] = {
     { "sure" }, { "whatever" }, { "fine" }, { "if you say so" }, { "okay then" },
     { "no problem" }, { "as you wish" }, { "right" }, { "yeah, sure" },
     { "if that's what you want" }, { "I guess" }, { "if you insist" },
@@ -749,10 +465,6 @@ static const pattern_t passive_aggressive_patterns[] = {
     { NULL }
 };
 
-//
-/* ============================================================================
- * Snowflake patterns table (MAXIMIZED)
- * ============================================================================ */
 static const pattern_t snowflake_patterns[] = {
     { "triggered" }, { "microaggression" }, { "safe space" }, { "privilege" },
     { "problematic" }, { "offended" }, { "snowflake" }, { "fragile" },
@@ -776,9 +488,6 @@ static const pattern_t snowflake_patterns[] = {
     { NULL }
 };
 
-/* ============================================================================
- * BrainRot patterns table (FULL, UNTRIMMED, BRACE-SAFE)
- * ============================================================================ */
 static const pattern_t brain_rot_patterns[] = {
     {"lol"}, {"lmao"}, {"rofl"}, {"bruh"}, {"wtf"}, {"omg"}, {"haha"}, {"hehe"}, {"xd"}, {"xdxd"},
     {"yo"}, {"hey"}, {"sup"}, {"what's up"}, {"man"}, {"dude"}, {"bro"}, {"broski"}, {"homie"}, {"fam"},
@@ -802,6 +511,736 @@ static const pattern_t brain_rot_patterns[] = {
     {NULL}
 };
 
+/* ============================================================================
+ * Internal helpers
+ * ============================================================================ */
+
+static char *dupstr(const char *s) {
+    if (!s) return NULL;
+    size_t n = strlen(s);
+    char *r = (char*)malloc(n + 1);
+    if (r) memcpy(r, s, n + 1);
+    return r;
+}
+
+static void strtolower(char *s) {
+    if (!s) return;
+    for (; *s; s++) *s = (char)tolower((unsigned char)*s);
+}
+
+static int soap_is_abbrev(const char *s) {
+    static const char *abbr[] = {
+        "mr.", "mrs.", "dr.", "vs.", "etc.", "e.g.", "i.e.", NULL
+    };
+    for (int i = 0; abbr[i]; i++)
+        if (strcasecmp(s, abbr[i]) == 0)
+            return 1;
+    return 0;
+}
+
+/* ============================================================================
+ * Sanitization
+ * ============================================================================ */
+
+char *fossil_io_soap_normalize(const char *text) {
+    if (!text) return NULL;
+    size_t len = strlen(text);
+    if (len == 0) {
+        // Return empty string for empty input
+        char *empty = (char *)malloc(1);
+        if (empty) empty[0] = 0;
+        return empty;
+    }
+
+    // Remove leading/trailing whitespace, collapse multiple spaces, advanced leet normalization, lowercase
+    char *tmp = (char *)malloc(len + 2);
+    if (!tmp) return NULL;
+    size_t j = 0;
+    int last_space = 0;
+    // Skip leading whitespace
+    size_t i = 0;
+    while (isspace((unsigned char)text[i]) && text[i] != '\n') i++;
+    for (; text[i]; i++) {
+        unsigned char c = (unsigned char)text[i];
+        if (c < 32 && c != '\n') continue; // skip control chars except newline
+        if (isspace(c) && c != '\n') {
+            if (!last_space) tmp[j++] = ' ';
+            last_space = 1;
+        } else {
+            tmp[j++] = text[i];
+            last_space = 0;
+        }
+    }
+    // Remove trailing whitespace
+    while (j > 0 && isspace((unsigned char)tmp[j-1]) && tmp[j-1] != '\n') j--;
+    tmp[j] = 0;
+
+    // Lowercase
+    strtolower(tmp);
+
+    // Remove punctuation except for sentence-ending and intra-word apostrophes, using helpers
+    char *out = (char *)malloc(strlen(tmp) + 1);
+    if (!out) { free(tmp); return NULL; }
+    size_t k = 0;
+    for (size_t m = 0; tmp[m]; m++) {
+        char c = tmp[m];
+        if (is_word_char(c) || c == ' ' || c == '\n' || is_sentence_punct(c)) {
+            // Only allow apostrophe if surrounded by alpha (intra-word)
+            if (c == '\'') {
+                if (!(m > 0 && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1])))
+                    continue;
+            }
+            out[k++] = c;
+        }
+    }
+    out[k] = 0;
+    free(tmp);
+
+    // Remove trailing spaces again (for cases like "Only one sentence. ")
+    while (k > 0 && isspace((unsigned char)out[k-1]) && out[k-1] != '\n') out[--k] = 0;
+
+    // Defensive: check for NULL before returning
+    if (!out) return NULL;
+
+    return out;
+}
+
+char *fossil_io_soap_sanitize(const char *text) {
+    if (!text) return NULL;
+    size_t len = strlen(text);
+    if (len == 0) {
+        char *empty = (char *)malloc(1);
+        if (empty) empty[0] = 0;
+        return empty;
+    }
+    // Remove control chars except newline, trim leading/trailing whitespace, collapse multiple spaces
+    char *tmp = (char *)malloc(len + 2);
+    if (!tmp) return NULL;
+    size_t j = 0;
+    int last_space = 0;
+    // Skip leading whitespace
+    size_t i = 0;
+    while (isspace((unsigned char)text[i]) && text[i] != '\n') i++;
+    for (; text[i]; i++) {
+        unsigned char c = (unsigned char)text[i];
+        if (c < 32 && c != '\n') {
+            // Replace control chars (except newline) with space
+            if (!last_space) tmp[j++] = ' ';
+            last_space = 1;
+            continue;
+        }
+        if (isspace(c) && c != '\n') {
+            if (!last_space) tmp[j++] = ' ';
+            last_space = 1;
+        } else {
+            tmp[j++] = text[i];
+            last_space = 0;
+        }
+    }
+    // Remove trailing whitespace
+    while (j > 0 && isspace((unsigned char)tmp[j-1]) && tmp[j-1] != '\n') j--;
+    tmp[j] = 0;
+
+    // Normalize lowercase
+    strtolower(tmp);
+
+    // Remove punctuation except sentence-ending, intra-word apostrophes, and properly used commas
+    char *out = (char *)malloc(strlen(tmp) + 1);
+    if (!out) { free(tmp); return NULL; }
+    size_t k = 0;
+    size_t tmplen = strlen(tmp);
+    for (size_t m = 0; m < tmplen; m++) {
+        char c = tmp[m];
+        if (
+            is_word_char(c) ||
+            c == ' ' || c == '\n' ||
+            is_sentence_punct(c) ||
+            (is_inner_punct(c) && m > 0 && m + 1 < tmplen && is_word_char(tmp[m-1]) && is_word_char(tmp[m+1]))
+        ) {
+            // Only allow apostrophe if surrounded by alpha (intra-word)
+            if (c == '\'') {
+                if (!(m > 0 && m + 1 < tmplen && isalpha((unsigned char)tmp[m-1]) && isalpha((unsigned char)tmp[m+1])))
+                    continue;
+            }
+            out[k++] = c;
+        }
+    }
+    out[k] = 0;
+    free(tmp);
+
+    // Remove trailing spaces again
+    while (k > 0 && isspace((unsigned char)out[k-1]) && out[k-1] != '\n') out[--k] = 0;
+
+    // Ensure sentence ends with punctuation if not already
+    if (k > 0 && !is_sentence_punct(out[k-1])) {
+        out[k++] = '.';
+        out[k] = 0;
+    }
+
+    return out;
+}
+
+/* ============================================================================
+ * Grammar & style analysis
+ * ============================================================================ */
+
+fossil_io_soap_grammar_style_t fossil_io_soap_analyze_grammar_style(const char *text) {
+    fossil_io_soap_grammar_style_t r = {1, 0, "neutral", 0, 0, NULL, NULL, 100, {0,0,0,0}};
+    if (!text) return r;
+
+    int passive = 0, words = 0, grammar_errors = 0, style_inconsistencies = 0;
+    const char *style = "neutral";
+    int style_confidence = 80;
+    const char *grammar_errs[16] = {NULL};
+    const char *style_incons[16] = {NULL};
+    int grammar_err_idx = 0, style_incons_idx = 0;
+
+    // Count words using is_word_char
+    int in_word = 0;
+    for (const char *p = text; *p; ++p) {
+        if (is_word_char(*p)) {
+            if (!in_word) {
+                words++;
+                in_word = 1;
+            }
+        } else {
+            in_word = 0;
+        }
+    }
+
+    // Passive voice: look for "was|were|is|are|been|being" + " " + word ending in "ed"
+    const char *p = text;
+    while (*p) {
+        if (!strncmp(p, "was ", 4) || !strncmp(p, "were ", 5) ||
+            !strncmp(p, "is ", 3) || !strncmp(p, "are ", 4) ||
+            !strncmp(p, "been ", 5) || !strncmp(p, "being ", 6)) {
+            const char *q = p;
+            while (*q && !is_word_char(*q)) q++;
+            while (*q && is_word_char(*q)) q++;
+            while (*q && !is_word_char(*q)) q++;
+            // Look for word ending in "ed"
+            char buf[32] = {0};
+            int i = 0;
+            while (*q && is_word_char(*q) && i < 30) buf[i++] = *q++;
+            buf[i] = 0;
+            size_t blen = strlen(buf);
+            if (blen > 2 && buf[blen-2] == 'e' && buf[blen-1] == 'd')
+                passive++;
+        }
+        p++;
+    }
+    if (words) r.passive_voice_pct = (passive * 100) / words;
+
+    // Style detection (improved heuristics)
+    int has_exclaim = 0, has_question = 0, has_semicolon = 0, has_colon = 0, has_formal = 0, has_casual = 0, has_emojis = 0, has_caps = 0;
+    for (const char *q = text; *q; q++) {
+        if (*q == '!') has_exclaim = 1;
+        if (*q == '?') has_question = 1;
+        if (*q == ';') has_semicolon = 1;
+        if (*q == ':') has_colon = 1;
+        if (isupper((unsigned char)*q)) has_caps = 1;
+    }
+    if (strstr(text, "therefore") || strstr(text, "however") || strstr(text, "thus")) has_formal = 1;
+    if (strstr(text, "lol") || strstr(text, "btw") || strstr(text, "hey")) has_casual = 1;
+    if (strstr(text, ":)") || strstr(text, ":(") || strstr(text, ";)")) has_emojis = 1;
+
+    if (has_exclaim || has_question) {
+        style = "emotional";
+        style_confidence = 70;
+    }
+    if (has_formal || has_semicolon || has_colon) {
+        style = "formal";
+        style_confidence = 80;
+    }
+    if (has_casual || has_emojis) {
+        style = "casual";
+        style_confidence = 80;
+    }
+    if (has_caps && !has_formal && !has_casual) {
+        style = "emphatic";
+        style_confidence = 60;
+    }
+
+    // Grammar error: double spaces
+    if (strstr(text, "  ")) {
+        grammar_errors++;
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Double space detected";
+        r.grammar_ok = 0;
+    }
+    // Grammar error: repeated punctuation (e.g. "!!", "??", "...")
+    if (strstr(text, "!!") || strstr(text, "??") || strstr(text, "...")) {
+        grammar_errors++;
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Repeated punctuation";
+        r.grammar_ok = 0;
+    }
+    // Grammar error: missing terminal punctuation
+    size_t len = strlen(text);
+    if (len > 0 && !is_sentence_punct(text[len-1])) {
+        grammar_errors++;
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Missing terminal punctuation";
+        r.grammar_ok = 0;
+    }
+    // Grammar error: all lowercase sentence start
+    if (is_word_char(text[0]) && islower((unsigned char)text[0])) {
+        grammar_errors++;
+        if (grammar_err_idx < 16)
+            grammar_errs[grammar_err_idx++] = "Sentence does not start with a capital letter";
+        r.grammar_ok = 0;
+    }
+
+    // Style inconsistency: mix of "!" and "."
+    if (has_exclaim && strchr(text, '.')) {
+        style_inconsistencies++;
+        if (style_incons_idx < 16)
+            style_incons[style_incons_idx++] = "Mixed emotional and neutral punctuation";
+    }
+    // Style inconsistency: mix of formal and casual
+    if (has_formal && has_casual) {
+        style_inconsistencies++;
+        if (style_incons_idx < 16)
+            style_incons[style_incons_idx++] = "Mix of formal and casual language";
+    }
+    // Style inconsistency: excessive capitalization
+    if (has_caps && strlen(text) > 10) {
+        int cap_count = 0, total = 0;
+        for (const char *q = text; *q; q++) {
+            if (is_word_char(*q)) {
+                total++;
+                if (isupper((unsigned char)*q)) cap_count++;
+            }
+        }
+        if (total > 0 && cap_count * 2 > total) {
+            style_inconsistencies++;
+            if (style_incons_idx < 16)
+                style_incons[style_incons_idx++] = "Excessive capitalization";
+        }
+    }
+
+    r.style = style;
+    r.style_confidence = style_confidence;
+    r.grammar_error_count = grammar_errors;
+    r.style_inconsistency_count = style_inconsistencies;
+    r.grammar_errors = (grammar_err_idx > 0) ? (const char **)grammar_errs : NULL;
+    r.style_inconsistencies = (style_incons_idx > 0) ? (const char **)style_incons : NULL;
+
+    return r;
+}
+
+char *fossil_io_soap_correct_grammar(const char *text) {
+    if (!text) return NULL;
+
+    // --- Begin enhanced context-aware grammar correction ---
+    size_t outcap = strlen(text) * 2 + 64;
+    char *out = malloc(outcap);
+    if (!out) return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    if (!text || !out) return NULL;
+
+    int new_sentence = 1;
+    int last_space = 0;
+    char last_char = 0;
+
+    int in_quote = 0;
+    int in_paren = 0;
+    int in_url = 0;
+    int word_start = 1;
+
+    // For abbreviation detection
+    char prev_word[32] = {0};
+    int prev_word_len = 0;
+
+    int ellipsis = 0;
+    int after_punct = 0;
+
+    struct {
+        const char *from;
+        const char *to;
+    } contractions[] = {
+        {" dont ", " don't "}, {" cant ", " can't "}, {" wont ", " won't "},
+        {" isnt ", " isn't "}, {" arent ", " aren't "}, {" wasnt ", " wasn't "},
+        {" werent ", " weren't "}, {" doesnt ", " doesn't "}, {" didnt ", " didn't "},
+        {" hasnt ", " hasn't "}, {" havent ", " haven't "}, {" hadnt ", " hadn't "},
+        {" couldnt ", " couldn't "}, {" wouldnt ", " wouldn't "}, {" shouldnt ", " shouldn't "},
+        {" mustnt ", " mustn't "}, {" neednt ", " needn't "}, {" darent ", " daren't "},
+        {" im ", " I'm "}, {" ive ", " I've "}, {" ill ", " I'll "}, {" id ", " I'd "},
+        {" youre ", " you're "}, {" youve ", " you've "}, {" youll ", " you'll "},
+        {" youd ", " you'd "}, {" hes ", " he's "}, {" hed ", " he'd "}, {" hell ", " he'll "},
+        {" shes ", " she's "}, {" shed ", " she'd "}, {" shell ", " she'll "},
+        {" its ", " it's "}, {" were ", " we're "}, {" theyre ", " they're "},
+        {" theyve ", " they've "}, {" theyll ", " they'll "}, {" theyd ", " they'd "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" whats ", " what's "},
+        {" whos ", " who's "}, {" wheres ", " where's "}, {" whens ", " when's "},
+        {" whys ", " why's "}, {" hows ", " how's "}, {" couldve ", " could've "},
+        {" wouldve ", " would've "}, {" shouldve ", " should've "}, {" mightve ", " might've "},
+        {" mustve ", " must've "}, {" mayve ", " may've "}, {" lets ", " let's "},
+        {" thats ", " that's "}, {" theres ", " there's "}, {" dont.", " don't."},
+        {" dont,", " don't,"}, {" cant.", " can't."}, {" cant,", " can't,"},
+        {" wont.", " won't."}, {" wont,", " won't,"}, {NULL, NULL}
+    };
+
+    while (*p) {
+        char c = *p;
+
+        // Track quote and paren state
+        if (c == '"' || c == '\'') in_quote ^= 1;
+        if (c == '(') in_paren++;
+        if (c == ')') if (in_paren > 0) in_paren--;
+
+        // URL detection (cheap, no regex)
+        if (!in_url && (strncmp(p, "http://", 7) == 0 ||
+                        strncmp(p, "https://", 8) == 0))
+            in_url = 1;
+        if (in_url && (isspace((unsigned char)c) || c == '"' || c == '\'')) // end url on space or quote
+            in_url = 0;
+
+        // Normalize whitespace (collapse multiple spaces/tabs)
+        if (isspace((unsigned char)c)) {
+            if (!last_space && !after_punct) {
+                *q++ = ' ';
+                last_space = 1;
+            }
+            word_start = 1;
+            p++;
+            continue;
+        }
+        last_space = 0;
+        after_punct = 0;
+
+        // Word boundary and sentence word count
+        if (is_word_char(c) && word_start) {
+            word_start = 0;
+        }
+        if (!is_word_char(c))
+            word_start = 1;
+
+        // Abbreviation detection (look back for word before '.')
+        if (c == '.' && prev_word_len > 0) {
+            prev_word[prev_word_len] = 0;
+        }
+
+        // Capitalize start of sentences
+        int is_abbrev = 0;
+        if (new_sentence && is_word_char(c) && isalpha((unsigned char)c)) {
+            if (prev_word_len > 0 && soap_is_abbrev(prev_word))
+                is_abbrev = 1;
+
+            if (!is_abbrev && !ellipsis)
+                c = (char)toupper((unsigned char)c);
+
+            new_sentence = 0;
+            ellipsis = 0;
+        }
+
+        // Punctuation collapse, but smarter
+        if (ispunct((unsigned char)c) && c == last_char) {
+            // Collapse repeated punctuation except for ellipsis
+            if (c == '.' && *(p+1) == '.' && *(p+2) == '.') {
+                // allow ellipsis
+            } else if (is_sentence_punct(c)) {
+                p++;
+                continue;
+            }
+        }
+
+        // Sentence boundary detection (punctuation-aware)
+        if (is_sentence_punct(c) && !in_quote) {
+            // Decimal number: don't end sentence
+            if (c == '.' && isdigit((unsigned char)*(p+1)))
+                ;
+            // Abbreviation: don't end sentence
+            else if (is_abbrev)
+                ;
+            else if (c == '.' && *(p+1) == '.' && *(p+2) == '.') {
+                ellipsis = 1;
+            }
+            else
+                new_sentence = 1;
+        }
+
+        // Context-aware contraction replacement (inline, not global)
+        int contraction_found = 0;
+        if (!in_quote && !in_url && !in_paren) {
+            for (int i = 0; contractions[i].from; i++) {
+                size_t len = strlen(contractions[i].from);
+                if (strncmp(p, contractions[i].from, len) == 0) {
+                    memcpy(q, contractions[i].to, strlen(contractions[i].to));
+                    q += strlen(contractions[i].to);
+                    p += len;
+                    last_char = contractions[i].to[strlen(contractions[i].to)-1];
+                    contraction_found = 1;
+                    break;
+                }
+            }
+        }
+        if (contraction_found) continue;
+
+        // Smart spacing after punctuation (ensure single space after .!?)
+        if (is_sentence_punct(c) && !in_quote && !in_url) {
+            *q++ = c;
+            last_char = c;
+            p++;
+            // Skip any spaces after punctuation
+            while (isspace((unsigned char)*p)) p++;
+            // Insert a single space if not end of string or next is punctuation
+            if (*p && !ispunct((unsigned char)*p) && *p != '\0') {
+                *q++ = ' ';
+                last_space = 1;
+            }
+            after_punct = 1;
+            continue;
+        }
+
+        // Fix common missing apostrophes in contractions (e.g. dont -> don't)
+        int contraction_fixed = 0;
+        if (!in_quote && !in_url && is_word_char(c) && isalpha((unsigned char)c)) {
+            // Look for common patterns like "dont", "cant", etc.
+            if ((p == text || !is_word_char(*(p-1))) &&
+                (strncmp(p, "dont", 4) == 0 || strncmp(p, "cant", 4) == 0 ||
+                 strncmp(p, "wont", 4) == 0 || strncmp(p, "isnt", 4) == 0 ||
+                 strncmp(p, "arent", 5) == 0 || strncmp(p, "wasnt", 5) == 0 ||
+                 strncmp(p, "werent", 6) == 0 || strncmp(p, "doesnt", 6) == 0 ||
+                 strncmp(p, "didnt", 5) == 0 || strncmp(p, "hasnt", 5) == 0 ||
+                 strncmp(p, "havent", 6) == 0 || strncmp(p, "hadnt", 5) == 0 ||
+                 strncmp(p, "couldnt", 7) == 0 || strncmp(p, "wouldnt", 7) == 0 ||
+                 strncmp(p, "shouldnt", 8) == 0 || strncmp(p, "mustnt", 6) == 0 ||
+                 strncmp(p, "neednt", 6) == 0 || strncmp(p, "darent", 6) == 0)) {
+                // Insert apostrophe before last t
+                size_t wlen = 0;
+                while (is_word_char(p[wlen]) && isalpha((unsigned char)p[wlen])) wlen++;
+                if (wlen > 3 && wlen < 10) {
+                    for (size_t i = 0; i < wlen; i++) {
+                        if (i == wlen - 3) *q++ = '\'';
+                        *q++ = p[i];
+                    }
+                    p += wlen;
+                    last_char = p[-1];
+                    contraction_fixed = 1;
+                }
+            }
+        }
+        if (contraction_fixed) continue;
+
+        // Expand common informal forms (e.g. "gonna" -> "going to", "wanna" -> "want to")
+        int informal_expanded = 0;
+        if (!in_quote && !in_url && is_word_char(c) && isalpha((unsigned char)c)) {
+            if ((p == text || !is_word_char(*(p-1)))) {
+                if (strncmp(p, "gonna", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "going to", 8); q += 8; p += 5; last_char = 'o'; informal_expanded = 1;
+                } else if (strncmp(p, "wanna", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "want to", 7); q += 7; p += 5; last_char = 'o'; informal_expanded = 1;
+                } else if (strncmp(p, "gotta", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "got to", 6); q += 6; p += 5; last_char = 'o'; informal_expanded = 1;
+                } else if (strncmp(p, "kinda", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "kind of", 7); q += 7; p += 5; last_char = 'f'; informal_expanded = 1;
+                } else if (strncmp(p, "sorta", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "sort of", 7); q += 7; p += 5; last_char = 'f'; informal_expanded = 1;
+                } else if (strncmp(p, "outta", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "out of", 6); q += 6; p += 5; last_char = 'f'; informal_expanded = 1;
+                } else if (strncmp(p, "lemme", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "let me", 6); q += 6; p += 5; last_char = 'e'; informal_expanded = 1;
+                } else if (strncmp(p, "gimme", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "give me", 7); q += 7; p += 5; last_char = 'e'; informal_expanded = 1;
+                } else if (strncmp(p, "ain't", 5) == 0 && !is_word_char(p[5])) {
+                    memcpy(q, "is not", 6); q += 6; p += 5; last_char = 't'; informal_expanded = 1;
+                }
+            }
+        }
+        if (informal_expanded) continue;
+
+        // Remove repeated punctuation (e.g. "!!!" -> "!")
+        int rep_punct = 0;
+        if (ispunct((unsigned char)c) && (c == '!' || c == '?')) {
+            while (*(p+1) == c) { p++; rep_punct = 1; }
+            if (rep_punct) {
+                *q++ = c;
+                last_char = c;
+                p++;
+                continue;
+            }
+        }
+
+        // Remove space before punctuation (e.g. "word ." -> "word.")
+        if (q > out && isspace((unsigned char)q[-1]) && ispunct((unsigned char)c) && c != '\'') {
+            q--;
+        }
+
+        *q++ = c;
+        last_char = c;
+        p++;
+
+        // Track previous word for abbreviation check
+        if (is_word_char(c) && isalpha((unsigned char)c)) {
+            if (prev_word_len < (int)sizeof(prev_word) - 1)
+                prev_word[prev_word_len++] = (char)tolower((unsigned char)c);
+        } else {
+            prev_word_len = 0;
+        }
+
+        // Grow output buffer if needed
+        if ((size_t)(q - out) > outcap - 16) {
+            size_t used = q - out;
+            outcap *= 2;
+            char *newout = realloc(out, outcap);
+            if (!newout) {
+                free(out);
+                return NULL;
+            }
+            out = newout;
+            q = out + used;
+        }
+    }
+
+    // Ensure terminal punctuation
+    if (q > out && !is_sentence_punct(q[-1])) {
+        *q++ = '.';
+    }
+
+    *q = '\0';
+
+    // Remove trailing spaces
+    while (q > out && isspace((unsigned char)q[-1])) *(--q) = 0;
+
+    (void)ellipsis;
+    (void)after_punct;
+
+    return out;
+}
+
+/* ============================================================================
+ * Readability / scoring
+ * ============================================================================ */
+
+fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
+    fossil_io_soap_scores_t s = {100, 100, 100};
+    if (!text) return s;
+
+    size_t len = strlen(text);
+
+    // Readability: penalize short or very long text
+    if (len < 40) s.readability -= 40;
+    else if (len > 1000) s.readability -= 10;
+
+    // Readability: penalize long sentences
+    char **sentences = fossil_io_soap_split(text);
+    int long_sent = 0, total_sent = 0;
+    if (sentences) {
+        for (int i = 0; sentences[i]; i++) {
+            if (sentences[i]) {
+                size_t slen = strlen(sentences[i]);
+                if (slen > 120) long_sent++;
+                total_sent++;
+            }
+        }
+        if (total_sent > 0 && long_sent * 2 > total_sent)
+            s.readability -= 10;
+        for (int i = 0; sentences[i]; i++) {
+            if (sentences[i]) free(sentences[i]);
+        }
+        free(sentences);
+    }
+
+    // Clarity: reward line breaks, penalize excessive punctuation
+    if (strchr(text, '\n')) s.clarity += 5;
+    if (strstr(text, "...")) s.clarity -= 5;
+    int punct_count = 0;
+    for (const char *p = text; *p; p++)
+        if (is_inner_punct(*p) || is_sentence_punct(*p))
+            punct_count++;
+    if (punct_count > (int)(len / 6)) s.clarity -= 10;
+
+    // Clarity: penalize repeated words (use is_word_char for word boundaries)
+    char **words = fossil_io_soap_split(text);
+    int repeated = 0;
+    if (words) {
+        for (int i = 1; words[i]; i++) {
+            const char *w1 = words[i-1];
+            const char *w2 = words[i];
+            if (!w1 || !w2) continue;
+            int isw1 = 0, isw2 = 0;
+            for (const char *c = w1; *c; c++) if (is_word_char(*c)) { isw1 = 1; break; }
+            for (const char *c = w2; *c; c++) if (is_word_char(*c)) { isw2 = 1; break; }
+            if (!isw1 || !isw2) continue;
+            if (strcasecmp(w1, w2) == 0) repeated++;
+        }
+        if (repeated > 0) s.clarity -= 5;
+        for (int i = 0; words[i]; i++) {
+            if (words[i]) free(words[i]);
+        }
+        free(words);
+    }
+
+    // Quality: penalize excessive exclamation, reward absence of spammy patterns
+    int exclam = 0;
+    for (const char *p = text; *p; p++)
+        if (*p == '!') exclam++;
+    if (exclam > 3) s.quality -= 10;
+    if (strstr(text, "!!!")) s.quality -= 10;
+    // Use match_word_pattern for spammy phrases
+    for (size_t i = 0; i + 7 < len; i++) {
+        if (match_word_pattern(text, i, "buy now") || match_word_pattern(text, i, "click here")) {
+            s.quality -= 10;
+            break;
+        }
+    }
+
+    // Quality: penalize all-caps words (use is_word_char for word detection)
+    int allcaps = 0, wordcount = 0;
+    const char *p = text;
+    while (*p) {
+        // Skip non-word chars
+        while (*p && !is_word_char(*p)) p++;
+        if (!*p) break;
+        int cap = 1, lenw = 0;
+        while (*p && is_word_char(*p)) {
+            if (islower((unsigned char)*p)) cap = 0;
+            lenw++;
+            p++;
+        }
+        if (cap && lenw > 2) allcaps++;
+        if (lenw > 0) wordcount++;
+    }
+    if (allcaps > 0 && allcaps * 3 > wordcount) s.quality -= 10;
+
+    // Clamp to [0,100]
+    if (s.readability > 100) s.readability = 100;
+    if (s.clarity > 100) s.clarity = 100;
+    if (s.quality > 100) s.quality = 100;
+    if (s.readability < 0) s.readability = 0;
+    if (s.clarity < 0) s.clarity = 0;
+    if (s.quality < 0) s.quality = 0;
+
+    // For very short text, also penalize clarity and quality
+    if (len < 40) {
+        s.clarity -= 30;
+        s.quality -= 30;
+        if (s.clarity < 0) s.clarity = 0;
+        if (s.quality < 0) s.quality = 0;
+    }
+
+    return s;
+}
+
+const char *fossil_io_soap_readability_label(int score) {
+    if (score >= 95) return "outstanding";
+    if (score >= 85) return "excellent";
+    if (score >= 70) return "very good";
+    if (score >= 60) return "good";
+    if (score >= 50) return "fair";
+    if (score >= 35) return "poor";
+    if (score >= 20) return "very poor";
+    return "unreadable";
+}
+
+/* ============================================================================
+ * Detector
+ * ============================================================================ */
+
 typedef struct {
     const char *id;
     const pattern_t *patterns;
@@ -812,7 +1251,6 @@ typedef struct {
  * ============================================================================ */
 static const detector_map_t detector_map[] = {
     /* Document-level */
-    {"propaganda", propaganda_patterns},
     {"conspiracy", conspiracy_patterns},
 
     /* Sentence-level */
@@ -839,11 +1277,11 @@ static const detector_map_t detector_map[] = {
     {"neutral", neutral_patterns},
     {"aggressive", aggressive_patterns},
     {"emotional", emotional_patterns},
-    {"passive_aggressive", passive_aggressive_patterns},
+    {"passive", passive_patterns},
     {"snowflake", snowflake_patterns},
 
     /* Structural (logic handled separately) */
-    {"redundant_sentences", NULL},
+    {"redundant", NULL},
     {"poor_cohesion", NULL},
     {"repeated_words", NULL},
 
@@ -865,12 +1303,36 @@ static const pattern_t *get_patterns(const char *detector_id) {
  * Structural detection helpers
  * ============================================================================ */
 
-static int detect_redundant_sentences(char **sentences) {
+static int detect_redundant(char **sentences) {
     if (!sentences) return 0;
     for (size_t i = 0; sentences[i]; i++) {
+        // Normalize sentence i
+        char *si = dupstr(sentences[i]);
+        if (!si) continue;
+        strtolower(si);
+        // Remove leading/trailing whitespace and punctuation
+        char *start_i = si;
+        while (*start_i && (isspace((unsigned char)*start_i) || ispunct((unsigned char)*start_i))) start_i++;
+        char *end_i = start_i + strlen(start_i);
+        while (end_i > start_i && (isspace((unsigned char)*(end_i-1)) || ispunct((unsigned char)*(end_i-1)))) *(--end_i) = 0;
+
         for (size_t j = i + 1; sentences[j]; j++) {
-            if (strcmp(sentences[i], sentences[j]) == 0) return 1;
+            char *sj = dupstr(sentences[j]);
+            if (!sj) continue;
+            strtolower(sj);
+            char *start_j = sj;
+            while (*start_j && (isspace((unsigned char)*start_j) || ispunct((unsigned char)*start_j))) start_j++;
+            char *end_j = start_j + strlen(start_j);
+            while (end_j > start_j && (isspace((unsigned char)*(end_j-1)) || ispunct((unsigned char)*(end_j-1)))) *(--end_j) = 0;
+
+            if (strcmp(start_i, start_j) == 0) {
+                free(si);
+                free(sj);
+                return 1;
+            }
+            free(sj);
         }
+        free(si);
     }
     return 0;
 }
@@ -878,8 +1340,16 @@ static int detect_redundant_sentences(char **sentences) {
 static int detect_repeated_words(char **words) {
     if (!words) return 0;
     for (size_t i = 0; words[i]; i++) {
+        if (strlen(words[i]) == 0) continue;
         for (size_t j = i + 1; words[j]; j++) {
-            if (strcmp(words[i], words[j]) == 0) return 1;
+            // Ignore case and skip punctuation-only "words"
+            const char *wi = words[i];
+            const char *wj = words[j];
+            int only_punct_i = 1, only_punct_j = 1;
+            for (const char *p = wi; *p; p++) if (isalnum((unsigned char)*p)) { only_punct_i = 0; break; }
+            for (const char *p = wj; *p; p++) if (isalnum((unsigned char)*p)) { only_punct_j = 0; break; }
+            if (only_punct_i || only_punct_j) continue;
+            if (strcasecmp(wi, wj) == 0) return 1;
         }
     }
     return 0;
@@ -927,6 +1397,32 @@ static int detect_poor_cohesion(char **sentences) {
         }
     }
 
+    if (total > 2) {
+        size_t rep = 0;
+        for (size_t i = 1; sentences[i]; i++) {
+            char *first1 = dupstr(sentences[i-1]);
+            char *first2 = dupstr(sentences[i]);
+            char *w1 = strtok(first1, " \t\n");
+            char *w2 = strtok(first2, " \t\n");
+            if (w1 && w2 && strcasecmp(w1, w2) == 0) rep++;
+            free(first1);
+            free(first2);
+        }
+        if (((double)rep / (total-1)) > 0.4) weak++;
+    }
+
+    size_t short_count = 0, long_count = 0;
+    for (size_t i = 0; sentences[i]; i++) {
+        size_t wc = 0;
+        char *copy = dupstr(sentences[i]);
+        for (char *tok = strtok(copy, " \t\n"); tok; tok = strtok(NULL, " \t\n")) wc++;
+        free(copy);
+        if (wc < 4) short_count++;
+        if (wc > 25) long_count++;
+    }
+    if (total > 0 && ((double)short_count / total) > 0.5) weak++;
+    if (total > 0 && ((double)long_count / total) > 0.3) weak++;
+
     if (total == 0) return 0;
     return ((double)weak / total) > 0.3;
 }
@@ -944,88 +1440,110 @@ static int match_brain_rot(const char *word) {
 /* ============================================================================
  * Refactored fossil_io_soap_detect with Morse, BrainRot, Leet, and Structural
  * ============================================================================ */
-/* Helper: match_patterns implementation */
-static int match_patterns(const char *text, const pattern_t *patterns) {
-    if (!text || !patterns) return 0;
-    for (int i = 0; patterns[i].pattern; i++) {
-        if (strstr(text, patterns[i].pattern)) return 1;
-    }
-    return 0;
-}
 
 int fossil_io_soap_detect(const char *text, const char *detector_id) {
     if (!text || !detector_id) return 0;
 
     int result = 0;
 
-    /* ================= Document-level normalization ================= */
+    // Document-level normalization using advanced leet normalization
     char *norm = dupstr(text);
-    normalize_leet(norm);
+    if (!norm) return 0;
     strtolower(norm);
 
     const pattern_t *patterns = get_patterns(detector_id);
-    if (patterns) result |= match_patterns(norm, patterns);
+    if (patterns) {
+        // Use match_word_pattern for word/phrase patterns
+        size_t len = strlen(norm);
+        for (size_t i = 0; patterns[i].pattern && !result; i++) {
+            size_t plen = strlen(patterns[i].pattern);
+            for (size_t j = 0; j + plen <= len; j++) {
+                if (match_word_pattern(norm, j, patterns[i].pattern)) {
+                    result = 1;
+                    break;
+                }
+            }
+        }
+    }
     free(norm);
 
-    /* ================= Sentence-level detection ================= */
+    // Sentence-level detection
     char **sentences = fossil_io_soap_split(text);
-    if (sentences) {
+    if (sentences && !result) {
         for (size_t i = 0; sentences[i]; i++) {
             char *s_norm = dupstr(sentences[i]);
-            normalize_leet(s_norm);
+            if (!s_norm) continue;
             strtolower(s_norm);
 
-            if (patterns) result |= match_patterns(s_norm, patterns);
-
+            if (patterns) {
+                size_t len = strlen(s_norm);
+                for (size_t k = 0; patterns[k].pattern && !result; k++) {
+                    size_t plen = strlen(patterns[k].pattern);
+                    for (size_t j = 0; j + plen <= len; j++) {
+                        if (match_word_pattern(s_norm, j, patterns[k].pattern)) {
+                            result = 1;
+                            break;
+                        }
+                    }
+                }
+            }
             free(s_norm);
+            if (result) break;
         }
     }
 
-    /* ================= Word-level detection ================= */
+    // Word-level detection
     char **words = fossil_io_soap_split(text);
-    if (words) {
+    if (words && !result) {
         for (size_t i = 0; words[i]; i++) {
             char *w_norm = dupstr(words[i]);
-            normalize_leet(w_norm);
+            if (!w_norm) continue;
             strtolower(w_norm);
 
             if (strcmp(detector_id, "brain_rot") == 0) {
-                if (match_brain_rot(w_norm)) result = 1;
-            } else if (strcmp(detector_id, "leet") == 0) {
-                for (char *p = w_norm; *p; p++)
-                    if (*p == '4' || *p == '3' || *p == '1' || *p == '0' || *p == '5' || *p == '7') {
-                        result = 1;
-                        break;
+                if (match_brain_rot(w_norm)) {
+                    result = 1;
+                    free(w_norm);
+                    break;
+                }
+            }
+
+            if (!result && patterns) {
+                size_t len = strlen(w_norm);
+                for (size_t k = 0; patterns[k].pattern && !result; k++) {
+                    size_t plen = strlen(patterns[k].pattern);
+                    for (size_t j = 0; j + plen <= len; j++) {
+                        if (match_word_pattern(w_norm, j, patterns[k].pattern)) {
+                            result = 1;
+                            break;
+                        }
                     }
-            } else if (strcmp(detector_id, "morse") == 0) {
-                char *decoded = decode_morse(w_norm);
-                if (decoded) {
-                    for (size_t j=0; j<strlen(decoded); j++)
-                        if (isalpha(decoded[j])) { result = 1; break; }
-                    free(decoded);
                 }
             }
 
             free(w_norm);
+            if (result) break;
         }
     }
 
-    /* ================= Structural detection ================= */
-    if (strcmp(detector_id, "redundant_sentences") == 0) {
-        result = detect_redundant_sentences(sentences);
-    } else if (strcmp(detector_id, "repeated_words") == 0) {
-        result = detect_repeated_words(words);
-    } else if (strcmp(detector_id, "poor_cohesion") == 0) {
-        result = detect_poor_cohesion(sentences);
+    // Structural detection
+    if (!result) {
+        if (strcmp(detector_id, "redundant") == 0) {
+            result = detect_redundant(sentences);
+        } else if (strcmp(detector_id, "repeated_words") == 0) {
+            result = detect_repeated_words(words);
+        } else if (strcmp(detector_id, "poor_cohesion") == 0) {
+            result = detect_poor_cohesion(sentences);
+        }
     }
 
-    /* ================= Cleanup ================= */
-    if (sentences && sentences != words) {
+    // Cleanup
+    if (sentences) {
         for (size_t i = 0; sentences[i]; i++) free(sentences[i]);
         free(sentences);
     }
 
-    if (words && words != sentences) {
+    if (words) {
         for (size_t i = 0; words[i]; i++) free(words[i]);
         free(words);
     }
@@ -1038,64 +1556,196 @@ int fossil_io_soap_detect(const char *text, const char *detector_id) {
  * ============================================================================ */
 
 char **fossil_io_soap_split(const char *text) {
-    // Overload: if text contains sentence-ending punctuation, split as sentences; else, split as words.
+    // Enhanced: split as sentences if sentence-ending punctuation is present, else split as words.
     if (!text) return NULL;
 
-    // Heuristic: if text contains '.', '!' or '?', treat as sentences
+    // Heuristic: if text contains sentence-ending punctuation, treat as sentences
     int is_sentence = 0;
     for (const char *q = text; *q; q++) {
-        if (*q == '.' || *q == '!' || *q == '?') { is_sentence = 1; break; }
+        if (is_sentence_punct(*q)) { is_sentence = 1; break; }
     }
 
+    // First pass: count segments
     size_t count = 0;
     const char *p = text;
+    int in_token = 0;
     while (*p) {
         if (!is_sentence) {
-            if (isspace((unsigned char)*p)) count++;
+            // Word mode: use is_word_char
+            if (is_word_char(*p) && !in_token) {
+                in_token = 1;
+                count++;
+            } else if (!is_word_char(*p)) {
+                in_token = 0;
+            }
         } else {
-            if (*p == '.' || *p == '!' || *p == '?') count++;
+            // Sentence mode
+            if (!in_token && !isspace((unsigned char)*p)) {
+                in_token = 1;
+                count++;
+            }
+            if (is_sentence_punct(*p)) {
+                in_token = 0;
+            }
         }
         p++;
     }
-    char **arr = (char**)malloc(sizeof(char*) * (count + 2));
+
+    char **arr = NULL;
+    if (count == 0) {
+        arr = (char**)malloc(sizeof(char*) * 1);
+        if (!arr) return NULL;
+        arr[0] = NULL;
+        return arr;
+    }
+    arr = (char**)malloc(sizeof(char*) * (count + 1));
+    if (!arr) return NULL;
     size_t idx = 0;
-    const char *start = text;
+
+    // Second pass: extract segments
     p = text;
     while (*p) {
-        if ((!is_sentence && isspace((unsigned char)*p)) ||
-            (is_sentence && (*p == '.' || *p == '!' || *p == '?'))) {
-            size_t len = p - start;
-            char *s = (char*)malloc(len + 1);
-            strncpy(s, start, len); s[len] = 0;
-            arr[idx++] = s;
-            start = p + 1;
+        // Skip leading whitespace and control chars
+        while (*p && (isspace((unsigned char)*p) || ((unsigned char)*p < 32 && *p != '\n'))) p++;
+        if (!*p) break;
+        const char *start = p;
+        if (!is_sentence) {
+            // Word mode: use is_word_char
+            while (*p && is_word_char(*p)) p++;
+        } else {
+            // Sentence mode
+            int in_quote = 0;
+            while (*p) {
+                if (*p == '"' || *p == '\'') in_quote ^= 1;
+                if (!in_quote && is_sentence_punct(*p)) {
+                    p++; // include punctuation
+                    break;
+                }
+                p++;
+            }
         }
-        p++;
-    }
-    if (*start) {
-        arr[idx++] = dupstr(start);
+        size_t len = p - start;
+        // Trim trailing whitespace and control chars
+        while (len > 0 && (isspace((unsigned char)start[len-1]) || ((unsigned char)start[len-1] < 32 && start[len-1] != '\n'))) len--;
+        if (len > 0) {
+            char *s = (char*)malloc(len + 1);
+            if (s) {
+                strncpy(s, start, len);
+                s[len] = 0;
+                arr[idx++] = s;
+            }
+        }
     }
     arr[idx] = NULL;
     return arr;
 }
 
-char *fossil_io_soap_reflow(const char *text,int width){
-    if(!text||width<=0) return dupstr(text);
-    char *out=malloc(strlen(text)*2+1);
-    int col=0; size_t oi=0;
-    for(const char *p=text;*p;p++){
-        out[oi++]=*p; col++;
-        if(col>=width && isspace((unsigned char)*p)){ out[oi++]='\n'; col=0;}
+char *fossil_io_soap_reflow(const char *text, int width) {
+    if (!text || width <= 0) return dupstr(text);
+
+    size_t len = strlen(text);
+    char *out = malloc(len * 2 + 2);
+    if (!out) return NULL;
+
+    int col = 0;
+    size_t oi = 0;
+    const char *p = text;
+    int last_space_oi = -1;
+    while (*p) {
+        if (oi >= len * 2) { // Prevent buffer overflow
+            size_t newcap = len * 4 + 2;
+            char *newout = realloc(out, newcap);
+            if (!newout) {
+                free(out);
+                return NULL;
+            }
+            out = newout;
+        }
+        if (*p == '\n') {
+            out[oi++] = *p++;
+            col = 0;
+            last_space_oi = -1;
+            continue;
+        }
+        if (isspace((unsigned char)*p)) {
+            // collapse multiple spaces/tabs to a single space
+            if (oi > 0 && !is_word_char(out[oi-1]) && out[oi-1] != '\n' && out[oi-1] != ' ') {
+                out[oi++] = ' ';
+                col++;
+                last_space_oi = (int)oi - 1;
+            } else if (oi > 0 && out[oi-1] != ' ' && out[oi-1] != '\n') {
+                out[oi++] = ' ';
+                col++;
+                last_space_oi = (int)oi - 1;
+            }
+            // skip all consecutive whitespace
+            while (isspace((unsigned char)*p)) ++p;
+            continue;
+        }
+        out[oi++] = *p++;
+        col++;
+        if (col >= width) {
+            // Try to break at last space
+            if (last_space_oi >= 0 && last_space_oi < (int)oi) {
+                out[last_space_oi] = '\n';
+                // recalc col: chars since last_space_oi
+                col = (int)(oi - last_space_oi - 1);
+                last_space_oi = -1;
+            } else {
+                out[oi++] = '\n';
+                col = 0;
+            }
+        }
+        // update last_space_oi if this char is a space
+        if (oi > 0 && out[oi-1] == ' ') {
+            last_space_oi = (int)oi - 1;
+        }
     }
-    out[oi]=0;
+    // Remove trailing space before final newline
+    while (oi > 0 && out[oi-1] == ' ') oi--;
+    out[oi] = 0;
     return out;
 }
 
-char *fossil_io_soap_capitalize(const char *text,int mode){
-    if(!text) return NULL;
-    char *s=dupstr(text);
-    if(mode==0){int cap=1; for(char *p=s;*p;p++){if(cap && isalpha((unsigned char)*p)){*p=toupper(*p); cap=0;} if(*p=='.'||*p=='!'||*p=='?') cap=1;}}
-    else if(mode==1){int cap=1; for(char *p=s;*p;p++){if(isspace((unsigned char)*p)) cap=1; else if(cap){*p=toupper(*p); cap=0;}}}
+char *fossil_io_soap_capitalize(const char *text, int mode) {
+    if (!text) return NULL;
+    char *s = dupstr(text);
+    if (!s) return NULL;
+
+    if (mode == 0) {
+        // Capitalize the first letter of each sentence (after ., !, ?)
+        int cap = 1;
+        int in_quote = 0;
+        for (char *p = s; *p; p++) {
+            if (*p == '"' || *p == '\'') in_quote ^= 1;
+            if (cap && isalpha((unsigned char)*p)) {
+                *p = (char)toupper((unsigned char)*p);
+                cap = 0;
+            }
+            // Sentence end: ., !, ? (not inside quotes)
+            if (!in_quote && (*p == '.' || *p == '!' || *p == '?')) {
+                // Look ahead for ellipsis, ensure bounds
+                if (*p == '.' && *(p+1) && *(p+2) && *(p+1) == '.' && *(p+2) == '.') {
+                    p += 2; // skip ellipsis
+                }
+                // Only set cap if not at end of string
+                if (*(p+1) != '\0') cap = 1;
+            }
+            // Also capitalize after line breaks
+            if (*p == '\n') cap = 1;
+        }
+    } else if (mode == 1) {
+        // Capitalize the first letter of each word
+        int cap = 1;
+        for (char *p = s; *p; p++) {
+            if (isspace((unsigned char)*p) || ispunct((unsigned char)*p)) {
+                cap = 1;
+            } else if (cap && isalpha((unsigned char)*p)) {
+                *p = (char)toupper((unsigned char)*p);
+                cap = 0;
+            }
+        }
+    }
     return s;
 }
 
@@ -1103,26 +1753,346 @@ char *fossil_io_soap_capitalize(const char *text,int mode){
  * Suggest / Summarize
  * ============================================================================ */
 
-char *fossil_io_soap_suggest(const char *text){
-    if(!text) return NULL;
-    char *out=dupstr(text);
-    char *p=out,*q=out; int last_space=0;
-    while(*p){
-        if(isspace((unsigned char)*p)){ if(!last_space)*q++=' '; last_space=1; }
-        else { *q++=*p; last_space=0; }
+char *fossil_io_soap_suggest(const char *text) {
+    if (!text) return NULL;
+
+    char *norm = fossil_io_soap_sanitize(text);
+    if (!norm) return NULL;
+
+    char *corrected = fossil_io_soap_correct_grammar(norm);
+    free(norm);
+    if (!corrected) return NULL;
+
+    // Collapse multiple spaces using is_word_char for word boundaries
+    size_t len = strlen(corrected);
+    char *out = malloc(len + 2);
+    if (!out) {
+        free(corrected);
+        return NULL;
+    }
+    char *p = corrected, *q = out;
+    int last_space = 0;
+    while (*p) {
+        if (isspace((unsigned char)*p)) {
+            if (!last_space) *q++ = ' ';
+            last_space = 1;
+        } else {
+            *q++ = *p;
+            last_space = 0;
+        }
         p++;
     }
-    *q=0;
+    *q = 0;
+
+    // If input had trailing space, preserve it
+    if (len > 0 && isspace((unsigned char)corrected[len-1]) && q > out && out[q-out-1] != ' ') {
+        *q++ = ' ';
+        *q = 0;
+    }
+
+    // Capitalize the first letter of each sentence using fossil_io_soap_capitalize
+    char *final = fossil_io_soap_capitalize(out, 0);
+    free(out);
+    free(corrected);
+
+    return final;
+}
+
+char *fossil_io_soap_summarize(const char *text) {
+    if (!text) return NULL;
+    size_t textlen = strlen(text);
+    if (textlen == 0) return dupstr("");
+
+    char **sentences = fossil_io_soap_split(text);
+    if (!sentences) return dupstr(text);
+
+    // Count non-empty sentences using is_word_char
+    int nonempty = 0;
+    for (int i = 0; sentences[i]; i++) {
+        char *s = sentences[i];
+        int has_word = 0;
+        for (char *p = s; *p; p++) {
+            if (is_word_char(*p)) { has_word = 1; break; }
+        }
+        if (has_word) nonempty++;
+    }
+
+    // If only one non-empty sentence, return it as summary
+    if (nonempty == 1) {
+        char *result = NULL;
+        for (int i = 0; sentences[i]; i++) {
+            char *s = sentences[i];
+            int has_word = 0;
+            for (char *p = s; *p; p++) {
+                if (is_word_char(*p)) { has_word = 1; break; }
+            }
+            if (has_word) {
+                result = dupstr(s);
+                break;
+            }
+        }
+        for (int i = 0; sentences[i]; i++) free(sentences[i]);
+        free(sentences);
+        return result ? result : dupstr("");
+    }
+
+    // Otherwise, summarize with up to two non-empty sentences
+    int max_sentences = 2;
+    char *out = malloc(1024);
+    if (!out) {
+        for (int i = 0; sentences[i]; i++) free(sentences[i]);
+        free(sentences);
+        return NULL;
+    }
+    out[0] = 0;
+
+    int count = 0;
+    for (int i = 0; sentences[i] && count < max_sentences; i++) {
+        char *s = sentences[i];
+        int has_word = 0;
+        for (char *p = s; *p; p++) {
+            if (is_word_char(*p)) { has_word = 1; break; }
+        }
+        if (!has_word) continue;
+
+        // Add sentence to summary
+        strcat(out, s);
+        size_t slen = strlen(s);
+        if (slen == 0 || !is_sentence_punct(s[slen-1]))
+            strcat(out, ".");
+        strcat(out, " ");
+        count++;
+    }
+
+    // If no sentences found, fallback to first 80 chars
+    if (count == 0) {
+        strncpy(out, text, 80);
+        out[80] = 0;
+    }
+
+    // Cleanup
+    for (int i = 0; sentences[i]; i++) free(sentences[i]);
+    free(sentences);
+
+    // Trim trailing space
+    size_t len = strlen(out);
+    while (len > 0 && isspace((unsigned char)out[len-1])) out[--len] = 0;
+
     return out;
 }
 
-char *fossil_io_soap_summarize(const char *text){
-    if(!text) return NULL;
-    char **sentences=fossil_io_soap_split(text);
-    if(!sentences) return dupstr(text);
-    char *out=malloc(1024);
-    out[0]=0;
-    int i;
-    for(i=0;i<2 && sentences[i];i++){ strcat(out,sentences[i]); strcat(out," "); }
+/* ============================================================================
+ * Rewrite & Format
+ * ============================================================================ */
+
+// Rewrite: attempts to rephrase text by correcting grammar, normalizing style, and reflowing lines.
+char *fossil_io_soap_rewrite(const char *text) {
+    if (!text) return NULL;
+
+    // Sanitize and normalize using is_word_char for word boundaries
+    char *norm = fossil_io_soap_sanitize(text);
+    if (!norm) return NULL;
+
+    // Decluster camelCase words using is_case_split and is_word_char
+    char *declustered = soap_decluster_words(norm);
+    if (norm) free(norm);
+    if (!declustered) return NULL;
+
+    // Correct grammar
+    char *corrected = fossil_io_soap_correct_grammar(declustered);
+    if (declustered) free(declustered);
+    if (!corrected) return NULL;
+
+    // Normalize punctuation using is_sentence_punct and is_inner_punct
+    size_t clen = strlen(corrected);
+    char *punct_norm = malloc(clen + 8);
+    if (!punct_norm) { if (corrected) free(corrected); return NULL; }
+    normalize_punctuation(corrected, punct_norm);
+    if (corrected) free(corrected);
+
+    // Capitalize sentences using finalize_sentences and is_sentence_punct
+    finalize_sentences(punct_norm);
+
+    // Reflow to 80 columns
+    char *reflowed = fossil_io_soap_reflow(punct_norm, 80);
+    if (punct_norm) free(punct_norm);
+
+    return reflowed;
+}
+
+// Format: pretty-prints text with consistent indentation and line breaks.
+char *fossil_io_soap_format(const char *text) {
+    if (!text) return NULL;
+
+    // Remove excessive whitespace and normalize
+    char *norm = fossil_io_soap_sanitize(text);
+    if (!norm) return NULL;
+
+    // Capitalize sentences
+    char *capitalized = fossil_io_soap_capitalize(norm, 0);
+    free(norm);
+    if (!capitalized) {
+        return NULL;
+    }
+
+    // Reflow to 72 columns for formatting
+    char *formatted = fossil_io_soap_reflow(capitalized, 72);
+    free(capitalized);
+    if (!formatted) {
+        return NULL;
+    }
+
+    return formatted;
+}
+
+char *fossil_io_soap_declutter(const char *text) {
+    if (!text)
+        return NULL;
+
+    size_t len = strlen(text);
+    size_t cap = len * 2 + 32;
+
+    char *out = (char *)malloc(cap);
+    if (!out)
+        return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+    int space_pending = 0;
+
+    while (*p) {
+        char c = *p;
+
+        /* normalize whitespace */
+        if (isspace((unsigned char)c)) {
+            space_pending = 1;
+            p++;
+            continue;
+        }
+
+        /* camelCase / word boundary split using is_word_char and is_case_split */
+        if (prev &&
+            is_word_char(prev) &&
+            is_word_char(c) &&
+            is_case_split(prev, c)) {
+            *q++ = ' ';
+        }
+        else if (space_pending && q > out && q[-1] != ' ') {
+            *q++ = ' ';
+        }
+
+        *q++ = c;
+        prev = c;
+        space_pending = 0;
+        p++;
+    }
+
+    /* trim trailing space */
+    if (q > out && q[-1] == ' ')
+        q--;
+
+    *q = '\0';
     return out;
+}
+
+char *fossil_io_soap_punctuate(const char *text) {
+    if (!text)
+        return NULL;
+
+    size_t len = strlen(text);
+    size_t cap = len * 2 + 32;
+
+    char *out = (char *)malloc(cap);
+    if (!out)
+        return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+    int dots = 0;
+    int sentence_start = 1;
+
+    while (*p) {
+        char c = *p++;
+
+        /* normalize ellipsis using is_sentence_punct */
+        if (c == '.') {
+            dots++;
+            if (dots <= 3)
+                *q++ = '.';
+            prev = '.';
+            continue;
+        } else {
+            dots = 0;
+        }
+
+        /* collapse repeated ! or ? using is_sentence_punct */
+        if ((c == '!' || c == '?') && c == prev)
+            continue;
+
+        /* auto-space after sentence punctuation using is_sentence_punct */
+        if (is_sentence_punct(prev) && c != ' ') {
+            *q++ = ' ';
+            sentence_start = 1;
+        }
+
+        /* capitalize sentence start */
+        if (sentence_start && isalpha((unsigned char)c)) {
+            c = (char)toupper((unsigned char)c);
+            sentence_start = 0;
+        }
+
+        if (is_sentence_punct(c))
+            sentence_start = 1;
+
+        *q++ = c;
+        prev = c;
+    }
+
+    /* ensure terminal punctuation using is_sentence_punct */
+    if (q > out && !is_sentence_punct(q[-1])) {
+        *q++ = '.';
+    }
+
+    *q = '\0';
+    return out;
+}
+
+char *fossil_io_soap_process(const char *text) {
+    if (!text)
+        return NULL;
+
+    // Step 1: Sanitize the input text
+    char *sanitized = fossil_io_soap_sanitize(text);
+    if (!sanitized)
+        return NULL;
+
+    // Step 2: Normalize whitespace and punctuation
+    char *normalized = fossil_io_soap_punctuate(sanitized);
+    free(sanitized);
+    if (!normalized)
+        return NULL;
+
+    // Step 3: Correct grammar
+    char *corrected = fossil_io_soap_correct_grammar(normalized);
+    free(normalized);
+    if (!corrected)
+        return NULL;
+
+    // Step 4: Capitalize sentences
+    char *capitalized = fossil_io_soap_capitalize(corrected, 0);
+    free(corrected);
+    if (!capitalized)
+        return NULL;
+
+    // Step 5: Format the text for consistent indentation and line breaks
+    char *formatted = fossil_io_soap_format(capitalized);
+    free(capitalized);
+    if (!formatted)
+        return NULL;
+
+    return formatted;
 }

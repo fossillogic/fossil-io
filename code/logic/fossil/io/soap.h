@@ -37,172 +37,59 @@ extern "C" {
 // ============================================================================
 
 /**
- * fossil_io_soap_options_t
+ * fossil_io_soap_grammar_style_t
  *
- * Central configuration structure controlling all SOAP analysis, detection,
- * normalization, and output behavior.
- *
- * Each field acts as an enable/disable switch (0 = off, non-zero = on),
- * allowing callers to compose lightweight scans or full forensic analysis
- * pipelines without recompilation.
- *
- * NOTE:
- *  - Options are intentionally flat to avoid nested config churn.
- *  - Fields may be interpreted as weights or thresholds in future versions.
- *  - Unknown or unsupported flags MUST be ignored for forward compatibility.
+ * Aggregate result of grammar and stylistic analysis.
  */
 typedef struct {
 
-    /* =====================================================================
-     * Core quality signals (scored / weighted)
-     * ===================================================================== */
+    /** 1 if no grammar issues detected, 0 otherwise. */
+    int grammar_ok;
 
-    /** Evaluate overall writing quality using combined heuristics:
-     *  grammar, clarity, coherence, redundancy, and signal density.
-     */
-    int detect_quality;
+    /** Percentage of sentences using passive voice (0–100). */
+    int passive_voice_pct;
 
-    /** Measure clarity and logical coherence of ideas and sentence flow. */
-    int detect_clarity;
+    /** Classified writing style label (static string). */
+    const char *style;
 
-    /** Classify tone (e.g., neutral, aggressive, sarcastic). */
-    int detect_tone;
+    /** Number of grammar errors detected. */
+    int grammar_error_count;
 
-    /** Compute readability metrics (sentence length, word complexity, flow). */
-    int detect_readability;
+    /** Number of stylistic inconsistencies detected. */
+    int style_inconsistency_count;
 
-    /** Detect low-signal language such as meme-speak, excessive slang,
-     *  filler phrasing, or stylistic degradation ("brain rot").
-     */
-    int detect_brain_rot;
+    /** Array of grammar error descriptions (NULL-terminated, may be NULL). */
+    const char **grammar_errors;
 
-    /* =====================================================================
-     * Content & intent detection
-     * ===================================================================== */
+    /** Array of stylistic inconsistency descriptions (NULL-terminated, may be NULL). */
+    const char **style_inconsistencies;
 
-    /** Heuristic detection of spam-like or templated content. */
-    int detect_spam;
+    /** Confidence score for detected style (0–100). */
+    int style_confidence;
 
-    /** Identify emotionally manipulative rage-bait patterns. */
-    int detect_ragebait;
+    /** Reserved for future expansion (set to 0). */
+    int reserved[4];
 
-    /** Detect exaggerated or curiosity-driven clickbait phrasing. */
-    int detect_clickbait;
+} fossil_io_soap_grammar_style_t;
 
-    /** Detect non-human or automated text patterns. */
-    int detect_bot;
+/**
+ * fossil_io_soap_scores_t
+ *
+ * Numerical scoring results normalized to 0–100.
+ * All fields are maximized (set to 100) by default for maximal scoring.
+ */
+typedef struct {
 
-    /** Detect marketing, sales, or promotional language. */
-    int detect_marketing;
+    /** Ease of reading and comprehension (0–100, maximal = 100). */
+    int readability;
 
-    /** Detect dense but low-meaning technical jargon. */
-    int detect_technobabble;
+    /** Logical clarity and coherence (0–100, maximal = 100). */
+    int clarity;
 
-    /** Detect hype-driven exaggeration or inflated claims. */
-    int detect_hype;
+    /** Overall writing quality (0–100, maximal = 100). */
+    int quality;
 
-    /** Identify political framing or messaging. */
-    int detect_political;
-
-    /** Detect conspiratorial framing or narrative patterns. */
-    int detect_conspiracy;
-
-    /** Detect offensive, abusive, or demeaning language. */
-    int detect_offensive;
-
-    /** Detect agenda-driven messaging or ideological persuasion. */
-    int detect_propaganda;
-
-    /** Heuristic detection of false, misleading, or unsupported claims. */
-    int detect_misinformation;
-
-    /* =====================================================================
-     * Behavioral / stylistic signals
-     * ===================================================================== */
-
-    /** Detect formal or academic writing style. */
-    int detect_formal;
-
-    /** Detect casual or conversational writing style. */
-    int detect_casual;
-
-    /** Detect sarcasm or ironic phrasing. */
-    int detect_sarcasm;
-
-    /** Detect emotionally neutral or objective tone. */
-    int detect_neutral;
-
-    /** Detect aggressive or confrontational language. */
-    int detect_aggressive;
-
-    /** Detect emotionally charged language. */
-    int detect_emotional;
-
-    /** Detect passive-aggressive phrasing patterns. */
-    int detect_passive_aggressive;
-
-    int detect_snowflake;
-
-    int detect_morse;
-
-    /* =====================================================================
-     * Structural & linguistic analysis
-     * ===================================================================== */
-
-    /** Perform grammar validation and error detection. */
-    int analyze_grammar;
-
-    /** Analyze overall writing style and consistency. */
-    int analyze_style;
-
-    /** Measure passive voice usage frequency. */
-    int analyze_passive_voice;
-
-    /** Analyze sentence complexity and syntactic depth. */
-    int analyze_sentence_complexity;
-
-    /** Measure paragraph-level cohesion and flow. */
-    int analyze_paragraph_cohesion;
-
-    /** Detect redundant phrasing or repeated ideas. */
-    int analyze_redundancy;
-
-    /** Detect excessive word or phrase repetition. */
-    int analyze_word_repetition;
-
-    /* =====================================================================
-     * Normalization & correction passes
-     * ===================================================================== */
-
-    /** Sanitize low-quality or unsafe language. */
-    int apply_sanitization;
-
-    /** Normalize whitespace, punctuation, and casing. */
-    int apply_normalization;
-
-    /** Apply grammar correction heuristics. */
-    int apply_grammar_correction;
-
-    /* =====================================================================
-     * Output controls
-     * ===================================================================== */
-
-    /** Include a human-readable summary in the output. */
-    int include_summary;
-
-    /** Include numerical quality and analysis scores. */
-    int include_scores;
-
-    /** Include detected flags and classifications. */
-    int include_flags;
-
-    /** Include style and tone descriptors. */
-    int include_style;
-
-    /** Include internal diagnostics and debug metadata. */
-    int include_debug;
-
-} fossil_io_soap_options_t;
+} fossil_io_soap_scores_t;
 
 // ============================================================================
 // Sanitize, Analysis, & Summary
@@ -221,7 +108,7 @@ typedef struct {
  * Internal logic:
  *  - Duplicates the input string.
  *  - Replaces control characters (except newline) with spaces.
- *  - Normalizes leetspeak and lowercases the text.
+ *  - Lowercases the text.
  *  - Returns the sanitized result.
  */
 char *fossil_io_soap_sanitize(const char *text);
@@ -259,24 +146,6 @@ char *fossil_io_soap_summarize(const char *text);
 // ============================================================================
 
 /**
- * fossil_io_soap_grammar_style_t
- *
- * Aggregate result of grammar and stylistic analysis.
- */
-typedef struct {
-
-    /** 1 if no grammar issues detected, 0 otherwise. */
-    int grammar_ok;
-
-    /** Percentage of sentences using passive voice (0–100). */
-    int passive_voice_pct;
-
-    /** Classified writing style label (static string). */
-    const char *style;
-
-} fossil_io_soap_grammar_style_t;
-
-/**
  * Analyzes grammar correctness and stylistic characteristics.
  *
  * Internal logic:
@@ -307,24 +176,6 @@ char *fossil_io_soap_correct_grammar(const char *text);
 // ============================================================================
 
 /**
- * fossil_io_soap_scores_t
- *
- * Numerical scoring results normalized to 0–100.
- */
-typedef struct {
-
-    /** Ease of reading and comprehension. */
-    int readability;
-
-    /** Logical clarity and coherence. */
-    int clarity;
-
-    /** Overall writing quality. */
-    int quality;
-
-} fossil_io_soap_scores_t;
-
-/**
  * Computes readability, clarity, and quality scores.
  *
  * Internal logic:
@@ -347,11 +198,36 @@ const char *fossil_io_soap_readability_label(int readability_score);
  * Generic detection interface for a single detector identifier.
  *
  * Internal logic:
- *  - Normalizes input (leetspeak, lowercase).
+ *  - Lowercases input.
  *  - Looks up detector patterns by ID.
  *  - Checks for pattern matches at document, sentence, and word level.
- *  - Handles special detectors (brain_rot, leet, morse, structural).
+ *  - Handles special detectors (brain_rot, structural).
  *  - Returns 1 if any pattern matches, else 0.
+ * 
+ * Available detector options:
+ *   - "conspiracy"
+ *   - "spam"
+ *   - "ragebait"
+ *   - "clickbait"
+ *   - "bot"
+ *   - "marketing"
+ *   - "technobabble"
+ *   - "hype"
+ *   - "political"
+ *   - "offensive"
+ *   - "misinfo"
+ *   - "brain_rot"
+ *   - "formal"
+ *   - "casual"
+ *   - "sarcasm"
+ *   - "neutral"
+ *   - "aggressive"
+ *   - "emotional"
+ *   - "passive"
+ *   - "snowflake"
+ *   - "redundant"
+ *   - "poor_cohesion"
+ *   - "repeated_words"
  */
 int fossil_io_soap_detect(const char *text, const char *detector_id);
 
@@ -380,7 +256,7 @@ char *fossil_io_soap_reflow(const char *text, int width);
  *
  * Internal logic:
  *  - Duplicates input.
- *  - Normalizes leetspeak and lowercases all letters.
+ *  - Lowercases all letters.
  *  - Returns the normalized string.
  */
 char *fossil_io_soap_normalize(const char *text);
@@ -394,6 +270,84 @@ char *fossil_io_soap_normalize(const char *text);
  *  - Returns a newly allocated string.
  */
 char *fossil_io_soap_capitalize(const char *text, int mode);
+
+/**
+ * Attempts to rephrase text by correcting grammar, normalizing style, and reflowing lines.
+ *
+ * Internal logic:
+ *  - Sanitizes and normalizes the input.
+ *  - Corrects grammar.
+ *  - Capitalizes sentences.
+ *  - Reflows to 80 columns.
+ *  - Returns the rewritten string (caller must free).
+ */
+char *fossil_io_soap_rewrite(const char *text);
+
+/**
+ * Pretty-prints text with consistent indentation and line breaks.
+ *
+ * Internal logic:
+ *  - Removes excessive whitespace and normalizes.
+ *  - Capitalizes sentences.
+ *  - Reflows to 72 columns.
+ *  - Returns the formatted string (caller must free).
+ */
+char *fossil_io_soap_format(const char *text);
+
+/*
+ * Declutter text by repairing word boundaries and whitespace.
+ *
+ * - Splits camelCase / PascalCase words
+ * - Normalizes excessive whitespace
+ * - Preserves numbers and symbols
+ *
+ * Parameters:
+ *   text  - Input UTF-8 / ASCII text (NULL-safe)
+ *
+ * Returns:
+ *   Newly allocated NUL-terminated string.
+ *   Caller owns the memory and must free().
+ *   Returns NULL on allocation failure or if text is NULL.
+ */
+char *fossil_io_soap_declutter(const char *text);
+
+/*
+ * Normalize punctuation and sentence structure.
+ *
+ * - Collapses repeated punctuation (!!!??? → !)
+ * - Normalizes ellipsis (...)
+ * - Capitalizes sentence starts
+ * - Ensures terminal punctuation
+ *
+ * Parameters:
+ *   text  - Input UTF-8 / ASCII text (NULL-safe)
+ *
+ * Returns:
+ *   Newly allocated NUL-terminated string.
+ *   Caller owns the memory and must free().
+ *   Returns NULL on allocation failure or if text is NULL.
+ */
+char *fossil_io_soap_punctuate(const char *text);
+
+/**
+ * fossil_io_soap_process
+ *
+ * Performs a full processing pipeline on the input text, including sanitization,
+ * normalization, grammar correction, capitalization, and formatting.
+ *
+ * Returns:
+ *  - Newly allocated processed string (caller owns memory)
+ *  - NULL on allocation or processing failure
+ *
+ * Internal logic:
+ *  - Sanitizes the input text.
+ *  - Normalizes whitespace and punctuation.
+ *  - Corrects grammar.
+ *  - Applies sentence capitalization.
+ *  - Formats the text for consistent indentation and line breaks.
+ *  - Returns the processed result.
+ */
+char *fossil_io_soap_process(const char *text);
 
 #ifdef __cplusplus
 }
@@ -411,78 +365,6 @@ namespace fossil {
     
         class Soap {
         public:
-            // ===============================
-            // Options
-            // ===============================
-            struct Options {
-                fossil_io_soap_options_t c_options;
-            
-                Options() { memset(&c_options, 0, sizeof(c_options)); }
-            
-                // ===============================
-                // Core quality signals
-                // ===============================
-                Options& detect_quality(bool v) { c_options.detect_quality = v; return *this; }
-                Options& detect_clarity(bool v) { c_options.detect_clarity = v; return *this; }
-                Options& detect_tone(bool v) { c_options.detect_tone = v; return *this; }
-                Options& detect_readability(bool v) { c_options.detect_readability = v; return *this; }
-                Options& detect_brain_rot(bool v) { c_options.detect_brain_rot = v; return *this; }
-            
-                // ===============================
-                // Content & intent detection
-                // ===============================
-                Options& detect_spam(bool v) { c_options.detect_spam = v; return *this; }
-                Options& detect_ragebait(bool v) { c_options.detect_ragebait = v; return *this; }
-                Options& detect_clickbait(bool v) { c_options.detect_clickbait = v; return *this; }
-                Options& detect_bot(bool v) { c_options.detect_bot = v; return *this; }
-                Options& detect_marketing(bool v) { c_options.detect_marketing = v; return *this; }
-                Options& detect_technobabble(bool v) { c_options.detect_technobabble = v; return *this; }
-                Options& detect_hype(bool v) { c_options.detect_hype = v; return *this; }
-                Options& detect_political(bool v) { c_options.detect_political = v; return *this; }
-                Options& detect_conspiracy(bool v) { c_options.detect_conspiracy = v; return *this; }
-                Options& detect_offensive(bool v) { c_options.detect_offensive = v; return *this; }
-                Options& detect_propaganda(bool v) { c_options.detect_propaganda = v; return *this; }
-                Options& detect_misinformation(bool v) { c_options.detect_misinformation = v; return *this; }
-            
-                // ===============================
-                // Behavioral / stylistic signals
-                // ===============================
-                Options& detect_formal(bool v) { c_options.detect_formal = v; return *this; }
-                Options& detect_casual(bool v) { c_options.detect_casual = v; return *this; }
-                Options& detect_sarcasm(bool v) { c_options.detect_sarcasm = v; return *this; }
-                Options& detect_neutral(bool v) { c_options.detect_neutral = v; return *this; }
-                Options& detect_aggressive(bool v) { c_options.detect_aggressive = v; return *this; }
-                Options& detect_emotional(bool v) { c_options.detect_emotional = v; return *this; }
-                Options& detect_passive_aggressive(bool v) { c_options.detect_passive_aggressive = v; return *this; }
-            
-                // ===============================
-                // Structural & linguistic analysis
-                // ===============================
-                Options& analyze_grammar(bool v) { c_options.analyze_grammar = v; return *this; }
-                Options& analyze_style(bool v) { c_options.analyze_style = v; return *this; }
-                Options& analyze_passive_voice(bool v) { c_options.analyze_passive_voice = v; return *this; }
-                Options& analyze_sentence_complexity(bool v) { c_options.analyze_sentence_complexity = v; return *this; }
-                Options& analyze_paragraph_cohesion(bool v) { c_options.analyze_paragraph_cohesion = v; return *this; }
-                Options& analyze_redundancy(bool v) { c_options.analyze_redundancy = v; return *this; }
-                Options& analyze_word_repetition(bool v) { c_options.analyze_word_repetition = v; return *this; }
-            
-                // ===============================
-                // Normalization & correction passes
-                // ===============================
-                Options& apply_sanitization(bool v) { c_options.apply_sanitization = v; return *this; }
-                Options& apply_normalization(bool v) { c_options.apply_normalization = v; return *this; }
-                Options& apply_grammar_correction(bool v) { c_options.apply_grammar_correction = v; return *this; }
-            
-                // ===============================
-                // Output controls
-                // ===============================
-                Options& include_summary(bool v) { c_options.include_summary = v; return *this; }
-                Options& include_scores(bool v) { c_options.include_scores = v; return *this; }
-                Options& include_flags(bool v) { c_options.include_flags = v; return *this; }
-                Options& include_style(bool v) { c_options.include_style = v; return *this; }
-                Options& include_debug(bool v) { c_options.include_debug = v; return *this; }
-            };
-        
             // ===============================
             // Sanitize, Suggest, Summarize
             // ===============================
@@ -642,6 +524,33 @@ namespace fossil {
              *   - Checks for pattern matches at document, sentence, and word level.
              *   - Handles special detectors (brain_rot, leet, morse, structural).
              *   - Returns 1 if any pattern matches, else 0.
+             * 
+             * Available detector options:
+             *   - "conspiracy"
+             *   - "spam"
+             *   - "ragebait"
+             *   - "clickbait"
+             *   - "bot"
+             *   - "marketing"
+             *   - "technobabble"
+             *   - "hype"
+             *   - "political"
+             *   - "offensive"
+             *   - "misinfo"
+             *   - "brain_rot"
+             *   - "leet"
+             *   - "morse"
+             *   - "formal"
+             *   - "casual"
+             *   - "sarcasm"
+             *   - "neutral"
+             *   - "aggressive"
+             *   - "emotional"
+             *   - "passive"
+             *   - "snowflake"
+             *   - "redundant"
+             *   - "poor_cohesion"
+             *   - "repeated_words"
              */
             static bool detect(const std::string &text, const std::string &detector_id) {
                 return fossil_io_soap_detect(text.c_str(), detector_id.c_str()) != 0;
@@ -715,6 +624,95 @@ namespace fossil {
              */
             static std::string capitalize(const std::string &text, int mode) {
                 char *res = fossil_io_soap_capitalize(text.c_str(), mode);
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Attempts to rephrase the input text by correcting grammar, normalizing style, and reflowing lines.
+             * Returns the rewritten string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Sanitizes and normalizes the input.
+             *   - Corrects grammar.
+             *   - Capitalizes sentences.
+             *   - Reflows to 80 columns.
+             *   - Returns the rewritten string (caller must free).
+             */
+            static std::string rewrite(const std::string &text) {
+                char *res = fossil_io_soap_rewrite(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Pretty-prints the input text with consistent indentation and line breaks.
+             * Returns the formatted string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Removes excessive whitespace and normalizes.
+             *   - Capitalizes sentences.
+             *   - Reflows to 72 columns.
+             *   - Returns the formatted string (caller must free).
+             */
+            static std::string format(const std::string &text) {
+                char *res = fossil_io_soap_format(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Declutters the input text by repairing word boundaries and whitespace.
+             * Splits camelCase/PascalCase words, normalizes excessive whitespace, and preserves numbers/symbols.
+             * Returns the decluttered string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Splits camelCase / PascalCase words
+             *   - Normalizes excessive whitespace
+             *   - Preserves numbers and symbols
+             */
+            static std::string declutter(const std::string &text) {
+                char *res = fossil_io_soap_declutter(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Normalizes punctuation and sentence structure in the input text.
+             * Collapses repeated punctuation, normalizes ellipsis, capitalizes sentence starts, and ensures terminal punctuation.
+             * Returns the punctuated string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Collapses repeated punctuation (!!!??? → !)
+             *   - Normalizes ellipsis (...)
+             *   - Capitalizes sentence starts
+             *   - Ensures terminal punctuation
+             */
+            static std::string punctuate(const std::string &text) {
+                char *res = fossil_io_soap_punctuate(text.c_str());
+                std::string out = res ? res : "";
+                free(res);
+                return out;
+            }
+
+            /**
+             * Performs a full processing pipeline on the input text, including sanitization, normalization,
+             * grammar correction, capitalization, and formatting.
+             * Returns the processed string. Throws away the result if allocation fails.
+             *
+             * Internal logic:
+             *   - Sanitizes the input text.
+             *   - Normalizes whitespace and punctuation.
+             *   - Corrects grammar.
+             *   - Applies sentence capitalization.
+             *   - Formats the text for consistent indentation and line breaks.
+             */
+            static std::string process(const std::string &text) {
+                char *res = fossil_io_soap_process(text.c_str());
                 std::string out = res ? res : "";
                 free(res);
                 return out;

@@ -21,7 +21,7 @@ class TestRunnerGenerator:
             for file in files:
                 if file.startswith("test_"):
                     file_path = os.path.join(root, file)
-                    with open(file_path, "r") as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
                         matches = re.findall(pattern, content)
                         if file.endswith(".c") or file.endswith(".cpp"):
