@@ -307,107 +307,107 @@ void fossil_io_apply_position(ccstring pos) {
     }
 }
 
-/*
- * Function to print text with attributes, colors, background colors, positions, and format specifiers.
- * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
+/**
+ * -----------------------------------------------------------------------------
+ * New attribute parser using '@' syntax for inline styling.
+ *
+ * This function parses and applies terminal attributes using the '@' syntax.
+ * Example usage in strings:
+ *   "Normal text @color:red Red @reset Normal"
+ *   "Score: @color:green 100 @reset"
+ *   "Warning: @bg:yellow,attr:bold Important! @reset"
+ *
+ * Supported attribute types:
+ *   - @color:<name>    : Set foreground color (if color enabled)
+ *   - @bg:<name>       : Set background color (if color enabled)
+ *   - @attr:<name>     : Set text attribute (bold, underline, etc.)
+ *   - @pos:<name>      : Move cursor to a named position
+ *   - @reset           : Reset all attributes and colors
+ *
+ * Multiple attributes can be combined with commas, e.g.:
+ *   "@color:red,attr:bold"
+ *
+ * If output is disabled or str is NULL, prints "cnullptr" to stderr.
  */
-void fossil_io_print_with_attributes(ccstring str) {
+void fossil_io_print_with_at_attributes(ccstring str) {
     if (str == NULL) {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
         return;
     }
 
-    ccstring current_pos = str;
-    ccstring start = NULL;
-    ccstring end = NULL;
+    const char *p = str;
+    const char *last = str;
+    while (*p) {
+        if (*p == '@') {
+            // Print text before '@'
+            if (p > last) {
+                fossil_io_file_write(FOSSIL_STDOUT, last, 1, p - last);
+            }
+            ++p; // skip '@'
+            // Skip any whitespace after '@'
+            while (*p == ' ') ++p;
+            // Find end of attribute (space or end)
+            const char *attr_start = p;
+            while (*p && *p != ' ' && *p != '@') ++p;
+            size_t attr_len = p - attr_start;
+            if (attr_len > 0) {
+                char attrbuf[128];
+                if (attr_len >= sizeof(attrbuf)) attr_len = sizeof(attrbuf) - 1;
+                strncpy(attrbuf, attr_start, attr_len);
+                attrbuf[attr_len] = '\0';
 
-    while ((start = strchr(current_pos, '{')) != NULL) {
-        // Output text before '{'
-        fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, start - current_pos);
+                // Support multiple attributes separated by commas
+                char *saveptr = NULL;
+                char *token = strtok_r(attrbuf, ",", &saveptr);
+                while (token) {
+                    // Remove leading/trailing whitespace
+                    while (*token == ' ') ++token;
+                    char *end = token + strlen(token) - 1;
+                    while (end > token && (*end == ' ' || *end == '\t')) *end-- = '\0';
 
-        // Find the matching '}'
-        end = strchr(start, '}');
-        if (end) {
-            // Extract attributes inside '{}'
-            size_t length = end - start - 1;
-            char attributes[length + 1];
-            strncpy(attributes, start + 1, length);
-            attributes[length] = '\0';
-
-            // Check for bg: or pos: prefix
-            if (strncmp(attributes, "bg:", 3) == 0) {
-                // Handle background color and optional attribute
-                char *bg_color = attributes + 3;
-                char *comma_pos = strchr(bg_color, ',');
-                if (comma_pos) {
-                    *comma_pos = '\0';
-                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
-                    fossil_io_apply_attribute(comma_pos + 1);
-                } else {
-                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
-                }
-            } else if (strncmp(attributes, "pos:", 4) == 0) {
-                // Handle position
-                fossil_io_apply_position(attributes + 4);
-            } else {
-                // Handle color and/or attribute
-                char *color = attributes;
-                char *attribute = NULL;
-                char *comma_pos = strchr(attributes, ',');
-                if (comma_pos) {
-                    *comma_pos = '\0';
-                    color = attributes;
-                    attribute = comma_pos + 1;
-                }
-                if (FOSSIL_IO_COLOR_ENABLE && color && color[0] != '\0') {
-                    fossil_io_apply_color(color);
-                }
-                if (attribute && attribute[0] != '\0') {
-                    fossil_io_apply_attribute(attribute);
+                    // Parse attribute: type:value or just type
+                    char *colon = strchr(token, ':');
+                    if (colon) {
+                        *colon = '\0';
+                        char *type = token;
+                        char *value = colon + 1;
+                        if (strcmp(type, "color") == 0 && FOSSIL_IO_COLOR_ENABLE) {
+                            fossil_io_apply_color(value);
+                        } else if (strcmp(type, "bg") == 0 && FOSSIL_IO_COLOR_ENABLE) {
+                            fossil_io_apply_bg_color(value);
+                        } else if (strcmp(type, "attr") == 0) {
+                            fossil_io_apply_attribute(value);
+                        } else if (strcmp(type, "pos") == 0) {
+                            fossil_io_apply_position(value);
+                        } else if (strcmp(type, "reset") == 0) {
+                            fossil_io_apply_attribute("normal");
+                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_color("reset");
+                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color("reset");
+                        }
+                    } else {
+                        // Single word attribute, e.g. @reset
+                        if (strcmp(token, "reset") == 0) {
+                            fossil_io_apply_attribute("normal");
+                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_color("reset");
+                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color("reset");
+                        } else {
+                            fossil_io_apply_attribute(token);
+                        }
+                    }
+                    token = strtok_r(NULL, ",", &saveptr);
                 }
             }
-
-            // Move past '}' and continue processing
-            current_pos = end + 1;
+            // Skip any whitespace after attribute
+            while (*p == ' ') ++p;
+            last = p;
         } else {
-            // No matching '}', print the rest and break
-            fossil_io_file_write(FOSSIL_STDOUT, start, 1, strlen(start));
-            break;
+            ++p;
         }
     }
-
-    // Output remaining text after last '}'
-    fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, strlen(current_pos));
+    // Print any trailing text
+    if (last < p)
+        fossil_io_file_write(FOSSIL_STDOUT, last, 1, p - last);
     fossil_io_file_flush(FOSSIL_STDOUT);
-}
-
-// Function to print a sanitized formatted string to a specific file stream with attributes
-void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
-    if (str != NULL && stream != NULL) {
-        char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str));
-        sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
-
-        // Remove attribute/color escape codes for file output
-        ccstring current_pos = sanitized_str;
-        ccstring start = NULL;
-        ccstring end = NULL;
-        while ((start = strchr(current_pos, '{')) != NULL) {
-            // Write text before '{' to the file
-            fossil_io_file_write(stream, current_pos, 1, start - current_pos);
-            end = strchr(start, '}');
-            if (end) {
-                // Skip the attribute section
-                current_pos = end + 1;
-            } else {
-                // No matching '}', write the rest and break
-                fossil_io_file_write(stream, start, 1, strlen(start));
-                break;
-            }
-        }
-        // Write remaining text after last '}'
-        fossil_io_file_write(stream, current_pos, 1, strlen(current_pos));
-    }
 }
 
 //
@@ -423,7 +423,7 @@ void fossil_io_puts(ccstring str) {
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
         
         // Print the sanitized string with attributes
-        fossil_io_print_with_attributes(sanitized_str);
+        fossil_io_print_with_at_attributes(sanitized_str);
     } else {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
@@ -446,7 +446,7 @@ void fossil_io_printf(ccstring format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
 
     // Print the sanitized output with attributes
-    fossil_io_print_with_attributes(buffer);
+    fossil_io_print_with_at_attributes(buffer);
 
     va_end(args);
 }
@@ -459,8 +459,11 @@ void fossil_io_fputs(fossil_io_file_t *stream, ccstring str) {
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
-        // Apply color/attributes and sanitize the string before printing
-        fossil_io_fprint_with_attributes(stream, sanitized_str);
+        // Temporarily redirect FOSSIL_STDOUT to the given stream
+        fossil_io_file_t *original_stdout = FOSSIL_STDOUT;
+        FOSSIL_STDOUT = stream;
+        fossil_io_print_with_at_attributes(sanitized_str);
+        FOSSIL_STDOUT = original_stdout;
     } else {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
@@ -476,8 +479,11 @@ void fossil_io_fprintf(fossil_io_file_t *stream, ccstring format, ...) {
     char buffer[FOSSIL_IO_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
 
-    // Print the sanitized formatted string with attributes to the specified stream
-    fossil_io_fprint_with_attributes(stream, buffer);
+    // Temporarily redirect FOSSIL_STDOUT to the given stream
+    fossil_io_file_t *original_stdout = FOSSIL_STDOUT;
+    FOSSIL_STDOUT = stream;
+    fossil_io_print_with_at_attributes(buffer);
+    FOSSIL_STDOUT = original_stdout;
 
     va_end(args);
 }

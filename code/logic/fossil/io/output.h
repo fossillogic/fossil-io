@@ -37,63 +37,70 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
 
 /**
  * -----------------------------------------------------------------------------
- * Fossil IO Output Styling and Control Macros & Functions
+ * New attribute parser using '@' syntax for advanced inline terminal styling.
  *
- * This section provides a comprehensive set of macros and functions for
- * controlling terminal output styling, including colors, background colors,
- * text attributes, and cursor positioning. It is designed for building
- * visually rich CLI applications with flexible formatting.
+ * This function enables rich, inline styling of terminal output by parsing and
+ * applying terminal attributes using a custom '@' syntax embedded within output
+ * strings. The parser interprets attribute directives and translates them into
+ * the appropriate ANSI escape sequences for styling text in the terminal.
  *
- * Output Control Flags:
- *   - int32_t FOSSIL_IO_COLOR_ENABLE = 1;
- *     Enables or disables color output globally. When set to 1, color and
- *     attribute escape codes are emitted; when 0, output is plain text.
- *   - int32_t FOSSIL_IO_OUTPUT_ENABLE = 1;
- *     Enables or disables all output. Useful for suppressing output during
- *     unit testing or silent operation.
+ * Example usage in strings:
+ *   "Normal text @color:red Red @reset Normal"
+ *   "Score: @color:green 100 @reset"
+ *   "Warning: @bg:yellow,attr:bold Important! @reset"
  *
- * Color Macros:
- *   - Standard (dark) colors: FOSSIL_IO_COLOR_BLACK, FOSSIL_IO_COLOR_RED, etc.
- *   - Bright colors: FOSSIL_IO_COLOR_BRIGHT_RED, FOSSIL_IO_COLOR_BRIGHT_GREEN, etc.
- *   - Extended colors: orange, pink, purple, brown, teal, silver.
- *   - Background colors: FOSSIL_IO_BG_BLUE, FOSSIL_IO_BG_BRIGHT_YELLOW, etc.
+ * Supported attribute types and their available options:
  *
- * Text Attribute Macros:
- *   - Bold, dim, italic, underline, blink, reverse, hidden, strikethrough.
- *   - Reset macros for each attribute and for all attributes.
+ *   - @color:<name>
+ *       Set the foreground (text) color. Only applied if color output is enabled.
+ *       Available color names:
+ *         black, red, green, yellow, blue, magenta, cyan, white, gray, orange,
+ *         pink, purple, brown, teal, silver,
+ *         bright_black, bright_red, bright_green, bright_yellow, bright_blue,
+ *         bright_magenta, bright_cyan, bright_white,
+ *         reset
  *
- * Buffer Size:
- *   - FOSSIL_IO_BUFFER_SIZE is set to 1000 for safe formatting and output.
+ *   - @bg:<name>
+ *       Set the background color. Only applied if color output is enabled.
+ *       Available background color names:
+ *         black, red, green, yellow, blue, magenta, cyan, white, gray, orange,
+ *         pink, purple, brown, teal, silver,
+ *         bright_black, bright_red, bright_green, bright_yellow, bright_blue,
+ *         bright_magenta, bright_cyan, bright_white,
+ *         reset
  *
- * Functions:
- *   - fossil_io_apply_color(const char *color)
- *     Applies a named foreground color using ANSI escape codes.
- *   - fossil_io_apply_bg_color(const char *bg_color)
- *     Applies a named background color.
- *   - fossil_io_apply_attribute(const char *attribute)
- *     Applies a named text attribute.
- *   - fossil_io_apply_position(const char *pos)
- *     Moves the cursor to a named position (top, bottom, left, right, center, etc.).
- *   - fossil_io_print_with_attributes(const char *str)
- *     Prints text with inline markup for color, background, attributes, and position.
- *   - fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str)
- *     Prints sanitized text (without escape codes) to a file stream.
+ *   - @attr:<name>
+ *       Set text attributes. Multiple attributes can be specified, separated by commas.
+ *       Available attribute names:
+ *         bold, dim, italic, underline, blink, reverse, reversed, hidden, strikethrough,
+ *         normal, reset_bold, reset_dim, reset_italic, reset_underline, reset_blink,
+ *         reset_reverse, reset_hidden, reset_strike, reset
  *
- * Markup Syntax:
- *   - Inline markup uses curly braces, e.g.:
- *     {red}, {bold}, {bg:yellow}, {bg:blue,underline}, {pos:center}
- *     Combinations: {red,bold}, {bg:green,italic}
- *   - Markup is parsed and corresponding ANSI codes are applied.
- *   - For file output, markup is stripped for clean output.
+ *   - @pos:<name>
+ *       Move the cursor to a named position. Useful for advanced terminal UIs.
+ *       Available position names:
+ *         top, bottom, left, right, center, top-left, top-right, bottom-left,
+ *         bottom-right, middle-left, middle-right
  *
- * Example Usage:
- *   fossil_io_puts("Normal {red,bold}Red Bold{reset} Text");
- *   fossil_io_printf("Score: {green}%d{reset}\n", score);
- *   fossil_io_fputs(file, "File output {bg:yellow,underline}highlighted{reset}");
+ *   - @reset
+ *       Reset all attributes and colors to their defaults.
  *
- * -----------------------------------------------------------------------------
+ * Multiple attributes can be combined in a single directive using commas, e.g.:
+ *   "@color:red,attr:bold"
  *
-*/
+ * The parser processes the string, applies the requested attributes, and
+ * continues outputting the rest of the string with the new styles in effect.
+ * When @reset is encountered, all styles are cleared.
+ *
+ * If output is disabled (FOSSIL_IO_OUTPUT_ENABLE == 0) or the input string
+ * is NULL, the function prints the string "cnullptr" to stderr to indicate
+ * a null pointer was encountered.
+ *
+ * This feature is ideal for building rich, styled terminal UIs, colored logs,
+ * and dynamic output with minimal effort and without manual ANSI escape codes.
+ *
+ * See the implementation for details on how each attribute is handled.
+ */
 
 /**
  * Redirects the output to a specified stream.
@@ -169,7 +176,7 @@ void fossil_io_putchar(char c);
  * @param stream The output stream where the string should be printed. This should be a valid pointer to a `FILE` object.
  * @param str The string to be printed. This should be a null-terminated string.
  */
-void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
+void fossil_io_fputs(fossil_io_file_t *stream, ccstring str);
 
 /**
  * Prints a formatted string to the specified output stream.
