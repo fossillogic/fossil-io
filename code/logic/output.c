@@ -125,6 +125,216 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
+typedef enum {
+    FOSSIL_CIPHER_ENCODE,
+    FOSSIL_CIPHER_DECODE
+} fossil_cipher_mode_t;
+
+typedef struct {
+    char c;
+    const char *morse;
+} morse_entry_t;
+
+static const morse_entry_t morse_table[] = {
+    {'a', ".-"}, {'b', "-..."}, {'c', "-.-."},
+    {'d', "-.."}, {'e', "."},   {'f', "..-."},
+    {'g', "--."}, {'h', "...."}, {'i', ".."},
+    {'j', ".---"},{'k', "-.-"},  {'l', ".-.."},
+    {'m', "--"},  {'n', "-."},   {'o', "---"},
+    {'p', ".--."},{'q', "--.-"}, {'r', ".-."},
+    {'s', "..."}, {'t', "-"},    {'u', "..-"},
+    {'v', "...-"},{'w', ".--"},  {'x', "-..-"},
+    {'y', "-.--"},{'z', "--.."},
+    {'0',"-----"},{'1',".----"},{'2',"..---"},
+    {'3',"...--"},{'4',"....-"},{'5',"....."},
+    {'6',"-...."},{'7',"--..."},{'8',"---.."},
+    {'9',"----."},
+    {0,NULL}
+};
+
+static char *fossil_cipher_rot13(const char *in, fossil_cipher_mode_t mode) {
+    (void)mode;
+
+    size_t len = strlen(in);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+
+    for (size_t i = 0; i < len; i++) {
+        char c = in[i];
+        if (c >= 'a' && c <= 'z')
+            out[i] = ((c - 'a' + 13) % 26) + 'a';
+        else if (c >= 'A' && c <= 'Z')
+            out[i] = ((c - 'A' + 13) % 26) + 'A';
+        else
+            out[i] = c;
+    }
+
+    out[len] = '\0';
+    return out;
+}
+
+static char *fossil_cipher_leet(const char *in, fossil_cipher_mode_t mode) {
+    size_t len = strlen(in);
+    char *out = malloc(len * 2 + 1); // safe expansion
+    if (!out) return NULL;
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        char c = tolower(in[i]);
+        switch (c) {
+            case 'a': out[j++]='4'; break;
+            case 'e': out[j++]='3'; break;
+            case 'i': out[j++]='1'; break;
+            case 'o': out[j++]='0'; break;
+            case 's': out[j++]='5'; break;
+            case 't': out[j++]='7'; break;
+            default:  out[j++]=in[i]; break;
+        }
+    }
+
+    out[j] = '\0';
+    return out;
+}
+
+static char *fossil_cipher_haxsor(const char *in, fossil_cipher_mode_t mode) {
+    size_t len = strlen(in);
+    char *out = malloc(len * 3 + 1);
+    if (!out) return NULL;
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        char c = tolower(in[i]);
+        if (c == 'x') {
+            out[j++]='x'; out[j++]='0'; out[j++]='r';
+        } else if (c == 'e') {
+            out[j++]='3';
+        } else if (c == 'a') {
+            out[j++]='@';
+        } else {
+            out[j++]=in[i];
+        }
+    }
+
+    out[j] = '\0';
+    return out;
+}
+
+static char *fossil_cipher_morse(const char *in, fossil_cipher_mode_t mode) {
+    size_t cap = strlen(in) * 6 + 1;
+    char *out = malloc(cap);
+    if (!out) return NULL;
+
+    size_t j = 0;
+    for (size_t i = 0; in[i]; i++) {
+        char c = tolower(in[i]);
+        if (c == ' ') {
+            out[j++]=' '; out[j++]=' ';
+            continue;
+        }
+        for (int k = 0; morse_table[k].c; k++) {
+            if (morse_table[k].c == c) {
+                size_t mlen = strlen(morse_table[k].morse);
+                memcpy(out + j, morse_table[k].morse, mlen);
+                j += mlen;
+                out[j++]=' ';
+                break;
+            }
+        }
+    }
+
+    out[j] = '\0';
+    return out;
+}
+
+//
+typedef struct {
+    const char *name;
+    char *(*fn)(const char *, fossil_cipher_mode_t);
+} fossil_cipher_entry_t;
+
+// Caesar cipher (shift by 3 for encode, -3 for decode)
+static char *fossil_cipher_caesar(const char *in, fossil_cipher_mode_t mode) {
+    int shift = (mode == FOSSIL_CIPHER_ENCODE) ? 3 : 23; // 23 == -3 mod 26
+    size_t len = strlen(in);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+
+    for (size_t i = 0; i < len; i++) {
+        char c = in[i];
+        if (c >= 'a' && c <= 'z')
+            out[i] = ((c - 'a' + shift) % 26) + 'a';
+        else if (c >= 'A' && c <= 'Z')
+            out[i] = ((c - 'A' + shift) % 26) + 'A';
+        else
+            out[i] = c;
+    }
+    out[len] = '\0';
+    return out;
+}
+
+// Binary encode/decode (encode: text to 0/1, decode: 8-bit binary to text)
+static char *fossil_cipher_binary(const char *in, fossil_cipher_mode_t mode) {
+    if (mode == FOSSIL_CIPHER_ENCODE) {
+        size_t len = strlen(in);
+        char *out = malloc(len * 9 + 1); // 8 bits + space per char
+        if (!out) return NULL;
+        size_t j = 0;
+        for (size_t i = 0; i < len; i++) {
+            for (int b = 7; b >= 0; b--) {
+                out[j++] = ((in[i] >> b) & 1) ? '1' : '0';
+            }
+            out[j++] = ' ';
+        }
+        if (j > 0) out[j - 1] = '\0'; // remove last space
+        else out[j] = '\0';
+        return out;
+    } else { // decode
+        size_t len = strlen(in);
+        char *out = malloc(len / 8 + 2);
+        if (!out) return NULL;
+        size_t j = 0;
+        for (size_t i = 0; i + 7 < len;) {
+            unsigned char val = 0;
+            for (int b = 0; b < 8; b++, i++) {
+                if (in[i] == '1') val = (val << 1) | 1;
+                else if (in[i] == '0') val = (val << 1);
+                else break;
+            }
+            out[j++] = val;
+            // Skip space if present
+            if (in[i] == ' ') i++;
+        }
+        out[j] = '\0';
+        return out;
+    }
+}
+
+char *fossil_io_apply_cipher(
+    const char *text,
+    const char *name,
+    fossil_cipher_mode_t mode
+) {
+    if (!text || !name) return NULL;
+
+    static const fossil_cipher_entry_t table[] = {
+        { "leet",   fossil_cipher_leet },
+        { "haxsor", fossil_cipher_haxsor },
+        { "rot13",  fossil_cipher_rot13 },
+        { "caesar", fossil_cipher_caesar },
+        { "morse",  fossil_cipher_morse },
+        { "binary", fossil_cipher_binary },
+        { NULL, NULL }
+    };
+
+    for (int i = 0; table[i].name; i++) {
+        if (fossil_io_cstring_iequals(name, table[i].name)) {
+            return table[i].fn(text, mode);
+        }
+    }
+
+    return fossil_io_cstring_dup(text); // unknown cipher = passthrough
+}
+
 // Function to apply background color
 void fossil_io_apply_bg_color(ccstring bg_color) {
     if (fossil_io_cstring_iequals(bg_color, "black")) {
@@ -307,115 +517,155 @@ void fossil_io_apply_position(ccstring pos) {
     }
 }
 
-/**
- * -----------------------------------------------------------------------------
- * New attribute parser using '@' syntax for inline styling.
- *
- * This function parses and applies terminal attributes using the '@' syntax.
- * Example usage in strings:
- *   "Normal text @color:red Red @reset Normal"
- *   "Score: @color:green 100 @reset"
- *   "Warning: @bg:yellow,attr:bold Important! @reset"
- *
- * Supported attribute types:
- *   - @color:<name>    : Set foreground color (if color enabled)
- *   - @bg:<name>       : Set background color (if color enabled)
- *   - @attr:<name>     : Set text attribute (bold, underline, etc.)
- *   - @pos:<name>      : Move cursor to a named position
- *   - @reset           : Reset all attributes and colors
- *
- * Multiple attributes can be combined with commas, e.g.:
- *   "@color:red,attr:bold"
- *
- * If output is disabled or str is NULL, prints "cnullptr" to stderr.
+/*
+ * Function to print text with attributes, colors, background colors, positions, and format specifiers.
+ * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
  */
-void fossil_io_print_with_at_attributes(ccstring str) {
+void fossil_io_print_with_attributes(ccstring str) {
     if (str == NULL) {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
         return;
     }
 
-    const char *p = str;
-    const char *last = str;
-    while (*p) {
-        if (*p == '@') {
-            // Print text before '@'
-            if (p > last) {
-                fossil_io_file_write(FOSSIL_STDOUT, last, 1, p - last);
+    ccstring current_pos = str;
+    ccstring start = NULL;
+    ccstring end = NULL;
+
+    while ((start = strchr(current_pos, '{')) != NULL) {
+        // Output text before '{'
+        if (start > current_pos) {
+            fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, start - current_pos);
+        }
+
+        // Find the matching '}'
+        end = strchr(start, '}');
+        if (end && end > start) {
+            // Extract attributes inside '{}'
+            size_t length = end - start - 1;
+            if (length == 0) {
+                // Empty braces, print as is
+                fossil_io_file_write(FOSSIL_STDOUT, "{", 1, 1);
+                fossil_io_file_write(FOSSIL_STDOUT, "}", 1, 1);
+                current_pos = end + 1;
+                continue;
             }
-            ++p; // skip '@'
-            // Skip any whitespace after '@'
-            while (*p == ' ') ++p;
-            // Find end of attribute (space or end)
-            const char *attr_start = p;
-            while (*p && *p != ' ' && *p != '@') ++p;
-            size_t attr_len = p - attr_start;
-            if (attr_len > 0) {
-                char attrbuf[128];
-                if (attr_len >= sizeof(attrbuf)) attr_len = sizeof(attrbuf) - 1;
-                strncpy(attrbuf, attr_start, attr_len);
-                attrbuf[attr_len] = '\0';
+            char attributes[length + 1];
+            strncpy(attributes, start + 1, length);
+            attributes[length] = '\0';
 
-                // Support multiple attributes separated by commas
-                char *saveptr = NULL;
-                char *token = strtok_r(attrbuf, ",", &saveptr);
-                while (token) {
-                    // Remove leading whitespace
-                    while (*token == ' ' || *token == '\t') ++token;
-                    if (*token == '\0') {
-                        token = strtok_r(NULL, ",", &saveptr);
-                        continue;
+            // Check for encode: or decode: prefix
+            if (strncmp(attributes, "encode:", 7) == 0) {
+                char *cipher_name = attributes + 7;
+                char *close = strchr(end + 1, '{');
+                ccstring text_start = end + 1;
+                ccstring text_end = close ? close : str + strlen(str);
+                size_t text_len = text_end - text_start;
+                char *text = malloc(text_len + 1);
+                if (text) {
+                    strncpy(text, text_start, text_len);
+                    text[text_len] = '\0';
+                    char *encoded = fossil_io_apply_cipher(text, cipher_name, FOSSIL_CIPHER_ENCODE);
+                    if (encoded) {
+                        fossil_io_file_write(FOSSIL_STDOUT, encoded, 1, strlen(encoded));
+                        free(encoded);
                     }
-                    // Remove trailing whitespace
-                    char *end = token + strlen(token) - 1;
-                    while (end > token && (*end == ' ' || *end == '\t')) {
-                        *end = '\0';
-                        --end;
+                    free(text);
+                }
+                current_pos = text_end;
+                continue;
+            } else if (strncmp(attributes, "decode:", 7) == 0) {
+                char *cipher_name = attributes + 7;
+                char *close = strchr(end + 1, '{');
+                ccstring text_start = end + 1;
+                ccstring text_end = close ? close : str + strlen(str);
+                size_t text_len = text_end - text_start;
+                char *text = malloc(text_len + 1);
+                if (text) {
+                    strncpy(text, text_start, text_len);
+                    text[text_len] = '\0';
+                    char *decoded = fossil_io_apply_cipher(text, cipher_name, FOSSIL_CIPHER_DECODE);
+                    if (decoded) {
+                        fossil_io_file_write(FOSSIL_STDOUT, decoded, 1, strlen(decoded));
+                        free(decoded);
                     }
-
-                    // Parse attribute: type:value or just type
-                    char *colon = strchr(token, ':');
-                    if (colon) {
-                        *colon = '\0';
-                        char *type = token;
-                        char *value = colon + 1;
-                        if (strcmp(type, "color") == 0 && FOSSIL_IO_COLOR_ENABLE) {
-                            fossil_io_apply_color(value);
-                        } else if (strcmp(type, "bg") == 0 && FOSSIL_IO_COLOR_ENABLE) {
-                            fossil_io_apply_bg_color(value);
-                        } else if (strcmp(type, "attr") == 0) {
-                            fossil_io_apply_attribute(value);
-                        } else if (strcmp(type, "pos") == 0) {
-                            fossil_io_apply_position(value);
-                        } else if (strcmp(type, "reset") == 0) {
-                            fossil_io_apply_attribute("normal");
-                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_color("reset");
-                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color("reset");
-                        }
-                    } else {
-                        // Single word attribute, e.g. @reset
-                        if (strcmp(token, "reset") == 0) {
-                            fossil_io_apply_attribute("normal");
-                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_color("reset");
-                            if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color("reset");
-                        } else if (*token != '\0') {
-                            fossil_io_apply_attribute(token);
-                        }
-                    }
-                    token = strtok_r(NULL, ",", &saveptr);
+                    free(text);
+                }
+                current_pos = text_end;
+                continue;
+            }
+            // Check for bg: or pos: prefix
+            if (strncmp(attributes, "bg:", 3) == 0) {
+                char *bg_color = attributes + 3;
+                char *comma_pos = strchr(bg_color, ',');
+                if (comma_pos) {
+                    *comma_pos = '\0';
+                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
+                    if (comma_pos[1] != '\0') fossil_io_apply_attribute(comma_pos + 1);
+                } else {
+                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
+                }
+            } else if (strncmp(attributes, "pos:", 4) == 0) {
+                if (attributes[4] != '\0') fossil_io_apply_position(attributes + 4);
+            } else {
+                // Handle color and/or attribute
+                char *color = attributes;
+                char *attribute = NULL;
+                char *comma_pos = strchr(attributes, ',');
+                if (comma_pos) {
+                    *comma_pos = '\0';
+                    color = attributes;
+                    attribute = comma_pos + 1;
+                }
+                if (FOSSIL_IO_COLOR_ENABLE && color && color[0] != '\0') {
+                    fossil_io_apply_color(color);
+                }
+                if (attribute && attribute[0] != '\0') {
+                    fossil_io_apply_attribute(attribute);
                 }
             }
-            // Skip any whitespace after attribute
-            while (*p == ' ') ++p;
-            last = p;
+
+            // Move past '}' and continue processing
+            current_pos = end + 1;
         } else {
-            ++p;
+            // No matching '}', print '{' and continue searching
+            fossil_io_file_write(FOSSIL_STDOUT, start, 1, 1);
+            current_pos = start + 1;
         }
     }
-    // Print any trailing text
-    if (last < p)
-        fossil_io_file_write(FOSSIL_STDOUT, last, 1, p - last);
+
+    // Output remaining text after last '}'
+    if (current_pos && *current_pos) {
+        fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, strlen(current_pos));
+    }
     fossil_io_file_flush(FOSSIL_STDOUT);
+}
+
+// Function to print a sanitized formatted string to a specific file stream with attributes
+void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
+    if (str != NULL && stream != NULL) {
+        char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
+        strncpy(sanitized_str, str, sizeof(sanitized_str));
+        sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
+
+        ccstring current_pos = sanitized_str;
+        ccstring start = NULL;
+        ccstring end = NULL;
+        while ((start = strchr(current_pos, '{')) != NULL) {
+            // Write text before '{' to the file
+            fossil_io_file_write(stream, current_pos, 1, start - current_pos);
+            end = strchr(start, '}');
+            if (end && end > start) {
+                // Skip the attribute section
+                current_pos = end + 1;
+            } else {
+                // No matching '}', write '{' and continue searching
+                fossil_io_file_write(stream, start, 1, 1);
+                current_pos = start + 1;
+            }
+        }
+        // Write remaining text after last '}'
+        fossil_io_file_write(stream, current_pos, 1, strlen(current_pos));
+    }
 }
 
 //
@@ -431,7 +681,7 @@ void fossil_io_puts(ccstring str) {
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
         
         // Print the sanitized string with attributes
-        fossil_io_print_with_at_attributes(sanitized_str);
+        fossil_io_print_with_attributes(sanitized_str);
     } else {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
@@ -454,24 +704,21 @@ void fossil_io_printf(ccstring format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
 
     // Print the sanitized output with attributes
-    fossil_io_print_with_at_attributes(buffer);
+    fossil_io_print_with_attributes(buffer);
 
     va_end(args);
 }
 
 // Function to print a sanitized string to a specific file stream
-void fossil_io_fputs(fossil_io_file_t *stream, const char *str) {
+void fossil_io_fputs(fossil_io_file_t *stream, ccstring str) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
     if (str != NULL && stream != NULL) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
-        // Temporarily redirect FOSSIL_STDOUT to the given stream
-        fossil_io_file_t *original_stdout = FOSSIL_STDOUT;
-        FOSSIL_STDOUT = stream;
-        fossil_io_print_with_at_attributes(sanitized_str);
-        FOSSIL_STDOUT = original_stdout;
+        // Apply color/attributes and sanitize the string before printing
+        fossil_io_fprint_with_attributes(stream, sanitized_str);
     } else {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
@@ -487,11 +734,8 @@ void fossil_io_fprintf(fossil_io_file_t *stream, ccstring format, ...) {
     char buffer[FOSSIL_IO_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), format, args);
 
-    // Temporarily redirect FOSSIL_STDOUT to the given stream
-    fossil_io_file_t *original_stdout = FOSSIL_STDOUT;
-    FOSSIL_STDOUT = stream;
-    fossil_io_print_with_at_attributes(buffer);
-    FOSSIL_STDOUT = original_stdout;
+    // Print the sanitized formatted string with attributes to the specified stream
+    fossil_io_fprint_with_attributes(stream, buffer);
 
     va_end(args);
 }
