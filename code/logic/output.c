@@ -522,6 +522,8 @@ void fossil_io_apply_position(ccstring pos) {
  * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
  */
 void fossil_io_print_with_attributes(ccstring str) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+
     if (str == NULL) {
         fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
         return;
