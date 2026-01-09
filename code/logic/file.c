@@ -710,10 +710,7 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
     return 0;
 }
 
-int32_t fossil_io_file_setpos(
-    fossil_io_file_t *stream,
-    const fossil_io_pos_t *pos
-) {
+int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos) {
     if (!stream || !stream->file || !pos) {
         return FOSSIL_ERROR_CNULL_POINTER;
     }
