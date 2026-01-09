@@ -710,28 +710,6 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
     return 0;
 }
 
-int fossil_io_file_seek(
-    fossil_io_file_t *stream,
-    int64_t offset
-) {
-    if (!stream || !stream->file) return -1;
-
-#if defined(_WIN32)
-    if (_fseeki64(stream->file, offset, SEEK_SET) != 0)
-        return -1;
-    int64_t pos = _ftelli64(stream->file);
-#else
-    if (fseeko(stream->file, (off_t)offset, SEEK_SET) != 0)
-        return -1;
-    off_t pos = ftello(stream->file);
-#endif
-
-    if (pos < 0) return -1;
-
-    stream->position = (int64_t)pos;
-    return 0;
-}
-
 int32_t fossil_io_file_setpos(
     fossil_io_file_t *stream,
     const fossil_io_pos_t *pos
