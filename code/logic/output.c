@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
 int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing 
