@@ -312,7 +312,7 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream);
  * @param stream Pointer to the fossil_io_file_t structure to seek.
  * @return       0 on success, non-zero on failure.
  */
-int32_t fossil_io_file_setpos(fossil_io_file_t *stream, fossil_io_pos_t pos);
+int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos);
 
 /**
  * Get the current position of the file pointer in an open stream.
