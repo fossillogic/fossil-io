@@ -305,31 +305,6 @@ int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename
 int32_t fossil_io_file_flush(fossil_io_file_t *stream);
 
 /**
- * fossil_io_file_seek
- *
- * Move the file position of an open Fossil IO stream to a specified byte offset.
- *
- * This function performs a seek relative to the beginning of the file (equivalent to SEEK_SET).
- * The function updates the internal cached position in the stream struct.
- *
- * Parameters:
- *   stream  - Pointer to an open fossil_io_file_t. Must be non-NULL and point to a valid stream.
- *   offset  - The byte offset from the beginning of the file to move the file position to.
- *
- * Returns:
- *   0 on success, non-zero on failure. On failure, errno is set appropriately.
- *   Common errors include:
- *     - EINVAL if the stream is NULL or invalid
- *     - EIO if an underlying IO error occurs
- *
- * Notes:
- *   - This function is intended for regular files; behavior on non-seekable streams (pipes, sockets) is undefined.
- *   - This function does not flush buffers; call fossil_io_file_flush() if needed before seeking.
- *   - For absolute-position capture/restoration, see fossil_io_file_getpos() / fossil_io_file_setpos().
- */
-int fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset);
-
-/**
  * Seek to the beginning of an open stream.
  *
  * This function moves the file pointer associated with the stream to the beginning.
