@@ -126,8 +126,6 @@ typedef struct {
     bool is_binary;         // True if AI processing detected non-text content
 } fossil_io_file_t;
 
-typedef fpos_t fossil_io_pos_t;
-
 extern fossil_io_file_t *FOSSIL_STDIN;
 extern fossil_io_file_t *FOSSIL_STDOUT;
 extern fossil_io_file_t *FOSSIL_STDERR;
@@ -303,27 +301,6 @@ int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename
  * @return       0 on success, non-zero on failure.
  */
 int32_t fossil_io_file_flush(fossil_io_file_t *stream);
-
-/**
- * Seek to the beginning of an open stream.
- *
- * This function moves the file pointer associated with the stream to the beginning.
- *
- * @param stream Pointer to the fossil_io_file_t structure to seek.
- * @return       0 on success, non-zero on failure.
- */
-int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos);
-
-/**
- * Get the current position of the file pointer in an open stream.
- *
- * This function retrieves the current position of the file pointer in an open stream.
- *
- * @param stream Pointer to the fossil_io_file_t structure to get the position of.
- * @param pos    Pointer to store the current position of the file pointer.
- * @return       0 on success, non-zero on failure.
- */
-int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos);
 
 /**
  * Rotate a file stream.
@@ -859,31 +836,6 @@ namespace fossil {
              */
             static int32_t flush(fossil_io_file_t *stream) {
                 return fossil_io_file_flush(stream);
-            }
-
-            /**
-             * Seek to the beginning of an open stream.
-             *
-             * This function moves the file pointer associated with the stream to the beginning.
-             *
-             * @param stream Pointer to the fossil_io_file_t structure to seek.
-             * @return       0 on success, non-zero on failure.
-             */
-            static int32_t setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos) {
-                return fossil_io_file_setpos(stream, pos);
-            }
-
-            /**
-             * Get the current position of the file pointer in an open stream.
-             *
-             * This function retrieves the current position of the file pointer in an open stream.
-             *
-             * @param stream Pointer to the fossil_io_file_t structure to get the position of.
-             * @param pos    Pointer to store the current position of the file pointer.
-             * @return       0 on success, non-zero on failure.
-             */
-            static int32_t getpos(fossil_io_file_t *stream, int64_t *pos) {
-                return fossil_io_file_getpos(stream, pos);
             }
 
             /**

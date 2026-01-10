@@ -258,34 +258,6 @@ FOSSIL_TEST(c_test_stream_flush_file) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
-    const char *filename = "testfile_setpos_getpos.txt";
-    const char *content = "This is a test.";
-    int64_t pos;
-
-    // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "w"));
-    fossil_io_file_write(&c_stream, content, strlen(content), 1);
-    fossil_io_file_close(&c_stream);
-
-    // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
-
-    // Set the file position
-    int64_t pos_set = 0;
-    // Seek to position 5
-    fossil_io_file_seek(&c_stream, 5, SEEK_SET);
-    fossil_io_file_getpos(&c_stream, &pos_set); // pos_set is int64_t
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_setpos(&c_stream, &pos_set));
-
-    // Get the file position
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_getpos(&c_stream, &pos));
-    ASSUME_ITS_EQUAL_I32(5, pos);
-
-    // Close the file
-    fossil_io_file_close(&c_stream);
-}
-
 FOSSIL_TEST(c_test_stream_ai_analyze) {
     const char *filename = "testfile_ai.txt";
     const char *content = "This is a test for AI analysis.";
@@ -388,7 +360,6 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_analyze);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_compute_embedding);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_ai_ready_and_reset);

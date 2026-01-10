@@ -701,40 +701,6 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
     return 0;
 }
 
-int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos) {
-    if (!stream || !stream->file || !pos) {
-        return FOSSIL_ERROR_CNULL_POINTER;
-    }
-
-    if (fsetpos(stream->file, pos) != 0) {
-        return FOSSIL_ERROR_IO;
-    }
-
-    /* Update cached byte position if available */
-    long tell = ftell(stream->file);
-    if (tell >= 0) {
-        stream->position = (int64_t)tell;
-    }
-
-    return FOSSIL_ERROR_OK;
-}
-
-int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos) {
-    if (!stream || !stream->file || !pos) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    long local_pos = ftell(stream->file);
-    if (local_pos >= 0) {
-        stream->position = (int64_t)local_pos;
-        *pos = (int64_t)local_pos;
-        return 0;
-    }
-
-    return -1;
-}
-
 int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
     if (filename == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
