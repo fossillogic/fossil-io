@@ -629,7 +629,7 @@ int32_t fossil_io_file_save(
 
 // Copy a file from the source to the destination
 int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename) {
-    if (!src || !dst) return FOSSIL_ERROR_CNULL_POINTER;
+    if (!source_filename || !destination_filename) return FOSSIL_ERROR_CNULL_POINTER;
 
     FILE *in = fopen(source_filename, "rb");
     if (!in) return FOSSIL_ERROR_FILE_NOT_FOUND;
@@ -729,7 +729,6 @@ int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *p
 }
 
 int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos) {
-    fossil_io_file_getpos(fossil_io_file_t *stream) {
     if (!stream || !stream->file) {
         errno = EINVAL;
         return -1L;
