@@ -243,7 +243,11 @@ FOSSIL_TEST(cpp_test_stream_setpos_and_getpos) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "r"));
 
     // Set the file position
-    fossil_io_pos_t pos_set = 5;
+    fossil_io_pos_t pos_set;
+    memset(&pos_set, 0, sizeof(pos_set));
+    // Seek to position 5 before getting the position struct
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_seek(&cpp_stream, 5, SEEK_SET));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_getpos(&cpp_stream, &pos_set));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_setpos(&cpp_stream, &pos_set));
 
     // Get the file position
