@@ -869,7 +869,7 @@ namespace fossil {
              * @param stream Pointer to the fossil_io_file_t structure to seek.
              * @return       0 on success, non-zero on failure.
              */
-            static int32_t setpos(fossil_io_file_t *stream, fossil_io_pos_t pos) {
+            static int32_t setpos(fossil_io_file_t *stream, const fossil_io_pos_t *pos) {
                 return fossil_io_file_setpos(stream, pos);
             }
 
