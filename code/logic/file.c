@@ -524,12 +524,7 @@ size_t fossil_io_file_write(
 }
 
 // Append data to the end of an open stream
-int32_t fossil_io_file_append(
-    fossil_io_file_t *stream,
-    const void *buffer,
-    size_t size,
-    size_t count
-) {
+int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count) {
     if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
         return 0;
     }
