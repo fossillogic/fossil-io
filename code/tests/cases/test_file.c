@@ -272,13 +272,10 @@ FOSSIL_TEST(c_test_stream_setpos_and_getpos) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename, "r"));
 
     // Set the file position
-    fossil_io_pos_t pos_set;
-    memset(&pos_set, 0, sizeof(pos_set)); // Ensure the struct is zeroed
-    // Set the position to 5 using fsetpos/fseek or similar if needed
-    // If fossil_io_pos_t is compatible with fpos_t, use fgetpos/fsetpos to set it
-    // Here, seek to position 5, then get the position struct
+    int64_t pos_set = 0;
+    // Seek to position 5
     fossil_io_file_seek(&c_stream, 5, SEEK_SET);
-    fossil_io_file_getpos(&c_stream, &pos_set);
+    fossil_io_file_getpos(&c_stream, &pos_set); // pos_set is int64_t
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_setpos(&c_stream, &pos_set));
 
     // Get the file position
