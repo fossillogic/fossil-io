@@ -229,30 +229,6 @@ FOSSIL_TEST(cpp_test_stream_flush_file) {
     fossil_io_file_close(&cpp_stream);
 }
 
-FOSSIL_TEST(cpp_test_stream_setpos_and_getpos) {
-    const char *filename = "testfile_setpos_getpos.txt";
-    const char *content = "This is a test.";
-    int64_t pos;
-
-    // Create the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "w"));
-    fossil_io_file_write(&cpp_stream, content, strlen(content), 1);
-    fossil_io_file_close(&cpp_stream);
-
-    // Open the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&cpp_stream, filename, "r"));
-
-    // Set the file position
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_setpos(&cpp_stream, 5));
-
-    // Get the file position
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_getpos(&cpp_stream, &pos));
-    ASSUME_ITS_EQUAL_I32(5, pos);
-
-    // Close the file
-    fossil_io_file_close(&cpp_stream);
-}
-
 FOSSIL_TEST(cpp_test_stream_class_tempfile_creation) {
     // Create a temporary file using the class method
     fossil_io_file_t temp_stream = fossil::io::Stream::tempfile();
@@ -513,7 +489,6 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_get_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
-    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_tempfile_creation);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_tempfile_cleanup);

@@ -489,8 +489,6 @@ FOSSIL_TEST(objcpp_test_io_validate_sanitize_string_noop) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test Pool
-// * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(objcpp_input_tests) {
     FOSSIL_TEST_ADD(objcpp_input_suite, objcpp_test_io_gets_from_stream);

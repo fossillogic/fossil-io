@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
 int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing 
@@ -312,6 +313,8 @@ void fossil_io_apply_position(ccstring pos) {
  * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
  */
 void fossil_io_print_with_attributes(ccstring str) {
+    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+
     if (str == NULL) {
         fprintf(stderr, "cnullptr\n");
         return;
@@ -327,28 +330,33 @@ void fossil_io_print_with_attributes(ccstring str) {
 
         // Find the matching '}'
         end = strchr(start, '}');
-        if (end) {
+        if (end && end > start) {
             // Extract attributes inside '{}'
             size_t length = end - start - 1;
+            if (length == 0) {
+                // Empty braces, print as is
+                fossil_io_file_write(FOSSIL_STDOUT, "{", 1, 1);
+                fossil_io_file_write(FOSSIL_STDOUT, "}", 1, 1);
+                current_pos = end + 1;
+                continue;
+            }
             char attributes[length + 1];
             strncpy(attributes, start + 1, length);
             attributes[length] = '\0';
 
             // Check for bg: or pos: prefix
             if (strncmp(attributes, "bg:", 3) == 0) {
-                // Handle background color and optional attribute
                 char *bg_color = attributes + 3;
                 char *comma_pos = strchr(bg_color, ',');
                 if (comma_pos) {
                     *comma_pos = '\0';
-                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
-                    fossil_io_apply_attribute(comma_pos + 1);
+                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
+                    if (comma_pos[1] != '\0') fossil_io_apply_attribute(comma_pos + 1);
                 } else {
-                    if (FOSSIL_IO_COLOR_ENABLE) fossil_io_apply_bg_color(bg_color);
+                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
                 }
             } else if (strncmp(attributes, "pos:", 4) == 0) {
-                // Handle position
-                fossil_io_apply_position(attributes + 4);
+                if (attributes[4] != '\0') fossil_io_apply_position(attributes + 4);
             } else {
                 // Handle color and/or attribute
                 char *color = attributes;
@@ -388,7 +396,6 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
-        // Remove attribute/color escape codes for file output
         ccstring current_pos = sanitized_str;
         ccstring start = NULL;
         ccstring end = NULL;
@@ -396,13 +403,13 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
             // Write text before '{' to the file
             fossil_io_file_write(stream, current_pos, 1, start - current_pos);
             end = strchr(start, '}');
-            if (end) {
+            if (end && end > start) {
                 // Skip the attribute section
                 current_pos = end + 1;
             } else {
-                // No matching '}', write the rest and break
-                fossil_io_file_write(stream, start, 1, strlen(start));
-                break;
+                // No matching '}', write '{' and continue searching
+                fossil_io_file_write(stream, start, 1, 1);
+                current_pos = start + 1;
             }
         }
         // Write remaining text after last '}'

@@ -455,266 +455,225 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
 }
 
 // Read data from an open stream
-size_t fossil_io_file_read(fossil_io_file_t *stream, void *buffer, size_t size, size_t count) {
-    if (stream == NULL || buffer == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+size_t fossil_io_file_read(
+    fossil_io_file_t *stream,
+    void *buffer,
+    size_t size,
+    size_t count
+) {
+    /* Match fread(): undefined behavior on NULL is avoided,
+       but no diagnostics are emitted */
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+        return 0;
     }
 
-    // Only allow reading if the stream is marked readable
+    /* Enforce Fossil IO access policy, but preserve fread semantics */
     if (!stream->readable) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File is not readable - %s\n", stream->filename);
-        return FOSSIL_ERROR_IO;
+        errno = EBADF;
+        return 0;
     }
+
+    /* Clear previous error state (optional but common) */
+    clearerr(stream->file);
 
     size_t items_read = fread(buffer, size, count, stream->file);
 
-    if (items_read == 0 && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File corruption - %s\n", stream->filename);
-        return FOSSIL_ERROR_FILE_CORRUPTION;
+    /* Update stream position if available */
+    long pos = ftell(stream->file);
+    if (pos >= 0) {
+        stream->position = (size_t)pos;
     }
 
-    // Update file position and size in the stream struct
-    stream->position = ftell(stream->file);
-    fseek(stream->file, 0, SEEK_END);
-    stream->size = (size_t)ftell(stream->file);
-    fseek(stream->file, stream->position, SEEK_SET);
+    /* Do NOT seek to compute size — fread never does this */
 
     return items_read;
 }
 
 // Write data to an open stream
-size_t fossil_io_file_write(fossil_io_file_t *stream, const void *buffer, size_t size, size_t count) {
-    if (stream == NULL || buffer == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+size_t fossil_io_file_write(
+    fossil_io_file_t *stream,
+    const void *buffer,
+    size_t size,
+    size_t count
+) {
+    /* fread/fwrite return 0 on invalid input without diagnostics */
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+        return 0;
     }
 
-    // Only allow writing if the stream is marked writable
+    /* Enforce Fossil IO policy without breaking fwrite semantics */
     if (!stream->writable) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File is not writable - %s\n", stream->filename);
-        return FOSSIL_ERROR_IO;
+        errno = EBADF;
+        return 0;
     }
 
-    size_t bytes_written = fwrite(buffer, size, count, stream->file);
+    /* Clear prior error state (optional but conventional) */
+    clearerr(stream->file);
 
-    if (bytes_written == 0 && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File write failed - %s\n", strerror(errno));
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    size_t items_written = fwrite(buffer, size, count, stream->file);
+
+    /* Update position if seekable */
+    long pos = ftell(stream->file);
+    if (pos >= 0) {
+        stream->position = (size_t)pos;
     }
 
-    // Update file position and size in the stream struct
-    stream->position = ftell(stream->file);
+    /* Do NOT seek to compute size — fwrite never does this */
 
-    // Save current position, seek to end to get size, then restore position
-    int64_t current_pos = stream->position;
-    if (fseek(stream->file, 0, SEEK_END) == 0) {
-        stream->size = (size_t)ftell(stream->file);
-        fseek(stream->file, current_pos, SEEK_SET);
-    }
-
-    return bytes_written;
+    return items_written;
 }
 
 // Append data to the end of an open stream
 int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count) {
-    if (stream == NULL || buffer == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+        return 0;
     }
 
-    // Only allow writing if the stream is marked writable
     if (!stream->writable) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File is not writable - %s\n", stream->filename);
-        return FOSSIL_ERROR_IO;
+        errno = EBADF;
+        return 0;
     }
 
-    // Seek to end and update position
-    if (fseek(stream->file, 0, SEEK_END) != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to seek to end of file\n");
-        return FOSSIL_ERROR_IO;
-    }
-    stream->position = ftell(stream->file);
+    /* DO NOT SEEK — append mode guarantees EOF writes */
+    clearerr(stream->file);
 
-    size_t written = fwrite(buffer, size, count, stream->file);
+    size_t items_written = fwrite(buffer, size, count, stream->file);
 
-    if (written != (size_t)count) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to append data to file - %s\n", stream->filename);
-        return FOSSIL_ERROR_IO;
+    long pos = ftell(stream->file);
+    if (pos >= 0) {
+        stream->position = (size_t)pos;
     }
 
-    // Update file size and position in the struct
-    stream->position = ftell(stream->file);
-
-    // Save current position, seek to end to get size, then restore position
-    int64_t current_pos = stream->position;
-    if (fseek(stream->file, 0, SEEK_END) == 0) {
-        stream->size = (size_t)ftell(stream->file);
-        fseek(stream->file, current_pos, SEEK_SET);
-    }
-
-    return FOSSIL_ERROR_OK;
+    return items_written;
 }
 
 // Seek to a specified position in an open stream
 int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t origin) {
-    if (stream == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+    if (!stream || !stream->file) {
+        errno = EINVAL;
+        return -1;
     }
 
-    // Use fseek for standard FILE* streams
-    int result = fseek(stream->file, (long)offset, origin);
-    if (result != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Seek failed - %s\n", strerror(errno));
-        return FOSSIL_ERROR_IO;
-    }
+    /* Clear error state (optional but conventional) */
+    clearerr(stream->file);
 
-    // Update the cached position in the stream struct
-    long pos = ftell(stream->file);
-    if (pos == -1L && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file position\n");
-        return FOSSIL_ERROR_IO;
-    }
-    stream->position = (int64_t)pos;
+    int rc = fseek(stream->file, offset, origin);
 
-    return FOSSIL_ERROR_OK;
+    /* Do NOT call ftell() — fseek does not */
+    return rc;
 }
 
 // Get the current position of the file pointer in an open stream
 int32_t fossil_io_file_tell(fossil_io_file_t *stream) {
-    if (stream == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+    if (!stream || !stream->file) {
+        errno = EINVAL;
+        return -1L;
     }
 
-    long position = ftell(stream->file);
+    clearerr(stream->file);
 
-    if (position == -1L && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file position\n");
-        return FOSSIL_ERROR_IO;
+    int32_t pos = ftell(stream->file);
+
+    if (pos >= 0) {
+        stream->position = (int32_t)pos;
     }
 
-    stream->position = (int64_t)position; // update struct's position field
-
-    // Optionally update cached size as well
-    long current_pos = position;
-    if (fseek(stream->file, 0, SEEK_END) == 0) {
-        stream->size = (size_t)ftell(stream->file);
-        fseek(stream->file, current_pos, SEEK_SET);
-    }
-
-    return (int32_t)position;
+    /* No seeking, no printing, no size updates */
+    return pos;
 }
 
 // Save an open stream to a new file
-int32_t fossil_io_file_save(fossil_io_file_t *stream, const char *new_filename) {
-    if (stream == NULL || stream->file == NULL || new_filename == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+int32_t fossil_io_file_save(
+    fossil_io_file_t *stream,
+    const char *new_filename
+) {
+    if (!stream || !stream->file || !new_filename) {
+        errno = EINVAL;
+        return -1;
     }
 
     if (strlen(new_filename) >= sizeof(stream->filename)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Limit reached\n");
-        return FOSSIL_ERROR_LIMIT_REACHED;
+        errno = ENAMETOOLONG;
+        return -1;
     }
 
-    // Close the current file
-    fclose(stream->file);
-
-    // Rename the file
-    if (rename(stream->filename, new_filename) != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to save %s\n", new_filename);
-        stream->is_open = false;
-        return FOSSIL_ERROR_IO;
+    /* Flush stdio buffers */
+    if (fflush(stream->file) != 0) {
+        return -1;
     }
 
-    // Determine mode string based on file type
-    const char *mode_str = (strcmp(stream->type, "binary") == 0) ? "rb+" : "r+";
+    /* Preserve old name in case of failure */
+    char old_name[sizeof(stream->filename)];
+    strncpy(old_name, stream->filename, sizeof(old_name));
 
-    // Reopen the file with the new name and update metadata
-    int32_t result = fossil_io_file_open(stream, new_filename, mode_str);
-    if (result != FOSSIL_ERROR_OK) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", strerror(errno));
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    /* Rename atomically */
+    if (rename(old_name, new_filename) != 0) {
+        return -1;
     }
 
-    // Update the filename in the struct
+    /* Update in-memory name only after success */
     strncpy(stream->filename, new_filename, sizeof(stream->filename) - 1);
     stream->filename[sizeof(stream->filename) - 1] = '\0';
 
-    // Update type field based on file content (already handled in fossil_io_file_open)
-    // All other fields (mode, owner, group, flags, timestamps, etc.) are updated by fossil_io_file_open
-
-    return FOSSIL_ERROR_OK;
+    return 0;
 }
 
 // Copy a file from the source to the destination
 int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename) {
-    if (source_filename == NULL || destination_filename == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+    if (!source_filename || !destination_filename) return FOSSIL_ERROR_CNULL_POINTER;
+
+    FILE *in = fopen(source_filename, "rb");
+    if (!in) return FOSSIL_ERROR_FILE_NOT_FOUND;
+
+    FILE *out = fopen(destination_filename, "wb");
+    if (!out) {
+        fclose(in);
+        return FOSSIL_ERROR_IO;
     }
 
-    FILE *source_file = fopen(source_filename, "rb");
-    if (source_file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", source_filename);
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
-    }
+    char buf[FOSSIL_BUFFER_MEDIUM];
+    size_t n;
+    int error = 0;
 
-    FILE *destination_file = fopen(destination_filename, "wb");
-    if (destination_file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", destination_filename);
-        fclose(source_file);
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
-    }
-
-    char buffer[FOSSIL_BUFFER_MEDIUM];
-    size_t bytesRead;
-
-    while ((bytesRead = fread(buffer, 1, FOSSIL_BUFFER_MEDIUM, source_file)) > 0) {
-        size_t bytesWritten = fwrite(buffer, 1, bytesRead, destination_file);
-        if (bytesWritten != bytesRead) {
-            fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found\n");
-            fclose(source_file);
-            fclose(destination_file);
-            return FOSSIL_ERROR_FILE_NOT_FOUND;
+    while ((n = fread(buf, 1, sizeof buf, in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) {
+            error = 1;
+            break;
         }
     }
 
-    fclose(source_file);
-    fclose(destination_file);
+    if (ferror(in)) error = 1;
+
+    fclose(in);
+    fclose(out);
+
+    if (error) {
+        remove(destination_filename); /* prevent partial copy */
+        return FOSSIL_ERROR_IO;
+    }
 
     return FOSSIL_ERROR_OK;
 }
 
 int32_t fossil_io_file_remove(const char *filename) {
-    if (filename == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+    if (!filename) return FOSSIL_ERROR_CNULL_POINTER;
+
+    if (remove(filename) != 0) {
+        if (errno == ENOENT)
+            return FOSSIL_ERROR_FILE_NOT_FOUND;
+        return FOSSIL_ERROR_IO;
     }
 
-    if (remove(filename) == 0) {
-        return FOSSIL_ERROR_OK;  // File removed successfully
-    } else {
-        if (errno == ENOENT) {
-            fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found when removing file %s\n", filename);
-            return FOSSIL_ERROR_FILE_NOT_FOUND;
-        } else {
-            fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error when removing file %s\n", filename);
-            return FOSSIL_ERROR_IO;
-        }
-    }
+    return FOSSIL_ERROR_OK;
 }
 
 int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename) {
-    if (old_filename == NULL || new_filename == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
+    if (!old_filename || !new_filename)
         return FOSSIL_ERROR_CNULL_POINTER;
-    }
 
     if (rename(old_filename, new_filename) != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to rename file %s\n", old_filename);
+        if (errno == ENOENT)
+            return FOSSIL_ERROR_FILE_NOT_FOUND;
         return FOSSIL_ERROR_IO;
     }
 
@@ -722,87 +681,24 @@ int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename
 }
 
 int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
-    if (stream == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
-    }
+    if (!stream || !stream->file) return -1;
 
-    if (fflush(stream->file) != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to flush file - %s\n", stream->filename);
-        return FOSSIL_ERROR_IO;
-    }
+    if (fflush(stream->file) != 0) return -1;
 
-    // Update file position after flush
-    stream->position = ftell(stream->file);
+    long pos = ftell(stream->file);
+    if (pos >= 0)
+        stream->position = (int64_t)pos;
 
 #ifndef _WIN32
-    // Update timestamps and permissions using updated struct fields
     struct stat st;
     if (stat(stream->filename, &st) == 0) {
-        stream->mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+        stream->mode = st.st_mode & 0777;
         stream->modified_at = st.st_mtime;
         stream->accessed_at = st.st_atime;
-        struct passwd *pw = getpwuid(st.st_uid);
-        struct group *gr = getgrgid(st.st_gid);
-        if (pw) {
-            strncpy(stream->owner, pw->pw_name, sizeof(stream->owner) - 1);
-            stream->owner[sizeof(stream->owner) - 1] = '\0';
-        }
-        if (gr) {
-            strncpy(stream->group, gr->gr_name, sizeof(stream->group) - 1);
-            stream->group[sizeof(stream->group) - 1] = '\0';
-        }
     }
 #endif
 
-    return FOSSIL_ERROR_OK;
-}
-
-int32_t fossil_io_file_setpos(fossil_io_file_t *stream, int64_t pos) {
-    if (stream == NULL || stream->file == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
-    }
-
-    if (fseek(stream->file, (long)pos, SEEK_SET) != 0) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to set file position\n");
-        return FOSSIL_ERROR_IO;
-    }
-
-    long new_pos = ftell(stream->file);
-    if (new_pos == -1L && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file position\n");
-        return FOSSIL_ERROR_IO;
-    }
-    stream->position = (int64_t)new_pos;
-
-    return FOSSIL_ERROR_OK;
-}
-
-int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos) {
-    if (stream == NULL || stream->file == NULL || pos == NULL) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
-    }
-
-    long file_pos = ftell(stream->file);
-    if (file_pos == -1L && ferror(stream->file)) {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file position\n");
-        return FOSSIL_ERROR_IO;
-    }
-
-    // Update the struct's position field
-    stream->position = (int64_t)file_pos;
-    *pos = stream->position;
-
-    // Optionally update cached size as well
-    long current_pos = file_pos;
-    if (fseek(stream->file, 0, SEEK_END) == 0) {
-        stream->size = (size_t)ftell(stream->file);
-        fseek(stream->file, current_pos, SEEK_SET);
-    }
-
-    return FOSSIL_ERROR_OK;
+    return 0;
 }
 
 int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
