@@ -524,7 +524,7 @@ size_t fossil_io_file_write(
 }
 
 // Append data to the end of an open stream
-size_t fossil_io_file_append(
+int32_t fossil_io_file_append(
     fossil_io_file_t *stream,
     const void *buffer,
     size_t size,
@@ -553,11 +553,7 @@ size_t fossil_io_file_append(
 }
 
 // Seek to a specified position in an open stream
-int fossil_io_file_seek(
-    fossil_io_file_t *stream,
-    long offset,
-    int origin
-) {
+int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t origin) {
     if (!stream || !stream->file) {
         errno = EINVAL;
         return -1;
@@ -729,16 +725,19 @@ int32_t fossil_io_file_setpos(fossil_io_file_t *stream, const fossil_io_pos_t *p
 }
 
 int32_t fossil_io_file_getpos(fossil_io_file_t *stream, int64_t *pos) {
-    if (!stream || !stream->file) {
+    if (!stream || !stream->file || !pos) {
         errno = EINVAL;
-        return -1L;
+        return -1;
     }
 
-    long pos = ftell(stream->file);
-    if (pos >= 0)
-        stream->position = (int64_t)pos;
+    long local_pos = ftell(stream->file);
+    if (local_pos >= 0) {
+        stream->position = (int64_t)local_pos;
+        *pos = (int64_t)local_pos;
+        return 0;
+    }
 
-    return pos;
+    return -1;
 }
 
 int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
