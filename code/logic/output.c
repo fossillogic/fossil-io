@@ -316,7 +316,7 @@ void fossil_io_print_with_attributes(ccstring str) {
     if (!FOSSIL_IO_OUTPUT_ENABLE) return;
 
     if (str == NULL) {
-        fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+        fprintf(stderr, "cnullptr\n");
         return;
     }
 
@@ -326,9 +326,7 @@ void fossil_io_print_with_attributes(ccstring str) {
 
     while ((start = strchr(current_pos, '{')) != NULL) {
         // Output text before '{'
-        if (start > current_pos) {
-            fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, start - current_pos);
-        }
+        fwrite(current_pos, 1, start - current_pos, stdout);
 
         // Find the matching '}'
         end = strchr(start, '}');
@@ -380,17 +378,15 @@ void fossil_io_print_with_attributes(ccstring str) {
             // Move past '}' and continue processing
             current_pos = end + 1;
         } else {
-            // No matching '}', print '{' and continue searching
-            fossil_io_file_write(FOSSIL_STDOUT, start, 1, 1);
-            current_pos = start + 1;
+            // No matching '}', print the rest and break
+            fwrite(start, 1, strlen(start), stdout);
+            break;
         }
     }
 
     // Output remaining text after last '}'
-    if (current_pos && *current_pos) {
-        fossil_io_file_write(FOSSIL_STDOUT, current_pos, 1, strlen(current_pos));
-    }
-    fossil_io_file_flush(FOSSIL_STDOUT);
+    fwrite(current_pos, 1, strlen(current_pos), stdout);
+    fflush(stdout);
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
