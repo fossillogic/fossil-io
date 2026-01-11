@@ -294,7 +294,8 @@ static char *cipher_base64(const char *text, const char *params, int decode) {
         size_t olen = ((len + 2) / 3) * 4;
         char *out = malloc(olen + 2 + (wrap ? olen / wrap + 2 : 0));
         if (!out) return NULL;
-        size_t i, j = 0, w = 0;
+        size_t i, j = 0;
+        int w = 0;
         for (i = 0; i < len; i += 3) {
             int v = (text[i] << 16) | ((i+1 < len ? text[i+1] : 0) << 8) | (i+2 < len ? text[i+2] : 0);
             out[j++] = table[(v >> 18) & 0x3F];
