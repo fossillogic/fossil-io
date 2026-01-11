@@ -309,7 +309,7 @@ namespace fossil {
              */
             static std::string encode(const std::string &text,
                                       const std::string &cipher_id) {
-                return encode(text.c_str(), cipher_id.c_str());
+                return fossil_io_cipher_encode(text.c_str(), cipher_id.c_str());
             }
 
             /**
@@ -369,7 +369,7 @@ namespace fossil {
              */
             static std::string decode(const std::string &text,
                                       const std::string &cipher_id) {
-                return decode(text.c_str(), cipher_id.c_str());
+                return fossil_io_cipher_decode(text.c_str(), cipher_id.c_str());
             }
         
         };
