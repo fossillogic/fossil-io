@@ -65,14 +65,16 @@ typedef struct {
 
 static const cipher_entry cipher_table[] = {
     { "caesar",    cipher_caesar    },
+    { "rot13",     cipher_rot13     },
     { "vigenere",  cipher_vigenere  },
     { "base64",    cipher_base64    },
     { "base32",    cipher_base32    },
     { "binary",    cipher_binary    },
     { "morse",     cipher_morse     },
+    { "atbash",    cipher_atbash    },
     { "baconian",  cipher_baconian  },
     { "railfence", cipher_railfence },
-    { "haxor",    cipher_haxor    },
+    { "haxor",     cipher_haxor     },
     { NULL, NULL }
 };
 
@@ -80,7 +82,14 @@ static const cipher_entry cipher_table[] = {
 /* Helpers                                                                    */
 /* ------------------------------------------------------------------------- */
 
+/*
+ * Lookup cipher by name.
+ * Unknown names return NULL (caller decides fallback behavior).
+ */
 static const cipher_entry *cipher_lookup(const char *name) {
+    if (!name || !*name)
+        return NULL;
+
     for (int i = 0; cipher_table[i].id; i++) {
         if (!strcasecmp(cipher_table[i].id, name))
             return &cipher_table[i];
@@ -88,11 +97,29 @@ static const cipher_entry *cipher_lookup(const char *name) {
     return NULL;
 }
 
-/* Splits "name:param" into name + param pointer */
+/*
+ * Splits:
+ *   "name:param1,param2,unknown=ok"
+ *
+ * Rules:
+ *  - name is copied safely
+ *  - params may be NULL
+ *  - unknown params are preserved, not rejected
+ */
 static void cipher_split(const char *cipher_id,
              char *name, size_t name_sz,
              const char **params) {
-    const char *p = strchr(cipher_id, ':');
+    const char *p;
+
+    if (!cipher_id) {
+        name[0] = 0;
+        *params = NULL;
+        return;
+    }
+
+    /* stop name at first ':' only */
+    p = strchr(cipher_id, ':');
+
     if (!p) {
         strncpy(name, cipher_id, name_sz - 1);
         name[name_sz - 1] = 0;
@@ -106,6 +133,8 @@ static void cipher_split(const char *cipher_id,
 
     memcpy(name, cipher_id, len);
     name[len] = 0;
+
+    /* everything after ':' is params, unknown allowed */
     *params = p + 1;
 }
 
@@ -118,13 +147,15 @@ char *fossil_io_cipher_encode(const char *text, const char *cipher_id) {
         return NULL;
 
     char name[32];
-    const char *params;
+    const char *params = NULL;
 
     cipher_split(cipher_id, name, sizeof(name), &params);
 
     const cipher_entry *c = cipher_lookup(name);
+
+    /* Unknown cipher: fail soft (identity transform) */
     if (!c || !c->fn)
-        return NULL;
+        return fossil_io_cstring_dup(text);
 
     return c->fn(text, params, 0);
 }
@@ -134,13 +165,15 @@ char *fossil_io_cipher_decode(const char *text, const char *cipher_id) {
         return NULL;
 
     char name[32];
-    const char *params;
+    const char *params = NULL;
 
     cipher_split(cipher_id, name, sizeof(name), &params);
 
     const cipher_entry *c = cipher_lookup(name);
+
+    /* Unknown cipher: fail soft (identity transform) */
     if (!c || !c->fn)
-        return NULL;
+        return fossil_io_cstring_dup(text);
 
     return c->fn(text, params, 1);
 }
