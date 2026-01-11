@@ -240,19 +240,19 @@ FOSSIL_TEST(cpp_test_cipher_class_invalid_cipher_id) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_cipher_tests) {
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_caesar_default);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_caesar_shift_5_nowrap);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_vigenere_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_base64_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_base64_url);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_base32_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_binary_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_binary_sep_bits);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_morse_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_baconian_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_railfence_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_haxor_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_invalid_cipher_id);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_caesar_default);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_caesar_shift_5_nowrap);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_vigenere_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base64_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base64_url);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base32_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_binary_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_binary_sep_bits);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_morse_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_baconian_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_railfence_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_haxor_basic);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_invalid_cipher_id);
 
     FOSSIL_TEST_REGISTER(cpp_cipher_suite);
 }
