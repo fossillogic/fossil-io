@@ -292,15 +292,20 @@ static char *cipher_base64(const char *text, const char *params, int decode) {
     if (!decode) {
         size_t len = strlen(text);
         size_t olen = ((len + 2) / 3) * 4;
-        char *out = malloc(olen + 2);
+        char *out = malloc(olen + 2 + (wrap ? olen / wrap + 2 : 0));
         if (!out) return NULL;
-        size_t i, j = 0;
+        size_t i, j = 0, w = 0;
         for (i = 0; i < len; i += 3) {
             int v = (text[i] << 16) | ((i+1 < len ? text[i+1] : 0) << 8) | (i+2 < len ? text[i+2] : 0);
             out[j++] = table[(v >> 18) & 0x3F];
             out[j++] = table[(v >> 12) & 0x3F];
             out[j++] = (i+1 < len) ? table[(v >> 6) & 0x3F] : (pad ? '=' : 0);
             out[j++] = (i+2 < len) ? table[v & 0x3F] : (pad ? '=' : 0);
+            w += 4;
+            if (wrap > 0 && w >= wrap) {
+                out[j++] = '\n';
+                w = 0;
+            }
         }
         out[j] = 0;
         return out;
@@ -392,8 +397,16 @@ static char *cipher_binary(const char *text, const char *params, int decode) {
         size_t j = 0;
         for (size_t i = 0; i < len; i++) {
             unsigned char c = text[i];
-            for (int b = bits - 1; b >= 0; b--)
-                out[j++] = ((c >> b) & 1) ? '1' : '0';
+            if (signed_mode) {
+                // Interpret as signed char if signed_mode is set
+                signed char sc = (signed char)c;
+                unsigned char uc = (unsigned char)sc;
+                for (int b = bits - 1; b >= 0; b--)
+                    out[j++] = ((uc >> b) & 1) ? '1' : '0';
+            } else {
+                for (int b = bits - 1; b >= 0; b--)
+                    out[j++] = ((c >> b) & 1) ? '1' : '0';
+            }
             out[j++] = sep;
         }
         out[j ? j-1 : 0] = 0;
@@ -413,7 +426,20 @@ static char *cipher_binary(const char *text, const char *params, int decode) {
                 }
                 i++;
             }
-            if (b == bits) out[j++] = (char)v;
+            if (b == bits) {
+                if (signed_mode) {
+                    // Convert to signed char if signed_mode is set
+                    if (bits < 8) {
+                        // Sign-extend manually for bits < 8
+                        int sign_bit = 1 << (bits - 1);
+                        if (v & sign_bit)
+                            v |= ~((1 << bits) - 1);
+                    }
+                    out[j++] = (char)((signed char)v);
+                } else {
+                    out[j++] = (char)v;
+                }
+            }
             while (i < len && text[i] == sep) i++;
         }
         out[j] = 0;
@@ -500,12 +526,10 @@ static char *cipher_morse(const char *text, const char *params, int decode) {
 
 /* 9. Baconian */
 static char *cipher_baconian(const char *text, const char *params, int decode) {
-    const char *variant = "classic";
     char a = 'A', b = 'B';
     int group = 5;
     if (params) {
         const char *p;
-        if ((p = strstr(params, "variant="))) variant = p + 8;
         if ((p = strstr(params, "a="))) a = p[2];
         if ((p = strstr(params, "b="))) b = p[2];
         group = parse_int_param(params, "group", 5);
@@ -607,13 +631,9 @@ static char *cipher_railfence(const char *text, const char *params, int decode) 
 
 /* 11. Haxor */
 static char *cipher_haxor(const char *text, const char *params, int decode) {
-    const char *mode = "1337";
     int preserve_case = parse_bool_param(params, "case", 0);
     int reverse = parse_bool_param(params, "reverse", 0);
-    if (params) {
-        const char *p;
-        if ((p = strstr(params, "mode="))) mode = p + 5;
-    }
+    // mode is currently only "1337" and not used for other mappings
     size_t len = strlen(text);
     char *out = malloc(len * 8 + 1);
     if (!out) return NULL;
