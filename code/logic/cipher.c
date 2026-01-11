@@ -44,17 +44,15 @@ typedef char *(*cipher_fn)(
 /* (actual cipher logic can live elsewhere or be filled in later)             */
 /* ------------------------------------------------------------------------- */
 
-static char *cipher_caesar(const char *, const char *, int);
-static char *cipher_rot13(const char *, const char *, int);
-static char *cipher_vigenere(const char *, const char *, int);
-static char *cipher_base64(const char *, const char *, int);
-static char *cipher_base32(const char *, const char *, int);
-static char *cipher_binary(const char *, const char *, int);
-static char *cipher_morse(const char *, const char *, int);
-static char *cipher_atbash(const char *, const char *, int);
-static char *cipher_baconian(const char *, const char *, int);
-static char *cipher_railfence(const char *, const char *, int);
-static char *cipher_haxsor(const char *, const char *, int);
+static char *cipher_caesar(const char *text, const char *params, int decode);
+static char *cipher_vigenere(const char *text, const char *params, int decode);
+static char *cipher_base64(const char *text, const char *params, int decode);
+static char *cipher_base32(const char *text, const char *params, int decode);
+static char *cipher_binary(const char *text, const char *params, int decode);
+static char *cipher_morse(const char *text, const char *params, int decode);
+static char *cipher_baconian(const char *text, const char *params, int decode);
+static char *cipher_railfence(const char *text, const char *params, int decode);
+static char *cipher_haxor(const char *text, const char *params, int decode);
 
 /* ------------------------------------------------------------------------- */
 /* Cipher registry                                                            */
@@ -67,16 +65,14 @@ typedef struct {
 
 static const cipher_entry cipher_table[] = {
     { "caesar",    cipher_caesar    },
-    { "rot13",     cipher_rot13     },
     { "vigenere",  cipher_vigenere  },
     { "base64",    cipher_base64    },
     { "base32",    cipher_base32    },
     { "binary",    cipher_binary    },
     { "morse",     cipher_morse     },
-    { "atbash",    cipher_atbash    },
     { "baconian",  cipher_baconian  },
     { "railfence", cipher_railfence },
-    { "haxsor",    cipher_haxsor    },
+    { "haxor",    cipher_haxor    },
     { NULL, NULL }
 };
 
@@ -150,420 +146,512 @@ char *fossil_io_cipher_decode(const char *text, const char *cipher_id) {
 }
 
 /* ------------------------------------------------------------------------- */
-/* Minimal reference cipher implementations                                   */
-/* (safe stubs where logic not yet provided)                                  */
+/* Lookup tables and helpers for ciphers                                      */
 /* ------------------------------------------------------------------------- */
 
-static char *cipher_caesar(const char *text, const char *params, int decode) {
-    int shift = params ? atoi(params) : 3;
-    if (decode) shift = -shift;
+/* Caesar helpers */
+static int parse_int_param(const char *params, const char *key, int def) {
+    if (!params) return def;
+    const char *p = strstr(params, key);
+    if (!p) return def;
+    p += strlen(key);
+    if (*p == '=') p++;
+    return atoi(p);
+}
+static int parse_bool_param(const char *params, const char *key, int def) {
+    int v = parse_int_param(params, key, def);
+    return v ? 1 : 0;
+}
 
-    char *out = fossil_io_cstring_dup(text);
-    if (!out) return NULL;
-
-    for (char *p = out; *p; p++) {
-        if (isalpha((unsigned char)*p)) {
-            char base = islower(*p) ? 'a' : 'A';
-            *p = (char)(base + ((*p - base + shift + 26) % 26));
-        }
+/* Vigenère helpers */
+static void parse_vigenere_params(const char *params, char *key, size_t key_sz, int *alpha, int *preserve) {
+    *alpha = parse_bool_param(params, "alpha", 1);
+    *preserve = parse_bool_param(params, "preserve", 1);
+    if (!params) { key[0] = 0; return; }
+    const char *k = strstr(params, "key=");
+    if (k) {
+        k += 4;
+        size_t len = 0;
+        while (k[len] && k[len] != ',' && len < key_sz - 1) len++;
+        strncpy(key, k, len); key[len] = 0;
+    } else {
+        size_t len = 0;
+        while (params[len] && params[len] != ',' && len < key_sz - 1) len++;
+        strncpy(key, params, len); key[len] = 0;
     }
-    return out;
 }
 
-static char *cipher_rot13(const char *text, const char *params, int decode) {
-    (void)params;
-    (void)decode;
-    return cipher_caesar(text, "13", 0);
-}
-
-static char *cipher_atbash(const char *text, const char *params, int decode) {
-    (void)params;
-    (void)decode;
-
-    char *out = fossil_io_cstring_dup(text);
-    if (!out) return NULL;
-
-    for (char *p = out; *p; p++) {
-        if (islower(*p))
-            *p = 'z' - (*p - 'a');
-        else if (isupper(*p))
-            *p = 'Z' - (*p - 'A');
-    }
-    return out;
-}
-
-static char *cipher_vigenere(const char *text, const char *params, int decode) {
-    if (!params || !*params)
-        return fossil_io_cstring_dup(text);
-
-    char *out = fossil_io_cstring_dup(text);
-    if (!out) return NULL;
-
-    size_t klen = strlen(params);
-    size_t j = 0;
-
-    for (size_t i = 0; out[i]; i++) {
-        if (!isalpha(out[i]))
-            continue;
-
-        int k = tolower(params[j % klen]) - 'a';
-        if (decode) k = -k;
-
-        char base = islower(out[i]) ? 'a' : 'A';
-        out[i] = (char)(base + ((out[i] - base + k + 26) % 26));
-        j++;
-    }
-    return out;
-}
-
+/* Base64 helpers */
 static const char base64_table[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64_url_table[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-static char *cipher_base64(const char *text, const char *params, int decode) {
-    (void)params;
+/* Base32 helpers */
+static const char base32_table[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char base32hex_table[] =
+    "0123456789ABCDEFGHIJKLMNOPQRSTUV";
 
-    if (!text) return NULL;
-
-    if (!decode) {
-        size_t len = strlen(text);
-        size_t outlen = 4 * ((len + 2) / 3) + 1;
-        char *out = malloc(outlen);
-        if (!out) return NULL;
-
-        size_t i = 0, j = 0;
-        while (i < len) {
-            unsigned char a = i < len ? text[i++] : 0;
-            unsigned char b = i < len ? text[i++] : 0;
-            unsigned char c = i < len ? text[i++] : 0;
-
-            out[j++] = base64_table[(a >> 2) & 0x3F];
-            out[j++] = base64_table[((a & 0x3) << 4) | ((b >> 4) & 0xF)];
-            out[j++] = (i - 1) > len ? '=' : base64_table[((b & 0xF) << 2) | ((c >> 6) & 0x3)];
-            out[j++] = (i) > len ? '=' : base64_table[c & 0x3F];
-        }
-        out[j] = 0;
-        char *dup = fossil_io_cstring_dup(out);
-        free(out);
-        return dup;
-    } else {
-        /* Decode simplified version */
-        size_t len = strlen(text);
-        size_t outlen = len / 4 * 3 + 1;
-        char *out = malloc(outlen);
-        if (!out) return NULL;
-
-        size_t i = 0, j = 0;
-        unsigned char buf[4];
-        int buflen = 0;
-
-        while (i < len) {
-            char c = text[i++];
-            if (c == '=') break;
-            const char *p = strchr(base64_table, c);
-            if (!p) continue;
-            buf[buflen++] = (unsigned char)(p - base64_table);
-            if (buflen == 4) {
-                out[j++] = (buf[0] << 2) | (buf[1] >> 4);
-                out[j++] = (buf[1] << 4) | (buf[2] >> 2);
-                out[j++] = (buf[2] << 6) | buf[3];
-                buflen = 0;
-            }
-        }
-        if (buflen) {
-            if (buflen > 1) out[j++] = (buf[0] << 2) | (buf[1] >> 4);
-            if (buflen > 2) out[j++] = (buf[1] << 4) | (buf[2] >> 2);
-        }
-        out[j] = 0;
-        char *dup = fossil_io_cstring_dup(out);
-        free(out);
-        return dup;
-    }
-}
-
-static const char base32_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-
-static char *cipher_base32(const char *text, const char *params, int decode) {
-    (void)params;
-
-    if (!text) return NULL;
-
-    if (!decode) {
-        size_t len = strlen(text);
-        size_t outlen = (len + 4) / 5 * 8 + 1;
-        char *out = malloc(outlen);
-        if (!out) return NULL;
-
-        size_t i = 0, j = 0;
-        while (i < len) {
-            unsigned char bytes[5] = {0,0,0,0,0};
-            int bcount = 0;
-            for (; bcount < 5 && i < len; bcount++, i++)
-                bytes[bcount] = (unsigned char)text[i];
-
-            out[j++] = base32_table[(bytes[0] >> 3) & 0x1F];
-            out[j++] = base32_table[((bytes[0] & 0x07) << 2) | ((bytes[1] >> 6) & 0x03)];
-            out[j++] = bcount > 1 ? base32_table[(bytes[1] >> 1) & 0x1F] : '=';
-            out[j++] = bcount > 1 ? base32_table[((bytes[1] & 0x01) << 4) | ((bytes[2] >> 4) & 0x0F)] : '=';
-            out[j++] = bcount > 2 ? base32_table[((bytes[2] & 0x0F) << 1) | ((bytes[3] >> 7) & 0x01)] : '=';
-            out[j++] = bcount > 3 ? base32_table[(bytes[3] >> 2) & 0x1F] : '=';
-            out[j++] = bcount > 3 ? base32_table[((bytes[3] & 0x03) << 3) | ((bytes[4] >> 5) & 0x07)] : '=';
-            out[j++] = bcount > 4 ? base32_table[bytes[4] & 0x1F] : '=';
-        }
-        out[j] = 0;
-        char *dup = fossil_io_cstring_dup(out);
-        free(out);
-        return dup;
-    } else {
-        /* Decode stub: fallback passthrough */
-        return fossil_io_cstring_dup(text);
-    }
-}
-
-static char *cipher_binary(const char *text, const char *params, int decode) {
-    if (!text) return NULL;
-    int bits = params ? atoi(params) : 8;
-
-    if (decode) {
-        size_t len = strlen(text);
-        size_t outlen = len / bits + 1;
-        char *out = fossil_io_cstring_dup("");
-        if (!out) return NULL;
-
-        for (size_t i = 0; i + bits <= len; i += bits) {
-            char byte[9] = {0};
-            strncpy(byte, text + i, bits);
-            char c = (char) strtol(byte, NULL, 2);
-            size_t olen = strlen(out);
-            out = realloc(out, olen + 2);
-            out[olen] = c;
-            out[olen + 1] = 0;
-        }
-        return out;
-    }
-
-    /* Encode */
-    size_t len = strlen(text);
-    size_t outlen = len * bits + 1;
-    char *out = malloc(outlen);
-    if (!out) return NULL;
-    out[0] = 0;
-
-    for (size_t i = 0; i < len; i++) {
-        char byte[16] = {0};
-        for (int b = bits - 1; b >= 0; b--) {
-            byte[bits - 1 - b] = ((text[i] >> b) & 1) ? '1' : '0';
-        }
-        strcat(out, byte);
-    }
-
-    char *dup = fossil_io_cstring_dup(out);
-    free(out);
-    return dup;
-}
-
-static const char *morse_table[] = {
-    ".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---",
-    "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-",
-    "..-", "...-", ".--", "-..-", "-.--", "--..", // A-Z
-    "-----", ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----." // 0-9
+/* Morse code table */
+static const struct { char ch; const char *code; } morse_table[] = {
+    {'A', ".-"},    {'B', "-..."},  {'C', "-.-."}, {'D', "-.."},   {'E', "."},
+    {'F', "..-."},  {'G', "--."},   {'H', "...."}, {'I', ".."},    {'J', ".---"},
+    {'K', "-.-"},   {'L', ".-.."},  {'M', "--"},   {'N', "-."},    {'O', "---"},
+    {'P', ".--."},  {'Q', "--.-"},  {'R', ".-."},  {'S', "..."},   {'T', "-"},
+    {'U', "..-"},   {'V', "...-"},  {'W', ".--"},  {'X', "-..-"},  {'Y', "-.--"},
+    {'Z', "--.."},  {'0', "-----"}, {'1', ".----"},{'2', "..---"}, {'3', "...--"},
+    {'4', "....-"}, {'5', "....."}, {'6', "-...."},{'7', "--..."}, {'8', "---.."},
+    {'9', "----."}, {' ', "/"},     {0, NULL}
 };
 
-static char *cipher_morse(const char *text, const char *params, int decode) {
-    (void)params;
-    if (!text) return NULL;
+/* Baconian helpers */
+static const char *baconian_classic[] = {
+    "AAAAA","AAAAB","AAABA","AAABB","AABAA","AABAB","AABBA","AABBB","ABAAA","ABAAB",
+    "ABABA","ABABB","ABBAA","ABBAB","ABBBA","ABBBB","BAAAA","BAAAB","BAABA","BAABB",
+    "BABAA","BABAB","BABBA","BABBB","BBAAA","BBAAB"
+};
 
+/* Rail Fence helpers */
+static void railfence_params(const char *params, int *rails, int *offset, int *preserve) {
+    *rails = parse_int_param(params, "rails", 2);
+    *offset = parse_int_param(params, "offset", 0);
+    *preserve = parse_bool_param(params, "preserve", 1);
+    if (!params) return;
+    int v = atoi(params);
+    if (v > 1) *rails = v;
+}
+
+/* Haxor helpers */
+static const struct { char ch; const char *leet; } haxor_1337[] = {
+    {'A', "4"}, {'B', "8"}, {'C', "("}, {'D', "|)"}, {'E', "3"}, {'F', "|="},
+    {'G', "6"}, {'H', "#"}, {'I', "1"}, {'J', "_|"}, {'K', "|<"}, {'L', "1"},
+    {'M', "/\\/\\",}, {'N', "|\\|"}, {'O', "0"}, {'P', "|>"}, {'Q', "0,"},
+    {'R', "|2"}, {'S', "5"}, {'T', "7"}, {'U', "(_)"}, {'V', "\\/"}, {'W', "\\/\\/"},
+    {'X', "><"}, {'Y', "`/"}, {'Z', "2"}, {0, NULL}
+};
+
+/* ------------------------------------------------------------------------- */
+/* Cipher Implementations                                                     */
+/* ------------------------------------------------------------------------- */
+
+/* 1. Caesar Cipher */
+static char *cipher_caesar(const char *text, const char *params, int decode) {
+    int shift = parse_int_param(params, "shift", 3);
+    int wrap = parse_bool_param(params, "wrap", 1);
+    int alpha = parse_bool_param(params, "alpha", 1);
+    if (!params && isdigit(text[0])) shift = atoi(text);
+
+    if (decode) shift = 26 - (shift % 26);
+    size_t len = strlen(text);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+    for (size_t i = 0; i < len; i++) {
+        char c = text[i];
+        if (alpha && isalpha(c)) {
+            char base = isupper(c) ? 'A' : 'a';
+            int off = (c - base + shift) % 26;
+            if (!wrap && (c - base + shift) >= 26) out[i] = c;
+            else out[i] = base + off;
+        } else out[i] = c;
+    }
+    out[len] = 0;
+    return out;
+}
+
+/* 3. Vigenère */
+static char *cipher_vigenere(const char *text, const char *params, int decode) {
+    char key[64] = {0};
+    int alpha, preserve;
+    parse_vigenere_params(params, key, sizeof(key), &alpha, &preserve);
+    if (!key[0]) return NULL;
+    size_t len = strlen(text), klen = strlen(key);
+    char *out = malloc(len + 1);
+    if (!out) return NULL;
+    for (size_t i = 0, j = 0; i < len; i++) {
+        char c = text[i];
+        if (isalpha(c) && alpha) {
+            char base = isupper(c) ? 'A' : 'a';
+            char k = toupper(key[j % klen]) - 'A';
+            int off = decode ? (26 + (c - base) - k) % 26 : (c - base + k) % 26;
+            out[i] = base + off;
+            j++;
+        } else if (preserve) out[i] = c;
+        else out[i] = c;
+    }
+    out[len] = 0;
+    return out;
+}
+
+/* 4. Base64 */
+static char *cipher_base64(const char *text, const char *params, int decode) {
+    int url = parse_bool_param(params, "url", 0);
+    int pad = parse_bool_param(params, "pad", 1);
+    int wrap = parse_int_param(params, "wrap", 0);
+    const char *table = url ? base64_url_table : base64_table;
     if (!decode) {
-        /* Encode */
-        char *out = fossil_io_cstring_dup("");
-        for (size_t i = 0; text[i]; i++) {
-            char c = toupper(text[i]);
-            if (c >= 'A' && c <= 'Z') {
-                const char *m = morse_table[c - 'A'];
-                size_t len = strlen(out) + strlen(m) + 2;
-                out = realloc(out, len);
-                strcat(out, m);
-                strcat(out, " ");
-            } else if (c >= '0' && c <= '9') {
-                const char *m = morse_table[c - '0' + 26];
-                size_t len = strlen(out) + strlen(m) + 2;
-                out = realloc(out, len);
-                strcat(out, m);
-                strcat(out, " ");
-            } else if (c == ' ') {
-                strcat(out, "/ ");
+        size_t len = strlen(text);
+        size_t olen = ((len + 2) / 3) * 4;
+        char *out = malloc(olen + 2);
+        if (!out) return NULL;
+        size_t i, j = 0;
+        for (i = 0; i < len; i += 3) {
+            int v = (text[i] << 16) | ((i+1 < len ? text[i+1] : 0) << 8) | (i+2 < len ? text[i+2] : 0);
+            out[j++] = table[(v >> 18) & 0x3F];
+            out[j++] = table[(v >> 12) & 0x3F];
+            out[j++] = (i+1 < len) ? table[(v >> 6) & 0x3F] : (pad ? '=' : 0);
+            out[j++] = (i+2 < len) ? table[v & 0x3F] : (pad ? '=' : 0);
+        }
+        out[j] = 0;
+        return out;
+    } else {
+        // Simple base64 decode (no error checking)
+        size_t len = strlen(text);
+        char *out = malloc(len + 1);
+        if (!out) return NULL;
+        int val = 0, valb = -8, j = 0;
+        for (size_t i = 0; i < len; i++) {
+            char c = text[i];
+            if (c == '=' || c == '\n' || c == '\r') continue;
+            const char *p = strchr(table, c);
+            if (!p) continue;
+            val = (val << 6) + (p - table);
+            valb += 6;
+            if (valb >= 0) {
+                out[j++] = (char)((val >> valb) & 0xFF);
+                valb -= 8;
             }
         }
+        out[j] = 0;
         return out;
     }
+}
 
-    /* Decode (simplified, supports letters/digits only) */
-    char *out = fossil_io_cstring_dup("");
-    char buffer[16];
-    size_t bidx = 0;
+/* 5. Base32 */
+static char *cipher_base32(const char *text, const char *params, int decode) {
+    int hex = parse_bool_param(params, "hex", 0);
+    int pad = parse_bool_param(params, "pad", 1);
+    int upper = parse_bool_param(params, "upper", 1);
+    const char *table = hex ? base32hex_table : base32_table;
+    if (!decode) {
+        size_t len = strlen(text);
+        size_t olen = ((len + 4) / 5) * 8;
+        char *out = malloc(olen + 2);
+        if (!out) return NULL;
+        size_t i, j = 0;
+        for (i = 0; i < len; i += 5) {
+            unsigned int v = 0;
+            for (int k = 0; k < 5; k++)
+                v |= (i+k < len ? (unsigned char)text[i+k] : 0) << (8*(4-k));
+            for (int k = 0; k < 8; k++) {
+                if (i*8/5 + k < olen)
+                    out[j++] = table[(v >> (35-5*k)) & 0x1F];
+            }
+        }
+        if (pad) while (j % 8) out[j++] = '=';
+        out[j] = 0;
+        if (!upper) for (size_t k = 0; k < j; k++) out[k] = tolower(out[k]);
+        return out;
+    } else {
+        // Simple base32 decode (no error checking)
+        size_t len = strlen(text);
+        char *out = malloc(len + 1);
+        if (!out) return NULL;
+        int val = 0, valb = -5, j = 0;
+        for (size_t i = 0; i < len; i++) {
+            char c = toupper(text[i]);
+            if (c == '=' || c == '\n' || c == '\r') continue;
+            const char *p = strchr(table, c);
+            if (!p) continue;
+            val = (val << 5) + (p - table);
+            valb += 5;
+            if (valb >= 0) {
+                out[j++] = (char)((val >> valb) & 0xFF);
+                valb -= 8;
+            }
+        }
+        out[j] = 0;
+        return out;
+    }
+}
 
-    for (size_t i = 0; ; i++) {
-        char c = text[i];
-        if (c == '.' || c == '-') {
-            buffer[bidx++] = c;
-        } else if (c == ' ' || c == 0) {
-            buffer[bidx] = 0;
-            if (bidx > 0) {
+/* 6. Binary */
+static char *cipher_binary(const char *text, const char *params, int decode) {
+    int bits = parse_int_param(params, "bits", 8);
+    char sep = ' ';
+    if (params) {
+        const char *p = strstr(params, "sep=");
+        if (p) sep = p[4];
+        else if (isdigit(params[0])) bits = atoi(params);
+    }
+    int signed_mode = parse_bool_param(params, "signed", 0);
+    if (!decode) {
+        size_t len = strlen(text);
+        char *out = malloc(len * (bits + 2) + 1);
+        if (!out) return NULL;
+        size_t j = 0;
+        for (size_t i = 0; i < len; i++) {
+            unsigned char c = text[i];
+            for (int b = bits - 1; b >= 0; b--)
+                out[j++] = ((c >> b) & 1) ? '1' : '0';
+            out[j++] = sep;
+        }
+        out[j ? j-1 : 0] = 0;
+        return out;
+    } else {
+        // Decode binary string to text
+        size_t len = strlen(text);
+        char *out = malloc(len / bits + 2);
+        if (!out) return NULL;
+        size_t j = 0, i = 0;
+        while (i < len) {
+            int v = 0, b = 0;
+            while (b < bits && i < len) {
+                if (text[i] == '0' || text[i] == '1') {
+                    v = (v << 1) | (text[i] - '0');
+                    b++;
+                }
+                i++;
+            }
+            if (b == bits) out[j++] = (char)v;
+            while (i < len && text[i] == sep) i++;
+        }
+        out[j] = 0;
+        return out;
+    }
+}
+
+/* 7. Morse Code */
+static char *cipher_morse(const char *text, const char *params, int decode) {
+    char dash = '-';
+    char dot = '.';
+    const char *charsep = " ";
+    const char *wordsep = "/";
+    int strict = parse_bool_param(params, "strict", 0);
+    if (params) {
+        const char *p;
+        if ((p = strstr(params, "dash="))) dash = p[5];
+        if ((p = strstr(params, "dot="))) dot = p[4];
+        if ((p = strstr(params, "charsep="))) charsep = p + 8;
+        if ((p = strstr(params, "wordsep="))) wordsep = p + 8;
+    }
+    if (!decode) {
+        size_t len = strlen(text);
+        char *out = malloc(len * 8 + 1);
+        if (!out) return NULL;
+        size_t j = 0;
+        size_t cslen = strlen(charsep);
+        for (size_t i = 0; i < len; i++) {
+            char c = toupper(text[i]);
+            if (c == ' ') {
+                size_t wslen = strlen(wordsep);
+                memcpy(out + j, wordsep, wslen); j += wslen;
+            } else {
                 int found = 0;
-                for (int j = 0; j < 36; j++) {
-                    if (strcmp(buffer, morse_table[j]) == 0) {
-                        char decoded = (j < 26) ? 'A' + j : '0' + (j - 26);
-                        size_t len = strlen(out);
-                        out = realloc(out, len + 2);
-                        out[len] = decoded;
-                        out[len + 1] = 0;
+                for (int k = 0; morse_table[k].ch; k++) {
+                    if (morse_table[k].ch == c) {
+                        for (size_t m = 0; morse_table[k].code[m]; m++)
+                            out[j++] = morse_table[k].code[m] == '.' ? dot : dash;
                         found = 1;
                         break;
                     }
                 }
-                if (!found) {
-                    size_t len = strlen(out);
-                    out = realloc(out, len + 2);
-                    out[len] = '?';
-                    out[len + 1] = 0;
-                }
-            }
-            bidx = 0;
-        } else if (c == '/') {
-            size_t len = strlen(out);
-            out = realloc(out, len + 2);
-            out[len] = ' ';
-            out[len + 1] = 0;
-        }
-        if (c == 0) break;
-    }
-    return out;
-}
-
-static char *cipher_baconian(const char *text, const char *params, int decode) {
-    (void)params;
-    if (!text) return NULL;
-
-    const char *bacon[26] = {
-        "AAAAA","AAAAB","AAABA","AAABB","AABAA","AABAB","AABBA","AABBB",
-        "ABAAA","ABAAB","ABABA","ABABB","ABBAA","ABBAB","ABBBA","ABBBB",
-        "BAAAA","BAAAB","BAABA","BAABB","BABAA","BABAB","BABBA","BABBB",
-        "BBAAA","BBAAB"
-    };
-
-    if (!decode) {
-        char *out = fossil_io_cstring_dup("");
-        for (size_t i = 0; text[i]; i++) {
-            char c = toupper(text[i]);
-            if (c >= 'A' && c <= 'Z') {
-                size_t len = strlen(out) + 6;
-                out = realloc(out, len);
-                strcat(out, bacon[c - 'A']);
+                if (!found && strict) continue;
+                memcpy(out + j, charsep, cslen); j += cslen;
             }
         }
+        out[j ? j-cslen : 0] = 0;
         return out;
     } else {
-        char *out = fossil_io_cstring_dup("");
+        // Morse decode (simple, not strict)
+        char *out = malloc(strlen(text) + 1);
+        if (!out) return NULL;
+        size_t j = 0;
+        char buf[8] = {0};
+        size_t bi = 0;
+        for (size_t i = 0; text[i]; i++) {
+            if (strncmp(text + i, wordsep, strlen(wordsep)) == 0) {
+                out[j++] = ' ';
+                i += strlen(wordsep) - 1;
+                bi = 0;
+            } else if (strncmp(text + i, charsep, strlen(charsep)) == 0) {
+                buf[bi] = 0;
+                for (int k = 0; morse_table[k].ch; k++) {
+                    int match = 1;
+                    for (size_t m = 0; morse_table[k].code[m]; m++) {
+                        char sym = morse_table[k].code[m] == '.' ? dot : dash;
+                        if (buf[m] != sym) { match = 0; break; }
+                    }
+                    if (match && strlen(morse_table[k].code) == strlen(buf)) {
+                        out[j++] = morse_table[k].ch;
+                        break;
+                    }
+                }
+                bi = 0;
+                i += strlen(charsep) - 1;
+            } else if (text[i] == dot || text[i] == dash) {
+                if (bi < sizeof(buf)-1) buf[bi++] = text[i];
+            }
+        }
+        out[j] = 0;
+        return out;
+    }
+}
+
+/* 9. Baconian */
+static char *cipher_baconian(const char *text, const char *params, int decode) {
+    const char *variant = "classic";
+    char a = 'A', b = 'B';
+    int group = 5;
+    if (params) {
+        const char *p;
+        if ((p = strstr(params, "variant="))) variant = p + 8;
+        if ((p = strstr(params, "a="))) a = p[2];
+        if ((p = strstr(params, "b="))) b = p[2];
+        group = parse_int_param(params, "group", 5);
+    }
+    if (!decode) {
         size_t len = strlen(text);
-        for (size_t i = 0; i + 5 <= len; i += 5) {
-            char block[6];
-            strncpy(block, text + i, 5);
-            block[5] = 0;
+        char *out = malloc(len * group + 2);
+        if (!out) return NULL;
+        size_t j = 0;
+        for (size_t i = 0; i < len; i++) {
+            char c = toupper(text[i]);
+            if (c >= 'A' && c <= 'Z') {
+                const char *code = baconian_classic[c - 'A'];
+                for (int k = 0; k < group; k++)
+                    out[j++] = code[k] == 'A' ? a : b;
+            } else out[j++] = c;
+        }
+        out[j] = 0;
+        return out;
+    } else {
+        // Baconian decode
+        size_t len = strlen(text);
+        char *out = malloc(len / group + 2);
+        if (!out) return NULL;
+        size_t j = 0, i = 0;
+        while (i + group <= len) {
+            char buf[6] = {0};
+            for (int k = 0; k < group; k++)
+                buf[k] = (text[i + k] == a) ? 'A' : (text[i + k] == b) ? 'B' : 0;
+            i += group;
+            for (int k = 0; k < 26; k++) {
+                if (strncmp(buf, baconian_classic[k], group) == 0) {
+                    out[j++] = 'A' + k;
+                    break;
+                }
+            }
+        }
+        out[j] = 0;
+        return out;
+    }
+}
+
+/* 10. Rail Fence */
+static char *cipher_railfence(const char *text, const char *params, int decode) {
+    int rails, offset, preserve;
+    railfence_params(params, &rails, &offset, &preserve);
+    size_t len = strlen(text);
+    char *out = malloc(len + 1);
+    if (!out || rails < 2) return NULL;
+    if (!decode) {
+        int rail = 0, dir = 1;
+        size_t j = 0;
+        char **rows = malloc(rails * sizeof(char *));
+        size_t *idx = calloc(rails, sizeof(size_t));
+        for (int r = 0; r < rails; r++) rows[r] = malloc(len + 1);
+        for (size_t i = 0; i < len; i++) {
+            rows[rail][idx[rail]++] = text[i];
+            rail += dir;
+            if (rail == rails - 1 || rail == 0) dir = -dir;
+        }
+        for (int r = 0; r < rails; r++) {
+            memcpy(out + j, rows[r], idx[r]);
+            j += idx[r];
+            free(rows[r]);
+        }
+        free(rows); free(idx);
+        out[j] = 0;
+        return out;
+    } else {
+        // Rail fence decode
+        size_t *pos = calloc(rails, sizeof(size_t));
+        size_t *lenr = calloc(rails, sizeof(size_t));
+        int rail = 0, dir = 1;
+        for (size_t i = 0; i < len; i++) {
+            lenr[rail]++;
+            rail += dir;
+            if (rail == rails - 1 || rail == 0) dir = -dir;
+        }
+        char **rows = malloc(rails * sizeof(char *));
+        size_t idx = 0;
+        for (int r = 0; r < rails; r++) {
+            rows[r] = malloc(lenr[r]);
+            memcpy(rows[r], text + idx, lenr[r]);
+            idx += lenr[r];
+        }
+        rail = 0; dir = 1;
+        idx = 0;
+        for (size_t i = 0; i < len; i++) {
+            out[i] = rows[rail][pos[rail]++];
+            rail += dir;
+            if (rail == rails - 1 || rail == 0) dir = -dir;
+        }
+        for (int r = 0; r < rails; r++) free(rows[r]);
+        free(rows); free(pos); free(lenr);
+        out[len] = 0;
+        return out;
+    }
+}
+
+/* 11. Haxor */
+static char *cipher_haxor(const char *text, const char *params, int decode) {
+    const char *mode = "1337";
+    int preserve_case = parse_bool_param(params, "case", 0);
+    int reverse = parse_bool_param(params, "reverse", 0);
+    if (params) {
+        const char *p;
+        if ((p = strstr(params, "mode="))) mode = p + 5;
+    }
+    size_t len = strlen(text);
+    char *out = malloc(len * 8 + 1);
+    if (!out) return NULL;
+    size_t j = 0;
+    if (!decode || !reverse) {
+        for (size_t i = 0; i < len; i++) {
+            char c = toupper(text[i]);
             int found = 0;
-            for (int j = 0; j < 26; j++) {
-                if (strcmp(block, bacon[j]) == 0) {
-                    size_t olen = strlen(out);
-                    out = realloc(out, olen + 2);
-                    out[olen] = 'A' + j;
-                    out[olen + 1] = 0;
+            for (int k = 0; haxor_1337[k].ch; k++) {
+                if (haxor_1337[k].ch == c) {
+                    size_t l = strlen(haxor_1337[k].leet);
+                    memcpy(out + j, haxor_1337[k].leet, l);
+                    j += l;
                     found = 1;
                     break;
                 }
             }
-            if (!found) {
-                size_t olen = strlen(out);
-                out = realloc(out, olen + 2);
-                out[olen] = '?';
-                out[olen + 1] = 0;
-            }
+            if (!found) out[j++] = text[i];
         }
+        out[j] = 0;
+        return out;
+    } else {
+        // Reverse mapping (simple, only for 1337)
+        size_t i = 0;
+        while (i < len) {
+            int matched = 0;
+            for (int k = 0; haxor_1337[k].ch; k++) {
+                size_t l = strlen(haxor_1337[k].leet);
+                if (strncmp(text + i, haxor_1337[k].leet, l) == 0) {
+                    out[j++] = preserve_case ? haxor_1337[k].ch : tolower(haxor_1337[k].ch);
+                    i += l;
+                    matched = 1;
+                    break;
+                }
+            }
+            if (!matched) out[j++] = text[i++];
+        }
+        out[j] = 0;
         return out;
     }
-}
-
-static char *cipher_railfence(const char *text, const char *params, int decode) {
-    if (!text) return NULL;
-
-    int rails = params ? atoi(params) : 3;
-    if (rails < 2) rails = 2;
-
-    size_t len = strlen(text);
-    char *out = fossil_io_cstring_dup(text);
-    if (!out) return NULL;
-
-    if (!decode) {
-        char *tmp = malloc(len + 1);
-        size_t idx = 0;
-        for (int r = 0; r < rails; r++) {
-            int step1 = (rails - r - 1) * 2;
-            int step2 = r * 2;
-            size_t i = r;
-            int toggle = 0;
-            while (i < len) {
-                tmp[idx++] = text[i];
-                if (r == 0 || r == rails - 1) {
-                    i += (rails - 1) * 2;
-                } else {
-                    i += toggle ? step1 : step2;
-                    toggle = !toggle;
-                }
-            }
-        }
-        tmp[len] = 0;
-        free(out);
-        out = fossil_io_cstring_dup(tmp);
-        free(tmp);
-    } else {
-        /* Decode simplified: reverse process */
-        char *tmp = malloc(len + 1);
-        memset(tmp, 0, len + 1);
-
-        size_t idx = 0;
-        for (int r = 0; r < rails; r++) {
-            int step1 = (rails - r - 1) * 2;
-            int step2 = r * 2;
-            size_t i = r;
-            int toggle = 0;
-            while (i < len) {
-                tmp[i] = text[idx++];
-                if (r == 0 || r == rails - 1) {
-                    i += (rails - 1) * 2;
-                } else {
-                    i += toggle ? step1 : step2;
-                    toggle = !toggle;
-                }
-            }
-        }
-        free(out);
-        out = fossil_io_cstring_dup(tmp);
-        free(tmp);
-    }
-
-    return out;
-}
-
-static char *cipher_haxsor(const char *text, const char *params, int decode) {
-    (void)decode;  // XOR is symmetric
-    if (!text) return NULL;
-
-    char key = params && *params ? params[0] : 0x5A; // default key
-    size_t len = strlen(text);
-
-    char *out = fossil_io_cstring_dup(text);
-    if (!out) return NULL;
-
-    for (size_t i = 0; i < len; i++) {
-        out[i] ^= key;
-    }
-
-    return out;
 }
