@@ -65,13 +65,11 @@ typedef struct {
 
 static const cipher_entry cipher_table[] = {
     { "caesar",    cipher_caesar    },
-    { "rot13",     cipher_rot13     },
     { "vigenere",  cipher_vigenere  },
     { "base64",    cipher_base64    },
     { "base32",    cipher_base32    },
     { "binary",    cipher_binary    },
     { "morse",     cipher_morse     },
-    { "atbash",    cipher_atbash    },
     { "baconian",  cipher_baconian  },
     { "railfence", cipher_railfence },
     { "haxor",     cipher_haxor     },
