@@ -377,9 +377,9 @@ static char *cipher_base32(const char *text, const char *params, int decode) {
         if (!out) return NULL;
         size_t i, j = 0;
         for (i = 0; i < len; i += 5) {
-            unsigned int v = 0;
+            uint64_t v = 0;
             for (int k = 0; k < 5; k++)
-                v |= (i+k < len ? (unsigned char)text[i+k] : 0) << (8*(4-k));
+                v |= (uint64_t)(i+k < len ? (unsigned char)text[i+k] : 0) << (8*(4-k));
             for (int k = 0; k < 8; k++) {
                 if (i*8/5 + k < olen)
                     out[j++] = table[(v >> (35-5*k)) & 0x1F];
@@ -549,6 +549,15 @@ static char *cipher_morse(const char *text, const char *params, int decode) {
                 i += strlen(charsep) - 1;
             } else if (text[i] == dot || text[i] == dash) {
                 if (bi < sizeof(buf)-1) buf[bi++] = text[i];
+            }
+        }
+        if (bi > 0) {
+            buf[bi] = 0;
+            for (int k = 0; morse_table[k].ch; k++) {
+                if (!strcmp(buf, morse_table[k].code)) {
+                    out[j++] = morse_table[k].ch;
+                    break;
+                }
             }
         }
         out[j] = 0;
