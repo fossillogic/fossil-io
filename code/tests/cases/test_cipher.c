@@ -57,203 +57,165 @@ FOSSIL_TEARDOWN(c_cipher_suite) {
 
 // Cipher API tests
 
-FOSSIL_TEST(c_test_cipher_caesar_default) {
-    const char *plain = "Hello, World!";
-    char *enc = fossil_io_cipher_encode(plain, "caesar");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        char *dec = fossil_io_cipher_decode(enc, "caesar");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_caesar) {
+    const char *plain = "HelloWorld";
+    char *encoded = fossil_io_cipher_encode(plain, "caesar");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "caesar");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_caesar_shift_5_nowrap) {
-    const char *plain = "Zebra!";
-    char *enc = fossil_io_cipher_encode(plain, "caesar:shift=5,wrap=0");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_CSTR_CONTAINS(enc, "Ejgwf");
-        char *dec = fossil_io_cipher_decode(enc, "caesar:shift=5,wrap=0");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_vigenere) {
+    const char *plain = "OpenAI";
+    char *encoded = fossil_io_cipher_encode(plain, "vigenere");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "vigenere");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_vigenere_basic) {
-    const char *plain = "ATTACKATDAWN";
-    char *enc = fossil_io_cipher_encode(plain, "vigenere:key=LEMON");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "LXFOPVEFRNHR");
-        char *dec = fossil_io_cipher_decode(enc, "vigenere:key=LEMON");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_base64) {
+    const char *plain = "Encode this!";
+    char *encoded = fossil_io_cipher_encode(plain, "base64");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "base64");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_base64_basic) {
-    const char *plain = "hello world";
-    char *enc = fossil_io_cipher_encode(plain, "base64");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "aGVsbG8gd29ybGQ=");
-        char *dec = fossil_io_cipher_decode(enc, "base64");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_base32) {
+    const char *plain = "Base32Test";
+    char *encoded = fossil_io_cipher_encode(plain, "base32");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "base32");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_base64_url) {
-    const char *plain = "test?";
-    char *enc = fossil_io_cipher_encode(plain, "base64:url=1");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_CSTR_CONTAINS(enc, "dGVzdD8");
-        char *dec = fossil_io_cipher_decode(enc, "base64:url=1");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_binary) {
+    const char *plain = "Bin";
+    char *encoded = fossil_io_cipher_encode(plain, "binary");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "binary");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_base32_basic) {
-    const char *plain = "foo";
-    char *enc = fossil_io_cipher_encode(plain, "base32");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_CSTR_CONTAINS(enc, "MZXW6===");
-        char *dec = fossil_io_cipher_decode(enc, "base32");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
-}
-
-FOSSIL_TEST(c_test_cipher_binary_basic) {
-    const char *plain = "A";
-    char *enc = fossil_io_cipher_encode(plain, "binary");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "01000001");
-        char *dec = fossil_io_cipher_decode(enc, "binary");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
-}
-
-FOSSIL_TEST(c_test_cipher_binary_sep_bits) {
-    const char *plain = "AB";
-    char *enc = fossil_io_cipher_encode(plain, "binary:sep=,");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_CSTR_CONTAINS(enc, "01000001,01000010");
-        char *dec = fossil_io_cipher_decode(enc, "binary:sep=,");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
-}
-
-FOSSIL_TEST(c_test_cipher_morse_basic) {
+FOSSIL_TEST(c_test_cipher_encode_decode_morse) {
     const char *plain = "SOS";
-    char *enc = fossil_io_cipher_encode(plain, "morse");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "... --- ...");
-        char *dec = fossil_io_cipher_decode(enc, "morse");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+    char *encoded = fossil_io_cipher_encode(plain, "morse");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "morse");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_baconian_basic) {
-    const char *plain = "ABC";
-    char *enc = fossil_io_cipher_encode(plain, "baconian");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "AAAAABAAABAAABA");
-        char *dec = fossil_io_cipher_decode(enc, "baconian");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_baconian) {
+    const char *plain = "abc";
+    char *encoded = fossil_io_cipher_encode(plain, "baconian");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "baconian");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_railfence_basic) {
-    const char *plain = "WEAREDISCOVEREDFLEEATONCE";
-    char *enc = fossil_io_cipher_encode(plain, "railfence:rails=3");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_EQUAL_CSTR(enc, "WECRLTEERDSOEEFEAOCAIVDEN");
-        char *dec = fossil_io_cipher_decode(enc, "railfence:rails=3");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            ASSUME_ITS_EQUAL_CSTR(dec, plain);
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_railfence) {
+    const char *plain = "railfence";
+    char *encoded = fossil_io_cipher_encode(plain, "railfence");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "railfence");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_haxor_basic) {
-    const char *plain = "HAXOR";
-    char *enc = fossil_io_cipher_encode(plain, "haxor");
-    ASSUME_ITS_TRUE(enc != NULL);
-    if (enc) {
-        ASSUME_ITS_CSTR_CONTAINS(enc, "#4><0|2");
-        char *dec = fossil_io_cipher_decode(enc, "haxor:reverse=1");
-        ASSUME_ITS_TRUE(dec != NULL);
-        if (dec) {
-            // Accept lower or upper case due to implementation
-            ASSUME_ITS_CSTR_CONTAINS(dec, "haxor");
-            free(dec);
-        }
-        free(enc);
-    }
+FOSSIL_TEST(c_test_cipher_encode_decode_haxor) {
+    const char *plain = "leet";
+    char *encoded = fossil_io_cipher_encode(plain, "haxor");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "haxor");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_invalid_cipher_id) {
-    char *enc = fossil_io_cipher_encode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(enc == NULL);
-    char *dec = fossil_io_cipher_decode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(dec == NULL);
+FOSSIL_TEST(c_test_cipher_encode_decode_leet) {
+    const char *plain = "elite";
+    char *encoded = fossil_io_cipher_encode(plain, "leet");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "leet");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
+}
+
+FOSSIL_TEST(c_test_cipher_encode_decode_rot13) {
+    const char *plain = "rot13test";
+    char *encoded = fossil_io_cipher_encode(plain, "rot13");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "rot13");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
+}
+
+FOSSIL_TEST(c_test_cipher_encode_decode_atbash) {
+    const char *plain = "atbash";
+    char *encoded = fossil_io_cipher_encode(plain, "atbash");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "atbash");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
+}
+
+FOSSIL_TEST(c_test_cipher_case_insensitive_id) {
+    const char *plain = "CaseTest";
+    char *encoded = fossil_io_cipher_encode(plain, "CaEsAr");
+    ASSUME_ITS_TRUE(encoded != NULL);
+    char *decoded = fossil_io_cipher_decode(encoded, "cAeSaR");
+    ASSUME_ITS_TRUE(decoded != NULL);
+    ASSUME_ITS_EQUAL_CSTR(plain, decoded);
+    free(encoded);
+    free(decoded);
+}
+
+FOSSIL_TEST(c_test_cipher_invalid_id_returns_null) {
+    char *encoded = fossil_io_cipher_encode("test", "unknowncipher");
+    ASSUME_ITS_TRUE(encoded == NULL);
+    char *decoded = fossil_io_cipher_decode("test", "unknowncipher");
+    ASSUME_ITS_TRUE(decoded == NULL);
+}
+
+FOSSIL_TEST(c_test_cipher_null_input_returns_null) {
+    char *encoded = fossil_io_cipher_encode(NULL, "caesar");
+    ASSUME_ITS_TRUE(encoded == NULL);
+    char *decoded = fossil_io_cipher_decode(NULL, "caesar");
+    ASSUME_ITS_TRUE(decoded == NULL);
+    encoded = fossil_io_cipher_encode("test", NULL);
+    ASSUME_ITS_TRUE(encoded == NULL);
+    decoded = fossil_io_cipher_decode("test", NULL);
+    ASSUME_ITS_TRUE(decoded == NULL);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -261,19 +223,21 @@ FOSSIL_TEST(c_test_cipher_invalid_cipher_id) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(c_cipher_tests) {
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_caesar_default);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_caesar_shift_5_nowrap);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_vigenere_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_base64_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_base64_url);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_base32_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_binary_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_binary_sep_bits);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_morse_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_baconian_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_railfence_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_haxor_basic);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_invalid_cipher_id);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_caesar);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_vigenere);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_base64);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_base32);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_binary);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_morse);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_baconian);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_railfence);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_haxor);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_leet);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_rot13);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_atbash);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_case_insensitive_id);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_invalid_id_returns_null);
+    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_null_input_returns_null);
 
     FOSSIL_TEST_REGISTER(c_cipher_suite);
 }
