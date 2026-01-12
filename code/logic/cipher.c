@@ -209,10 +209,11 @@ static cstring cipher_base64(ccstring text, int decode) {
         if (!out) return NULL;
         size_t i, j;
         for (i = 0, j = 0; i < len;) {
-            int sextet_a = text[i] == '=' ? 0 & i++ : b64_index[(unsigned char)text[i++]];
-            int sextet_b = text[i] == '=' ? 0 & i++ : b64_index[(unsigned char)text[i++]];
-            int sextet_c = text[i] == '=' ? 0 & i++ : b64_index[(unsigned char)text[i++]];
-            int sextet_d = text[i] == '=' ? 0 & i++ : b64_index[(unsigned char)text[i++]];
+            int sextet_a, sextet_b, sextet_c, sextet_d;
+            if (text[i] == '=') { sextet_a = 0; i++; } else { sextet_a = b64_index[(unsigned char)text[i++]]; }
+            if (text[i] == '=') { sextet_b = 0; i++; } else { sextet_b = b64_index[(unsigned char)text[i++]]; }
+            if (text[i] == '=') { sextet_c = 0; i++; } else { sextet_c = b64_index[(unsigned char)text[i++]]; }
+            if (text[i] == '=') { sextet_d = 0; i++; } else { sextet_d = b64_index[(unsigned char)text[i++]]; }
             uint32_t triple = (sextet_a << 18) | (sextet_b << 12) | (sextet_c << 6) | sextet_d;
             if (j < out_len) out[j++] = (triple >> 16) & 0xFF;
             if (j < out_len) out[j++] = (triple >> 8) & 0xFF;
