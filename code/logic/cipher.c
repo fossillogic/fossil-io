@@ -87,6 +87,8 @@ static const cipher_entry cipher_table[] = {
 /* ------------------------------------------------------------------------- */
 
 static const cipher_entry *cipher_lookup(ccstring name) {
+    if (!name || !*name)
+        return NULL;
     for (int i = 0; cipher_table[i].id; i++) {
         if (fossil_io_cstring_iequals(cipher_table[i].id, name))
             return &cipher_table[i];
@@ -99,26 +101,27 @@ static const cipher_entry *cipher_lookup(ccstring name) {
 /* ------------------------------------------------------------------------- */
 
 cstring fossil_io_cipher_encode(ccstring text, ccstring cipher_id) {
-    if (!text || !cipher_id)
+    if (!text || !*text || !cipher_id || !*cipher_id)
         return NULL;
 
     const cipher_entry *c = cipher_lookup(cipher_id);
     if (!c || !c->fn)
         return NULL;
 
-    // The cipher functions return malloc'd char*, so cast to cstring
-    return (cstring)c->fn(text, 0);
+    cstring result = (cstring)c->fn(text, 0);
+    return result;
 }
 
 cstring fossil_io_cipher_decode(ccstring text, ccstring cipher_id) {
-    if (!text || !cipher_id)
+    if (!text || !*text || !cipher_id || !*cipher_id)
         return NULL;
 
     const cipher_entry *c = cipher_lookup(cipher_id);
     if (!c || !c->fn)
         return NULL;
 
-    return (cstring)c->fn(text, 1);
+    cstring result = (cstring)c->fn(text, 1);
+    return result;
 }
 
 /* ------------------------------------------------------------------------- */

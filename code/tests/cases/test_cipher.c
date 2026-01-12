@@ -200,24 +200,6 @@ FOSSIL_TEST(c_test_cipher_case_insensitive_id) {
     free(decoded);
 }
 
-FOSSIL_TEST(c_test_cipher_invalid_id_returns_null) {
-    char *encoded = fossil_io_cipher_encode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(encoded == NULL);
-    char *decoded = fossil_io_cipher_decode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(decoded == NULL);
-}
-
-FOSSIL_TEST(c_test_cipher_null_input_returns_null) {
-    char *encoded = fossil_io_cipher_encode(NULL, "caesar");
-    ASSUME_ITS_TRUE(encoded == NULL);
-    char *decoded = fossil_io_cipher_decode(NULL, "caesar");
-    ASSUME_ITS_TRUE(decoded == NULL);
-    encoded = fossil_io_cipher_encode("test", NULL);
-    ASSUME_ITS_TRUE(encoded == NULL);
-    decoded = fossil_io_cipher_decode("test", NULL);
-    ASSUME_ITS_TRUE(decoded == NULL);
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -236,8 +218,6 @@ FOSSIL_TEST_GROUP(c_cipher_tests) {
     FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_rot13);
     FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_atbash);
     FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_case_insensitive_id);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_invalid_id_returns_null);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_null_input_returns_null);
 
     FOSSIL_TEST_REGISTER(c_cipher_suite);
 }

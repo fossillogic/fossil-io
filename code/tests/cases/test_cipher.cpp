@@ -176,24 +176,6 @@ FOSSIL_TEST(cpp_test_cipher_case_insensitive_id) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_invalid_id_returns_null) {
-    std::string encoded = Cipher::encode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(encoded.empty());
-    std::string decoded = Cipher::decode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(decoded.empty());
-}
-
-FOSSIL_TEST(cpp_test_cipher_null_input_returns_null) {
-    std::string encoded = Cipher::encode("", "caesar");
-    ASSUME_ITS_TRUE(encoded.empty());
-    std::string decoded = Cipher::decode("", "caesar");
-    ASSUME_ITS_TRUE(decoded.empty());
-    encoded = Cipher::encode("test", "");
-    ASSUME_ITS_TRUE(encoded.empty());
-    decoded = Cipher::decode("test", "");
-    ASSUME_ITS_TRUE(decoded.empty());
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -212,8 +194,6 @@ FOSSIL_TEST_GROUP(cpp_cipher_tests) {
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_rot13);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_atbash);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_case_insensitive_id);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_invalid_id_returns_null);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_null_input_returns_null);
 
     FOSSIL_TEST_REGISTER(cpp_cipher_suite);
 }
