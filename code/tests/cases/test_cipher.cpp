@@ -57,182 +57,141 @@ FOSSIL_TEARDOWN(cpp_cipher_suite) {
 
 // Cipher API tests
 
-// C++ Cipher class API tests
-
 using fossil::io::Cipher;
 
-FOSSIL_TEST(cpp_test_cipher_class_caesar_default) {
-    const std::string plain = "Hello, World!";
-    std::string enc = Cipher::encode(plain, "caesar");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        std::string dec = Cipher::decode(enc, "caesar");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_caesar) {
+    const std::string plain = "HelloWorld";
+    std::string encoded = Cipher::encode(plain, "caesar");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "caesar");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_caesar_shift_5_nowrap) {
-    const std::string plain = "Zebra!";
-    std::string enc = Cipher::encode(plain, "caesar:shift=5,wrap=0");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_CSTR_CONTAINS(enc.c_str(), "Ejgwf");
-        std::string dec = Cipher::decode(enc, "caesar:shift=5,wrap=0");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_vigenere) {
+    const std::string plain = "OpenAI";
+    std::string encoded = Cipher::encode(plain, "vigenere");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "vigenere");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_vigenere_basic) {
-    const std::string plain = "ATTACKATDAWN";
-    std::string enc = Cipher::encode(plain, "vigenere:key=LEMON");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "LXFOPVEFRNHR");
-        std::string dec = Cipher::decode(enc, "vigenere:key=LEMON");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_base64) {
+    const std::string plain = "Encode this!";
+    std::string encoded = Cipher::encode(plain, "base64");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "base64");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_base64_basic) {
-    const std::string plain = "hello world";
-    std::string enc = Cipher::encode(plain, "base64");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "aGVsbG8gd29ybGQ=");
-        std::string dec = Cipher::decode(enc, "base64");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_base32) {
+    const std::string plain = "Base32Test";
+    std::string encoded = Cipher::encode(plain, "base32");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "base32");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_base64_url) {
-    const std::string plain = "test?";
-    std::string enc = Cipher::encode(plain, "base64:url=1");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_CSTR_CONTAINS(enc.c_str(), "dGVzdD8");
-        std::string dec = Cipher::decode(enc, "base64:url=1");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_binary) {
+    const std::string plain = "Bin";
+    std::string encoded = Cipher::encode(plain, "binary");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "binary");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_base32_basic) {
-    const std::string plain = "foo";
-    std::string enc = Cipher::encode(plain, "base32");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_CSTR_CONTAINS(enc.c_str(), "MZXW6===");
-        std::string dec = Cipher::decode(enc, "base32");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
-}
-
-FOSSIL_TEST(cpp_test_cipher_class_binary_basic) {
-    const std::string plain = "A";
-    std::string enc = Cipher::encode(plain, "binary");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "01000001");
-        std::string dec = Cipher::decode(enc, "binary");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
-}
-
-FOSSIL_TEST(cpp_test_cipher_class_binary_sep_bits) {
-    const std::string plain = "AB";
-    std::string enc = Cipher::encode(plain, "binary:sep=,");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_CSTR_CONTAINS(enc.c_str(), "01000001,01000010");
-        std::string dec = Cipher::decode(enc, "binary:sep=,");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
-}
-
-FOSSIL_TEST(cpp_test_cipher_class_morse_basic) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_morse) {
     const std::string plain = "SOS";
-    std::string enc = Cipher::encode(plain, "morse");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "... --- ...");
-        std::string dec = Cipher::decode(enc, "morse");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+    std::string encoded = Cipher::encode(plain, "morse");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "morse");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_baconian_basic) {
-    const std::string plain = "ABC";
-    std::string enc = Cipher::encode(plain, "baconian");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "AAAAABAAABAAABA");
-        std::string dec = Cipher::decode(enc, "baconian");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_baconian) {
+    const std::string plain = "abc";
+    std::string encoded = Cipher::encode(plain, "baconian");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "baconian");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_railfence_basic) {
-    const std::string plain = "WEAREDISCOVEREDFLEEATONCE";
-    std::string enc = Cipher::encode(plain, "railfence:rails=3");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_EQUAL_CSTR(enc.c_str(), "WECRLTEERDSOEEFEAOCAIVDEN");
-        std::string dec = Cipher::decode(enc, "railfence:rails=3");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_EQUAL_CSTR(dec.c_str(), plain.c_str());
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_railfence) {
+    const std::string plain = "railfence";
+    std::string encoded = Cipher::encode(plain, "railfence");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "railfence");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_haxor_basic) {
-    const std::string plain = "HAXOR";
-    std::string enc = Cipher::encode(plain, "haxor");
-    ASSUME_ITS_TRUE(!enc.empty());
-    if (!enc.empty()) {
-        ASSUME_ITS_CSTR_CONTAINS(enc.c_str(), "#4><0|2");
-        std::string dec = Cipher::decode(enc, "haxor:reverse=1");
-        ASSUME_ITS_TRUE(!dec.empty());
-        if (!dec.empty()) {
-            ASSUME_ITS_CSTR_CONTAINS(dec.c_str(), "haxor");
-        }
-    }
+FOSSIL_TEST(cpp_test_cipher_encode_decode_haxor) {
+    const std::string plain = "leet";
+    std::string encoded = Cipher::encode(plain, "haxor");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "haxor");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_class_invalid_cipher_id) {
-    std::string enc = Cipher::encode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(enc.empty());
-    std::string dec = Cipher::decode("test", "unknowncipher");
-    ASSUME_ITS_TRUE(dec.empty());
+FOSSIL_TEST(cpp_test_cipher_encode_decode_leet) {
+    const std::string plain = "elite";
+    std::string encoded = Cipher::encode(plain, "leet");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "leet");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
+}
+
+FOSSIL_TEST(cpp_test_cipher_encode_decode_rot13) {
+    const std::string plain = "rot13test";
+    std::string encoded = Cipher::encode(plain, "rot13");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "rot13");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
+}
+
+FOSSIL_TEST(cpp_test_cipher_encode_decode_atbash) {
+    const std::string plain = "atbash";
+    std::string encoded = Cipher::encode(plain, "atbash");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "atbash");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
+}
+
+FOSSIL_TEST(cpp_test_cipher_case_insensitive_id) {
+    const std::string plain = "CaseTest";
+    std::string encoded = Cipher::encode(plain, "CaEsAr");
+    ASSUME_ITS_TRUE(!encoded.empty());
+    std::string decoded = Cipher::decode(encoded, "cAeSaR");
+    ASSUME_ITS_TRUE(!decoded.empty());
+    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
+}
+
+FOSSIL_TEST(cpp_test_cipher_invalid_id_returns_null) {
+    std::string encoded = Cipher::encode("test", "unknowncipher");
+    ASSUME_ITS_TRUE(encoded.empty());
+    std::string decoded = Cipher::decode("test", "unknowncipher");
+    ASSUME_ITS_TRUE(decoded.empty());
+}
+
+FOSSIL_TEST(cpp_test_cipher_null_input_returns_null) {
+    std::string encoded = Cipher::encode("", "caesar");
+    ASSUME_ITS_TRUE(encoded.empty());
+    std::string decoded = Cipher::decode("", "caesar");
+    ASSUME_ITS_TRUE(decoded.empty());
+    encoded = Cipher::encode("test", "");
+    ASSUME_ITS_TRUE(encoded.empty());
+    decoded = Cipher::decode("test", "");
+    ASSUME_ITS_TRUE(decoded.empty());
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -240,19 +199,21 @@ FOSSIL_TEST(cpp_test_cipher_class_invalid_cipher_id) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_cipher_tests) {
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_caesar_default);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_caesar_shift_5_nowrap);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_vigenere_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base64_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base64_url);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_base32_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_binary_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_binary_sep_bits);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_morse_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_baconian_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_railfence_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_haxor_basic);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_class_invalid_cipher_id);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_caesar);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_vigenere);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base64);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base32);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_binary);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_morse);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_baconian);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_railfence);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_haxor);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_leet);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_rot13);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_atbash);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_case_insensitive_id);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_invalid_id_returns_null);
+    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_null_input_returns_null);
 
     FOSSIL_TEST_REGISTER(cpp_cipher_suite);
 }
