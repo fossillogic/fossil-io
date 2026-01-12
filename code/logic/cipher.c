@@ -28,6 +28,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <stdio.h>
 
 /* ------------------------------------------------------------------------- */
 /* Cipher handler signature                                                   */
@@ -35,7 +36,6 @@
 
 typedef char *(*cipher_fn)(
     const char *text,
-    const char *params,
     int decode
 );
 
@@ -107,7 +107,7 @@ cstring fossil_io_cipher_encode(ccstring text, ccstring cipher_id) {
         return NULL;
 
     // The cipher functions return malloc'd char*, so cast to cstring
-    return (cstring)c->fn(text, NULL, 0);
+    return (cstring)c->fn(text, 0);
 }
 
 cstring fossil_io_cipher_decode(ccstring text, ccstring cipher_id) {
@@ -118,7 +118,7 @@ cstring fossil_io_cipher_decode(ccstring text, ccstring cipher_id) {
     if (!c || !c->fn)
         return NULL;
 
-    return (cstring)c->fn(text, NULL, 1);
+    return (cstring)c->fn(text, 1);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -575,6 +575,8 @@ static cstring cipher_leet(ccstring text, int decode) {
 /* ROT13                                                                     */
 /* ------------------------------------------------------------------------- */
 static cstring cipher_rot13(ccstring text, int decode) {
+    // ROT13 is symmetric: encode and decode are the same
+    (void)decode;
     size_t len = fossil_io_cstring_length(text);
     cstring out = malloc(len + 1);
     if (!out) return NULL;
@@ -594,16 +596,25 @@ static cstring cipher_rot13(ccstring text, int decode) {
 /* ------------------------------------------------------------------------- */
 /* Atbash                                                                    */
 /* ------------------------------------------------------------------------- */
+static const char atbash_upper_table[26] = {
+    'Z','Y','X','W','V','U','T','S','R','Q','P','O','N','M','L','K','J','I','H','G','F','E','D','C','B','A'
+};
+static const char atbash_lower_table[26] = {
+    'z','y','x','w','v','u','t','s','r','q','p','o','n','m','l','k','j','i','h','g','f','e','d','c','b','a'
+};
+
 static cstring cipher_atbash(ccstring text, int decode) {
+    // Atbash is symmetric: encode and decode are the same
+    (void)decode;
     size_t len = fossil_io_cstring_length(text);
     cstring out = malloc(len + 1);
     if (!out) return NULL;
     for (size_t i = 0; i < len; ++i) {
         char c = text[i];
         if (isupper(c))
-            out[i] = 'Z' - (c - 'A');
+            out[i] = atbash_upper_table[c - 'A'];
         else if (islower(c))
-            out[i] = 'z' - (c - 'a');
+            out[i] = atbash_lower_table[c - 'a'];
         else
             out[i] = c;
     }
