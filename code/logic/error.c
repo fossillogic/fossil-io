@@ -33,203 +33,522 @@
 #define FOSSIL_IO_BUFFER_SIZE 1024
 
 static const char *fossil_error_codes[] = {
-    
-    /* ================= CORE ================= */
+    /* ======================================================================= */
+    /* SYSTEM / META                                                            */
+    /* ======================================================================= */
+    "system.ok",
     "system.unknown",
+    "system.internal",
     "system.fatal",
+    "system.panic",
+    "system.abort",
+    "system.assertion",
+    "system.invariant",
+    "system.contract",
     "system.recoverable",
     "system.unrecoverable",
+    "system.transient",
+    "system.permanent",
     "system.unsupported",
     "system.unimplemented",
     "system.deprecated",
     "system.experimental",
+    "system.misconfigured",
+    "system.corrupt",
+    "system.bootstrap",
+    "system.shutdown",
+    "system.restart",
+    "system.upgrade",
+    "system.downgrade",
+    "system.permission",
+    "system.capability",
     
-    /* ================= IO ================= */
+    /* ======================================================================= */
+    /* IO                                                                       */
+    /* ======================================================================= */
     "io.read",
     "io.write",
     "io.seek",
     "io.flush",
+    "io.sync",
+    "io.fsync",
     "io.truncate",
+    "io.append",
+    "io.scatter",
+    "io.gather",
     "io.closed",
     "io.eof",
+    "io.partial",
+    "io.short",
+    "io.blocked",
+    "io.nonblocking",
+    "io.timeout",
+    "io.interrupt",
+    "io.retry",
     "io.corrupt",
+    "io.checksum",
+    "io.buffer",
+    "io.alignment",
+    "io.direct",
+    "io.stream",
+    "io.pipe",
     
-    /* ================= MEMORY ================= */
+    /* ======================================================================= */
+    /* MEMORY                                                                   */
+    /* ======================================================================= */
     "memory.alloc",
     "memory.realloc",
     "memory.free",
+    "memory.map",
+    "memory.unmap",
+    "memory.remap",
+    "memory.lock",
+    "memory.unlock",
+    "memory.protect",
+    "memory.unprotect",
     "memory.leak",
     "memory.overrun",
     "memory.underrun",
     "memory.use_after_free",
+    "memory.double_free",
+    "memory.fragmented",
     "memory.exhausted",
     "memory.alignment",
+    "memory.page_fault",
+    "memory.segmentation",
+    "memory.guard",
+    "memory.poison",
+    "memory.swap",
+    "memory.numa",
     
-    /* ================= MATH ================= */
+    /* ======================================================================= */
+    /* CPU / EXECUTION                                                          */
+    /* ======================================================================= */
+    "cpu.illegal_instruction",
+    "cpu.privilege_violation",
+    "cpu.div_zero",
+    "cpu.overflow",
+    "cpu.underflow",
+    "cpu.fpu",
+    "cpu.simd",
+    "cpu.cache",
+    "cpu.pipeline",
+    "cpu.affinity",
+    "cpu.throttle",
+    
+    /* ======================================================================= */
+    /* MATH / NUMERIC                                                           */
+    /* ======================================================================= */
     "math.overflow",
     "math.underflow",
     "math.div_zero",
     "math.nan",
     "math.infinity",
     "math.domain",
+    "math.range",
     "math.precision",
+    "math.rounding",
+    "math.convergence",
+    "math.divergence",
+    "math.iteration",
+    "math.singularity",
+    "math.condition",
+    "math.approximation",
     
-    /* ================= PARSE / SYNTAX ================= */
+    /* ======================================================================= */
+    /* PARSING / LEXING / GRAMMAR                                               */
+    /* ======================================================================= */
     "parse.invalid",
     "parse.syntax",
     "parse.semantic",
-    "parse.unexpected_token",
-    "parse.incomplete",
-    "parse.overflow",
+    "parse.context",
+    "parse.state",
     "parse.encoding",
+    "parse.unexpected_token",
+    "parse.missing_token",
+    "parse.extra_token",
+    "parse.ambiguous",
+    "parse.incomplete",
+    "parse.recursion",
+    "parse.depth",
+    "parse.stack",
+    "parse.overflow",
     
-    /* ================= TYPE ================= */
-    "type.mismatch",
+    "lexer.invalid",
+    "lexer.token",
+    "lexer.state",
+    "lexer.encoding",
+    "lexer.buffer",
+    "lexer.escape",
+    
+    /* ======================================================================= */
+    /* TYPE SYSTEM                                                              */
+    /* ======================================================================= */
     "type.invalid",
+    "type.mismatch",
     "type.cast",
+    "type.coercion",
     "type.size",
     "type.range",
+    "type.signedness",
+    "type.alignment",
+    "type.qualifier",
+    "type.generic",
+    "type.polymorphic",
+    "type.variance",
     
-    /* ================= DATA ================= */
+    /* ======================================================================= */
+    /* FORMAT / ENCODING                                                        */
+    /* ======================================================================= */
+    "format.invalid",
+    "format.unsupported",
+    "format.truncated",
+    "format.version",
+    "format.magic",
+    "format.header",
+    "format.footer",
+    "format.padding",
+    "format.layout",
+    
+    "encoding.invalid",
+    "encoding.unsupported",
+    "encoding.incomplete",
+    "encoding.locale",
+    "encoding.endianness",
+    "encoding.normalization",
+    "encoding.compression",
+    "encoding.decompression",
+    
+    /* ======================================================================= */
+    /* DATA / CONTENT                                                           */
+    /* ======================================================================= */
     "data.invalid",
     "data.corrupt",
     "data.missing",
+    "data.extra",
     "data.duplicate",
     "data.inconsistent",
     "data.constraint",
     "data.integrity",
     "data.reference",
+    "data.circular",
+    "data.order",
+    "data.range",
+    "data.null",
+    "data.schema",
+    "data.version",
+    "data.migration",
     
-    /* ================= FORMAT / ENCODING ================= */
-    "format.invalid",
-    "format.unsupported",
-    "format.truncated",
-    "encoding.invalid",
-    "encoding.unsupported",
-    "encoding.locale",
-    
-    /* ================= FILESYSTEM ================= */
+    /* ======================================================================= */
+    /* FILESYSTEM / STORAGE                                                     */
+    /* ======================================================================= */
     "fs.not_found",
-    "fs.permission",
     "fs.exists",
+    "fs.permission",
     "fs.read_only",
     "fs.locked",
+    "fs.busy",
     "fs.mount",
+    "fs.unmount",
+    "fs.remount",
     "fs.quota",
     "fs.corrupt",
+    "fs.journal",
+    "fs.snapshot",
+    "fs.backup",
+    "fs.restore",
+    "fs.path",
+    "fs.symlink",
+    "fs.hardlink",
+    "fs.inode",
+    "fs.filesystem",
     
-    /* ================= NETWORK ================= */
-    "network.unreachable",
-    "network.timeout",
-    "network.reset",
-    "network.refused",
-    "network.dns",
-    "network.protocol",
-    "network.bandwidth",
+    /* ======================================================================= */
+    /* PROCESS / SIGNAL                                                         */
+    /* ======================================================================= */
+    "process.spawn",
+    "process.exec",
+    "process.exit",
+    "process.crash",
+    "process.signal",
+    "process.kill",
+    "process.zombie",
+    "process.orphan",
+    "process.permission",
+    "process.limit",
+    "process.priority",
+    "process.affinity",
     
-    /* ================= SECURITY ================= */
-    "security.violation",
-    "security.auth_failed",
-    "security.authz_failed",
-    "security.encryption",
-    "security.decryption",
-    "security.certificate",
-    "security.key",
-    "security.sandbox",
+    /* ======================================================================= */
+    /* THREAD / CONCURRENCY                                                     */
+    /* ======================================================================= */
+    "thread.create",
+    "thread.join",
+    "thread.detach",
+    "thread.cancel",
+    "thread.signal",
     
-    /* ================= DATABASE ================= */
-    "database.connect",
-    "database.query",
-    "database.transaction",
-    "database.deadlock",
-    "database.constraint",
-    "database.migration",
-    "database.schema",
-    "database.timeout",
-    
-    /* ================= CONCURRENCY ================= */
     "concurrency.race",
     "concurrency.deadlock",
     "concurrency.livelock",
+    "concurrency.starvation",
     "concurrency.atomicity",
-    "concurrency.thread",
-    "concurrency.process",
-    "concurrency.signal",
+    "concurrency.lock",
+    "concurrency.unlock",
+    "concurrency.condition",
+    "concurrency.barrier",
+    "concurrency.scheduler",
+    "concurrency.preemption",
     
-    /* ================= RESOURCE ================= */
+    /* ======================================================================= */
+    /* RESOURCE                                                                 */
+    /* ======================================================================= */
     "resource.exhausted",
+    "resource.leak",
     "resource.locked",
     "resource.starvation",
     "resource.handle",
     "resource.descriptor",
     "resource.pool",
+    "resource.cache",
+    "resource.bandwidth",
+    "resource.quota",
+    "resource.limit",
     
-    /* ================= CONFIG ================= */
+    /* ======================================================================= */
+    /* TIME / CLOCK                                                             */
+    /* ======================================================================= */
+    "time.timeout",
+    "time.expired",
+    "time.schedule",
+    "time.clock",
+    "time.drift",
+    "time.skew",
+    "time.monotonic",
+    "time.realtime",
+    "time.resolution",
+    "time.wrap",
+    
+    /* ======================================================================= */
+    /* CONFIG / ENVIRONMENT                                                     */
+    /* ======================================================================= */
     "config.missing",
     "config.invalid",
     "config.conflict",
     "config.version",
     "config.env",
+    "config.profile",
     "config.permission",
+    "config.schema",
+    "config.override",
+    "config.default",
+    "config.locked",
     
-    /* ================= API ================= */
+    /* ======================================================================= */
+    /* API / ABI                                                                */
+    /* ======================================================================= */
     "api.invalid_call",
     "api.contract",
+    "api.precondition",
+    "api.postcondition",
     "api.version",
+    "api.mismatch",
     "api.deprecated",
     "api.timeout",
     "api.limit",
+    "api.state",
+    "api.sequence",
+    "api.serialization",
+    "api.deserialization",
+    "abi.mismatch",
+    "abi.incompatible",
     
-    /* ================= STATE / LIFECYCLE ================= */
-    "state.invalid",
-    "state.uninitialized",
-    "state.already_initialized",
-    "state.finalized",
-    "state.transition",
-    "state.rollback",
+    /* ======================================================================= */
+    /* PROTOCOL / IPC                                                           */
+    /* ======================================================================= */
+    "protocol.invalid",
+    "protocol.version",
+    "protocol.handshake",
+    "protocol.negotiation",
+    "protocol.sequence",
+    "protocol.frame",
+    "protocol.fragment",
+    "protocol.checksum",
+    "protocol.timeout",
+    "protocol.reset",
+    "protocol.flow_control",
     
-    /* ================= TIME ================= */
-    "time.timeout",
-    "time.expired",
-    "time.clock",
-    "time.drift",
-    "time.schedule",
+    /* ======================================================================= */
+    /* NETWORK                                                                  */
+    /* ======================================================================= */
+    "network.unreachable",
+    "network.timeout",
+    "network.reset",
+    "network.refused",
+    "network.aborted",
+    "network.dns",
+    "network.routing",
+    "network.latency",
+    "network.bandwidth",
+    "network.congestion",
+    "network.proxy",
+    "network.firewall",
+    "network.nat",
+    "network.session",
+    "network.stream",
+    "network.packet",
     
-    /* ================= UI ================= */
-    "ui.render",
-    "ui.layout",
-    "ui.input",
-    "ui.focus",
-    "ui.accessibility",
+    /* ======================================================================= */
+    /* SECURITY / CRYPTO                                                        */
+    /* ======================================================================= */
+    "security.violation",
+    "security.auth_failed",
+    "security.authz_failed",
+    "security.identity",
+    "security.credential",
+    "security.token",
+    "security.session",
+    "security.encryption",
+    "security.decryption",
+    "security.certificate",
+    "security.key",
+    "security.keystore",
+    "security.revocation",
+    "security.sandbox",
+    "security.trust",
+    "security.integrity",
+    "security.tamper",
+    "security.replay",
     
-    /* ================= AI ================= */
+    /* ======================================================================= */
+    /* DATABASE / STORAGE ENGINE                                                */
+    /* ======================================================================= */
+    "database.connect",
+    "database.disconnect",
+    "database.query",
+    "database.prepare",
+    "database.execute",
+    "database.transaction",
+    "database.commit",
+    "database.rollback",
+    "database.deadlock",
+    "database.lock",
+    "database.constraint",
+    "database.schema",
+    "database.migration",
+    "database.index",
+    "database.cursor",
+    "database.replication",
+    "database.consistency",
+    "database.timeout",
+    
+    /* ======================================================================= */
+    /* AI / ML                                                                  */
+    /* ======================================================================= */
     "ai.model",
+    "ai.version",
+    "ai.load",
+    "ai.unload",
     "ai.inference",
     "ai.training",
+    "ai.finetune",
     "ai.dataset",
+    "ai.validation",
     "ai.bias",
     "ai.drift",
-    "ai.confidence",
     "ai.hallucination",
+    "ai.alignment",
+    "ai.confidence",
+    "ai.explainability",
+    "ai.prompt",
+    "ai.token_limit",
+    "ai.context_overflow",
     
-    /* ================= OBSERVABILITY ================= */
+    /* ======================================================================= */
+    /* UI / UX                                                                  */
+    /* ======================================================================= */
+    "ui.render",
+    "ui.layout",
+    "ui.paint",
+    "ui.refresh",
+    "ui.input",
+    "ui.focus",
+    "ui.gesture",
+    "ui.accessibility",
+    "ui.localization",
+    "ui.theme",
+    "ui.font",
+    "ui.image",
+    
+    /* ======================================================================= */
+    /* OBSERVABILITY / OPS                                                      */
+    /* ======================================================================= */
     "log.write",
+    "log.read",
     "log.format",
+    "log.rotate",
+    "log.truncate",
     "metrics.collect",
+    "metrics.aggregate",
+    "metrics.export",
     "trace.emit",
+    "trace.flush",
+    "trace.sample",
     "monitor.unavailable",
+    "diagnostics.collect",
+    "diagnostics.dump",
+    "profile.sample",
     
-    /* ================= USER ================= */
+    /* ======================================================================= */
+    /* BUILD / DEPLOY                                                           */
+    /* ======================================================================= */
+    "build.configure",
+    "build.compile",
+    "build.link",
+    "build.package",
+    "deploy.install",
+    "deploy.remove",
+    "deploy.upgrade",
+    "deploy.rollback",
+    "deploy.migration",
+    "deploy.orchestration",
+    "deploy.container",
+    "deploy.image",
+    
+    /* ======================================================================= */
+    /* USER                                                                     */
+    /* ======================================================================= */
     "user.input",
     "user.permission",
     "user.quota",
     "user.cancelled",
+    "user.timeout",
+    "user.conflict",
+    "user.invalid_state",
+    "user.rate_limit",
     
-    /* ================= META ================= */
-    "meta.internal",
-    "meta.assertion",
-    "meta.invariant",
-    "meta.contract",
+    /* ======================================================================= */
+    /* LEGAL / POLICY                                                           */
+    /* ======================================================================= */
+    "policy.violation",
+    "policy.denied",
+    "policy.expired",
+    "policy.restricted",
+    "license.invalid",
+    "license.expired",
+    "license.restricted",
+    "privacy.violation",
+    "privacy.redaction",
+    "compliance.failure",
+    "audit.failure",
+    
+    /* ======================================================================= */
+    /* FALLBACK / GUARANTEES                                                    */
+    /* ======================================================================= */
+    "meta.unreachable",
+    "meta.assumption",
+    "meta.placeholder",
+    "meta.future",
     
     NULL
 };
