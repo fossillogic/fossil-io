@@ -32,6 +32,208 @@
 
 #define FOSSIL_IO_BUFFER_SIZE 1024
 
+static const char *fossil_error_codes[] = {
+    
+    /* ================= CORE ================= */
+    "system.unknown",
+    "system.fatal",
+    "system.recoverable",
+    "system.unrecoverable",
+    "system.unsupported",
+    "system.unimplemented",
+    "system.deprecated",
+    "system.experimental",
+    
+    /* ================= IO ================= */
+    "io.read",
+    "io.write",
+    "io.seek",
+    "io.flush",
+    "io.truncate",
+    "io.closed",
+    "io.eof",
+    "io.corrupt",
+    
+    /* ================= MEMORY ================= */
+    "memory.alloc",
+    "memory.realloc",
+    "memory.free",
+    "memory.leak",
+    "memory.overrun",
+    "memory.underrun",
+    "memory.use_after_free",
+    "memory.exhausted",
+    "memory.alignment",
+    
+    /* ================= MATH ================= */
+    "math.overflow",
+    "math.underflow",
+    "math.div_zero",
+    "math.nan",
+    "math.infinity",
+    "math.domain",
+    "math.precision",
+    
+    /* ================= PARSE / SYNTAX ================= */
+    "parse.invalid",
+    "parse.syntax",
+    "parse.semantic",
+    "parse.unexpected_token",
+    "parse.incomplete",
+    "parse.overflow",
+    "parse.encoding",
+    
+    /* ================= TYPE ================= */
+    "type.mismatch",
+    "type.invalid",
+    "type.cast",
+    "type.size",
+    "type.range",
+    
+    /* ================= DATA ================= */
+    "data.invalid",
+    "data.corrupt",
+    "data.missing",
+    "data.duplicate",
+    "data.inconsistent",
+    "data.constraint",
+    "data.integrity",
+    "data.reference",
+    
+    /* ================= FORMAT / ENCODING ================= */
+    "format.invalid",
+    "format.unsupported",
+    "format.truncated",
+    "encoding.invalid",
+    "encoding.unsupported",
+    "encoding.locale",
+    
+    /* ================= FILESYSTEM ================= */
+    "fs.not_found",
+    "fs.permission",
+    "fs.exists",
+    "fs.read_only",
+    "fs.locked",
+    "fs.mount",
+    "fs.quota",
+    "fs.corrupt",
+    
+    /* ================= NETWORK ================= */
+    "network.unreachable",
+    "network.timeout",
+    "network.reset",
+    "network.refused",
+    "network.dns",
+    "network.protocol",
+    "network.bandwidth",
+    
+    /* ================= SECURITY ================= */
+    "security.violation",
+    "security.auth_failed",
+    "security.authz_failed",
+    "security.encryption",
+    "security.decryption",
+    "security.certificate",
+    "security.key",
+    "security.sandbox",
+    
+    /* ================= DATABASE ================= */
+    "database.connect",
+    "database.query",
+    "database.transaction",
+    "database.deadlock",
+    "database.constraint",
+    "database.migration",
+    "database.schema",
+    "database.timeout",
+    
+    /* ================= CONCURRENCY ================= */
+    "concurrency.race",
+    "concurrency.deadlock",
+    "concurrency.livelock",
+    "concurrency.atomicity",
+    "concurrency.thread",
+    "concurrency.process",
+    "concurrency.signal",
+    
+    /* ================= RESOURCE ================= */
+    "resource.exhausted",
+    "resource.locked",
+    "resource.starvation",
+    "resource.handle",
+    "resource.descriptor",
+    "resource.pool",
+    
+    /* ================= CONFIG ================= */
+    "config.missing",
+    "config.invalid",
+    "config.conflict",
+    "config.version",
+    "config.env",
+    "config.permission",
+    
+    /* ================= API ================= */
+    "api.invalid_call",
+    "api.contract",
+    "api.version",
+    "api.deprecated",
+    "api.timeout",
+    "api.limit",
+    
+    /* ================= STATE / LIFECYCLE ================= */
+    "state.invalid",
+    "state.uninitialized",
+    "state.already_initialized",
+    "state.finalized",
+    "state.transition",
+    "state.rollback",
+    
+    /* ================= TIME ================= */
+    "time.timeout",
+    "time.expired",
+    "time.clock",
+    "time.drift",
+    "time.schedule",
+    
+    /* ================= UI ================= */
+    "ui.render",
+    "ui.layout",
+    "ui.input",
+    "ui.focus",
+    "ui.accessibility",
+    
+    /* ================= AI ================= */
+    "ai.model",
+    "ai.inference",
+    "ai.training",
+    "ai.dataset",
+    "ai.bias",
+    "ai.drift",
+    "ai.confidence",
+    "ai.hallucination",
+    
+    /* ================= OBSERVABILITY ================= */
+    "log.write",
+    "log.format",
+    "metrics.collect",
+    "trace.emit",
+    "monitor.unavailable",
+    
+    /* ================= USER ================= */
+    "user.input",
+    "user.permission",
+    "user.quota",
+    "user.cancelled",
+    
+    /* ================= META ================= */
+    "meta.internal",
+    "meta.assertion",
+    "meta.invariant",
+    "meta.contract",
+    
+    NULL
+};
+
 // Function to print sanitized error messages
 void fossil_io_error(const char *format, ...) {
     va_list args;
