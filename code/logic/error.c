@@ -30,8 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FOSSIL_IO_BUFFER_SIZE 1024
-
 static const char *fossil_error_codes[] = {
     /* ======================================================================= */
     /* SYSTEM / META                                                            */
@@ -1050,6 +1048,5 @@ const char *fossil_io_what(const char *error_code) {
         return fossil_error_messages[error_index][variant];
     } else {
         return "Unknown error code.";
-    }
     }
 }
