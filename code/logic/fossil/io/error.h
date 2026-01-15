@@ -447,6 +447,23 @@ void fossil_io_error(const char *format, ...);
  */
 const char *fossil_io_what(const char *error_code);
 
+/**
+ * Returns the numeric error code ID associated with a symbolic error code.
+ *
+ * The returned value is a stable integer identifier derived from the
+ * fossil_error_codes[] table. This value is suitable for switch-case logic,
+ * compact storage, and serialization.
+ *
+ * @param error_code The symbolic error code string (e.g., "io.read").
+ * @return A non-negative integer error ID on success,
+ *         or -1 if the error code is NULL or unrecognized.
+ *
+ * Stability guarantees:
+ * • IDs are stable as long as fossil_error_codes[] ordering is preserved.
+ * • New error codes must be appended, never reordered.
+ */
+int fossil_io_code(const char *error_code);
+
 #ifdef __cplusplus
 }
 
