@@ -12,7 +12,8 @@ fossil_io_lib = library('fossil_io',
         'soap.c',
         'file.c',
         'dir.c',
-        'cstring.c'
+        'cstring.c',
+        'cipher.c'
     ),
     install: true,
     dependencies: [cc.find_library('m', required: false)],
