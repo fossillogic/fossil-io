@@ -1050,3 +1050,15 @@ const char *fossil_io_what(const char *error_code) {
         return "Unknown error code.";
     }
 }
+
+int fossil_io_code(const char *error_code) {
+    if (!error_code)
+        return -1;
+
+    for (int i = 0; fossil_error_codes[i]; ++i) {
+        if (strcmp(fossil_error_codes[i], error_code) == 0)
+            return i;
+    }
+
+    return -1;
+}
