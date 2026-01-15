@@ -450,7 +450,7 @@ const char *fossil_io_what(const char *error_code);
 #ifdef __cplusplus
 }
 
-#include <exception>
+#include <string>
 
 namespace fossil {
 
