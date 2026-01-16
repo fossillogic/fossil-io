@@ -109,12 +109,12 @@ static const char *fossil_io_file_mode_from_keyword(const char *keyword) {
 int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, const char *mode) {
     if (stream == NULL || filename == NULL || mode == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
     if (strlen(filename) >= sizeof(stream->filename)) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Limit reached\n");
-        return FOSSIL_ERROR_LIMIT_REACHED;
+        return fossil_io_code("system.limit");
     }
 
     memset(stream, 0, sizeof(fossil_io_file_t));
@@ -122,7 +122,7 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
     if (stream->file == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", filename);
         stream->is_open = false;
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
+        return fossil_io_code("fs.not_found");
     }
 
     // Set filename
@@ -226,7 +226,7 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
     stream->embedding = NULL;
     stream->embedding_size = 0;
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
 // Close an open stream
@@ -338,14 +338,14 @@ int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream) {
 int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file) {
     if (stream == NULL || filename == NULL || mode == NULL || file == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
     FILE *new_file = freopen(filename, fossil_io_file_mode_from_keyword(mode), file);
     if (new_file == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", filename);
         stream->is_open = false;
-        return FOSSIL_ERROR_FILE_NOT_FOUND;
+        return fossil_io_code("fs.not_found");
     }
 
     // Reset structure
@@ -451,7 +451,7 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
     stream->embedding = NULL;
     stream->embedding_size = 0;
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
 // Read data from an open stream
@@ -620,15 +620,15 @@ int32_t fossil_io_file_save(
 
 // Copy a file from the source to the destination
 int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename) {
-    if (!source_filename || !destination_filename) return FOSSIL_ERROR_CNULL_POINTER;
+    if (!source_filename || !destination_filename) return fossil_io_code("system.contract");
 
     FILE *in = fopen(source_filename, "rb");
-    if (!in) return FOSSIL_ERROR_FILE_NOT_FOUND;
+    if (!in) return fossil_io_code("fs.not_found");
 
     FILE *out = fopen(destination_filename, "wb");
     if (!out) {
         fclose(in);
-        return FOSSIL_ERROR_IO;
+        return fossil_io_code("io.write");
     }
 
     char buf[FOSSIL_BUFFER_MEDIUM];
@@ -649,35 +649,36 @@ int32_t fossil_io_file_copy(const char *source_filename, const char *destination
 
     if (error) {
         remove(destination_filename); /* prevent partial copy */
-        return FOSSIL_ERROR_IO;
+        return fossil_io_code("io.write");
     }
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
 int32_t fossil_io_file_remove(const char *filename) {
-    if (!filename) return FOSSIL_ERROR_CNULL_POINTER;
+    if (!filename)
+        return fossil_io_code("system.contract");
 
     if (remove(filename) != 0) {
         if (errno == ENOENT)
-            return FOSSIL_ERROR_FILE_NOT_FOUND;
-        return FOSSIL_ERROR_IO;
+            return fossil_io_code("fs.not_found");
+        return fossil_io_code("io.write");
     }
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
 int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename) {
     if (!old_filename || !new_filename)
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
 
     if (rename(old_filename, new_filename) != 0) {
         if (errno == ENOENT)
-            return FOSSIL_ERROR_FILE_NOT_FOUND;
-        return FOSSIL_ERROR_IO;
+            return fossil_io_code("fs.not_found");
+        return fossil_io_code("io.write");
     }
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
 int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
@@ -701,10 +702,14 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
     return 0;
 }
 
+/**
+ * Rotate a file by renaming filename to filename.1, filename.1 to filename.2, ..., up to n.
+ * Oldest file (filename.n) is overwritten.
+ */
 int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
     if (filename == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
     char old_filename[FOSSIL_BUFFER_MEDIUM];
@@ -712,77 +717,89 @@ int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
 
     for (int32_t i = n; i > 0; i--) {
         if (i == 1) {
-            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s", filename);
+            snprintf(old_filename, sizeof(old_filename), "%s", filename);
         } else {
-            snprintf(old_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i - 1);
+            snprintf(old_filename, sizeof(old_filename), "%s.%d", filename, i - 1);
         }
 
-        snprintf(new_filename, FOSSIL_BUFFER_MEDIUM, "%s.%d", filename, i);
-        if (fossil_io_file_rename(old_filename, new_filename) != FOSSIL_ERROR_OK) {
+        snprintf(new_filename, sizeof(new_filename), "%s.%d", filename, i);
+        if (fossil_io_file_rename(old_filename, new_filename) != fossil_io_code("system.ok")) {
             fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to rotate file %s\n", filename);
-            return FOSSIL_ERROR_IO;
+            return fossil_io_code("io.write");
         }
     }
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
-// Create a backup of a file with a specified backup suffix
+/**
+ * Create a backup of a file with a specified backup suffix.
+ */
 int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix) {
     if (filename == NULL || backup_suffix == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
-    char backup_filename[FOSSIL_BUFFER_MEDIUM + 10];  // Length of backup_suffix + maximum integer length
-    snprintf(backup_filename, FOSSIL_BUFFER_MEDIUM + 10, "%s%s", filename, backup_suffix);
+    char backup_filename[FOSSIL_BUFFER_MEDIUM + 32];
+    snprintf(backup_filename, sizeof(backup_filename), "%s%s", filename, backup_suffix);
 
-    if (fossil_io_file_copy(filename, backup_filename) != FOSSIL_ERROR_OK) {
+    if (fossil_io_file_copy(filename, backup_filename) != fossil_io_code("system.ok")) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to create backup for %s\n", filename);
-        return FOSSIL_ERROR_IO;
+        return fossil_io_code("io.write");
     }
 
-    return FOSSIL_ERROR_OK;
+    return fossil_io_code("system.ok");
 }
 
-// Check if a file exists
+/**
+ * Check if a file exists.
+ * Returns fossil_io_code("system.ok") if not found, fossil_io_code("fs.exists") if found.
+ */
 int32_t fossil_io_file_file_exists(const char *filename) {
     if (filename == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
     FILE *file = fopen(filename, "r");
     if (file) {
         fclose(file);
-        return FOSSIL_ERROR_FILE_NOT_FOUND;  // File exists
+        return fossil_io_code("fs.exists");
     }
-    return FOSSIL_ERROR_OK;  // File does not exist
+    return fossil_io_code("system.ok");
 }
 
-// Get the size of an open stream (updates stream->size)
+/**
+ * Get the size of an open stream (updates stream->size).
+ * Returns the size on success, or a negative error code.
+ */
 int32_t fossil_io_file_get_size(fossil_io_file_t *stream) {
     if (stream == NULL || stream->file == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
-    // Save current position
-    int64_t current_pos = stream->position;
+    long current_pos = ftell(stream->file);
+    if (current_pos == -1L) {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from ftell\n");
+        return fossil_io_code("io.seek");
+    }
+
     if (fseek(stream->file, 0, SEEK_END) != 0) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from seeking to end\n");
-        return FOSSIL_ERROR_IO;
+        return fossil_io_code("io.seek");
     }
     long size = ftell(stream->file);
-    if (size == -1L && ferror(stream->file)) {
+    if (size == -1L) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file size\n");
-        return FOSSIL_ERROR_IO;
+        fseek(stream->file, current_pos, SEEK_SET);
+        return fossil_io_code("io.read");
     }
 
-    // Restore original position
-    if (fseek(stream->file, (long)current_pos, SEEK_SET) != 0) {
+    if (fseek(stream->file, current_pos, SEEK_SET) != 0) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from restoring file position\n");
-        return FOSSIL_ERROR_IO;
+        return fossil_io_code("io.seek");
     }
 
     stream->size = (size_t)size;
@@ -790,19 +807,21 @@ int32_t fossil_io_file_get_size(fossil_io_file_t *stream) {
     return (int32_t)size;
 }
 
-// Delete a file
+/**
+ * Delete a file.
+ */
 int32_t fossil_io_file_delete(const char *filename) {
     if (filename == NULL) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
-        return FOSSIL_ERROR_CNULL_POINTER;
+        return fossil_io_code("system.contract");
     }
 
     if (remove(filename) == 0) {
-        return FOSSIL_ERROR_OK;  // File deleted successfully
+        return fossil_io_code("system.ok");
     }
 
     fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error when deleting file %s\n", filename);
-    return FOSSIL_ERROR_IO;
+    return fossil_io_code("io.write");
 }
 
 // Detect file type (Regular file, Directory, Symbolic link)
@@ -883,7 +902,7 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
 #endif
 
     // Open the temporary file
-    if (fossil_io_file_open(&temp_stream, temp_filename, "wb+") != FOSSIL_ERROR_OK) {
+    if (fossil_io_file_open(&temp_stream, temp_filename, "wb+") != fossil_io_code("system.ok")) {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to open temporary file - %s\n", temp_filename);
         temp_stream.file = NULL;
         temp_stream.is_open = false;

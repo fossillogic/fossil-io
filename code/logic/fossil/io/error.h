@@ -29,193 +29,263 @@
 extern "C" {
 #endif
 
-typedef enum {
-    // Success and General Errors
-    FOSSIL_ERROR_OK = 0,
-    FOSSIL_ERROR_CNULL_POINTER,
-    FOSSIL_ERROR_INVALID_ARGUMENT,
-    FOSSIL_ERROR_TYPE_MISMATCH,
-    FOSSIL_ERROR_INVALID_OPERATION,
-    FOSSIL_ERROR_UNKNOWN,
-    FOSSIL_ERROR_CUSTOM,
-    FOSSIL_ERROR_INTERNAL,
-    FOSSIL_ERROR_UNKNOWN_ERROR_CODE,
-
-    // Arithmetic Errors
-    FOSSIL_ERROR_OVERFLOW_INT,
-    FOSSIL_ERROR_UNDERFLOW_INT,
-    FOSSIL_ERROR_OVERFLOW_FLOAT,
-    FOSSIL_ERROR_UNDERFLOW_FLOAT,
-    FOSSIL_ERROR_DIVISION_BY_ZERO,
-    FOSSIL_ERROR_INVALID_CAST,
-
-    // Memory Errors
-    FOSSIL_ERROR_OUT_OF_MEMORY,
-    FOSSIL_ERROR_MEMORY_CORRUPTION,
-    FOSSIL_ERROR_BUFFER_OVERFLOW,
-    FOSSIL_ERROR_BUFFER_UNDERFLOW,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_STR,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_FMT,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_FILE,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_NET,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_CMD,
-    FOSSIL_ERROR_BUFFER_OVERFLOW_ENV,
-    FOSSIL_ERROR_MEMORY_LEAK,
-    FOSSIL_ERROR_MEMORY_ALLOCATION_FAILURE,
-    FOSSIL_ERROR_MEMORY_ALIGNMENT_ISSUE,
-
-    // File and I/O Errors
-    FOSSIL_ERROR_FILE_CORRUPTION,
-    FOSSIL_ERROR_FILE_NOT_FOUND,
-    FOSSIL_ERROR_DIRECTORY_NOT_FOUND,
-    FOSSIL_ERROR_TOO_MANY_OPEN_FILES,
-    FOSSIL_ERROR_IO,
-    FOSSIL_ERROR_UNSUPPORTED_OPERATION,
-    FOSSIL_ERROR_PIPE,
-    FOSSIL_ERROR_SYSTEM_CALL_FAILED,
-    FOSSIL_ERROR_PERMISSION_DENIED,
-    FOSSIL_ERROR_READ_ONLY_FILESYSTEM,
-    FOSSIL_ERROR_FILE_LOCK_FAILED,
-    FOSSIL_ERROR_FILE_WRITE_FAILED,
-    FOSSIL_ERROR_FILE_READ_FAILED,
-    FOSSIL_ERROR_FILE_SEEK_FAILED,
-    FOSSIL_ERROR_FILE_CLOSE_FAILED,
-    FOSSIL_ERROR_FILE_TRUNCATE_FAILED,
-    FOSSIL_ERROR_FILE_TOO_LARGE,
-    FOSSIL_ERROR_DEVICE_NOT_READY,
-    FOSSIL_ERROR_DEVICE_REMOVED,
-
-    // Resource and Process Errors
-    FOSSIL_ERROR_RESOURCE_UNAVAILABLE,
-    FOSSIL_ERROR_BUSY,
-    FOSSIL_ERROR_DEADLOCK,
-    FOSSIL_ERROR_INTERRUPTED,
-    FOSSIL_ERROR_LIMIT_REACHED,
-    FOSSIL_ERROR_PROCESS,
-    FOSSIL_ERROR_PROCESS_CREATION_FAILED,
-    FOSSIL_ERROR_PROCESS_EXITED_WITH_ERROR,
-    FOSSIL_ERROR_PROCESS_TIMEOUT,
-    FOSSIL_ERROR_RESOURCE_DEPLETION,
-    FOSSIL_ERROR_THREAD_CREATION_FAILED,
-    FOSSIL_ERROR_THREAD_TERMINATION_FAILED,
-
-    // Hardware Errors
-    FOSSIL_ERROR_HARDWARE_FAILURE,
-    FOSSIL_ERROR_HARD_DISK_FAILURE,
-    FOSSIL_ERROR_CPU_OVERHEAT,
-    FOSSIL_ERROR_MEMORY_FAILURE,
-    FOSSIL_ERROR_HARDWARE_OVERLOAD,
-    FOSSIL_ERROR_DEVICE_TIMEOUT,
-    FOSSIL_ERROR_POWER_SUPPLY_FAILURE,
-    FOSSIL_ERROR_MOTHERBOARD_FAILURE,
-    FOSSIL_ERROR_CPU_FAILURE,
-    FOSSIL_ERROR_RAM_FAILURE,
-    FOSSIL_ERROR_SSD_FAILURE,
-    FOSSIL_ERROR_HDD_FAILURE,
-    FOSSIL_ERROR_FAN_FAILURE,
-    FOSSIL_ERROR_GPU_FAILURE,
-    FOSSIL_ERROR_BATTERY_FAILURE,
-    FOSSIL_ERROR_SENSOR_FAILURE,
-    FOSSIL_ERROR_USB_CONTROLLER_FAILURE,
-    FOSSIL_ERROR_PCI_DEVICE_FAILURE,
-    FOSSIL_ERROR_NETWORK_CARD_FAILURE,
-    FOSSIL_ERROR_SOUND_CARD_FAILURE,
-    FOSSIL_ERROR_DISPLAY_ADAPTER_FAILURE,
-    FOSSIL_ERROR_POWER_SUPPLY_OVERVOLTAGE,
-    FOSSIL_ERROR_POWER_SUPPLY_UNDERVOLTAGE,
-    FOSSIL_ERROR_THERMAL_SHUTDOWN,
-    FOSSIL_ERROR_FIRMWARE_CORRUPTION,
-    FOSSIL_ERROR_HARDWARE_INCOMPATIBILITY,
-    FOSSIL_ERROR_HARDWARE_NOT_DETECTED,
-    FOSSIL_ERROR_HARDWARE_DRIVER_MISSING,
-    FOSSIL_ERROR_HARDWARE_DRIVER_CORRUPTED,
-
-    // Network Errors
-    FOSSIL_ERROR_NETWORK_FAILURE,
-    FOSSIL_ERROR_TIMEOUT,
-    FOSSIL_ERROR_UNKNOWN_HOST,
-    FOSSIL_ERROR_CONNECTION_REFUSED,
-    FOSSIL_ERROR_NETWORK_UNREACHABLE,
-    FOSSIL_ERROR_PROTOCOL,
-    FOSSIL_ERROR_CONNECTION_RESET,
-    FOSSIL_ERROR_DNS_RESOLUTION_FAILED,
-    FOSSIL_ERROR_NETWORK_CONGESTION,
-    FOSSIL_ERROR_BANDWIDTH_EXCEEDED,
-    FOSSIL_ERROR_FIREWALL_BLOCKED,
-    FOSSIL_ERROR_SSL_HANDSHAKE_FAILED,
-    FOSSIL_ERROR_CERTIFICATE_EXPIRED,
-    FOSSIL_ERROR_CERTIFICATE_REVOKED,
-
-    // Security Errors
-    FOSSIL_ERROR_SQL_INJECTION,
-    FOSSIL_ERROR_XSS_ATTACK,
-    FOSSIL_ERROR_CSRF_ATTACK,
-    FOSSIL_ERROR_FORMAT_STRING_ATTACK,
-    FOSSIL_ERROR_CRYPTOGRAPHIC_WEAKNESS,
-    FOSSIL_ERROR_INSECURE_RANDOMNESS,
-    FOSSIL_ERROR_INSECURE_CONFIGURATION,
-    FOSSIL_ERROR_INSECURE_DESERIALIZATION,
-    FOSSIL_ERROR_INSECURE_FILE_HANDLING,
-    FOSSIL_ERROR_INSECURE_TEMPORARY_FILES,
-    FOSSIL_ERROR_INSECURE_COMMUNICATION,
-    FOSSIL_ERROR_INSECURE_AUTHENTICATION,
-    FOSSIL_ERROR_INSECURE_ACCESS_CONTROL,
-    FOSSIL_ERROR_SESSION_HIJACKING,
-    FOSSIL_ERROR_DATA_TAMPERING,
-    FOSSIL_ERROR_MAN_IN_THE_MIDDLE_ATTACK,
-    FOSSIL_ERROR_PRIVILEGE_ESCALATION,
-
-    // User-Related and External Errors
-    FOSSIL_ERROR_USER_ABORT,
-    FOSSIL_ERROR_SIGNAL,
-    FOSSIL_ERROR_USER_INPUT_TOO_LARGE,
-    FOSSIL_ERROR_USER_INPUT_INVALID_FORMAT,
-    FOSSIL_ERROR_USER_PERMISSION_REJECTED,
-
-    // Database Errors
-    FOSSIL_ERROR_DATABASE_CONNECTION_FAILED,
-    FOSSIL_ERROR_DATABASE_QUERY_FAILED,
-    FOSSIL_ERROR_DATABASE_TIMEOUT,
-    FOSSIL_ERROR_DATABASE_CORRUPTION,
-    FOSSIL_ERROR_DATABASE_DEADLOCK,
-    FOSSIL_ERROR_DATABASE_LOCK_FAILED,
-
-    // Serialization and Deserialization Errors
-    FOSSIL_ERROR_SERIALIZATION_FAILED,
-    FOSSIL_ERROR_DESERIALIZATION_FAILED,
-    FOSSIL_ERROR_INVALID_SERIALIZATION_FORMAT,
-    FOSSIL_ERROR_DATA_CORRUPTION,
-
-    // Miscellaneous Errors
-    FOSSIL_ERROR_INDEX_OUT_OF_BOUNDS,
-    FOSSIL_ERROR_FORMAT,
-    FOSSIL_ERROR_INCOMPATIBLE_VERSION,
-    FOSSIL_ERROR_JSON_PARSING_FAILED,
-    FOSSIL_ERROR_XML_PARSING_FAILED,
-    FOSSIL_ERROR_YAML_PARSING_FAILED,
-    FOSSIL_ERROR_INVALID_CHECKSUM,
-    FOSSIL_ERROR_TIMER_EXPIRED,
-
-    // Truthful Intelligence Errors (TI)
-    FOSSIL_ERROR_TI_MODEL_NOT_FOUND,              // TI: FOSSIL_ERROR_AI_MODEL_NOT_FOUND
-    FOSSIL_ERROR_TI_INFERENCE_FAILED,             // TI: FOSSIL_ERROR_AI_INFERENCE_FAILED
-    FOSSIL_ERROR_TI_TRAINING_FAILED,              // TI: FOSSIL_ERROR_AI_TRAINING_FAILED
-    FOSSIL_ERROR_TI_INVALID_INPUT,                // TI: FOSSIL_ERROR_AI_INVALID_INPUT
-    FOSSIL_ERROR_TI_UNSUPPORTED_OPERATION,        // TI: FOSSIL_ERROR_AI_UNSUPPORTED_OPERATION
-    FOSSIL_ERROR_TI_TIMEOUT,                      // TI: FOSSIL_ERROR_AI_TIMEOUT
-    FOSSIL_ERROR_TI_MODEL_CORRUPTION,             // TI: FOSSIL_ERROR_AI_MODEL_CORRUPTION
-    FOSSIL_ERROR_TI_INSUFFICIENT_RESOURCES,       // TI: FOSSIL_ERROR_AI_INSUFFICIENT_RESOURCES
-    FOSSIL_ERROR_TI_INVALID_CONFIGURATION,        // TI: FOSSIL_ERROR_AI_INVALID_CONFIGURATION
-    FOSSIL_ERROR_TI_DATASET_NOT_FOUND,            // TI: FOSSIL_ERROR_AI_DATASET_NOT_FOUND
-    FOSSIL_ERROR_TI_DATASET_CORRUPTION,           // TI: FOSSIL_ERROR_AI_DATASET_CORRUPTION
-    FOSSIL_ERROR_TI_EVALUATION_FAILED,            // TI: FOSSIL_ERROR_AI_EVALUATION_FAILED
-    FOSSIL_ERROR_TI_UNSUPPORTED_MODEL_TYPE,       // TI: FOSSIL_ERROR_AI_UNSUPPORTED_MODEL_TYPE
-    FOSSIL_ERROR_TI_INCOMPATIBLE_MODEL_VERSION,   // TI: FOSSIL_ERROR_AI_INCOMPATIBLE_MODEL_VERSION
-    FOSSIL_ERROR_TI_INVALID_PARAMETER,            // TI: FOSSIL_ERROR_AI_INVALID_PARAMETER
-    FOSSIL_ERROR_TI_UNEXPECTED_OUTPUT,            // TI: FOSSIL_ERROR_AI_UNEXPECTED_OUTPUT
-
-    //
-} fossil_status_t;
+/**
+ * ==============================================================================
+ * Fossil IO Error Code System — Internal Logic, Error Code Catalogue, and Usage
+ * ==============================================================================
+ *
+ * OVERVIEW
+ * --------
+ * The Fossil IO error code system provides a unified, extensible, and ABI-stable
+ * catalogue of symbolic error identifiers for all Fossil IO and dependent subsystems.
+ * Each error condition is represented by a canonical string of the form:
+ *
+ *     <category>.<subcode>
+ *
+ * Example error codes:
+ *     "system.ok"
+ *     "io.read"
+ *     "memory.alloc"
+ *     "network.timeout"
+ *
+ * These symbolic codes are the authoritative identity for error conditions.
+ * They are used for:
+ *   - Internal dispatch and switch-case logic
+ *   - Structured logging and diagnostics
+ *   - Error classification (retryable, fatal, user-visible, etc.)
+ *   - Mapping to human-readable messages
+ *   - ABI-stable error interchange across modules and plugins
+ *
+ * ==============================================================================
+ * INTERNAL LOGIC
+ * ==============================================================================
+ *
+ * 1. Error Code Table
+ * -------------------
+ * All valid error codes are listed in a single, ordered array:
+ *
+ *   static const char *fossil_error_codes[] = { ... };
+ *
+ * Each entry is a stable string identifier. The array is never reordered or
+ * truncated; new codes are appended only.
+ *
+ * 2. Error Code Lookup
+ * --------------------
+ * - fossil_io_code(const char *error_code):
+ *     Returns the integer index of the error code in fossil_error_codes[], or -1
+ *     if not found. This index is stable and can be used for switch-case logic,
+ *     compact storage, or serialization.
+ *
+ * - fossil_io_what(const char *error_code):
+ *     Returns a human-readable message describing the error condition. Each code
+ *     maps to a set of message variants (see below). The returned string is a
+ *     constant literal and must not be freed.
+ *
+ * 3. Message Variants
+ * -------------------
+ * Each error code may have multiple descriptive message variants. The implementation
+ * may select a variant deterministically or randomly to reduce log monotony and
+ * improve diagnostics. The symbolic error code remains the single source of truth.
+ *
+ * 4. Error Reporting
+ * ------------------
+ * - fossil_io_error(const char *format, ...):
+ *     Formats and prints an error message to stderr. Recommended usage is to
+ *     include both the symbolic code and the human-readable message:
+ *
+ *         fossil_io_error("[%s] %s", error_code, fossil_io_what(error_code));
+ *
+ * ==============================================================================
+ * ERROR CODE CATALOGUE
+ * ==============================================================================
+ *
+ * The following error code strings are available. Each is stable and should be
+ * used as the canonical identifier for the corresponding error condition.
+ *
+ * SYSTEM / META
+ *   "system.ok", "system.unknown", "system.internal", "system.fatal", "system.panic",
+ *   "system.abort", "system.assertion", "system.invariant", "system.contract",
+ *   "system.recoverable", "system.unrecoverable", "system.transient", "system.permanent",
+ *   "system.unsupported", "system.unimplemented", "system.deprecated", "system.experimental",
+ *   "system.misconfigured", "system.corrupt", "system.bootstrap", "system.shutdown",
+ *   "system.restart", "system.upgrade", "system.downgrade", "system.permission",
+ *   "system.capability",
+ *
+ * IO
+ *   "io.read", "io.write", "io.seek", "io.flush", "io.sync", "io.fsync", "io.truncate",
+ *   "io.append", "io.scatter", "io.gather", "io.closed", "io.eof", "io.partial",
+ *   "io.short", "io.blocked", "io.nonblocking", "io.timeout", "io.interrupt", "io.retry",
+ *   "io.corrupt", "io.checksum", "io.buffer", "io.alignment", "io.direct", "io.stream",
+ *   "io.pipe",
+ *
+ * MEMORY
+ *   "memory.alloc", "memory.realloc", "memory.free", "memory.map", "memory.unmap",
+ *   "memory.remap", "memory.lock", "memory.unlock", "memory.protect", "memory.unprotect",
+ *   "memory.leak", "memory.overrun", "memory.underrun", "memory.use_after_free",
+ *   "memory.double_free", "memory.fragmented", "memory.exhausted", "memory.alignment",
+ *   "memory.page_fault", "memory.segmentation", "memory.guard", "memory.poison",
+ *   "memory.swap", "memory.numa",
+ *
+ * CPU / EXECUTION
+ *   "cpu.illegal_instruction", "cpu.privilege_violation", "cpu.div_zero", "cpu.overflow",
+ *   "cpu.underflow", "cpu.fpu", "cpu.simd", "cpu.cache", "cpu.pipeline", "cpu.affinity",
+ *   "cpu.throttle",
+ *
+ * MATH / NUMERIC
+ *   "math.overflow", "math.underflow", "math.div_zero", "math.nan", "math.infinity",
+ *   "math.domain", "math.range", "math.precision", "math.rounding", "math.convergence",
+ *   "math.divergence", "math.iteration", "math.singularity", "math.condition",
+ *   "math.approximation",
+ *
+ * PARSING / LEXING / GRAMMAR
+ *   "parse.invalid", "parse.syntax", "parse.semantic", "parse.context", "parse.state",
+ *   "parse.encoding", "parse.unexpected_token", "parse.missing_token", "parse.extra_token",
+ *   "parse.ambiguous", "parse.incomplete", "parse.recursion", "parse.depth", "parse.stack",
+ *   "parse.overflow", "lexer.invalid", "lexer.token", "lexer.state", "lexer.encoding",
+ *   "lexer.buffer", "lexer.escape",
+ *
+ * TYPE SYSTEM
+ *   "type.invalid", "type.mismatch", "type.cast", "type.coercion", "type.size",
+ *   "type.range", "type.signedness", "type.alignment", "type.qualifier", "type.generic",
+ *   "type.polymorphic", "type.variance",
+ *
+ * FORMAT / ENCODING
+ *   "format.invalid", "format.unsupported", "format.truncated", "format.version",
+ *   "format.magic", "format.header", "format.footer", "format.padding", "format.layout",
+ *   "encoding.invalid", "encoding.unsupported", "encoding.incomplete", "encoding.locale",
+ *   "encoding.endianness", "encoding.normalization", "encoding.compression",
+ *   "encoding.decompression",
+ *
+ * DATA / CONTENT
+ *   "data.invalid", "data.corrupt", "data.missing", "data.extra", "data.duplicate",
+ *   "data.inconsistent", "data.constraint", "data.integrity", "data.reference",
+ *   "data.circular", "data.order", "data.range", "data.null", "data.schema",
+ *   "data.version", "data.migration",
+ *
+ * FILESYSTEM / STORAGE
+ *   "fs.not_found", "fs.exists", "fs.permission", "fs.read_only", "fs.locked",
+ *   "fs.busy", "fs.mount", "fs.unmount", "fs.remount", "fs.quota", "fs.corrupt",
+ *   "fs.journal", "fs.snapshot", "fs.backup", "fs.restore", "fs.path", "fs.symlink",
+ *   "fs.hardlink", "fs.inode", "fs.filesystem",
+ *
+ * PROCESS / SIGNAL
+ *   "process.spawn", "process.exec", "process.exit", "process.crash", "process.signal",
+ *   "process.kill", "process.zombie", "process.orphan", "process.permission",
+ *   "process.limit", "process.priority", "process.affinity",
+ *
+ * THREAD / CONCURRENCY
+ *   "thread.create", "thread.join", "thread.detach", "thread.cancel", "thread.signal",
+ *   "concurrency.race", "concurrency.deadlock", "concurrency.livelock",
+ *   "concurrency.starvation", "concurrency.atomicity", "concurrency.lock",
+ *   "concurrency.unlock", "concurrency.condition", "concurrency.barrier",
+ *   "concurrency.scheduler", "concurrency.preemption",
+ *
+ * RESOURCE
+ *   "resource.exhausted", "resource.leak", "resource.locked", "resource.starvation",
+ *   "resource.handle", "resource.descriptor", "resource.pool", "resource.cache",
+ *   "resource.bandwidth", "resource.quota", "resource.limit",
+ *
+ * TIME / CLOCK
+ *   "time.timeout", "time.expired", "time.schedule", "time.clock", "time.drift",
+ *   "time.skew", "time.monotonic", "time.realtime", "time.resolution", "time.wrap",
+ *
+ * CONFIG / ENVIRONMENT
+ *   "config.missing", "config.invalid", "config.conflict", "config.version",
+ *   "config.env", "config.profile", "config.permission", "config.schema",
+ *   "config.override", "config.default", "config.locked",
+ *
+ * API / ABI
+ *   "api.invalid_call", "api.contract", "api.precondition", "api.postcondition",
+ *   "api.version", "api.mismatch", "api.deprecated", "api.timeout", "api.limit",
+ *   "api.state", "api.sequence", "api.serialization", "api.deserialization",
+ *   "abi.mismatch", "abi.incompatible",
+ *
+ * PROTOCOL / IPC
+ *   "protocol.invalid", "protocol.version", "protocol.handshake", "protocol.negotiation",
+ *   "protocol.sequence", "protocol.frame", "protocol.fragment", "protocol.checksum",
+ *   "protocol.timeout", "protocol.reset", "protocol.flow_control",
+ *
+ * NETWORK
+ *   "network.unreachable", "network.timeout", "network.reset", "network.refused",
+ *   "network.aborted", "network.dns", "network.routing", "network.latency",
+ *   "network.bandwidth", "network.congestion", "network.proxy", "network.firewall",
+ *   "network.nat", "network.session", "network.stream", "network.packet",
+ *
+ * SECURITY / CRYPTO
+ *   "security.violation", "security.auth_failed", "security.authz_failed",
+ *   "security.identity", "security.credential", "security.token", "security.session",
+ *   "security.encryption", "security.decryption", "security.certificate", "security.key",
+ *   "security.keystore", "security.revocation", "security.sandbox", "security.trust",
+ *   "security.integrity", "security.tamper", "security.replay",
+ *
+ * DATABASE / STORAGE ENGINE
+ *   "database.connect", "database.disconnect", "database.query", "database.prepare",
+ *   "database.execute", "database.transaction", "database.commit", "database.rollback",
+ *   "database.deadlock", "database.lock", "database.constraint", "database.schema",
+ *   "database.migration", "database.index", "database.cursor", "database.replication",
+ *   "database.consistency", "database.timeout",
+ *
+ * AI / ML
+ *   "ai.model", "ai.version", "ai.load", "ai.unload", "ai.inference", "ai.training",
+ *   "ai.finetune", "ai.dataset", "ai.validation", "ai.bias", "ai.drift",
+ *   "ai.hallucination", "ai.alignment", "ai.confidence", "ai.explainability",
+ *   "ai.prompt", "ai.token_limit", "ai.context_overflow",
+ *
+ * UI / UX
+ *   "ui.render", "ui.layout", "ui.paint", "ui.refresh", "ui.input", "ui.focus",
+ *   "ui.gesture", "ui.accessibility", "ui.localization", "ui.theme", "ui.font",
+ *   "ui.image",
+ *
+ * OBSERVABILITY / OPS
+ *   "log.write", "log.read", "log.format", "log.rotate", "log.truncate",
+ *   "metrics.collect", "metrics.aggregate", "metrics.export", "trace.emit",
+ *   "trace.flush", "trace.sample", "monitor.unavailable", "diagnostics.collect",
+ *   "diagnostics.dump", "profile.sample",
+ *
+ * BUILD / DEPLOY
+ *   "build.configure", "build.compile", "build.link", "build.package",
+ *   "deploy.install", "deploy.remove", "deploy.upgrade", "deploy.rollback",
+ *   "deploy.migration", "deploy.orchestration", "deploy.container", "deploy.image",
+ *
+ * USER
+ *   "user.input", "user.permission", "user.quota", "user.cancelled", "user.timeout",
+ *   "user.conflict", "user.invalid_state", "user.rate_limit",
+ *
+ * LEGAL / POLICY
+ *   "policy.violation", "policy.denied", "policy.expired", "policy.restricted",
+ *   "license.invalid", "license.expired", "license.restricted", "privacy.violation",
+ *   "privacy.redaction", "compliance.failure", "audit.failure",
+ *
+ * FALLBACK / GUARANTEES
+ *   "meta.unreachable", "meta.assumption", "meta.placeholder", "meta.future"
+ *
+ * ==============================================================================
+ * BEST PRACTICES FOR ERROR CODE USAGE
+ * ==============================================================================
+ *
+ * 1. Use category-level codes (e.g., "memory.*", "network.*") for broad policy,
+ *    retry, or severity logic.
+ * 2. Use full error codes (e.g., "io.read", "memory.alloc") for precise diagnostics,
+ *    logging, and error propagation.
+ * 3. Always log both the symbolic error code and the human-readable message.
+ * 4. Never branch control flow on message strings; always use the symbolic code.
+ * 5. Never remove or rename existing codes; only append new codes.
+ * 6. Do not expose internal-only codes in public APIs unless documented.
+ * 7. When propagating errors, preserve the original code whenever possible.
+ * 8. Use fossil_io_code() for efficient switch-case or serialization.
+ * 9. Use fossil_io_what() for user-facing or log messages, not for control flow.
+ * 10. Treat error codes as part of the public contract and maintain stability.
+ *
+ * ==============================================================================
+ * EXTENSIBILITY
+ * ==============================================================================
+ * - New error codes may be appended at any time.
+ * - Future extensions may include enums, bitmask traits, localization, or structured
+ *   error objects, all keyed off the symbolic code.
+ * - The symbolic code is the single source of truth for error identity.
+ *
+ * ==============================================================================
+ */
 
 /**
  * This function is used to report an error message with a formatted string.
@@ -226,196 +296,95 @@ typedef enum {
 void fossil_io_error(const char *format, ...);
 
 /**
- * This function is used to get a human-readable description of an error code.
+ * This function returns a string literal representing the symbolic name
+ * of the given error code, such as "system.ok", "io.read", or "memory.alloc".
+ * The returned string is intended to be a stable, human-readable identifier
+ * for the error code, suitable for logging, debugging, or diagnostics.
  *
- * @param error_code The error code for which the description is needed.
- * @return The human-readable description of the error code.
+ * @param error_code The error code whose symbolic name is to be retrieved.
+ * @return A constant string literal describing the symbolic name of the error code,
+ *         or "unknown" if the code is not recognized.
  */
-const char *fossil_io_what(fossil_status_t error_code);
+const char *fossil_io_what(const char *error_code);
+
+/**
+ * Returns the numeric error code ID associated with a symbolic error code.
+ *
+ * The returned value is a stable integer identifier derived from the
+ * fossil_error_codes[] table. This value is suitable for switch-case logic,
+ * compact storage, and serialization.
+ *
+ * @param error_code The symbolic error code string (e.g., "io.read").
+ * @return A non-negative integer error ID on success,
+ *         or -1 if the error code is NULL or unrecognized.
+ *
+ * Stability guarantees:
+ * • IDs are stable as long as fossil_error_codes[] ordering is preserved.
+ * • New error codes must be appended, never reordered.
+ */
+int fossil_io_code(const char *error_code);
 
 #ifdef __cplusplus
 }
 
-#include <exception>
+#include <string>
 
-/**
- * This namespace provides a set of functions for handling input and output operations.
- */
 namespace fossil {
-    /**
-     * This namespace provides a set of functions for handling input and output operations.
-     */
+
     namespace io {
-        /**
-         * Enum class for error codes.
-         */
-        enum class ErrorCode {
-            // Success and General Errors
-            OK = FOSSIL_ERROR_OK,
-            NULL_POINTER = FOSSIL_ERROR_CNULL_POINTER,
-            INVALID_ARGUMENT = FOSSIL_ERROR_INVALID_ARGUMENT,
-            TYPE_MISMATCH = FOSSIL_ERROR_TYPE_MISMATCH,
-            INVALID_OPERATION = FOSSIL_ERROR_INVALID_OPERATION,
-            UNKNOWN = FOSSIL_ERROR_UNKNOWN,
-            CUSTOM = FOSSIL_ERROR_CUSTOM,
-            INTERNAL = FOSSIL_ERROR_INTERNAL,
-            UNKNOWN_ERROR_CODE = FOSSIL_ERROR_UNKNOWN_ERROR_CODE,
-
-            // Arithmetic Errors
-            OVERFLOW_INT = FOSSIL_ERROR_OVERFLOW_INT,
-            UNDERFLOW_INT = FOSSIL_ERROR_UNDERFLOW_INT,
-            OVERFLOW_FLOAT = FOSSIL_ERROR_OVERFLOW_FLOAT,
-            UNDERFLOW_FLOAT = FOSSIL_ERROR_UNDERFLOW_FLOAT,
-            DIVISION_BY_ZERO = FOSSIL_ERROR_DIVISION_BY_ZERO,
-            INVALID_CAST = FOSSIL_ERROR_INVALID_CAST,
-
-            // Memory Errors
-            OUT_OF_MEMORY = FOSSIL_ERROR_OUT_OF_MEMORY,
-            MEMORY_CORRUPTION = FOSSIL_ERROR_MEMORY_CORRUPTION,
-            BUFFER_OVERFLOW = FOSSIL_ERROR_BUFFER_OVERFLOW,
-            BUFFER_UNDERFLOW = FOSSIL_ERROR_BUFFER_UNDERFLOW,
-            BUFFER_OVERFLOW_STR = FOSSIL_ERROR_BUFFER_OVERFLOW_STR,
-            BUFFER_OVERFLOW_FMT = FOSSIL_ERROR_BUFFER_OVERFLOW_FMT,
-            BUFFER_OVERFLOW_FILE = FOSSIL_ERROR_BUFFER_OVERFLOW_FILE,
-            BUFFER_OVERFLOW_NET = FOSSIL_ERROR_BUFFER_OVERFLOW_NET,
-            BUFFER_OVERFLOW_CMD = FOSSIL_ERROR_BUFFER_OVERFLOW_CMD,
-            BUFFER_OVERFLOW_ENV = FOSSIL_ERROR_BUFFER_OVERFLOW_ENV,
-            MEMORY_LEAK = FOSSIL_ERROR_MEMORY_LEAK,
-            MEMORY_ALLOCATION_FAILURE = FOSSIL_ERROR_MEMORY_ALLOCATION_FAILURE,
-            MEMORY_ALIGNMENT_ISSUE = FOSSIL_ERROR_MEMORY_ALIGNMENT_ISSUE,
-
-            // File and I/O Errors
-            FILE_CORRUPTION = FOSSIL_ERROR_FILE_CORRUPTION,
-            FILE_NOT_FOUND = FOSSIL_ERROR_FILE_NOT_FOUND,
-            DIRECTORY_NOT_FOUND = FOSSIL_ERROR_DIRECTORY_NOT_FOUND,
-            TOO_MANY_OPEN_FILES = FOSSIL_ERROR_TOO_MANY_OPEN_FILES,
-            IO = FOSSIL_ERROR_IO,
-            UNSUPPORTED_OPERATION = FOSSIL_ERROR_UNSUPPORTED_OPERATION,
-            PIPE = FOSSIL_ERROR_PIPE,
-            SYSTEM_CALL_FAILED = FOSSIL_ERROR_SYSTEM_CALL_FAILED,
-            PERMISSION_DENIED = FOSSIL_ERROR_PERMISSION_DENIED,
-            READ_ONLY_FILESYSTEM = FOSSIL_ERROR_READ_ONLY_FILESYSTEM,
-            FILE_LOCK_FAILED = FOSSIL_ERROR_FILE_LOCK_FAILED,
-            FILE_WRITE_FAILED = FOSSIL_ERROR_FILE_WRITE_FAILED,
-            FILE_READ_FAILED = FOSSIL_ERROR_FILE_READ_FAILED,
-            FILE_SEEK_FAILED = FOSSIL_ERROR_FILE_SEEK_FAILED,
-            FILE_CLOSE_FAILED = FOSSIL_ERROR_FILE_CLOSE_FAILED,
-            FILE_TRUNCATE_FAILED = FOSSIL_ERROR_FILE_TRUNCATE_FAILED,
-            FILE_TOO_LARGE = FOSSIL_ERROR_FILE_TOO_LARGE,
-            DEVICE_NOT_READY = FOSSIL_ERROR_DEVICE_NOT_READY,
-            DEVICE_REMOVED = FOSSIL_ERROR_DEVICE_REMOVED,
-
-            // Resource and Process Errors
-            RESOURCE_UNAVAILABLE = FOSSIL_ERROR_RESOURCE_UNAVAILABLE,
-            BUSY = FOSSIL_ERROR_BUSY,
-            DEADLOCK = FOSSIL_ERROR_DEADLOCK,
-            INTERRUPTED = FOSSIL_ERROR_INTERRUPTED,
-            LIMIT_REACHED = FOSSIL_ERROR_LIMIT_REACHED,
-            PROCESS = FOSSIL_ERROR_PROCESS,
-            PROCESS_CREATION_FAILED = FOSSIL_ERROR_PROCESS_CREATION_FAILED,
-            PROCESS_EXITED_WITH_ERROR = FOSSIL_ERROR_PROCESS_EXITED_WITH_ERROR,
-            PROCESS_TIMEOUT = FOSSIL_ERROR_PROCESS_TIMEOUT,
-            RESOURCE_DEPLETION = FOSSIL_ERROR_RESOURCE_DEPLETION,
-            THREAD_CREATION_FAILED = FOSSIL_ERROR_THREAD_CREATION_FAILED,
-            THREAD_TERMINATION_FAILED = FOSSIL_ERROR_THREAD_TERMINATION_FAILED,
-
-            // Hardware Errors
-            HARDWARE_FAILURE = FOSSIL_ERROR_HARDWARE_FAILURE,
-            HARD_DISK_FAILURE = FOSSIL_ERROR_HARD_DISK_FAILURE,
-            GPU_FAILURE = FOSSIL_ERROR_GPU_FAILURE,
-            CPU_OVERHEAT = FOSSIL_ERROR_CPU_OVERHEAT,
-            MEMORY_FAILURE = FOSSIL_ERROR_MEMORY_FAILURE,
-            HARDWARE_OVERLOAD = FOSSIL_ERROR_HARDWARE_OVERLOAD,
-            DEVICE_TIMEOUT = FOSSIL_ERROR_DEVICE_TIMEOUT,
-            POWER_SUPPLY_FAILURE = FOSSIL_ERROR_POWER_SUPPLY_FAILURE,
-
-            // Network Errors
-            NETWORK_FAILURE = FOSSIL_ERROR_NETWORK_FAILURE,
-            TIMEOUT = FOSSIL_ERROR_TIMEOUT,
-            UNKNOWN_HOST = FOSSIL_ERROR_UNKNOWN_HOST,
-            CONNECTION_REFUSED = FOSSIL_ERROR_CONNECTION_REFUSED,
-            NETWORK_UNREACHABLE = FOSSIL_ERROR_NETWORK_UNREACHABLE,
-            PROTOCOL = FOSSIL_ERROR_PROTOCOL,
-            CONNECTION_RESET = FOSSIL_ERROR_CONNECTION_RESET,
-            DNS_RESOLUTION_FAILED = FOSSIL_ERROR_DNS_RESOLUTION_FAILED,
-            NETWORK_CONGESTION = FOSSIL_ERROR_NETWORK_CONGESTION,
-            BANDWIDTH_EXCEEDED = FOSSIL_ERROR_BANDWIDTH_EXCEEDED,
-            FIREWALL_BLOCKED = FOSSIL_ERROR_FIREWALL_BLOCKED,
-            SSL_HANDSHAKE_FAILED = FOSSIL_ERROR_SSL_HANDSHAKE_FAILED,
-            CERTIFICATE_EXPIRED = FOSSIL_ERROR_CERTIFICATE_EXPIRED,
-            CERTIFICATE_REVOKED = FOSSIL_ERROR_CERTIFICATE_REVOKED,
-
-            // Security Errors
-            SQL_INJECTION = FOSSIL_ERROR_SQL_INJECTION,
-            XSS_ATTACK = FOSSIL_ERROR_XSS_ATTACK,
-            CSRF_ATTACK = FOSSIL_ERROR_CSRF_ATTACK,
-            FORMAT_STRING_ATTACK = FOSSIL_ERROR_FORMAT_STRING_ATTACK,
-            CRYPTOGRAPHIC_WEAKNESS = FOSSIL_ERROR_CRYPTOGRAPHIC_WEAKNESS,
-            INSECURE_RANDOMNESS = FOSSIL_ERROR_INSECURE_RANDOMNESS,
-            INSECURE_CONFIGURATION = FOSSIL_ERROR_INSECURE_CONFIGURATION,
-            INSECURE_DESERIALIZATION = FOSSIL_ERROR_INSECURE_DESERIALIZATION,
-            INSECURE_FILE_HANDLING = FOSSIL_ERROR_INSECURE_FILE_HANDLING,
-            INSECURE_TEMPORARY_FILES = FOSSIL_ERROR_INSECURE_TEMPORARY_FILES,
-            INSECURE_COMMUNICATION = FOSSIL_ERROR_INSECURE_COMMUNICATION,
-            INSECURE_AUTHENTICATION = FOSSIL_ERROR_INSECURE_AUTHENTICATION,
-            INSECURE_ACCESS_CONTROL = FOSSIL_ERROR_INSECURE_ACCESS_CONTROL,
-            SESSION_HIJACKING = FOSSIL_ERROR_SESSION_HIJACKING,
-            DATA_TAMPERING = FOSSIL_ERROR_DATA_TAMPERING,
-            MAN_IN_THE_MIDDLE_ATTACK = FOSSIL_ERROR_MAN_IN_THE_MIDDLE_ATTACK,
-            PRIVILEGE_ESCALATION = FOSSIL_ERROR_PRIVILEGE_ESCALATION,
-
-            // User-Related and External Errors
-            USER_ABORT = FOSSIL_ERROR_USER_ABORT,
-            SIGNAL = FOSSIL_ERROR_SIGNAL,
-            USER_INPUT_TOO_LARGE = FOSSIL_ERROR_USER_INPUT_TOO_LARGE,
-            USER_INPUT_INVALID_FORMAT = FOSSIL_ERROR_USER_INPUT_INVALID_FORMAT,
-            USER_PERMISSION_REJECTED = FOSSIL_ERROR_USER_PERMISSION_REJECTED,
-
-            // Database Errors
-            DATABASE_CONNECTION_FAILED = FOSSIL_ERROR_DATABASE_CONNECTION_FAILED,
-            DATABASE_QUERY_FAILED = FOSSIL_ERROR_DATABASE_QUERY_FAILED,
-            DATABASE_TIMEOUT = FOSSIL_ERROR_DATABASE_TIMEOUT,
-            DATABASE_CORRUPTION = FOSSIL_ERROR_DATABASE_CORRUPTION,
-            DATABASE_DEADLOCK = FOSSIL_ERROR_DATABASE_DEADLOCK,
-            DATABASE_LOCK_FAILED = FOSSIL_ERROR_DATABASE_LOCK_FAILED,
-
-            // Serialization and Deserialization Errors
-            SERIALIZATION_FAILED = FOSSIL_ERROR_SERIALIZATION_FAILED,
-            DESERIALIZATION_FAILED = FOSSIL_ERROR_DESERIALIZATION_FAILED,
-            INVALID_SERIALIZATION_FORMAT = FOSSIL_ERROR_INVALID_SERIALIZATION_FORMAT,
-            DATA_CORRUPTION = FOSSIL_ERROR_DATA_CORRUPTION,
-
-            // Miscellaneous Errors
-            INDEX_OUT_OF_BOUNDS = FOSSIL_ERROR_INDEX_OUT_OF_BOUNDS,
-            FORMAT = FOSSIL_ERROR_FORMAT,
-            INCOMPATIBLE_VERSION = FOSSIL_ERROR_INCOMPATIBLE_VERSION,
-            JSON_PARSING_FAILED = FOSSIL_ERROR_JSON_PARSING_FAILED,
-            XML_PARSING_FAILED = FOSSIL_ERROR_XML_PARSING_FAILED,
-            YAML_PARSING_FAILED = FOSSIL_ERROR_YAML_PARSING_FAILED,
-            INVALID_CHECKSUM = FOSSIL_ERROR_INVALID_CHECKSUM,
-            TIMER_EXPIRED = FOSSIL_ERROR_TIMER_EXPIRED
-        };
-
-        /**
-         * Exception class for handling errors.
-         */
-        class Error : public std::exception {
+    
+        class Error final {
         public:
-            explicit Error(ErrorCode code) : code_(code) {}
+            Error() = delete; // static-only utility class
 
-            const char* what() const noexcept override {
-                return fossil_io_what(static_cast<fossil_status_t>(code_));
+            /**
+             * Report an error using printf-style formatting.
+             */
+            static void report(const char *format, ...) noexcept {
+                va_list args;
+                va_start(args, format);
+                fossil_io_error(format, args);
+                va_end(args);
             }
 
-            ErrorCode code() const noexcept {
-                return code_;
+            /**
+             * Retrieve the symbolic name for an error code.
+             *
+             * Example: "system.ok", "io.read", "memory.alloc"
+             */
+            static const char *what(const char *error_code) noexcept {
+                return fossil_io_what(error_code);
             }
 
-        private:
-            ErrorCode code_;
+            /**
+             * Convenience overload for std::string.
+             */
+            static const char *what(const std::string &error_code) noexcept {
+                return fossil_io_what(error_code.c_str());
+            }
+
+            /**
+             * Retrieve the numeric error code ID for a symbolic error code.
+             *
+             * @param error_code The symbolic error code string (e.g., "io.read").
+             * @return A non-negative integer error ID on success,
+             *         or -1 if the error code is NULL or unrecognized.
+             */
+            static int code(const char *error_code) noexcept {
+                return fossil_io_code(error_code);
+            }
+
+            /**
+             * Convenience overload for std::string.
+             */
+            static int code(const std::string &error_code) noexcept {
+                return fossil_io_code(error_code.c_str());
+            }
         };
-    }
-}
+    
+    } // namespace io
+
+} // namespace fossil
 
 #endif
 
