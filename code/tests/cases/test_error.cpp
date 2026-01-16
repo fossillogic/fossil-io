@@ -54,437 +54,235 @@ FOSSIL_TEARDOWN(cpp_error_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(cpp_test_io_what_no_error) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_OK);
-    ASSUME_ITS_EQUAL_CSTR("No error, operation successful.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_CNULL_pointer) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_CNULL_POINTER);
-    ASSUME_ITS_EQUAL_CSTR("Null pointer encountered.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_invalid_argument) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_INVALID_ARGUMENT);
-    ASSUME_ITS_EQUAL_CSTR("Invalid argument provided.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_type_mismatch) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_TYPE_MISMATCH);
-    ASSUME_ITS_EQUAL_CSTR("Type mismatch encountered.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_invalid_operation) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_INVALID_OPERATION);
-    ASSUME_ITS_EQUAL_CSTR("Invalid operation.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_unknown) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_UNKNOWN);
-    ASSUME_ITS_EQUAL_CSTR("Unknown error.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_custom) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_CUSTOM);
-    ASSUME_ITS_EQUAL_CSTR("Custom error occurred.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_internal) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_INTERNAL);
-    ASSUME_ITS_EQUAL_CSTR("Internal error.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_unknown_error_code) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_UNKNOWN_ERROR_CODE);
-    ASSUME_ITS_EQUAL_CSTR("Unknown error code.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_overflow_int) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_OVERFLOW_INT);
-    ASSUME_ITS_EQUAL_CSTR("Integer overflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_underflow_int) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_UNDERFLOW_INT);
-    ASSUME_ITS_EQUAL_CSTR("Integer underflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_overflow_float) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_OVERFLOW_FLOAT);
-    ASSUME_ITS_EQUAL_CSTR("Float overflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_underflow_float) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_UNDERFLOW_FLOAT);
-    ASSUME_ITS_EQUAL_CSTR("Float underflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_division_by_zero) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_DIVISION_BY_ZERO);
-    ASSUME_ITS_EQUAL_CSTR("Division by zero.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_invalid_cast) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_INVALID_CAST);
-    ASSUME_ITS_EQUAL_CSTR("Invalid type cast.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_out_of_memory) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_OUT_OF_MEMORY);
-    ASSUME_ITS_EQUAL_CSTR("Out of memory.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_memory_corruption) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_MEMORY_CORRUPTION);
-    ASSUME_ITS_EQUAL_CSTR("Memory corruption detected.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_buffer_overflow) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_BUFFER_OVERFLOW);
-    ASSUME_ITS_EQUAL_CSTR("Buffer overflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_buffer_underflow) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_BUFFER_UNDERFLOW);
-    ASSUME_ITS_EQUAL_CSTR("Buffer underflow.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_file_not_found) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_FILE_NOT_FOUND);
-    ASSUME_ITS_EQUAL_CSTR("File not found.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_permission_denied) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_PERMISSION_DENIED);
-    ASSUME_ITS_EQUAL_CSTR("Permission denied.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_network_failure) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_NETWORK_FAILURE);
-    ASSUME_ITS_EQUAL_CSTR("Network failure.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_timeout) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_TIMEOUT);
-    ASSUME_ITS_EQUAL_CSTR("Network timeout.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_unknown_host) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_UNKNOWN_HOST);
-    ASSUME_ITS_EQUAL_CSTR("Unknown host.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_connection_refused) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_CONNECTION_REFUSED);
-    ASSUME_ITS_EQUAL_CSTR("Connection refused.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_sql_injection) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_SQL_INJECTION);
-    ASSUME_ITS_EQUAL_CSTR("SQL injection attempt detected.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_xss_attack) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_XSS_ATTACK);
-    ASSUME_ITS_EQUAL_CSTR("Cross-site scripting attack detected.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_csrf_attack) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_CSRF_ATTACK);
-    ASSUME_ITS_EQUAL_CSTR("Cross-site request forgery attack detected.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_user_abort) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_USER_ABORT);
-    ASSUME_ITS_EQUAL_CSTR("User aborted operation.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_database_connection_failed) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_DATABASE_CONNECTION_FAILED);
-    ASSUME_ITS_EQUAL_CSTR("Database connection failed.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_what_serialization_failed) {
-    const char *result = fossil_io_what(FOSSIL_ERROR_SERIALIZATION_FAILED);
-    ASSUME_ITS_EQUAL_CSTR("Serialization failed.", result);
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_no_error) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::OK);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("No error, operation successful.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::OK);
+// SYSTEM / META error code tests
+FOSSIL_TEST(cpp_test_error_code_system_meta) {
+    const char *codes[] = {
+        "system.ok", "system.unknown", "system.internal", "system.fatal", "system.panic",
+        "system.abort", "system.assertion", "system.invariant", "system.contract",
+        "system.recoverable", "system.unrecoverable", "system.transient", "system.permanent",
+        "system.unsupported", "system.unimplemented", "system.deprecated", "system.experimental",
+        "system.misconfigured", "system.corrupt", "system.bootstrap", "system.shutdown",
+        "system.restart", "system.upgrade", "system.downgrade", "system.permission",
+        "system.capability"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_CNULL_pointer) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::NULL_POINTER);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Null pointer encountered.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::NULL_POINTER);
+// IO error code tests
+FOSSIL_TEST(cpp_test_error_code_io) {
+    const char *codes[] = {
+        "io.read", "io.write", "io.seek", "io.flush", "io.sync", "io.fsync", "io.truncate",
+        "io.append", "io.scatter", "io.gather", "io.closed", "io.eof", "io.partial",
+        "io.short", "io.blocked", "io.nonblocking", "io.timeout", "io.interrupt", "io.retry",
+        "io.corrupt", "io.checksum", "io.buffer", "io.alignment", "io.direct", "io.stream",
+        "io.pipe"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_invalid_argument) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::INVALID_ARGUMENT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Invalid argument provided.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::INVALID_ARGUMENT);
+// MEMORY error code tests
+FOSSIL_TEST(cpp_test_error_code_memory) {
+    const char *codes[] = {
+        "memory.alloc", "memory.realloc", "memory.free", "memory.map", "memory.unmap",
+        "memory.remap", "memory.lock", "memory.unlock", "memory.protect", "memory.unprotect",
+        "memory.leak", "memory.overrun", "memory.underrun", "memory.use_after_free",
+        "memory.double_free", "memory.fragmented", "memory.exhausted", "memory.alignment",
+        "memory.page_fault", "memory.segmentation", "memory.guard", "memory.poison",
+        "memory.swap", "memory.numa"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_type_mismatch) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::TYPE_MISMATCH);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Type mismatch encountered.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::TYPE_MISMATCH);
+// CPU / EXECUTION error code tests
+FOSSIL_TEST(cpp_test_error_code_cpu) {
+    const char *codes[] = {
+        "cpu.illegal_instruction", "cpu.privilege_violation", "cpu.div_zero", "cpu.overflow",
+        "cpu.underflow", "cpu.fpu", "cpu.simd", "cpu.cache", "cpu.pipeline", "cpu.affinity",
+        "cpu.throttle"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_invalid_operation) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::INVALID_OPERATION);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Invalid operation.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::INVALID_OPERATION);
+// MATH / NUMERIC error code tests
+FOSSIL_TEST(cpp_test_error_code_math) {
+    const char *codes[] = {
+        "math.overflow", "math.underflow", "math.div_zero", "math.nan", "math.infinity",
+        "math.domain", "math.range", "math.precision", "math.rounding", "math.convergence",
+        "math.divergence", "math.iteration", "math.singularity", "math.condition",
+        "math.approximation"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_unknown) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::UNKNOWN);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Unknown error.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::UNKNOWN);
+// FILESYSTEM / STORAGE error code tests
+FOSSIL_TEST(cpp_test_error_code_fs) {
+    const char *codes[] = {
+        "fs.not_found", "fs.exists", "fs.permission", "fs.read_only", "fs.locked",
+        "fs.busy", "fs.mount", "fs.unmount", "fs.remount", "fs.quota", "fs.corrupt",
+        "fs.journal", "fs.snapshot", "fs.backup", "fs.restore", "fs.path", "fs.symlink",
+        "fs.hardlink", "fs.inode", "fs.filesystem"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_custom) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::CUSTOM);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Custom error occurred.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::CUSTOM);
+// NETWORK error code tests
+FOSSIL_TEST(cpp_test_error_code_network) {
+    const char *codes[] = {
+        "network.unreachable", "network.timeout", "network.reset", "network.refused",
+        "network.aborted", "network.dns", "network.routing", "network.latency",
+        "network.bandwidth", "network.congestion", "network.proxy", "network.firewall",
+        "network.nat", "network.session", "network.stream", "network.packet"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_internal) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::INTERNAL);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Internal error.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::INTERNAL);
+// SECURITY / CRYPTO error code tests
+FOSSIL_TEST(cpp_test_error_code_security) {
+    const char *codes[] = {
+        "security.violation", "security.auth_failed", "security.authz_failed",
+        "security.identity", "security.credential", "security.token", "security.session",
+        "security.encryption", "security.decryption", "security.certificate", "security.key",
+        "security.keystore", "security.revocation", "security.sandbox", "security.trust",
+        "security.integrity", "security.tamper", "security.replay"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_unknown_error_code) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::UNKNOWN_ERROR_CODE);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Unknown error code.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::UNKNOWN_ERROR_CODE);
+// DATABASE / STORAGE ENGINE error code tests
+FOSSIL_TEST(cpp_test_error_code_database) {
+    const char *codes[] = {
+        "database.connect", "database.disconnect", "database.query", "database.prepare",
+        "database.execute", "database.transaction", "database.commit", "database.rollback",
+        "database.deadlock", "database.lock", "database.constraint", "database.schema",
+        "database.migration", "database.index", "database.cursor", "database.replication",
+        "database.consistency", "database.timeout"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_overflow_int) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::OVERFLOW_INT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Integer overflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::OVERFLOW_INT);
+// AI / ML error code tests
+FOSSIL_TEST(cpp_test_error_code_ai) {
+    const char *codes[] = {
+        "ai.model", "ai.version", "ai.load", "ai.unload", "ai.inference", "ai.training",
+        "ai.finetune", "ai.dataset", "ai.validation", "ai.bias", "ai.drift",
+        "ai.hallucination", "ai.alignment", "ai.confidence", "ai.explainability",
+        "ai.prompt", "ai.token_limit", "ai.context_overflow"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_underflow_int) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::UNDERFLOW_INT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Integer underflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::UNDERFLOW_INT);
+// UI / UX error code tests
+FOSSIL_TEST(cpp_test_error_code_ui) {
+    const char *codes[] = {
+        "ui.render", "ui.layout", "ui.paint", "ui.refresh", "ui.input", "ui.focus",
+        "ui.gesture", "ui.accessibility", "ui.localization", "ui.theme", "ui.font",
+        "ui.image"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_overflow_float) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::OVERFLOW_FLOAT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Float overflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::OVERFLOW_FLOAT);
+// LEGAL / POLICY error code tests
+FOSSIL_TEST(cpp_test_error_code_policy) {
+    const char *codes[] = {
+        "policy.violation", "policy.denied", "policy.expired", "policy.restricted",
+        "license.invalid", "license.expired", "license.restricted", "privacy.violation",
+        "privacy.redaction", "compliance.failure", "audit.failure"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_underflow_float) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::UNDERFLOW_FLOAT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Float underflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::UNDERFLOW_FLOAT);
+// Fallback / meta error code tests
+FOSSIL_TEST(cpp_test_error_code_meta) {
+    const char *codes[] = {
+        "meta.unreachable", "meta.assumption", "meta.placeholder", "meta.future"
+    };
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        int id = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(id >= 0);
+        const char *msg = fossil::io::Error::what(codes[i]);
+        ASSUME_ITS_TRUE(msg && strcmp(msg, "unknown") != 0);
     }
 }
 
-FOSSIL_TEST(cpp_test_io_error_exception_division_by_zero) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::DIVISION_BY_ZERO);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Division by zero.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::DIVISION_BY_ZERO);
+// Test that all codes are unique and stable
+FOSSIL_TEST(cpp_test_error_code_uniqueness_and_stability) {
+    const char *codes[] = {
+        "system.ok", "io.read", "memory.alloc", "cpu.div_zero", "math.nan", "parse.syntax",
+        "type.mismatch", "format.invalid", "data.corrupt", "fs.not_found", "process.spawn",
+        "thread.create", "resource.exhausted", "time.timeout", "config.missing",
+        "api.invalid_call", "protocol.invalid", "network.unreachable", "security.violation",
+        "database.connect", "ai.model", "ui.render", "log.write", "build.compile",
+        "user.input", "policy.violation", "meta.unreachable"
+    };
+    int ids[sizeof(codes)/sizeof(*codes)];
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        ids[i] = fossil::io::Error::code(codes[i]);
+        ASSUME_ITS_TRUE(ids[i] >= 0);
     }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_invalid_cast) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::INVALID_CAST);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Invalid type cast.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::INVALID_CAST);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_out_of_memory) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::OUT_OF_MEMORY);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Out of memory.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::OUT_OF_MEMORY);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_memory_corruption) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::MEMORY_CORRUPTION);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Memory corruption detected.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::MEMORY_CORRUPTION);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_buffer_overflow) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::BUFFER_OVERFLOW);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Buffer overflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::BUFFER_OVERFLOW);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_buffer_underflow) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::BUFFER_UNDERFLOW);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Buffer underflow.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::BUFFER_UNDERFLOW);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_file_not_found) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::FILE_NOT_FOUND);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("File not found.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::FILE_NOT_FOUND);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_permission_denied) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::PERMISSION_DENIED);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Permission denied.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::PERMISSION_DENIED);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_network_failure) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::NETWORK_FAILURE);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Network failure.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::NETWORK_FAILURE);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_timeout) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::TIMEOUT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Network timeout.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::TIMEOUT);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_unknown_host) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::UNKNOWN_HOST);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Unknown host.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::UNKNOWN_HOST);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_connection_refused) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::CONNECTION_REFUSED);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Connection refused.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::CONNECTION_REFUSED);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_sql_injection) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::SQL_INJECTION);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("SQL injection attempt detected.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::SQL_INJECTION);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_xss_attack) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::XSS_ATTACK);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Cross-site scripting attack detected.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::XSS_ATTACK);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_csrf_attack) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::CSRF_ATTACK);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Cross-site request forgery attack detected.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::CSRF_ATTACK);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_user_abort) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::USER_ABORT);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("User aborted operation.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::USER_ABORT);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_database_connection_failed) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::DATABASE_CONNECTION_FAILED);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Database connection failed.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::DATABASE_CONNECTION_FAILED);
-    }
-}
-
-FOSSIL_TEST(cpp_test_io_error_exception_serialization_failed) {
-    try {
-        throw fossil::io::Error(fossil::io::ErrorCode::SERIALIZATION_FAILED);
-    } catch (const fossil::io::Error& e) {
-        ASSUME_ITS_EQUAL_CSTR("Serialization failed.", e.what());
-        ASSUME_ITS_EQUAL_I32(e.code(), fossil::io::ErrorCode::SERIALIZATION_FAILED);
+    for (size_t i = 0; i < sizeof(codes)/sizeof(*codes); ++i) {
+        for (size_t j = i + 1; j < sizeof(codes)/sizeof(*codes); ++j) {
+            ASSUME_ITS_TRUE(ids[i] != ids[j]);
+        }
     }
 }
 
@@ -493,69 +291,20 @@ FOSSIL_TEST(cpp_test_io_error_exception_serialization_failed) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_error_tests) {
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_no_error);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_CNULL_pointer);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_invalid_argument);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_type_mismatch);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_invalid_operation);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_unknown);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_custom);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_internal);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_unknown_error_code);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_overflow_int);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_underflow_int);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_overflow_float);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_underflow_float);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_division_by_zero);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_invalid_cast);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_out_of_memory);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_memory_corruption);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_buffer_overflow);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_buffer_underflow);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_file_not_found);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_permission_denied);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_network_failure);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_timeout);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_unknown_host);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_connection_refused);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_sql_injection);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_xss_attack);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_csrf_attack);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_user_abort);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_database_connection_failed);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_what_serialization_failed);
-
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_no_error);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_CNULL_pointer);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_invalid_argument);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_type_mismatch);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_invalid_operation);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_unknown);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_custom);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_internal);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_unknown_error_code);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_overflow_int);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_underflow_int);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_overflow_float);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_underflow_float);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_division_by_zero);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_invalid_cast);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_out_of_memory);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_memory_corruption);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_buffer_overflow);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_buffer_underflow);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_file_not_found);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_permission_denied);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_network_failure);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_timeout);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_unknown_host);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_connection_refused);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_sql_injection);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_xss_attack);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_csrf_attack);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_user_abort);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_database_connection_failed);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_io_error_exception_serialization_failed);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_system_meta);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_io);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_memory);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_cpu);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_math);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_fs);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_network);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_security);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_database);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_ai);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_ui);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_policy);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_meta);
+    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_uniqueness_and_stability);
 
     FOSSIL_TEST_REGISTER(cpp_error_suite);
 }
