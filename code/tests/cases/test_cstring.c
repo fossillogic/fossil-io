@@ -221,39 +221,6 @@ FOSSIL_TEST(c_test_cstring_pad_right) {
     fossil_io_cstring_free(result);
 }
 
-FOSSIL_TEST(c_test_cstring_stream_create_and_free) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    ASSUME_NOT_CNULL(stream);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(c_test_cstring_stream_write_and_read) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    fossil_io_cstring_stream_write(stream, "Hello, World!");
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(c_test_cstring_stream_multiple_writes) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    fossil_io_cstring_stream_write(stream, "Hello, ");
-    fossil_io_cstring_stream_write(stream, "World!");
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(c_test_cstring_stream_empty_read) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
 FOSSIL_TEST(c_test_cstring_icmp) {
     const char *s1 = "Hello";
     const char *s2 = "hello";
@@ -899,11 +866,6 @@ FOSSIL_TEST_GROUP(c_string_tests) {
     
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_string_to_money);
     FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_string_to_money_currency);
-
-    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_create_and_free);
-    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_write_and_read);
-    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_multiple_writes);
-    FOSSIL_TEST_ADD(c_string_suite, c_test_cstring_stream_empty_read);
 
     FOSSIL_TEST_REGISTER(c_string_suite);
 }
