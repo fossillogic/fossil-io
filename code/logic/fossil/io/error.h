@@ -29,403 +29,263 @@
 extern "C" {
 #endif
 
-/*
-    ===============================================================================
-     Fossil IO — Unified Comedy Error Code Catalogue
-    ===============================================================================
-    
-    OVERVIEW
-    --------
-    This table defines the complete set of symbolic error identifiers used by
-    Fossil IO and all dependent subsystems. Each entry is a stable, human-readable
-    string of the form:
-    
-        <category>.<subcode>
-    
-    Examples:
-        "system.ok"
-        "io.read"
-        "memory.alloc"
-        "network.timeout"
-    
-    These strings serve as the *canonical identity* of an error condition.
-    They are not localized, abbreviated, or user-facing by default. Instead,
-    they act as durable keys for:
-    
-      - internal dispatch and switch-case logic
-      - structured logging and diagnostics
-      - error classification (retryable, fatal, user-visible, etc.)
-      - mapping to human-readable messages
-      - ABI-stable error interchange across modules and plugins
-    
-    
-    STABILITY GUARANTEES
-    -------------------
-    • Entries in this table MUST NEVER be reordered or removed once released.
-    • New error codes may be appended at any time.
-    • String contents are ABI-stable identifiers; changing spelling or semantics
-      is considered a breaking change.
-    • Consumers must not rely on array indices directly unless generated enums
-      are explicitly provided.
-    
-    
-    RELATIONSHIP TO fossil_io_what()
-    --------------------------------
-    The function:
-    
-        const char *fossil_io_what(const char *error_code);
-    
-    accepts one of the symbolic strings defined in this table and returns a
-    descriptive message suitable for logging or diagnostics.
-    
-    Important notes:
-    • fossil_io_what() does NOT return the symbolic name itself.
-    • It returns a *human-readable explanation* of the error condition.
-    • The returned string is a constant literal and must not be freed.
-    • Unknown or unrecognized codes return a generic fallback message.
-    
-    Typical usage:
-    
-        fossil_io_error("[%s] %s",
-            error_code,
-            fossil_io_what(error_code)
-        );
-    
-    
-    MULTIPLE RESPONSES PER ERROR CODE (RANDOMIZED MESSAGES)
-    -------------------------------------------------------
-    Each symbolic error code MAY map to multiple human-readable message variants.
-    
-    For example, the error code:
-    
-        "io.read"
-    
-    may internally map to a set of messages such as:
-        1. "I/O read operation failed"
-        2. "Failed while reading from input source"
-        3. "Unable to read requested data"
-        4. "Read operation encountered an error"
-        5. "Input stream read failed"
-    
-    The implementation of fossil_io_what() MAY select one of these variants,
-    optionally using:
-      - a deterministic hash of the error code
-      - a pseudo-random generator
-      - a rotating index
-      - a build-time or runtime policy
-    
-    This allows:
-    • reduced log monotony
-    • improved readability during debugging
-    • richer diagnostics without changing error identity
-    
-    IMPORTANT:
-    The symbolic error code itself remains the *single source of truth*.
-    Randomized messages must never alter control flow or semantics.
-    
-    
-    INTERNAL DISPATCH AND SWITCH-CASE LOGIC
-    --------------------------------------
-    Although error codes are strings, they are intentionally structured to allow
-    efficient internal classification.
-    
-    Common patterns include:
-    • prefix matching (e.g., "io.", "memory.", "network.")
-    • category extraction for switch-case logic
-    • mapping to severity or retry policies
-    
-    Example:
-    
-        if (strncmp(code, "memory.", 7) == 0) {
-            // treat as fatal or near-fatal
-        }
-    
-    This avoids large enums while retaining clarity and extensibility.
-    
-    
-    RELATIONSHIP TO fossil_io_error()
-    ---------------------------------
-    The function:
-    
-        void fossil_io_error(const char *format, ...);
-    
-    is a formatting and reporting mechanism only. It does NOT define error identity.
-    
-    Recommended pattern:
-    
-        fossil_io_error(
-            "[%s] %s",
-            error_code,
-            fossil_io_what(error_code)
-        );
-    
-    The symbolic error code should always be included in logs to ensure:
-    • machine readability
-    • postmortem analysis
-    • stable filtering and aggregation
-    
-    
-    EXTENSIBILITY NOTES
-    -------------------
-    This table is designed to scale indefinitely.
-    
-    Future extensions may include:
-    • auto-generated enums mirroring this table
-    • bitmask traits (fatal, retryable, transient, user-visible)
-    • localization layers keyed off symbolic codes
-    • wire-format compression or hashing
-    • structured error objects carrying both code and context
-    
-    None of these extensions require changing the existing error codes.
-    
-    
-    SUMMARY
-    -------
-    • Symbolic error codes are stable identifiers, not messages
-    • fossil_io_what() maps codes → descriptive text
-    • Multiple randomized messages per code are supported and encouraged
-    • Control flow must depend on the code, not the message
-    • This table is the authoritative registry for all Fossil IO errors
-    
-    ===============================================================================
-*/
-
-/*
-    ===============================================================================
-     Fossil IO Error System — Usage Options & Best Practices
-    ===============================================================================
-    
-    This comment documents *all supported usage patterns* for the Fossil IO error
-    code system, including when to rely on high-level categories versus specific
-    error code identifiers, and how to integrate error handling cleanly across
-    layers.
-    
-    ------------------------------------------------------------------------------
-     1. ERROR CODE STRUCTURE
-    ------------------------------------------------------------------------------
-    Each error condition is identified by a stable string of the form:
-    
-        <category>.<subcode>
-    
-    Examples:
-        "io.read"
-        "memory.alloc"
-        "network.timeout"
-        "parse.syntax"
-    
-    The category expresses the *origin domain* of the error.
-    The subcode expresses the *specific failure condition*.
-    
-    These identifiers are ABI-stable and must be treated as canonical keys.
-    
-    
-    ------------------------------------------------------------------------------
-     2. CATEGORY-LEVEL USAGE (COARSE-GRAINED)
-    ------------------------------------------------------------------------------
-    Category-level handling is appropriate when:
-    
-    • The response is the same for all errors in a domain
-    • You are implementing policy or recovery logic
-    • You want to avoid brittle dependency on specific subcodes
-    • You are writing infrastructure, not application logic
-    
-    Typical use cases:
-    • Determining retry behavior
-    • Determining severity (fatal vs recoverable)
-    • Selecting logging channels
-    • Enforcing security or audit policies
-    • Resource cleanup decisions
-    
-    Examples:
-    • "memory.*" → treat as fatal or near-fatal
-    • "network.*" → possibly retryable
-    • "user.*" → user-visible error
-    • "security.*" → audit + deny
-    • "system.*" → escalate or abort
-    
-    Best practice:
-        Use category matching (e.g., prefix checks) in core control flow.
-    
-    
-    ------------------------------------------------------------------------------
-     3. FULL ERROR CODE USAGE (FINE-GRAINED)
-    ------------------------------------------------------------------------------
-    Full error code identifiers should be used when:
-    
-    • You need to distinguish between closely related failures
-    • The handling differs materially between subcases
-    • You are emitting diagnostics or logs
-    • You are writing tests or assertions
-    • You are communicating errors across module boundaries
-    
-    Typical use cases:
-    • Logging and telemetry
-    • Error message selection (via fossil_io_what)
-    • API error reporting
-    • Debugging and postmortem analysis
-    • Protocol or wire-level error reporting
-    
-    Examples:
-    • "io.read" vs "io.timeout"
-    • "memory.alloc" vs "memory.use_after_free"
-    • "database.deadlock" vs "database.timeout"
-    
-    Best practice:
-        Always log or report the *full* error code string.
-    
-    
-    ------------------------------------------------------------------------------
-     4. HUMAN-READABLE MESSAGES
-    ------------------------------------------------------------------------------
-    Human-readable error messages are derived from error codes, never the reverse.
-    
-    Key rules:
-    • Messages are descriptive, not authoritative
-    • Messages may change without breaking ABI
-    • Messages may be randomized or rotated
-    • Control flow must never depend on message text
-    
-    fossil_io_what() maps:
-        error code → descriptive message
-    
-    Best practice:
-        Treat messages as diagnostics only.
-    
-    
-    ------------------------------------------------------------------------------
-     5. MULTIPLE MESSAGE VARIANTS PER ERROR CODE
-    ------------------------------------------------------------------------------
-    Each error code may map to multiple descriptive messages.
-    
-    Allowed strategies:
-    • Fixed message
-    • Rotating messages
-    • Pseudo-random selection
-    • Hash-based deterministic selection
-    
-    Purpose:
-    • Reduce log fatigue
-    • Improve readability
-    • Preserve human attention
-    
-    Restrictions:
-    • Message variation must not alter semantics
-    • The error code remains the single source of truth
-    
-    
-    ------------------------------------------------------------------------------
-     6. INTERNAL DISPATCH STRATEGY
-    ------------------------------------------------------------------------------
-    Recommended hierarchy for decision-making:
-    
-        1. Category
-        2. Error code
-        3. Contextual data (if available)
-        4. Message (never)
-    
-    Example:
-        • Category → retry or abort
-        • Error code → specific recovery path
-        • Message → logging only
-    
-    Best practice:
-        Use categories for policy, codes for precision.
-    
-    
-    ------------------------------------------------------------------------------
-     7. ERROR PROPAGATION ACROSS LAYERS
-    ------------------------------------------------------------------------------
-    When propagating errors upward:
-    
-    • Preserve the original error code whenever possible
-    • Avoid collapsing distinct errors into generic ones
-    • Do not stringify errors prematurely
-    • Do not translate codes unless crossing an abstraction boundary
-    
-    If translation is required:
-    • Map to the closest semantic equivalent
-    • Document the translation explicitly
-    
-    
-    ------------------------------------------------------------------------------
-     8. PUBLIC API VS INTERNAL ERRORS
-    ------------------------------------------------------------------------------
-    Public-facing APIs:
-    • May expose symbolic error codes
-    • Should not expose internal-only subcodes
-    • Should document the possible codes
-    
-    Internal APIs:
-    • May use the full catalog freely
-    • May introduce internal-only codes (prefixed appropriately)
-    
-    Best practice:
-        Maintain a clear boundary between public and internal error domains.
-    
-    
-    ------------------------------------------------------------------------------
-     9. LOGGING AND TELEMETRY
-    ------------------------------------------------------------------------------
-    Required fields in logs:
-    • Full error code string
-    • Human-readable message
-    • Contextual metadata (file, line, resource, etc.)
-    
-    Optional fields:
-    • Category
-    • Retry count
-    • Severity
-    
-    Best practice:
-        Error codes should be indexable and filterable in logs.
-    
-    
-    ------------------------------------------------------------------------------
-    10. TESTING AND ASSERTIONS
-    ------------------------------------------------------------------------------
-    Use error codes in tests when:
-    
-    • Verifying specific failure modes
-    • Ensuring correct error propagation
-    • Preventing regression in error semantics
-    
-    Avoid testing against:
-    • Message text
-    • Message ordering
-    • Randomized message selection
-    
-    
-    ------------------------------------------------------------------------------
-    11. WHAT NOT TO DO (ANTI-PATTERNS)
-    ------------------------------------------------------------------------------
-    ✗ Do not branch logic on message strings
-    ✗ Do not invent ad-hoc error strings
-    ✗ Do not overload one error code with unrelated meanings
-    ✗ Do not remove or rename existing codes
-    ✗ Do not expose raw internal messages to users
-    
-    
-    ------------------------------------------------------------------------------
-    12. LONG-TERM MAINTENANCE GUIDELINES
-    ------------------------------------------------------------------------------
-    • Append new error codes; never reorder
-    • Prefer adding a new subcode over changing semantics
-    • Keep categories broad and stable
-    • Let subcodes evolve
-    • Treat error codes as part of the public contract
-    
-    
-    ------------------------------------------------------------------------------
-    SUMMARY
-    ------------------------------------------------------------------------------
-    • Categories are for policy and control flow
-    • Error code IDs are for precision and diagnostics
-    • Messages are for humans, not machines
-    • Stability beats cleverness
-    • This system is designed to last for decades
-    
-    ===============================================================================
-*/
+/**
+ * ==============================================================================
+ * Fossil IO Error Code System — Internal Logic, Error Code Catalogue, and Usage
+ * ==============================================================================
+ *
+ * OVERVIEW
+ * --------
+ * The Fossil IO error code system provides a unified, extensible, and ABI-stable
+ * catalogue of symbolic error identifiers for all Fossil IO and dependent subsystems.
+ * Each error condition is represented by a canonical string of the form:
+ *
+ *     <category>.<subcode>
+ *
+ * Example error codes:
+ *     "system.ok"
+ *     "io.read"
+ *     "memory.alloc"
+ *     "network.timeout"
+ *
+ * These symbolic codes are the authoritative identity for error conditions.
+ * They are used for:
+ *   - Internal dispatch and switch-case logic
+ *   - Structured logging and diagnostics
+ *   - Error classification (retryable, fatal, user-visible, etc.)
+ *   - Mapping to human-readable messages
+ *   - ABI-stable error interchange across modules and plugins
+ *
+ * ==============================================================================
+ * INTERNAL LOGIC
+ * ==============================================================================
+ *
+ * 1. Error Code Table
+ * -------------------
+ * All valid error codes are listed in a single, ordered array:
+ *
+ *   static const char *fossil_error_codes[] = { ... };
+ *
+ * Each entry is a stable string identifier. The array is never reordered or
+ * truncated; new codes are appended only.
+ *
+ * 2. Error Code Lookup
+ * --------------------
+ * - fossil_io_code(const char *error_code):
+ *     Returns the integer index of the error code in fossil_error_codes[], or -1
+ *     if not found. This index is stable and can be used for switch-case logic,
+ *     compact storage, or serialization.
+ *
+ * - fossil_io_what(const char *error_code):
+ *     Returns a human-readable message describing the error condition. Each code
+ *     maps to a set of message variants (see below). The returned string is a
+ *     constant literal and must not be freed.
+ *
+ * 3. Message Variants
+ * -------------------
+ * Each error code may have multiple descriptive message variants. The implementation
+ * may select a variant deterministically or randomly to reduce log monotony and
+ * improve diagnostics. The symbolic error code remains the single source of truth.
+ *
+ * 4. Error Reporting
+ * ------------------
+ * - fossil_io_error(const char *format, ...):
+ *     Formats and prints an error message to stderr. Recommended usage is to
+ *     include both the symbolic code and the human-readable message:
+ *
+ *         fossil_io_error("[%s] %s", error_code, fossil_io_what(error_code));
+ *
+ * ==============================================================================
+ * ERROR CODE CATALOGUE
+ * ==============================================================================
+ *
+ * The following error code strings are available. Each is stable and should be
+ * used as the canonical identifier for the corresponding error condition.
+ *
+ * SYSTEM / META
+ *   "system.ok", "system.unknown", "system.internal", "system.fatal", "system.panic",
+ *   "system.abort", "system.assertion", "system.invariant", "system.contract",
+ *   "system.recoverable", "system.unrecoverable", "system.transient", "system.permanent",
+ *   "system.unsupported", "system.unimplemented", "system.deprecated", "system.experimental",
+ *   "system.misconfigured", "system.corrupt", "system.bootstrap", "system.shutdown",
+ *   "system.restart", "system.upgrade", "system.downgrade", "system.permission",
+ *   "system.capability",
+ *
+ * IO
+ *   "io.read", "io.write", "io.seek", "io.flush", "io.sync", "io.fsync", "io.truncate",
+ *   "io.append", "io.scatter", "io.gather", "io.closed", "io.eof", "io.partial",
+ *   "io.short", "io.blocked", "io.nonblocking", "io.timeout", "io.interrupt", "io.retry",
+ *   "io.corrupt", "io.checksum", "io.buffer", "io.alignment", "io.direct", "io.stream",
+ *   "io.pipe",
+ *
+ * MEMORY
+ *   "memory.alloc", "memory.realloc", "memory.free", "memory.map", "memory.unmap",
+ *   "memory.remap", "memory.lock", "memory.unlock", "memory.protect", "memory.unprotect",
+ *   "memory.leak", "memory.overrun", "memory.underrun", "memory.use_after_free",
+ *   "memory.double_free", "memory.fragmented", "memory.exhausted", "memory.alignment",
+ *   "memory.page_fault", "memory.segmentation", "memory.guard", "memory.poison",
+ *   "memory.swap", "memory.numa",
+ *
+ * CPU / EXECUTION
+ *   "cpu.illegal_instruction", "cpu.privilege_violation", "cpu.div_zero", "cpu.overflow",
+ *   "cpu.underflow", "cpu.fpu", "cpu.simd", "cpu.cache", "cpu.pipeline", "cpu.affinity",
+ *   "cpu.throttle",
+ *
+ * MATH / NUMERIC
+ *   "math.overflow", "math.underflow", "math.div_zero", "math.nan", "math.infinity",
+ *   "math.domain", "math.range", "math.precision", "math.rounding", "math.convergence",
+ *   "math.divergence", "math.iteration", "math.singularity", "math.condition",
+ *   "math.approximation",
+ *
+ * PARSING / LEXING / GRAMMAR
+ *   "parse.invalid", "parse.syntax", "parse.semantic", "parse.context", "parse.state",
+ *   "parse.encoding", "parse.unexpected_token", "parse.missing_token", "parse.extra_token",
+ *   "parse.ambiguous", "parse.incomplete", "parse.recursion", "parse.depth", "parse.stack",
+ *   "parse.overflow", "lexer.invalid", "lexer.token", "lexer.state", "lexer.encoding",
+ *   "lexer.buffer", "lexer.escape",
+ *
+ * TYPE SYSTEM
+ *   "type.invalid", "type.mismatch", "type.cast", "type.coercion", "type.size",
+ *   "type.range", "type.signedness", "type.alignment", "type.qualifier", "type.generic",
+ *   "type.polymorphic", "type.variance",
+ *
+ * FORMAT / ENCODING
+ *   "format.invalid", "format.unsupported", "format.truncated", "format.version",
+ *   "format.magic", "format.header", "format.footer", "format.padding", "format.layout",
+ *   "encoding.invalid", "encoding.unsupported", "encoding.incomplete", "encoding.locale",
+ *   "encoding.endianness", "encoding.normalization", "encoding.compression",
+ *   "encoding.decompression",
+ *
+ * DATA / CONTENT
+ *   "data.invalid", "data.corrupt", "data.missing", "data.extra", "data.duplicate",
+ *   "data.inconsistent", "data.constraint", "data.integrity", "data.reference",
+ *   "data.circular", "data.order", "data.range", "data.null", "data.schema",
+ *   "data.version", "data.migration",
+ *
+ * FILESYSTEM / STORAGE
+ *   "fs.not_found", "fs.exists", "fs.permission", "fs.read_only", "fs.locked",
+ *   "fs.busy", "fs.mount", "fs.unmount", "fs.remount", "fs.quota", "fs.corrupt",
+ *   "fs.journal", "fs.snapshot", "fs.backup", "fs.restore", "fs.path", "fs.symlink",
+ *   "fs.hardlink", "fs.inode", "fs.filesystem",
+ *
+ * PROCESS / SIGNAL
+ *   "process.spawn", "process.exec", "process.exit", "process.crash", "process.signal",
+ *   "process.kill", "process.zombie", "process.orphan", "process.permission",
+ *   "process.limit", "process.priority", "process.affinity",
+ *
+ * THREAD / CONCURRENCY
+ *   "thread.create", "thread.join", "thread.detach", "thread.cancel", "thread.signal",
+ *   "concurrency.race", "concurrency.deadlock", "concurrency.livelock",
+ *   "concurrency.starvation", "concurrency.atomicity", "concurrency.lock",
+ *   "concurrency.unlock", "concurrency.condition", "concurrency.barrier",
+ *   "concurrency.scheduler", "concurrency.preemption",
+ *
+ * RESOURCE
+ *   "resource.exhausted", "resource.leak", "resource.locked", "resource.starvation",
+ *   "resource.handle", "resource.descriptor", "resource.pool", "resource.cache",
+ *   "resource.bandwidth", "resource.quota", "resource.limit",
+ *
+ * TIME / CLOCK
+ *   "time.timeout", "time.expired", "time.schedule", "time.clock", "time.drift",
+ *   "time.skew", "time.monotonic", "time.realtime", "time.resolution", "time.wrap",
+ *
+ * CONFIG / ENVIRONMENT
+ *   "config.missing", "config.invalid", "config.conflict", "config.version",
+ *   "config.env", "config.profile", "config.permission", "config.schema",
+ *   "config.override", "config.default", "config.locked",
+ *
+ * API / ABI
+ *   "api.invalid_call", "api.contract", "api.precondition", "api.postcondition",
+ *   "api.version", "api.mismatch", "api.deprecated", "api.timeout", "api.limit",
+ *   "api.state", "api.sequence", "api.serialization", "api.deserialization",
+ *   "abi.mismatch", "abi.incompatible",
+ *
+ * PROTOCOL / IPC
+ *   "protocol.invalid", "protocol.version", "protocol.handshake", "protocol.negotiation",
+ *   "protocol.sequence", "protocol.frame", "protocol.fragment", "protocol.checksum",
+ *   "protocol.timeout", "protocol.reset", "protocol.flow_control",
+ *
+ * NETWORK
+ *   "network.unreachable", "network.timeout", "network.reset", "network.refused",
+ *   "network.aborted", "network.dns", "network.routing", "network.latency",
+ *   "network.bandwidth", "network.congestion", "network.proxy", "network.firewall",
+ *   "network.nat", "network.session", "network.stream", "network.packet",
+ *
+ * SECURITY / CRYPTO
+ *   "security.violation", "security.auth_failed", "security.authz_failed",
+ *   "security.identity", "security.credential", "security.token", "security.session",
+ *   "security.encryption", "security.decryption", "security.certificate", "security.key",
+ *   "security.keystore", "security.revocation", "security.sandbox", "security.trust",
+ *   "security.integrity", "security.tamper", "security.replay",
+ *
+ * DATABASE / STORAGE ENGINE
+ *   "database.connect", "database.disconnect", "database.query", "database.prepare",
+ *   "database.execute", "database.transaction", "database.commit", "database.rollback",
+ *   "database.deadlock", "database.lock", "database.constraint", "database.schema",
+ *   "database.migration", "database.index", "database.cursor", "database.replication",
+ *   "database.consistency", "database.timeout",
+ *
+ * AI / ML
+ *   "ai.model", "ai.version", "ai.load", "ai.unload", "ai.inference", "ai.training",
+ *   "ai.finetune", "ai.dataset", "ai.validation", "ai.bias", "ai.drift",
+ *   "ai.hallucination", "ai.alignment", "ai.confidence", "ai.explainability",
+ *   "ai.prompt", "ai.token_limit", "ai.context_overflow",
+ *
+ * UI / UX
+ *   "ui.render", "ui.layout", "ui.paint", "ui.refresh", "ui.input", "ui.focus",
+ *   "ui.gesture", "ui.accessibility", "ui.localization", "ui.theme", "ui.font",
+ *   "ui.image",
+ *
+ * OBSERVABILITY / OPS
+ *   "log.write", "log.read", "log.format", "log.rotate", "log.truncate",
+ *   "metrics.collect", "metrics.aggregate", "metrics.export", "trace.emit",
+ *   "trace.flush", "trace.sample", "monitor.unavailable", "diagnostics.collect",
+ *   "diagnostics.dump", "profile.sample",
+ *
+ * BUILD / DEPLOY
+ *   "build.configure", "build.compile", "build.link", "build.package",
+ *   "deploy.install", "deploy.remove", "deploy.upgrade", "deploy.rollback",
+ *   "deploy.migration", "deploy.orchestration", "deploy.container", "deploy.image",
+ *
+ * USER
+ *   "user.input", "user.permission", "user.quota", "user.cancelled", "user.timeout",
+ *   "user.conflict", "user.invalid_state", "user.rate_limit",
+ *
+ * LEGAL / POLICY
+ *   "policy.violation", "policy.denied", "policy.expired", "policy.restricted",
+ *   "license.invalid", "license.expired", "license.restricted", "privacy.violation",
+ *   "privacy.redaction", "compliance.failure", "audit.failure",
+ *
+ * FALLBACK / GUARANTEES
+ *   "meta.unreachable", "meta.assumption", "meta.placeholder", "meta.future"
+ *
+ * ==============================================================================
+ * BEST PRACTICES FOR ERROR CODE USAGE
+ * ==============================================================================
+ *
+ * 1. Use category-level codes (e.g., "memory.*", "network.*") for broad policy,
+ *    retry, or severity logic.
+ * 2. Use full error codes (e.g., "io.read", "memory.alloc") for precise diagnostics,
+ *    logging, and error propagation.
+ * 3. Always log both the symbolic error code and the human-readable message.
+ * 4. Never branch control flow on message strings; always use the symbolic code.
+ * 5. Never remove or rename existing codes; only append new codes.
+ * 6. Do not expose internal-only codes in public APIs unless documented.
+ * 7. When propagating errors, preserve the original code whenever possible.
+ * 8. Use fossil_io_code() for efficient switch-case or serialization.
+ * 9. Use fossil_io_what() for user-facing or log messages, not for control flow.
+ * 10. Treat error codes as part of the public contract and maintain stability.
+ *
+ * ==============================================================================
+ * EXTENSIBILITY
+ * ==============================================================================
+ * - New error codes may be appended at any time.
+ * - Future extensions may include enums, bitmask traits, localization, or structured
+ *   error objects, all keyed off the symbolic code.
+ * - The symbolic code is the single source of truth for error identity.
+ *
+ * ==============================================================================
+ */
 
 /**
  * This function is used to report an error message with a formatted string.
@@ -476,7 +336,7 @@ namespace fossil {
         class Error final {
         public:
             Error() = delete; // static-only utility class
-        
+
             /**
              * Report an error using printf-style formatting.
              */
@@ -486,7 +346,7 @@ namespace fossil {
                 fossil_io_error(format, args);
                 va_end(args);
             }
-        
+
             /**
              * Retrieve the symbolic name for an error code.
              *
@@ -495,12 +355,30 @@ namespace fossil {
             static const char *what(const char *error_code) noexcept {
                 return fossil_io_what(error_code);
             }
-        
+
             /**
              * Convenience overload for std::string.
              */
             static const char *what(const std::string &error_code) noexcept {
                 return fossil_io_what(error_code.c_str());
+            }
+
+            /**
+             * Retrieve the numeric error code ID for a symbolic error code.
+             *
+             * @param error_code The symbolic error code string (e.g., "io.read").
+             * @return A non-negative integer error ID on success,
+             *         or -1 if the error code is NULL or unrecognized.
+             */
+            static int code(const char *error_code) noexcept {
+                return fossil_io_code(error_code);
+            }
+
+            /**
+             * Convenience overload for std::string.
+             */
+            static int code(const std::string &error_code) noexcept {
+                return fossil_io_code(error_code.c_str());
             }
         };
     

@@ -551,6 +551,10 @@ static const char *fossil_error_codes[] = {
     NULL
 };
 
+enum {
+    FOSSIL_IO_BUFFER_SIZE = 1024
+};
+
 // Function to print sanitized error messages
 void fossil_io_error(const char *format, ...) {
     va_list args;
