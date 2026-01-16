@@ -22,8 +22,8 @@
  * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#ifndef FOSSIL_IO_CIPHER_H
-#define FOSSIL_IO_CIPHER_H
+#ifndef FOSSIL_IO_REGEX_H
+#define FOSSIL_IO_REGEX_H
 
 #ifdef __cplusplus
 extern "C" {
