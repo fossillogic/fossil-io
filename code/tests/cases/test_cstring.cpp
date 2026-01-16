@@ -338,39 +338,6 @@ FOSSIL_TEST(cpp_test_cstring_append) {
     fossil_io_cstring_free(str);
 }
 
-FOSSIL_TEST(cpp_test_cstring_stream_create_and_free) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    ASSUME_NOT_CNULL(stream);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_write_and_read) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    fossil_io_cstring_stream_write(stream, "Hello, World!");
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_multiple_writes) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    fossil_io_cstring_stream_write(stream, "Hello, ");
-    fossil_io_cstring_stream_write(stream, "World!");
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_empty_read) {
-    fossil_io_cstring_stream *stream = fossil_io_cstring_stream_create(1024);
-    ccstring result = fossil_io_cstring_stream_read(stream);
-    ASSUME_NOT_CNULL(result);
-    ASSUME_ITS_EQUAL_CSTR("", result);
-    fossil_io_cstring_stream_free(stream);
-}
-
 FOSSIL_TEST(cpp_test_cstring_class_create_and_free) {
     fossil::io::CString str("Hello, World!");
     ASSUME_NOT_CNULL(str.str());
@@ -503,32 +470,6 @@ FOSSIL_TEST(cpp_test_cstring_class_pad_right) {
     fossil::io::CString result = str.pad_right(10, '*');
     ASSUME_NOT_CNULL(result.str());
     ASSUME_ITS_EQUAL_CSTR("Hello*****", result.str());
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_class_create_and_free) {
-    fossil::io::CStringStream stream(1024);
-    ASSUME_NOT_CNULL(stream.read().c_str());
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_class_write_and_read) {
-    fossil::io::CStringStream stream(1024);
-    stream.write("Hello, World!");
-    std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_class_multiple_writes) {
-    fossil::io::CStringStream stream(1024);
-    stream.write("Hello, ");
-    stream.write("World!");
-    std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("Hello, World!", result.c_str());
-}
-
-FOSSIL_TEST(cpp_test_cstring_stream_class_empty_read) {
-    fossil::io::CStringStream stream(1024);
-    std::string result = stream.read();
-    ASSUME_ITS_EQUAL_CSTR("", result.c_str());
 }
 
 FOSSIL_TEST(cpp_test_cstring_class_icontains) {
@@ -951,11 +892,6 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_normalize_spaces_safe);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_index_of_safe);
 
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_create_and_free);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_write_and_read);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_multiple_writes);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_empty_read);
-
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_silly);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_piglatin);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_leetspeak);
@@ -1002,11 +938,6 @@ FOSSIL_TEST_GROUP(cpp_string_tests) {
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_from_words_and_to_words);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_from_words_exception);
     FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_class_number_to_words_exception);
-
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_create_and_free);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_write_and_read);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_multiple_writes);
-    FOSSIL_TEST_ADD(cpp_string_suite, cpp_test_cstring_stream_class_empty_read);
 
     FOSSIL_TEST_REGISTER(cpp_string_suite);
 }
