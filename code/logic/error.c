@@ -1047,8 +1047,8 @@ const char *fossil_io_what(const char *error_code) {
     }
 
     if (error_index >= 0) {
-        // Pick a variant (for example, always 0, or random if you want)
-        int variant = 0;
+        // Pick a random variant (0-4)
+        int variant = rand() % 5;
         return fossil_error_messages[error_index][variant];
     } else {
         return "Unknown error code.";
