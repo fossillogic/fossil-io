@@ -45,6 +45,10 @@ typedef struct fossil_io_regex_match fossil_io_regex_match_t;
 /**
  * Compile a regular expression pattern into a regex object.
  *
+ * This function supports option string IDs such as "icase", "multiline", "dotall",
+ * "ungreedy", and "anchored" (see internal option resolution). The pattern is compiled
+ * into a simple bytecode VM supporting literals, '.', '^', and '$'.
+ *
  * @param pattern   The regular expression pattern as a null-terminated string.
  * @param options   A NULL-terminated array of option string IDs (may be NULL).
  * @param error_out Optional pointer to receive an error message string (allocated, must be freed by caller).
@@ -69,6 +73,10 @@ void fossil_io_regex_free(fossil_io_regex_t *re);
 
 /**
  * Execute a compiled regex against input text.
+ *
+ * This function works by running a simple bytecode VM over the input text,
+ * supporting options such as "icase", "multiline", "dotall", "ungreedy", and "anchored"
+ * as resolved by fossil_io_regex_resolve_options. The VM supports literals, '.', '^', and '$'.
  *
  * @param re        Pointer to compiled regex object.
  * @param text      Input text to match against.
@@ -102,6 +110,11 @@ int fossil_io_regex_group_count(const fossil_io_regex_match_t *m);
 
 /**
  * Get the string value of a specific capture group.
+ *
+ * This function works by returning a pointer to the string value of the
+ * specified capture group from the match object, or NULL if the group is
+ * not available. The returned pointer is valid as long as the match object
+ * is not freed.
  *
  * @param m     Pointer to the match object.
  * @param index Index of the capture group (0-based).
