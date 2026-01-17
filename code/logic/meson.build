@@ -6,6 +6,7 @@ add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'cpp')
 fossil_io_lib = library('fossil_io',
     files(
         'archive.c',
+        'regex.c',
         'input.c',
         'output.c',
         'error.c',
