@@ -43,9 +43,6 @@ size_t strnlen(const char *s, size_t maxlen) {
 
 #ifndef HAVE_STRNCASECMP
 int strncasecmp(const char *s1, const char *s2, size_t n) {
-    if (!s1 && !s2) return 0;
-    if (!s1) return -1;
-    if (!s2) return 1;
     for (size_t i = 0; i < n && s1[i] && s2[i]; i++) {
         int diff = tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
         if (diff != 0) return diff;
