@@ -55,13 +55,12 @@ static const struct {
 
 static fossil_rx_optmask_t fossil_io_regex_resolve_options(const char **ids) {
     fossil_rx_optmask_t mask = 0;
-    int i;
 
     if (!ids)
         return 0;
 
     for (; *ids; ids++) {
-        for (i = 0; fossil_rx_options[i].id; i++) {
+        for (int i = 0; fossil_rx_options[i].id; i++) {
             if (strcmp(*ids, fossil_rx_options[i].id) == 0) {
                 mask |= fossil_rx_options[i].mask;
                 break;
@@ -134,37 +133,43 @@ static char *fossil_rx_strdup(const char *s) {
 }
 
 /* ============================================================================
- * Minimal Compiler (Literal + . * ^ $)
+ * Enhanced Compiler (literal + . ^ $)
  * ============================================================================
- *
- * NOTE:
- * This is intentionally conservative scaffolding.
- * The instruction set and VM are fully capable of expansion.
  */
 
-static fossil_rx_inst_t *fossil_rx_compile_literal(
+static fossil_rx_inst_t *fossil_rx_compile_basic(
     const char *pattern,
     int *out_len) {
     int len = (int)strlen(pattern);
     fossil_rx_inst_t *prog;
     int pc = 0;
-    int i;
 
     prog = (fossil_rx_inst_t *)
-        calloc((size_t)len + 1, sizeof(*prog));
+        calloc((size_t)len + 2, sizeof(*prog));
 
     if (!prog)
         return NULL;
 
-    for (i = 0; i < len; i++) {
-        prog[pc].op = RX_OP_CHAR;
-        prog[pc].c  = (unsigned char)pattern[i];
-        pc++;
+    for (int i = 0; i < len; i++) {
+        char ch = pattern[i];
+
+        if (ch == '.' ) {
+            prog[pc++].op = RX_OP_ANY;
+        }
+        else if (ch == '^' && i == 0) {
+            prog[pc++].op = RX_OP_ASSERT_BEGIN;
+        }
+        else if (ch == '$' && i == len - 1) {
+            prog[pc++].op = RX_OP_ASSERT_END;
+        }
+        else {
+            prog[pc].op = RX_OP_CHAR;
+            prog[pc].c  = (unsigned char)ch;
+            pc++;
+        }
     }
 
-    prog[pc].op = RX_OP_MATCH;
-    pc++;
-
+    prog[pc++].op = RX_OP_MATCH;
     *out_len = pc;
     return prog;
 }
@@ -178,18 +183,32 @@ static int fossil_rx_vm_exec(
     const fossil_rx_inst_t *prog,
     int pc,
     const char *sp,
-    fossil_io_regex_match_t *m) {
+    fossil_io_regex_match_t *m,
+    fossil_rx_optmask_t opts) {
     for (;;) {
         const fossil_rx_inst_t *ins = &prog[pc];
 
         switch (ins->op) {
 
-        case RX_OP_CHAR:
-            if (*sp != (char)ins->c)
+        case RX_OP_CHAR: {
+            char a = *sp;
+            char b = (char)ins->c;
+
+            if (!a)
                 return 0;
+
+            if (opts & RX_OPT_ICASE) {
+                a = (char)tolower((unsigned char)a);
+                b = (char)tolower((unsigned char)b);
+            }
+
+            if (a != b)
+                return 0;
+
             sp++;
             pc++;
             break;
+        }
 
         case RX_OP_ANY:
             if (*sp == '\0')
@@ -203,7 +222,7 @@ static int fossil_rx_vm_exec(
             break;
 
         case RX_OP_SPLIT:
-            if (fossil_rx_vm_exec(prog, ins->x, sp, m))
+            if (fossil_rx_vm_exec(prog, ins->x, sp, m, opts))
                 return 1;
             pc = ins->y;
             break;
@@ -254,7 +273,7 @@ fossil_io_regex_t *fossil_io_regex_compile(
 
     re->options = fossil_io_regex_resolve_options(options);
 
-    re->prog = fossil_rx_compile_literal(pattern, &re->prog_len);
+    re->prog = fossil_rx_compile_basic(pattern, &re->prog_len);
     if (!re->prog) {
         if (error_out)
             *error_out = fossil_rx_strdup("compile failed");
@@ -278,7 +297,7 @@ int fossil_io_regex_match(
     const char *text,
     fossil_io_regex_match_t **out_match) {
     fossil_io_regex_match_t *m;
-    int rc;
+    int rc = 0;
 
     if (!re || !text)
         return -1;
@@ -289,9 +308,17 @@ int fossil_io_regex_match(
     if (!m)
         return -1;
 
-    m->start = text;
-
-    rc = fossil_rx_vm_exec(re->prog, 0, text, m);
+    if (re->options & RX_OPT_ANCHORED) {
+        m->start = text;
+        rc = fossil_rx_vm_exec(
+            re->prog, 0, text, m, re->options);
+    } else {
+        for (const char *p = text; *p && !rc; p++) {
+            m->start = p;
+            rc = fossil_rx_vm_exec(
+                re->prog, 0, p, m, re->options);
+        }
+    }
 
     if (!rc) {
         fossil_io_regex_match_free(m);
