@@ -295,6 +295,8 @@ int fossil_io_regex_match(
 
     if (!rc) {
         fossil_io_regex_match_free(m);
+        if (out_match)
+            *out_match = NULL;
         return 0;
     }
 
