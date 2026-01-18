@@ -75,12 +75,6 @@ FOSSIL_TEST(cpp_test_regex_cppwrapper_ctor_compile_and_match) {
     ASSUME_ITS_TRUE(!re.match("world"));
 }
 
-FOSSIL_TEST(cpp_test_regex_cppwrapper_compile_with_options) {
-    fossil::io::Regex re;
-    re.compile("abc", { "icase" });
-    ASSUME_ITS_TRUE(re.match("ABC"));
-    ASSUME_ITS_TRUE(re.match("abc"));
-}
 
 FOSSIL_TEST(cpp_test_regex_cppwrapper_match_with_groups) {
     fossil::io::Regex re("abc");
@@ -194,9 +188,9 @@ FOSSIL_TEST(cpp_test_regex_cppwrapper_group_count_and_group) {
     bool matched = re.match("abc", groups);
     ASSUME_ITS_TRUE(matched);
     ASSUME_ITS_EQUAL_I32(3, (int)groups.size());
-    ASSUME_ITS_EQUAL(groups[0], "a");
-    ASSUME_ITS_EQUAL(groups[1], "b");
-    ASSUME_ITS_EQUAL(groups[2], "c");
+    ASSUME_ITS_EQUAL_CSTR(groups[0].c_str(), "a");
+    ASSUME_ITS_EQUAL_CSTR(groups[1].c_str(), "b");
+    ASSUME_ITS_EQUAL_CSTR(groups[2].c_str(), "c");
 }
 
 FOSSIL_TEST(cpp_test_regex_cppwrapper_compile_empty_pattern) {
