@@ -34,6 +34,7 @@
 
 #ifndef HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen) {
+    if (!s) return 0;
     size_t i;
     for (i = 0; i < maxlen && s[i]; i++);
     return i;
@@ -46,6 +47,9 @@ int strncasecmp(const char *s1, const char *s2, size_t n) {
         int diff = tolower((unsigned char)s1[i]) - tolower((unsigned char)s2[i]);
         if (diff != 0) return diff;
     }
+    if (n == 0) return 0;
+    if (s1[n] && !s2[n]) return 1;
+    if (!s1[n] && s2[n]) return -1;
     return 0;
 }
 #endif
@@ -78,7 +82,12 @@ int fossil_io_cstring_money_to_string(double amount, char *output, size_t size) 
     if (!output || size == 0) return -1;
 
     // Set locale temporarily to the user's default locale
-    char *old_locale = setlocale(LC_NUMERIC, NULL);
+    const char *old_locale_ptr = setlocale(LC_NUMERIC, NULL);
+    char old_locale[64] = {0};
+    if (old_locale_ptr) {
+        strncpy(old_locale, old_locale_ptr, sizeof(old_locale) - 1);
+        old_locale[sizeof(old_locale) - 1] = '\0';
+    }
     setlocale(LC_NUMERIC, "");
 
     amount = round(amount * 100.0) / 100.0; // Round to 2 decimals
@@ -129,7 +138,9 @@ int fossil_io_cstring_money_to_string(double amount, char *output, size_t size) 
     output[size - 1] = '\0';
 
     // Restore previous locale
-    setlocale(LC_NUMERIC, old_locale);
+    if (old_locale[0]) {
+        setlocale(LC_NUMERIC, old_locale);
+    }
 
     return 0;
 }
@@ -257,9 +268,17 @@ int fossil_io_cstring_string_to_money_currency(const char *input, double *amount
 
 // ---------------- Tokenizer ----------------
 cstring fossil_io_cstring_token(cstring str, ccstring delim, cstring *saveptr) {
-    if (!saveptr || (!str && !*saveptr)) return NULL;
+    if (!saveptr) return NULL;
 
-    char *start = str ? str : *saveptr;
+    char *start;
+    if (str) {
+        start = str;
+    } else if (*saveptr) {
+        start = *saveptr;
+    } else {
+        return NULL;
+    }
+
     start += strspn(start, delim); // skip leading delimiters
     if (*start == '\0') {
         *saveptr = NULL;
@@ -315,8 +334,8 @@ cstring fossil_io_cstring_case_replace(ccstring input,
     size_t needle_len = strlen(needle);
     size_t repl_len = strlen(replacement);
 
-    // Allocate buffer with some extra room
-    size_t out_cap = input_len + 1 + (repl_len > needle_len ? repl_len * 8 : 0);
+    // Start with a reasonable buffer size
+    size_t out_cap = input_len + 1;
     char *output = malloc(out_cap);
     if (!output) return NULL;
 
@@ -326,23 +345,39 @@ cstring fossil_io_cstring_case_replace(ccstring input,
     while (*p) {
         const char *match = fossil_io_cstring_case_search(p, needle);
         if (!match) {
-            // Copy the rest
-            strncpy(output + out_pos, p, out_cap - out_pos);
+            size_t rest_len = strlen(p);
+            // Ensure enough space for the rest and null terminator
+            if (out_pos + rest_len + 1 > out_cap) {
+                out_cap = out_pos + rest_len + 1;
+                char *tmp = realloc(output, out_cap);
+                if (!tmp) {
+                    free(output);
+                    return NULL;
+                }
+                output = tmp;
+            }
+            memcpy(output + out_pos, p, rest_len);
+            out_pos += rest_len;
             break;
         }
 
         // Copy text before match
         size_t chunk_len = match - p;
-        if (out_pos + chunk_len >= out_cap) {
-            free(output);
-            return NULL;
+        if (out_pos + chunk_len + 1 > out_cap) {
+            out_cap = out_pos + chunk_len + 1;
+            char *tmp = realloc(output, out_cap);
+            if (!tmp) {
+                free(output);
+                return NULL;
+            }
+            output = tmp;
         }
         memcpy(output + out_pos, p, chunk_len);
         out_pos += chunk_len;
 
         // Copy replacement
-        if (out_pos + repl_len >= out_cap) {
-            out_cap *= 2;
+        if (out_pos + repl_len + 1 > out_cap) {
+            out_cap = out_pos + repl_len + 1;
             char *tmp = realloc(output, out_cap);
             if (!tmp) {
                 free(output);
@@ -393,7 +428,8 @@ int fossil_io_cstring_silly(const char *input, char *output, size_t size) {
     size_t len = strlen(input);
     if (len + 1 > size) return -1;
 
-    for (size_t i = 0; i < len; i++) {
+    size_t out_idx = 0;
+    for (size_t i = 0; i < len && out_idx < size - 1; i++) {
         char c = input[i];
         // Random case change
         if (isalpha((unsigned char)c)) {
@@ -404,12 +440,14 @@ int fossil_io_cstring_silly(const char *input, char *output, size_t size) {
             }
         }
         // Occasionally insert silly symbol
-        if (rand() % 10 == 0 && (i + 1 < size - 1)) {
-            output[i++] = '~';
+        if (rand() % 10 == 0 && (out_idx + 1 < size - 1)) {
+            output[out_idx++] = '~';
         }
-        output[i] = c;
+        if (out_idx < size - 1) {
+            output[out_idx++] = c;
+        }
     }
-    output[len] = '\0';
+    output[out_idx] = '\0';
     return 0;
 }
 
@@ -426,6 +464,7 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
     buffer[sizeof(buffer) - 1] = '\0';
 
     char *token = strtok(buffer, delims);
+    int first_word = 1;
     while (token) {
         size_t word_len = strlen(token);
         if (word_len == 0) {
@@ -435,17 +474,19 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
 
         // Vowel start → add "yay"
         if (strchr("AEIOUaeiou", token[0])) {
+            if (word_len + 3 >= sizeof(word)) return -1;
             strncpy(word, token, sizeof(word) - 4);  // leave room for "yay"
             word[sizeof(word) - 4] = '\0';
             strncat(word, "yay", sizeof(word) - strlen(word) - 1);
         } 
         // Consonant start → move first letter, add "ay"
         else {
+            if (word_len + 2 >= sizeof(word)) return -1;
             strncpy(word, token + 1, sizeof(word) - 4);  // leave room for "<c>ay"
             word[sizeof(word) - 4] = '\0';
 
             size_t len = strlen(word);
-            if (len < sizeof(word) - 3) {
+            if (len + 3 < sizeof(word)) {
                 word[len] = token[0];
                 word[len + 1] = 'a';
                 word[len + 2] = 'y';
@@ -456,10 +497,19 @@ int fossil_io_cstring_piglatin(const char *input, char *output, size_t size) {
         }
 
         // Check space in output before appending
-        if (strlen(output) + strlen(word) + 2 > size) return -1;
-        strcat(output, word);
-        strcat(output, " ");
+        size_t out_len = strlen(output);
+        size_t word_space = strlen(word);
+        // Add space only if not the first word
+        size_t extra = first_word ? 0 : 1;
+        if (out_len + word_space + extra + 1 > size) return -1;
+        if (!first_word) {
+            output[out_len] = ' ';
+            output[out_len + 1] = '\0';
+            out_len++;
+        }
+        strncat(output, word, size - out_len - 1);
 
+        first_word = 0;
         token = strtok(NULL, delims);
     }
 
@@ -485,17 +535,14 @@ int fossil_io_cstring_leetspeak(const char *input, char *output, size_t size) {
         }
 
         size_t repl_len = strlen(repl);
-        if (out_idx + repl_len >= size - 1) return -1;
-        strcpy(&output[out_idx], repl);
+        if (out_idx + repl_len >= size) return -1;
+        memcpy(&output[out_idx], repl, repl_len);
         out_idx += repl_len;
     }
     output[out_idx] = '\0';
     return 0;
 }
 
-// -------------------
-// Mocking SpongeBob
-// -------------------
 char* fossil_io_cstring_mocking(const char *str) {
     if (!str) return NULL;
     size_t len = strlen(str);
@@ -512,9 +559,6 @@ char* fossil_io_cstring_mocking(const char *str) {
     return out;
 }
 
-// -------------------
-// ROT13 Cipher
-// -------------------
 char* fossil_io_cstring_rot13(const char *str) {
     if (!str) return NULL;
     size_t len = strlen(str);
@@ -540,6 +584,11 @@ char* fossil_io_cstring_rot13(const char *str) {
 char* fossil_io_cstring_shuffle(const char *str) {
     if (!str) return NULL;
     size_t len = strlen(str);
+    if (len == 0) {
+        char *out = malloc(1);
+        if (out) out[0] = '\0';
+        return out;
+    }
     char *out = malloc(len + 1);
     if (!out) return NULL;
 
@@ -568,6 +617,12 @@ char* fossil_io_cstring_shuffle(const char *str) {
 char* fossil_io_cstring_upper_snake(const char *str) {
     if (!str) return NULL;
     size_t len = strlen(str);
+
+    if (len == 0) {
+        char *out = malloc(1);
+        if (out) out[0] = '\0';
+        return out;
+    }
 
     // Worst case: every char becomes "_X"
     char *out = malloc(len * 2 + 1);
@@ -612,6 +667,7 @@ static int fossil_io_cstring_number_to_words_inner(int num, char *buffer, size_t
 
     if (num >= 100) {
         int hundreds = num / 100;
+        if (hundreds < 0 || hundreds > 19) return -1;
         if (used + strlen(units[hundreds]) + 8 >= size) return -1;
         strcat(buffer, units[hundreds]);
         strcat(buffer, " hundred");
@@ -624,14 +680,17 @@ static int fossil_io_cstring_number_to_words_inner(int num, char *buffer, size_t
 
     if (num >= 20) {
         int t = num / 10;
+        if (t < 0 || t > 9) return -1;
         if (used + strlen(tens[t]) + 2 >= size) return -1;
         strcat(buffer, tens[t]);
         num %= 10;
         if (num > 0) {
+            if (num < 0 || num > 19) return -1;
             strcat(buffer, "-");
             strcat(buffer, units[num]);
         }
     } else if (num > 0 || used == 0) {
+        if (num < 0 || num > 19) return -1;
         if (used + strlen(units[num]) + 1 >= size) return -1;
         strcat(buffer, units[num]);
     }
@@ -646,6 +705,7 @@ int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size) {
 
     if (num >= 1000) {
         int thousands = num / 1000;
+        if (thousands < 0 || thousands > 19) return -1; // Prevent out-of-bounds access
         if (strlen(buffer) + strlen(units[thousands]) + 10 >= size) return -1;
         strcat(buffer, units[thousands]);
         strcat(buffer, " thousand");
@@ -738,12 +798,16 @@ int fossil_io_cstring_compare(ccstring s1, ccstring s2) {
 void fossil_io_cstring_trim(cstring str) {
     if (!str) return;
     size_t length = strlen(str);
+    if (length == 0) {
+        str[0] = '\0';
+        return;
+    }
     size_t start = 0;
     size_t end = length - 1;
-    while (start < length && isspace(str[start])) {
+    while (start < length && isspace((unsigned char)str[start])) {
         start++;
     }
-    while (end > start && isspace(str[end])) {
+    while (end > start && isspace((unsigned char)str[end])) {
         end--;
     }
     size_t count = end - start + 1;
@@ -937,6 +1001,11 @@ cstring fossil_io_cstring_repeat(ccstring str, size_t count) {
 cstring fossil_io_cstring_strip(ccstring str, char ch) {
     if (!str) return NULL;
     size_t length = strlen(str);
+    if (length == 0) {
+        cstring result = (cstring)malloc(1);
+        if (result) result[0] = '\0';
+        return result;
+    }
     size_t start = 0;
     size_t end = length - 1;
     while (start < length && str[start] == ch) {
@@ -1090,6 +1159,7 @@ int fossil_io_cstring_index_of(ccstring str, ccstring substr) {
 }
 
 int fossil_io_cstring_equals(ccstring a, ccstring b) {
+    if (!a || !b) return 0;
     return strcmp(a, b) == 0;
 }
 
@@ -1211,7 +1281,14 @@ cstring fossil_io_cstring_strip_quotes(ccstring str) {
 cstring fossil_io_cstring_append(cstring *dest, ccstring src) {
     if (!dest || !src) return NULL;
 
-    size_t old_len = *dest ? strlen(*dest) : 0;
+    if (*dest == NULL) {
+        *dest = malloc(strlen(src) + 1);
+        if (!*dest) return NULL;
+        strcpy(*dest, src);
+        return *dest;
+    }
+
+    size_t old_len = strlen(*dest);
     size_t add_len = strlen(src);
 
     char *new_str = realloc(*dest, old_len + add_len + 1);
@@ -1229,9 +1306,10 @@ cstring fossil_io_cstring_append(cstring *dest, ccstring src) {
 cstring fossil_io_cstring_create_safe(const char *init, size_t max_len) {
     if (!init) return NULL;
     size_t len = strnlen(init, max_len);
-    cstring result = fossil_io_cstring_create(init);
+    cstring result = (cstring)malloc(len + 1);
     if (!result) return NULL;
-    result[len] = '\0'; // enforce null-termination within max_len
+    memcpy(result, init, len);
+    result[len] = '\0';
     return result;
 }
 
@@ -1245,8 +1323,9 @@ void fossil_io_cstring_free_safe(cstring *str) {
 cstring fossil_io_cstring_copy_safe(ccstring str, size_t max_len) {
     if (!str) return NULL;
     size_t len = strnlen(str, max_len);
-    cstring copy = fossil_io_cstring_copy(str);
+    cstring copy = (cstring)malloc(len + 1);
     if (!copy) return NULL;
+    memcpy(copy, str, len);
     copy[len] = '\0';
     return copy;
 }
@@ -1259,9 +1338,11 @@ cstring fossil_io_cstring_concat_safe(ccstring s1, ccstring s2, size_t max_len) 
     if (!s1 || !s2) return NULL;
     size_t len1 = strnlen(s1, max_len);
     size_t len2 = strnlen(s2, max_len - len1);
-    cstring result = fossil_io_cstring_create(s1);
+    if (len1 + len2 > max_len) len2 = max_len - len1;
+    cstring result = (cstring)malloc(len1 + len2 + 1);
     if (!result) return NULL;
-    fossil_io_cstring_append(&result, s2);
+    memcpy(result, s1, len1);
+    memcpy(result + len1, s2, len2);
     result[len1 + len2] = '\0';
     return result;
 }
@@ -1325,9 +1406,11 @@ cstring *fossil_io_cstring_split_safe(ccstring str, char delimiter, size_t *coun
 
     size_t idx = 0;
     const char *start = str;
-    for (size_t i = 0; i <= strnlen(str, max_len); i++) {
+    size_t str_len = strnlen(str, max_len);
+    for (size_t i = 0; i <= str_len; i++) {
         if (str[i] == delimiter || str[i] == '\0') {
             size_t len = &str[i] - start;
+            if (len > str_len - (start - str)) len = str_len - (start - str);
             if (len > max_len) len = max_len;
             result[idx++] = fossil_io_cstring_create_safe(start, len);
             start = &str[i + 1];
@@ -1546,7 +1629,7 @@ int fossil_io_cstring_ends_with_safe(ccstring str, ccstring suffix, size_t max_l
     if (!str || !suffix) return 0;
     size_t len_suffix = strnlen(suffix, max_len);
     size_t len_str = strnlen(str, max_len);
-    if (len_suffix > len_str) return 0;
+    if (len_suffix == 0 || len_suffix > len_str) return 0;
     return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
