@@ -40,6 +40,8 @@ typedef unsigned int fossil_rx_optmask_t;
 #define RX_OPT_DOTALL     (1u << 2)
 #define RX_OPT_UNGREEDY   (1u << 3)
 #define RX_OPT_ANCHORED   (1u << 4)
+#define RX_OPT_EXTENDED   (1u << 5)
+#define RX_OPT_GLOBAL     (1u << 6)
 
 static const struct {
     const char *id;
@@ -50,6 +52,8 @@ static const struct {
     { "dotall",    RX_OPT_DOTALL    },
     { "ungreedy",  RX_OPT_UNGREEDY  },
     { "anchored",  RX_OPT_ANCHORED  },
+    { "extended",  RX_OPT_EXTENDED  },
+    { "global",    RX_OPT_GLOBAL    },
     { NULL, 0 }
 };
 
@@ -83,14 +87,26 @@ typedef enum {
     RX_OP_MATCH,
     RX_OP_SAVE,
     RX_OP_ASSERT_BEGIN,
-    RX_OP_ASSERT_END
+    RX_OP_ASSERT_END,
+    RX_OP_CHAR_CLASS,
+    RX_OP_NOT_CHAR_CLASS,
+    RX_OP_WORD_BOUNDARY,
+    RX_OP_NOT_WORD_BOUNDARY,
+    RX_OP_DIGIT,
+    RX_OP_NOT_DIGIT,
+    RX_OP_WHITESPACE,
+    RX_OP_NOT_WHITESPACE,
+    RX_OP_WORD_CHAR,
+    RX_OP_NOT_WORD_CHAR
 } fossil_rx_opcode_t;
 
 typedef struct {
     fossil_rx_opcode_t op;
     int x;
     int y;
-    int c;
+    unsigned char c;
+    char *class_set;
+    int class_len;
 } fossil_rx_inst_t;
 
 /* ============================================================================
@@ -103,6 +119,7 @@ struct fossil_io_regex {
     int prog_len;
     int cap_count;
     fossil_rx_optmask_t options;
+    char *pattern;
 };
 
 /* ============================================================================
@@ -114,9 +131,10 @@ struct fossil_io_regex_match {
     int matched;
     const char *start;
     const char *end;
-
+    size_t match_len;
     int group_count;
     const char **groups;
+    size_t *group_lens;
 };
 
 /* ============================================================================
@@ -145,7 +163,7 @@ static fossil_rx_inst_t *fossil_rx_compile_basic(
     int pc = 0;
 
     prog = (fossil_rx_inst_t *)
-        calloc((size_t)len + 2, sizeof(*prog));
+        calloc((size_t)len * 3 + 10, sizeof(*prog));
 
     if (!prog)
         return NULL;
@@ -153,18 +171,100 @@ static fossil_rx_inst_t *fossil_rx_compile_basic(
     for (int i = 0; i < len; i++) {
         char ch = pattern[i];
 
-        if (ch == '.' ) {
+        if (ch == '\\' && i + 1 < len) {
+            // Handle escape sequences
+            i++;
+            char esc = pattern[i];
+            
+            if (esc == 'd') {
+                prog[pc].op = RX_OP_DIGIT;
+            } else if (esc == 'D') {
+                prog[pc].op = RX_OP_NOT_DIGIT;
+            } else if (esc == 's') {
+                prog[pc].op = RX_OP_WHITESPACE;
+            } else if (esc == 'S') {
+                prog[pc].op = RX_OP_NOT_WHITESPACE;
+            } else if (esc == 'w') {
+                prog[pc].op = RX_OP_WORD_CHAR;
+            } else if (esc == 'W') {
+                prog[pc].op = RX_OP_NOT_WORD_CHAR;
+            } else if (esc == 'b') {
+                prog[pc].op = RX_OP_WORD_BOUNDARY;
+            } else if (esc == 'B') {
+                prog[pc].op = RX_OP_NOT_WORD_BOUNDARY;
+            } else {
+                prog[pc].op = RX_OP_CHAR;
+                prog[pc].c = (unsigned char)esc;
+            }
+            pc++;
+        }
+        else if (ch == '.') {
             prog[pc++].op = RX_OP_ANY;
         }
-        else if (ch == '^' && i == 0) {
+        else if (ch == '^') {
             prog[pc++].op = RX_OP_ASSERT_BEGIN;
         }
-        else if (ch == '$' && i == len - 1) {
+        else if (ch == '$') {
             prog[pc++].op = RX_OP_ASSERT_END;
+        }
+        else if (ch == '*' && pc > 0) {
+            // Zero or more: split loop
+            int saved_pc = pc - 1;
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = saved_pc;
+            prog[pc].y = pc + 1;
+            pc++;
+        }
+        else if (ch == '+' && pc > 0) {
+            // One or more: match at least once, then loop
+            int saved_pc = pc - 1;
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = saved_pc;
+            prog[pc].y = pc + 1;
+            pc++;
+        }
+        else if (ch == '?' && pc > 0) {
+            // Zero or one: split to skip previous
+            int saved_pc = pc - 1;
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = pc + 1;
+            prog[pc].y = saved_pc;
+            pc++;
+        }
+        else if (ch == '[' && i + 1 < len) {
+            // Character class
+            i++;
+            int class_start = i;
+            int is_negated = (pattern[i] == '^');
+            if (is_negated) {
+                i++;
+                class_start = i;
+            }
+            
+            while (i < len && pattern[i] != ']') i++;
+            
+            if (i < len) {
+                int class_len = i - class_start;
+                prog[pc].op = is_negated ? RX_OP_NOT_CHAR_CLASS : RX_OP_CHAR_CLASS;
+                prog[pc].class_set = (char *)malloc((size_t)class_len + 1);
+                if (prog[pc].class_set) {
+                    memcpy(prog[pc].class_set, &pattern[class_start], (size_t)class_len);
+                    prog[pc].class_set[class_len] = '\0';
+                    prog[pc].class_len = class_len;
+                    pc++;
+                }
+            }
+        }
+        else if (ch == '(' || ch == ')') {
+            // Group markers (capture)
+            prog[pc].op = RX_OP_SAVE;
+            prog[pc].x = pc;
+            prog[pc].y = (ch == '(') ? 1 : 0;
+            pc++;
         }
         else {
             prog[pc].op = RX_OP_CHAR;
-            prog[pc].c  = (unsigned char)ch;
+            prog[pc].c = (unsigned char)ch;
             pc++;
         }
     }
@@ -211,7 +311,9 @@ static int fossil_rx_vm_exec(
         }
 
         case RX_OP_ANY:
-            if (*sp == '\0')
+            if (*sp == '\0' && !(opts & RX_OPT_DOTALL))
+                return 0;
+            if (*sp == '\n' && !(opts & RX_OPT_DOTALL))
                 return 0;
             sp++;
             pc++;
@@ -227,21 +329,150 @@ static int fossil_rx_vm_exec(
             pc = ins->y;
             break;
 
-        case RX_OP_ASSERT_BEGIN:
-            if (sp != m->start)
+        case RX_OP_CHAR_CLASS: {
+            unsigned char ch = (unsigned char)*sp;
+            if (!ch)
                 return 0;
+            int found = 0;
+            for (int i = 0; i < ins->class_len; i++) {
+                if ((unsigned char)ins->class_set[i] == ch) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found)
+                return 0;
+            sp++;
+            pc++;
+            break;
+        }
+
+        case RX_OP_NOT_CHAR_CLASS: {
+            unsigned char ch = (unsigned char)*sp;
+            if (!ch)
+                return 0;
+            int found = 0;
+            for (int i = 0; i < ins->class_len; i++) {
+                if ((unsigned char)ins->class_set[i] == ch) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (found)
+                return 0;
+            sp++;
+            pc++;
+            break;
+        }
+
+        case RX_OP_DIGIT:
+            if (!isdigit((unsigned char)*sp))
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_NOT_DIGIT:
+            if (*sp && isdigit((unsigned char)*sp))
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_WHITESPACE:
+            if (!isspace((unsigned char)*sp))
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_NOT_WHITESPACE:
+            if (*sp && isspace((unsigned char)*sp))
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_WORD_CHAR:
+            if (!isalnum((unsigned char)*sp) && *sp != '_')
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_NOT_WORD_CHAR:
+            if (*sp && (isalnum((unsigned char)*sp) || *sp == '_'))
+                return 0;
+            sp++;
+            pc++;
+            break;
+
+        case RX_OP_WORD_BOUNDARY: {
+            int at_boundary = 0;
+            int prev_word = (sp != m->start) && (isalnum((unsigned char)sp[-1]) || sp[-1] == '_');
+            int curr_word = *sp && (isalnum((unsigned char)*sp) || *sp == '_');
+            at_boundary = (prev_word != curr_word);
+            if (!at_boundary)
+                return 0;
+            pc++;
+            break;
+        }
+
+        case RX_OP_NOT_WORD_BOUNDARY: {
+            int at_boundary = 0;
+            int prev_word = (sp != m->start) && (isalnum((unsigned char)sp[-1]) || sp[-1] == '_');
+            int curr_word = *sp && (isalnum((unsigned char)*sp) || *sp == '_');
+            at_boundary = (prev_word != curr_word);
+            if (at_boundary)
+                return 0;
+            pc++;
+            break;
+        }
+
+        case RX_OP_SAVE:
+            if (!m->groups) {
+                m->groups = (const char **)calloc((size_t)(ins->x + 1), sizeof(char *));
+                m->group_lens = (size_t *)calloc((size_t)(ins->x + 1), sizeof(size_t));
+                if (!m->groups || !m->group_lens)
+                    return -1;
+                m->group_count = ins->x + 1;
+            }
+            if (ins->y) {
+                m->groups[ins->x] = sp;
+            } else {
+                if (m->groups[ins->x]) {
+                    m->group_lens[ins->x] = (size_t)(sp - m->groups[ins->x]);
+                }
+            }
+            pc++;
+            break;
+
+        case RX_OP_ASSERT_BEGIN:
+            if (opts & RX_OPT_MULTILINE) {
+                if (sp != m->start && sp[-1] != '\n')
+                    return 0;
+            } else {
+                if (sp != m->start)
+                    return 0;
+            }
             pc++;
             break;
 
         case RX_OP_ASSERT_END:
-            if (*sp != '\0')
-                return 0;
+            if (opts & RX_OPT_MULTILINE) {
+                if (*sp != '\0' && *sp != '\n')
+                    return 0;
+            } else {
+                if (*sp != '\0')
+                    return 0;
+            }
             pc++;
             break;
 
         case RX_OP_MATCH:
             m->matched = 1;
             m->end = sp;
+            m->match_len = (size_t)(sp - m->start);
             return 1;
 
         default:
@@ -271,12 +502,28 @@ fossil_io_regex_t *fossil_io_regex_compile(
     if (!re)
         return NULL;
 
+    re->pattern = fossil_rx_strdup(pattern);
+    if (!re->pattern) {
+        free(re);
+        return NULL;
+    }
+
     re->options = fossil_io_regex_resolve_options(options);
 
     re->prog = fossil_rx_compile_basic(pattern, &re->prog_len);
     if (!re->prog) {
         if (error_out)
             *error_out = fossil_rx_strdup("compile failed");
+        free(re->pattern);
+        free(re);
+        return NULL;
+    }
+
+    if (re->prog_len == 0 || re->prog_len > 10000) {
+        if (error_out)
+            *error_out = fossil_rx_strdup("invalid program length");
+        free(re->prog);
+        free(re->pattern);
         free(re);
         return NULL;
     }
@@ -288,7 +535,14 @@ void fossil_io_regex_free(fossil_io_regex_t *re) {
     if (!re)
         return;
 
-    free(re->prog);
+    if (re->prog) {
+        for (int i = 0; i < re->prog_len; i++) {
+            if (re->prog[i].class_set)
+                free(re->prog[i].class_set);
+        }
+        free(re->prog);
+    }
+    free(re->pattern);
     free(re);
 }
 
@@ -340,11 +594,14 @@ void fossil_io_regex_match_free(fossil_io_regex_match_t *m) {
         return;
 
     free(m->groups);
+    free(m->group_lens);
     free(m);
 }
 
 int fossil_io_regex_group_count(const fossil_io_regex_match_t *m) {
-    return m ? m->group_count : 0;
+    if (!m)
+        return 0;
+    return m->group_count;
 }
 
 const char *fossil_io_regex_group(
@@ -353,4 +610,12 @@ const char *fossil_io_regex_group(
     if (!m || index < 0 || index >= m->group_count)
         return NULL;
     return m->groups[index];
+}
+
+size_t fossil_io_regex_group_length(
+    const fossil_io_regex_match_t *m,
+    int index) {
+    if (!m || index < 0 || index >= m->group_count)
+        return 0;
+    return m->group_lens[index];
 }

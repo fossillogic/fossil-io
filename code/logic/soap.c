@@ -1227,6 +1227,7 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text) {
 }
 
 const char *fossil_io_soap_readability_label(int score) {
+    if (score >= 100) return "perfect";
     if (score >= 95) return "outstanding";
     if (score >= 85) return "excellent";
     if (score >= 70) return "very good";
@@ -1234,6 +1235,7 @@ const char *fossil_io_soap_readability_label(int score) {
     if (score >= 50) return "fair";
     if (score >= 35) return "poor";
     if (score >= 20) return "very poor";
+    if (score >= 0) return "unreadable";
     return "unreadable";
 }
 

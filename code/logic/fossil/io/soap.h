@@ -31,6 +31,115 @@
 extern "C" {
 #endif
 
+/**
+ * ============================================================================
+ * SOAP v3 (Sanitize, Observe, Analyze, Process) - Text Analysis Framework
+ * ============================================================================
+ * 
+ * SOAP is a comprehensive text processing and analysis pipeline designed to
+ * detect, analyze, and improve written content across multiple dimensions.
+ * 
+ * ** CORE PIPELINE **
+ * 
+ * The framework operates in several stages:
+ * 
+ * 1. SANITIZATION: Removes control characters, normalizes whitespace, and
+ *    applies lowercase conversion while preserving readability.
+ * 
+ * 2. OBSERVATION: Detects patterns and characteristics through a specialized
+ *    detector system that identifies content types, writing styles, and
+ *    potential issues.
+ * 
+ * 3. ANALYSIS: Computes numerical scores for readability, clarity, and quality.
+ *    Also analyzes grammar correctness, stylistic patterns, and passive voice usage.
+ * 
+ * 4. PROCESSING: Applies corrections including grammar fixes, capitalization,
+ *    punctuation normalization, and text reflow for consistent formatting.
+ * 
+ * ** DETECTOR SYSTEM **
+ * 
+ * The detector system uses string IDs to identify various text characteristics.
+ * Each detector scans text at document, sentence, and word levels for patterns:
+ * 
+ * CONTENT TYPE DETECTORS:
+ *   - "spam"            : Commercial spam language (buy now, limited offer, etc.)
+ *   - "ragebait"        : Emotionally inflammatory content (outrageous, shocking, etc.)
+ *   - "clickbait"       : Attention-grabbing sensationalism (you won't believe, etc.)
+ *   - "bot"             : Automated/robotic posting patterns
+ *   - "marketing"       : Promotional and advertising language
+ *   - "technobabble"    : Overuse of technical jargon (blockchain, AI-driven, etc.)
+ *   - "hype"            : Excessive hyperbole and superlatives
+ *   - "political"       : Political terminology and discourse
+ *   - "conspiracy"      : Conspiracy theory indicators (cover-up, deep state, etc.)
+ *   - "offensive"       : Insulting, derogatory, or abusive language
+ *   - "misinfo"         : Misinformation and false claim patterns
+ * 
+ * WRITING STYLE DETECTORS:
+ *   - "formal"          : Academic/professional language (therefore, hereby, etc.)
+ *   - "casual"          : Informal conversational style (hey, lol, btw, etc.)
+ *   - "sarcasm"         : Sarcastic tone patterns (yeah right, as if, etc.)
+ *   - "neutral"         : Neutral/objective language (okay, yes, no, etc.)
+ *   - "aggressive"      : Combative language (attack, destroy, crush, etc.)
+ *   - "emotional"       : Emotionally expressive content (happy, sad, love, hate, etc.)
+ *   - "passive"         : Passive/submissive responses (sure, whatever, fine, etc.)
+ * 
+ * BEHAVIORAL PATTERN DETECTORS:
+ *   - "brain_rot"       : Internet slang and meme language (lol, bruh, sus, etc.)
+ *   - "snowflake"       : Sensitivity/identity politics language (triggered, woke, etc.)
+ *   - "redundant"       : Repeated sentences or content duplication
+ *   - "repeated_words"  : Excessive word repetition
+ *   - "poor_cohesion"   : Weak logical flow and sentence connections
+ * 
+ * ** USAGE EXAMPLES **
+ * 
+ * C API:
+ *   fossil_io_soap_detect(text, "spam")        // Check for spam patterns
+ *   fossil_io_soap_detect(text, "brain_rot")   // Detect internet slang
+ *   fossil_io_soap_analyze_grammar_style(text) // Get detailed analysis
+ *   fossil_io_soap_score(text)                 // Get readability/clarity/quality scores
+ *   fossil_io_soap_process(text)               // Full pipeline execution
+ * 
+ * C++ API:
+ *   Soap::detect(text, "clickbait")            // Check for clickbait
+ *   Soap::score(text)                          // Get scores as struct
+ *   Soap::analyze_grammar_style(text)          // Get grammar analysis
+ *   Soap::process(text)                        // Full pipeline
+ * 
+ * ** PROCESSING FUNCTIONS **
+ * 
+ * - sanitize()        : Clean unsafe/low-quality content
+ * - suggest()         : Generate improvement suggestions
+ * - summarize()       : Create concise summary (first 2 sentences)
+ * - correct_grammar() : Fix common grammar errors and contractions
+ * - normalize()       : Standardize whitespace and casing
+ * - capitalize()      : Apply sentence or title case
+ * - rewrite()         : Full rephrase with grammar + style correction
+ * - format()          : Pretty-print with consistent indentation
+ * - declutter()       : Fix camelCase word boundaries
+ * - punctuate()       : Normalize punctuation and sentence structure
+ * - reflow()          : Wrap text to specified line width
+ * - split()           : Break text into sentences or words
+ * 
+ * ** SCORING SYSTEM **
+ * 
+ * All scores are normalized to 0-100 range:
+ * 
+ *   READABILITY: Ease of understanding (penalizes very short/long text)
+ *   CLARITY:     Logical coherence (rewards line breaks, penalizes repetition)
+ *   QUALITY:     Overall writing quality (penalizes spam/excessive punctuation)
+ * 
+ * Labels:
+ *   95-100: Outstanding
+ *   85-94:  Excellent
+ *   70-84:  Very Good
+ *   60-69:  Good
+ *   50-59:  Fair
+ *   35-49:  Poor
+ *   20-34:  Very Poor
+ *   0-19:   Unreadable
+ * 
+ * ============================================================================
+ */
 
 // ============================================================================
 // SOAP v3 Analysis & Processing Options (Primary Control Surface)
