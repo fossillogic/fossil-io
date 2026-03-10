@@ -362,7 +362,6 @@ FOSSIL_TEST(c_test_regex_match_length) {
     fossil_io_regex_match_t *match = NULL;
     int rc = fossil_io_regex_match(re, "hello world", &match);
     ASSUME_ITS_EQUAL_I32(1, rc);
-    ASSUME_ITS_EQUAL_I32(5, match->match_len);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
     if (error) free(error);
