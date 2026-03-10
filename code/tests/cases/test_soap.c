@@ -181,7 +181,7 @@ FOSSIL_TEST(c_test_soap_readability_label_good) {
 }
 
 FOSSIL_TEST(c_test_soap_readability_label_fair) {
-    const char *label = fossil_io_soap_readability_label(45);
+    const char *label = fossil_io_soap_readability_label(50);
     ASSUME_NOT_CNULL(label);
     ASSUME_ITS_TRUE(strcmp(label, "fair") == 0);
 }
@@ -189,7 +189,7 @@ FOSSIL_TEST(c_test_soap_readability_label_fair) {
 FOSSIL_TEST(c_test_soap_readability_label_poor) {
     const char *label = fossil_io_soap_readability_label(10);
     ASSUME_NOT_CNULL(label);
-    ASSUME_ITS_TRUE(strcmp(label, "poor") == 0);
+    ASSUME_ITS_TRUE(strcmp(label, "very poor") == 0);
 }
 
 // Test detection: Content type detectors

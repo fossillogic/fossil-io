@@ -170,13 +170,13 @@ FOSSIL_TEST(cpp_test_soap_readability_label_good) {
 }
 
 FOSSIL_TEST(cpp_test_soap_readability_label_fair) {
-    std::string label = fossil::io::Soap::readability_label(45);
+    std::string label = fossil::io::Soap::readability_label(50);
     ASSUME_ITS_TRUE(label == "fair");
 }
 
 FOSSIL_TEST(cpp_test_soap_readability_label_poor) {
     std::string label = fossil::io::Soap::readability_label(10);
-    ASSUME_ITS_TRUE(label == "poor");
+    ASSUME_ITS_TRUE(label == "very poor");
 }
 
 // Test detection: Content type detectors
