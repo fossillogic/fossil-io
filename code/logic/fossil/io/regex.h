@@ -25,6 +25,8 @@
 #ifndef FOSSIL_IO_REGEX_H
 #define FOSSIL_IO_REGEX_H
 
+#include <stddef.h> // for size_t
+
 #ifdef __cplusplus
 extern "C"
 {
