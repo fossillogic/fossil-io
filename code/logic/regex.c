@@ -40,6 +40,8 @@ typedef unsigned int fossil_rx_optmask_t;
 #define RX_OPT_DOTALL     (1u << 2)
 #define RX_OPT_UNGREEDY   (1u << 3)
 #define RX_OPT_ANCHORED   (1u << 4)
+#define RX_OPT_EXTENDED   (1u << 5)
+#define RX_OPT_GLOBAL     (1u << 6)
 
 static const struct {
     const char *id;
@@ -50,6 +52,8 @@ static const struct {
     { "dotall",    RX_OPT_DOTALL    },
     { "ungreedy",  RX_OPT_UNGREEDY  },
     { "anchored",  RX_OPT_ANCHORED  },
+    { "extended",  RX_OPT_EXTENDED  },
+    { "global",    RX_OPT_GLOBAL    },
     { NULL, 0 }
 };
 
@@ -145,7 +149,7 @@ static fossil_rx_inst_t *fossil_rx_compile_basic(
     int pc = 0;
 
     prog = (fossil_rx_inst_t *)
-        calloc((size_t)len + 2, sizeof(*prog));
+        calloc((size_t)len * 2 + 10, sizeof(*prog));
 
     if (!prog)
         return NULL;
@@ -153,18 +157,46 @@ static fossil_rx_inst_t *fossil_rx_compile_basic(
     for (int i = 0; i < len; i++) {
         char ch = pattern[i];
 
-        if (ch == '.' ) {
+        if (ch == '\\' && i + 1 < len) {
+            // Handle escape sequences
+            i++;
+            prog[pc].op = RX_OP_CHAR;
+            prog[pc].c = (unsigned char)pattern[i];
+            pc++;
+        }
+        else if (ch == '.' ) {
             prog[pc++].op = RX_OP_ANY;
         }
-        else if (ch == '^' && i == 0) {
+        else if (ch == '^' && (i == 0)) {
             prog[pc++].op = RX_OP_ASSERT_BEGIN;
         }
-        else if (ch == '$' && i == len - 1) {
+        else if (ch == '$' && (i == len - 1)) {
             prog[pc++].op = RX_OP_ASSERT_END;
+        }
+        else if (ch == '*' && pc > 0) {
+            // Convert previous instruction to split loop
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = pc - 1;
+            prog[pc].y = pc + 1;
+            pc++;
+        }
+        else if (ch == '+' && pc > 0) {
+            // One or more: split after first match
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = pc - 1;
+            prog[pc].y = pc + 1;
+            pc++;
+        }
+        else if (ch == '?') {
+            // Zero or one: split to skip
+            prog[pc].op = RX_OP_SPLIT;
+            prog[pc].x = pc + 1;
+            prog[pc].y = pc + 2;
+            pc++;
         }
         else {
             prog[pc].op = RX_OP_CHAR;
-            prog[pc].c  = (unsigned char)ch;
+            prog[pc].c = (unsigned char)ch;
             pc++;
         }
     }
@@ -211,7 +243,9 @@ static int fossil_rx_vm_exec(
         }
 
         case RX_OP_ANY:
-            if (*sp == '\0')
+            if (*sp == '\0' && !(opts & RX_OPT_DOTALL))
+                return 0;
+            if (*sp == '\n' && !(opts & RX_OPT_DOTALL))
                 return 0;
             sp++;
             pc++;
@@ -227,15 +261,36 @@ static int fossil_rx_vm_exec(
             pc = ins->y;
             break;
 
+        case RX_OP_SAVE:
+            if (!m->groups) {
+                m->groups = (const char **)calloc((size_t)(ins->x + 1), sizeof(char *));
+                if (!m->groups)
+                    return -1;
+                m->group_count = ins->x + 1;
+            }
+            m->groups[ins->x] = (ins->y ? sp : NULL);
+            pc++;
+            break;
+
         case RX_OP_ASSERT_BEGIN:
-            if (sp != m->start)
-                return 0;
+            if (opts & RX_OPT_MULTILINE) {
+                if (sp != m->start && sp[-1] != '\n')
+                    return 0;
+            } else {
+                if (sp != m->start)
+                    return 0;
+            }
             pc++;
             break;
 
         case RX_OP_ASSERT_END:
-            if (*sp != '\0')
-                return 0;
+            if (opts & RX_OPT_MULTILINE) {
+                if (*sp != '\0' && *sp != '\n')
+                    return 0;
+            } else {
+                if (*sp != '\0')
+                    return 0;
+            }
             pc++;
             break;
 
