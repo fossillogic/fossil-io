@@ -144,6 +144,7 @@ FOSSIL_TEST(c_test_dir_move_and_rename) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_exists(src));
 
     const char *renamed = "test_dir_renamed";
+    fossil_io_dir_remove_recursive(renamed);
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_rename(dst, renamed));
     ASSUME_ITS_EQUAL_I32(1, fossil_io_dir_exists(renamed));
     fossil_io_dir_remove_recursive(renamed);

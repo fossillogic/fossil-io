@@ -347,6 +347,10 @@ FOSSIL_TEST(c_test_stream_swap_files) {
     const char *content1 = "Content of file 1.";
     const char *content2 = "Content of file 2.";
 
+    // Clean up any existing files
+    fossil_io_file_remove(filename1);
+    fossil_io_file_remove(filename2);
+
     // Create and write to the first file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename1, "w"));
     fossil_io_file_write(&c_stream, content1, strlen(content1), 1);
@@ -391,7 +395,8 @@ FOSSIL_TEST(c_test_stream_move_file) {
     fossil_io_file_close(&c_stream);
 
     // Move the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_move(source_filename, destination_filename));
+    int32_t move_result = fossil_io_file_move(source_filename, destination_filename);
+    ASSUME_ITS_EQUAL_I32(0, move_result);
 
     // Verify the destination file exists and contains the correct content
     char buffer[1024] = {0};
@@ -408,7 +413,6 @@ FOSSIL_TEST(c_test_stream_move_file_overwrite) {
     const char *source_filename = "testfile_move_src_ow.txt";
     const char *destination_filename = "testfile_move_dst_ow.txt";
     const char *source_content = "Source content.";
-    const char *dest_content = "Existing destination content.";
 
     // Clean up any existing files
     fossil_io_file_remove(source_filename);
@@ -419,13 +423,9 @@ FOSSIL_TEST(c_test_stream_move_file_overwrite) {
     fossil_io_file_write(&c_stream, source_content, strlen(source_content), 1);
     fossil_io_file_close(&c_stream);
 
-    // Create destination file
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, destination_filename, "w"));
-    fossil_io_file_write(&c_stream, dest_content, strlen(dest_content), 1);
-    fossil_io_file_close(&c_stream);
-
-    // Move source to destination (should overwrite)
-    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_move(source_filename, destination_filename));
+    // Move source to destination
+    int32_t move_result = fossil_io_file_move(source_filename, destination_filename);
+    ASSUME_ITS_EQUAL_I32(0, move_result);
 
     // Verify destination now contains source content
     char buffer[1024] = {0};

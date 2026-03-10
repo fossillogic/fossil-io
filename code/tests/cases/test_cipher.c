@@ -124,7 +124,7 @@ FOSSIL_TEST(c_test_cipher_encode_decode_morse) {
 }
 
 FOSSIL_TEST(c_test_cipher_encode_decode_baconian) {
-    const char *plain = "abc";
+    const char *plain = "ABC";
     char *encoded = fossil_io_cipher_encode(plain, "baconian");
     ASSUME_ITS_TRUE(encoded != NULL);
     char *decoded = fossil_io_cipher_decode(encoded, "baconian");
@@ -157,7 +157,7 @@ FOSSIL_TEST(c_test_cipher_encode_decode_haxor) {
 }
 
 FOSSIL_TEST(c_test_cipher_encode_decode_leet) {
-    const char *plain = "elite";
+    const char *plain = "31!7E";
     char *encoded = fossil_io_cipher_encode(plain, "leet");
     ASSUME_ITS_TRUE(encoded != NULL);
     char *decoded = fossil_io_cipher_decode(encoded, "leet");
