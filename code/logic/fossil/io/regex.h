@@ -26,7 +26,8 @@
 #define FOSSIL_IO_REGEX_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* ============================================================================
@@ -46,8 +47,10 @@ typedef struct fossil_io_regex_match fossil_io_regex_match_t;
  * Compile a regular expression pattern into a regex object.
  *
  * This function supports option string IDs such as "icase", "multiline", "dotall",
- * "ungreedy", and "anchored" (see internal option resolution). The pattern is compiled
- * into a simple bytecode VM supporting literals, '.', '^', and '$'.
+ * "ungreedy", "anchored", "extended", and "global" (see internal option resolution).
+ * The pattern is compiled into a simple bytecode VM supporting literals, '.', '^', '$',
+ * character classes [...], escape sequences (\d, \D, \s, \S, \w, \W, \b, \B),
+ * and quantifiers (*, +, ?).
  *
  * @param pattern   The regular expression pattern as a null-terminated string.
  * @param options   A NULL-terminated array of option string IDs (may be NULL).
@@ -67,16 +70,17 @@ fossil_io_regex_t *fossil_io_regex_compile(
 void fossil_io_regex_free(fossil_io_regex_t *re);
 
 /* ============================================================================
- * Matching
- * ============================================================================
- */
+    * Matching
+    * ============================================================================
+    */
 
 /**
  * Execute a compiled regex against input text.
  *
  * This function works by running a simple bytecode VM over the input text,
  * supporting options such as "icase", "multiline", "dotall", "ungreedy", and "anchored"
- * as resolved by fossil_io_regex_resolve_options. The VM supports literals, '.', '^', and '$'.
+ * as resolved by fossil_io_regex_resolve_options. The VM supports literals, '.', '^', '$',
+ * character classes, escape sequences (\d, \s, \w, \b), and quantifiers (*, +, ?).
  *
  * @param re        Pointer to compiled regex object.
  * @param text      Input text to match against.
@@ -96,9 +100,9 @@ int fossil_io_regex_match(
 void fossil_io_regex_match_free(fossil_io_regex_match_t *m);
 
 /* ============================================================================
- * Capture Groups
- * ============================================================================
- */
+    * Capture Groups
+    * ============================================================================
+    */
 
 /**
  * Get the number of capture groups in a match object.
@@ -122,6 +126,19 @@ int fossil_io_regex_group_count(const fossil_io_regex_match_t *m);
  */
 const char *fossil_io_regex_group(const fossil_io_regex_match_t *m, int index);
 
+/**
+ * Get the length of a specific capture group.
+ *
+ * This function returns the length (in bytes) of the specified capture group
+ * from the match object, or 0 if the group is not available. This is useful
+ * for handling capture groups that may not be null-terminated.
+ *
+ * @param m     Pointer to the match object.
+ * @param index Index of the capture group (0-based).
+ * @return      Length of the group string, or 0 if not available.
+ */
+size_t fossil_io_regex_group_length(const fossil_io_regex_match_t *m, int index);
+
 #ifdef __cplusplus
 }
 
@@ -129,9 +146,11 @@ const char *fossil_io_regex_group(const fossil_io_regex_match_t *m, int index);
 #include <vector>
 #include <stdexcept>
 
-namespace fossil {
+namespace fossil
+{
 
-    namespace io {
+    namespace io
+    {
         /* ============================================================================
          * Regex (C++ Wrapper)
          * ============================================================================
@@ -139,12 +158,13 @@ namespace fossil {
          * RAII-safe wrapper around fossil_io_regex_t
          * ABI-stable with the C implementation
          */
-        
-        class Regex {
+
+        class Regex
+        {
         public:
-            /* ------------------------------------------------------------------------
+            /* ========================================================================
              * Constructors / Destructor
-             * ------------------------------------------------------------------------
+             * ========================================================================
              */
 
             /**
@@ -153,10 +173,16 @@ namespace fossil {
              */
             Regex() noexcept
                 : re_(nullptr)
-            {}
+            {
+            }
 
             /**
              * @brief Constructs and compiles a Regex object from a pattern and options.
+             *
+             * Supports option string IDs such as "icase", "multiline", "dotall",
+             * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
+             * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
+             * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
              * Throws std::runtime_error if compilation fails.
              *
              * @param pattern Regular expression pattern.
@@ -197,8 +223,10 @@ namespace fossil {
              * @param other Regex object to move from.
              * @return Reference to this object.
              */
-            Regex &operator=(Regex &&other) noexcept {
-                if (this != &other) {
+            Regex &operator=(Regex &&other) noexcept
+            {
+                if (this != &other)
+                {
                     reset();
                     re_ = other.re_;
                     other.re_ = nullptr;
@@ -209,17 +237,23 @@ namespace fossil {
             /**
              * @brief Destructor. Frees the compiled regex object if present.
              */
-            ~Regex() {
+            ~Regex()
+            {
                 reset();
             }
 
-            /* ------------------------------------------------------------------------
-             * Compilation
-             * ------------------------------------------------------------------------
+            /* ========================================================================
+             * Compile & Destroy
+             * ========================================================================
              */
 
             /**
              * @brief Compiles the given pattern and options into a regex object.
+             *
+             * Supports option string IDs such as "icase", "multiline", "dotall",
+             * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
+             * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
+             * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
              * Throws std::runtime_error if compilation fails.
              *
              * @param pattern Regular expression pattern.
@@ -227,8 +261,7 @@ namespace fossil {
              */
             void compile(
                 const std::string &pattern,
-                const std::vector<std::string> &options = {}
-            )
+                const std::vector<std::string> &options = {})
             {
                 reset();
 
@@ -245,10 +278,10 @@ namespace fossil {
                 re_ = fossil_io_regex_compile(
                     pattern.c_str(),
                     opt_ids.empty() ? nullptr : opt_ids.data(),
-                    &err
-                );
+                    &err);
 
-                if (!re_) {
+                if (!re_)
+                {
                     std::string msg = err ? err : "regex compilation failed";
                     if (err)
                         free(err);
@@ -266,13 +299,30 @@ namespace fossil {
                 return re_ != nullptr;
             }
 
-            /* ------------------------------------------------------------------------
+            /**
+             * @brief Frees the compiled regex object and resets the internal pointer.
+             */
+            void reset() noexcept
+            {
+                if (re_)
+                {
+                    fossil_io_regex_free(re_);
+                    re_ = nullptr;
+                }
+            }
+
+            /* ========================================================================
              * Matching
-             * ------------------------------------------------------------------------
+             * ========================================================================
              */
 
             /**
              * @brief Checks if the regex matches the given text.
+             *
+             * Executes the compiled regex against input text using a bytecode VM,
+             * supporting options such as "icase", "multiline", "dotall", "ungreedy",
+             * and "anchored". The VM supports literals, '.', '^', '$', character classes,
+             * escape sequences (\d, \s, \w, \b), and quantifiers (*, +, ?).
              *
              * @param text Input text to match against.
              * @return true if match found, false otherwise.
@@ -295,6 +345,10 @@ namespace fossil {
             /**
              * @brief Matches the regex against the given text and extracts capture groups.
              *
+             * Executes the compiled regex and extracts all capture groups from a match object.
+             * The returned vector contains group strings indexed from 0. The match object
+             * is automatically freed after extraction.
+             *
              * @param text Input text to match against.
              * @param groups Output vector to receive capture group strings.
              * @return true if match found, false otherwise.
@@ -302,8 +356,7 @@ namespace fossil {
              */
             bool match(
                 const std::string &text,
-                std::vector<std::string> &groups
-            )
+                std::vector<std::string> &groups)
             {
                 ensure_compiled();
                 groups.clear();
@@ -317,29 +370,14 @@ namespace fossil {
                 int count = fossil_io_regex_group_count(m);
                 groups.reserve(count);
 
-                for (int i = 0; i < count; ++i) {
+                for (int i = 0; i < count; ++i)
+                {
                     const char *g = fossil_io_regex_group(m, i);
                     groups.emplace_back(g ? g : "");
                 }
 
                 fossil_io_regex_match_free(m);
                 return true;
-            }
-
-            /* ------------------------------------------------------------------------
-             * Utilities
-             * ------------------------------------------------------------------------
-             */
-
-            /**
-             * @brief Frees the compiled regex object and resets the internal pointer.
-             */
-            void reset() noexcept
-            {
-                if (re_) {
-                    fossil_io_regex_free(re_);
-                    re_ = nullptr;
-                }
             }
 
         private:
@@ -355,7 +393,7 @@ namespace fossil {
                     throw std::logic_error("regex not compiled");
             }
         };
-    
+
     } /* namespace io */
 } /* namespace fossil */
 
