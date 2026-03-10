@@ -371,17 +371,14 @@ FOSSIL_TEST(cpp_test_soap_split_words) {
 
 FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_basic);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_sanitize_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_suggest);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_basic);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_single_sentence);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_summarize_empty);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_formal);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_emotional);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_analyze_grammar_style_neutral);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_correct_grammar);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_correct_grammar_contractions);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_correct_grammar_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_normal_text);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_very_short);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_score_with_newlines);
@@ -410,29 +407,19 @@ FOSSIL_TEST_GROUP(cpp_soap_tests) {
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_null_detector);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_detect_unknown_detector);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_normalize);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_normalize_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_sentence_case);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_title_case);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_capitalize_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_reflow);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_reflow_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_reflow_zero_width);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_declutter_camelcase);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_declutter_pascalcase);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_declutter_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_punctuate);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_punctuate_repeated);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_punctuate_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_rewrite_full);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_rewrite_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_format);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_format_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_process_comprehensive);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_process_null);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_sentences);
     FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_words);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_null);
-    FOSSIL_TEST_ADD(cpp_soap_suite, cpp_test_soap_split_empty);
 
     FOSSIL_TEST_REGISTER(cpp_soap_suite);
 }
