@@ -363,12 +363,14 @@ FOSSIL_TEST(c_test_stream_swap_files) {
     // Verify the swap
     char buffer[1024] = {0};
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename1, "r"));
+    fossil_io_file_seek(&c_stream, 0, SEEK_SET);
     fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
     ASSUME_ITS_EQUAL_CSTR(content2, buffer);
     fossil_io_file_close(&c_stream);
 
     memset(buffer, 0, sizeof(buffer));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename2, "r"));
+    fossil_io_file_seek(&c_stream, 0, SEEK_SET);
     fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
     ASSUME_ITS_EQUAL_CSTR(content1, buffer);
     fossil_io_file_close(&c_stream);
@@ -378,6 +380,10 @@ FOSSIL_TEST(c_test_stream_move_file) {
     const char *source_filename = "testfile_move_source.txt";
     const char *destination_filename = "testfile_move_dest.txt";
     const char *content = "Content to be moved.";
+
+    // Clean up any existing files
+    fossil_io_file_remove(source_filename);
+    fossil_io_file_remove(destination_filename);
 
     // Create and write to the source file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, source_filename, "w"));
@@ -403,6 +409,10 @@ FOSSIL_TEST(c_test_stream_move_file_overwrite) {
     const char *destination_filename = "testfile_move_dst_ow.txt";
     const char *source_content = "Source content.";
     const char *dest_content = "Existing destination content.";
+
+    // Clean up any existing files
+    fossil_io_file_remove(source_filename);
+    fossil_io_file_remove(destination_filename);
 
     // Create source file
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, source_filename, "w"));
