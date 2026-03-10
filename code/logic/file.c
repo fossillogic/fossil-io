@@ -1478,3 +1478,71 @@ int fossil_io_file_link(
 
     return 0;
 }
+
+int32_t fossil_io_file_swap(const char *filename1, const char *filename2) {
+    if (!filename1 || !filename2) {
+        return fossil_io_code("system.contract");
+    }
+
+    if (strcmp(filename1, filename2) == 0) {
+        return fossil_io_code("system.ok");
+    }
+
+    // Create temporary file
+    fossil_io_file_t temp_file = fossil_io_file_tempfile();
+    if (!temp_file.file) {
+        return fossil_io_code("io.write");
+    }
+
+    char temp_filename[sizeof(temp_file.filename)];
+    strncpy(temp_filename, temp_file.filename, sizeof(temp_filename) - 1);
+    temp_filename[sizeof(temp_filename) - 1] = '\0';
+    fossil_io_file_close(&temp_file);
+
+    // Copy filename1 to temp
+    if (fossil_io_file_copy(filename1, temp_filename) != fossil_io_code("system.ok")) {
+        remove(temp_filename);
+        return fossil_io_code("io.write");
+    }
+
+    // Copy filename2 to filename1
+    if (fossil_io_file_copy(filename2, filename1) != fossil_io_code("system.ok")) {
+        remove(temp_filename);
+        return fossil_io_code("io.write");
+    }
+
+    // Copy temp to filename2
+    if (fossil_io_file_copy(temp_filename, filename2) != fossil_io_code("system.ok")) {
+        remove(temp_filename);
+        return fossil_io_code("io.write");
+    }
+
+    remove(temp_filename);
+    return fossil_io_code("system.ok");
+}
+
+int32_t fossil_io_file_move(const char *source_filename, const char *destination_filename) {
+    if (!source_filename || !destination_filename) {
+        return fossil_io_code("system.contract");
+    }
+
+    if (strcmp(source_filename, destination_filename) == 0) {
+        return fossil_io_code("system.ok");
+    }
+
+    if (rename(source_filename, destination_filename) == 0) {
+        return fossil_io_code("system.ok");
+    }
+
+    // If rename fails, try copy + delete as fallback
+    if (fossil_io_file_copy(source_filename, destination_filename) != fossil_io_code("system.ok")) {
+        return fossil_io_code("io.write");
+    }
+
+    if (fossil_io_file_remove(source_filename) != fossil_io_code("system.ok")) {
+        fossil_io_file_remove(destination_filename);
+        return fossil_io_code("io.write");
+    }
+
+    return fossil_io_code("system.ok");
+}
