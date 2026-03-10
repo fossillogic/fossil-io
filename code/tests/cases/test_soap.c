@@ -62,7 +62,7 @@ FOSSIL_TEARDOWN(c_soap_suite) {
 FOSSIL_TEST(c_test_soap_sanitize_basic) {
     const char *input = "Hello\x01World!\nThis is a test.";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(sanitized, "hello world!\nthis is a test.");
         free(sanitized);
@@ -72,7 +72,7 @@ FOSSIL_TEST(c_test_soap_sanitize_basic) {
 FOSSIL_TEST(c_test_soap_sanitize_control_chars) {
     const char *input = "Hello\x02World\x03!";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(sanitized, "hello world !");
         free(sanitized);
@@ -82,7 +82,7 @@ FOSSIL_TEST(c_test_soap_sanitize_control_chars) {
 FOSSIL_TEST(c_test_soap_sanitize_mixed_case) {
     const char *input = "ThIs Is A TeSt!";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_EQUAL_CSTR(sanitized, "this is a test!");
         free(sanitized);
@@ -92,7 +92,7 @@ FOSSIL_TEST(c_test_soap_sanitize_mixed_case) {
 FOSSIL_TEST(c_test_soap_sanitize_preserves_newline) {
     const char *input = "Hello\nWorld!";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_EQUAL_CSTR(sanitized, "hello\nworld!");
         free(sanitized);
@@ -102,7 +102,7 @@ FOSSIL_TEST(c_test_soap_sanitize_preserves_newline) {
 FOSSIL_TEST(c_test_soap_sanitize_only_control_chars) {
     const char *input = "\x01\x02\x03";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_EQUAL_CSTR(sanitized, "");
         free(sanitized);
@@ -112,7 +112,7 @@ FOSSIL_TEST(c_test_soap_sanitize_only_control_chars) {
 FOSSIL_TEST(c_test_soap_sanitize_long_sentence) {
     const char *input = "This is a very long sentence with multiple clauses, some control characters like \x04 and \x05, and mixed CASE to test the sanitizer's ability to clean and normalize the text properly.";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(sanitized, "this is a very long sentence with multiple clauses some control characters like and  and mixed case to test the sanitizer's ability to clean and normalize the text properly.");
         free(sanitized);
@@ -122,7 +122,7 @@ FOSSIL_TEST(c_test_soap_sanitize_long_sentence) {
 FOSSIL_TEST(c_test_soap_sanitize_paragraph) {
     const char *input = "First line with control\x06.\nSecond line with MIXED case and more control\x07.";
     char *sanitized = fossil_io_soap_sanitize(input);
-    ASSUME_ITS_TRUE(sanitized != NULL);
+    ASSUME_NOT_CNULL(sanitized);
     if (sanitized != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(sanitized, "first line with control .\nsecond line with mixed case and more control .");
         free(sanitized);
@@ -132,7 +132,7 @@ FOSSIL_TEST(c_test_soap_sanitize_paragraph) {
 FOSSIL_TEST(c_test_soap_suggest_spaces) {
     const char *input = "This   is   a    test.";
     char *suggestion = fossil_io_soap_suggest(input);
-    ASSUME_ITS_TRUE(suggestion != NULL);
+    ASSUME_NOT_CNULL(suggestion);
     if (suggestion != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(suggestion, "This is a test.");
         free(suggestion);
@@ -142,7 +142,7 @@ FOSSIL_TEST(c_test_soap_suggest_spaces) {
 FOSSIL_TEST(c_test_soap_summarize_short) {
     const char *input = "First sentence. Second sentence. Third sentence.";
     char *summary = fossil_io_soap_summarize(input);
-    ASSUME_ITS_TRUE(summary != NULL);
+    ASSUME_NOT_CNULL(summary);
     if (summary != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(summary, "First sentence. Second sentence.");
         free(summary);
@@ -152,15 +152,15 @@ FOSSIL_TEST(c_test_soap_summarize_short) {
 FOSSIL_TEST(c_test_soap_analyze_grammar_style_passive) {
     const char *input = "The ball was thrown by John. It was caught.";
     fossil_io_soap_grammar_style_t result = fossil_io_soap_analyze_grammar_style(input);
-    ASSUME_ITS_TRUE(result.passive_voice_pct >= 0);
-    ASSUME_ITS_TRUE(result.grammar_ok == 1);
-    ASSUME_ITS_TRUE(result.style != NULL);
+    ASSUME_ITS_MORE_OR_EQUAL_F64(result.passive_voice_pct, 0);
+    ASSUME_ITS_EQUAL_I32(result.grammar_ok, 1);
+    ASSUME_NOT_CNULL(result.style);
 }
 
 FOSSIL_TEST(c_test_soap_correct_grammar_basic) {
     const char *input = "this is a test. it works!";
     char *corrected = fossil_io_soap_correct_grammar(input);
-    ASSUME_ITS_TRUE(corrected != NULL);
+    ASSUME_NOT_CNULL(corrected);
     if (corrected != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(corrected, "This is a test. It works!");
         free(corrected);
@@ -170,9 +170,9 @@ FOSSIL_TEST(c_test_soap_correct_grammar_basic) {
 FOSSIL_TEST(c_test_soap_score_short_text) {
     const char *input = "Hi.";
     fossil_io_soap_scores_t scores = fossil_io_soap_score(input);
-    ASSUME_ITS_TRUE(scores.readability >= 0 && scores.readability <= 100);
-    ASSUME_ITS_TRUE(scores.clarity >= 0 && scores.clarity <= 100);
-    ASSUME_ITS_TRUE(scores.quality >= 0 && scores.quality <= 100);
+    ASSUME_ITS_WITHIN_RANGE_I32(scores.readability, 0, 100);
+    ASSUME_ITS_WITHIN_RANGE_I32(scores.clarity, 0, 100);
+    ASSUME_ITS_WITHIN_RANGE_I32(scores.quality, 0, 100);
 }
 
 FOSSIL_TEST(c_test_soap_readability_label) {
@@ -267,9 +267,10 @@ FOSSIL_TEST(c_test_soap_detect_formal) {
 FOSSIL_TEST(c_test_soap_split_sentences) {
     const char *input = "First. Second! Third?";
     char **split = fossil_io_soap_split(input);
-    ASSUME_ITS_TRUE(split != NULL);
+    ASSUME_NOT_CNULL(split);
     if (split != NULL) {
-        ASSUME_ITS_TRUE(split[0] != NULL && split[1] != NULL);
+        ASSUME_NOT_CNULL(split[0]);
+        ASSUME_NOT_CNULL(split[1]);
         for (int i = 0; split[i] != NULL; ++i) free(split[i]);
         free(split);
     }
@@ -278,7 +279,7 @@ FOSSIL_TEST(c_test_soap_split_sentences) {
 FOSSIL_TEST(c_test_soap_reflow_width) {
     const char *input = "This is a long line that should be wrapped at a certain width.";
     char *reflowed = fossil_io_soap_reflow(input, 20);
-    ASSUME_ITS_TRUE(reflowed != NULL);
+    ASSUME_NOT_CNULL(reflowed);
     if (reflowed != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(reflowed, "\n");
         free(reflowed);
@@ -289,7 +290,8 @@ FOSSIL_TEST(c_test_soap_capitalize_sentence_and_title) {
     const char *input = "this is a test. another sentence.";
     char *sentence_case = fossil_io_soap_capitalize(input, 0);
     char *title_case = fossil_io_soap_capitalize(input, 1);
-    ASSUME_ITS_TRUE(sentence_case != NULL && title_case != NULL);
+    ASSUME_NOT_CNULL(sentence_case);
+    ASSUME_NOT_CNULL(title_case);
     if (sentence_case != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(sentence_case, "This is a test.");
         free(sentence_case);
@@ -303,7 +305,7 @@ FOSSIL_TEST(c_test_soap_capitalize_sentence_and_title) {
 FOSSIL_TEST(c_test_soap_rewrite_pipeline) {
     const char *input = "tHiS is a tESt.   it works!!!";
     char *rewritten = fossil_io_soap_rewrite(input);
-    ASSUME_ITS_TRUE(rewritten != NULL);
+    ASSUME_NOT_CNULL(rewritten);
     if (rewritten != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(rewritten, "This is a test.");
         free(rewritten);
@@ -313,7 +315,7 @@ FOSSIL_TEST(c_test_soap_rewrite_pipeline) {
 FOSSIL_TEST(c_test_soap_format_pretty) {
     const char *input = "this is a test.   it should be formatted nicely.";
     char *formatted = fossil_io_soap_format(input);
-    ASSUME_ITS_TRUE(formatted != NULL);
+    ASSUME_NOT_CNULL(formatted);
     if (formatted != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(formatted, "This is a test.");
         free(formatted);
@@ -323,7 +325,7 @@ FOSSIL_TEST(c_test_soap_format_pretty) {
 FOSSIL_TEST(c_test_soap_declutter_camel_case) {
     const char *input = "ThisIsCamelCase and PascalCaseTest";
     char *decluttered = fossil_io_soap_declutter(input);
-    ASSUME_ITS_TRUE(decluttered != NULL);
+    ASSUME_NOT_CNULL(decluttered);
     if (decluttered != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(decluttered, "This Is Camel Case");
         free(decluttered);
@@ -333,7 +335,7 @@ FOSSIL_TEST(c_test_soap_declutter_camel_case) {
 FOSSIL_TEST(c_test_soap_punctuate_repeated) {
     const char *input = "Wow!!! Really???";
     char *punctuated = fossil_io_soap_punctuate(input);
-    ASSUME_ITS_TRUE(punctuated != NULL);
+    ASSUME_NOT_CNULL(punctuated);
     if (punctuated != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(punctuated, "Wow! Really?");
         free(punctuated);
@@ -343,7 +345,7 @@ FOSSIL_TEST(c_test_soap_punctuate_repeated) {
 FOSSIL_TEST(c_test_soap_process_full_pipeline) {
     const char *input = "tHiS is a tESt.   it works!!!";
     char *processed = fossil_io_soap_process(input);
-    ASSUME_ITS_TRUE(processed != NULL);
+    ASSUME_NOT_CNULL(processed);
     if (processed != NULL) {
         ASSUME_ITS_CSTR_CONTAINS(processed, "This is a test.");
         free(processed);
