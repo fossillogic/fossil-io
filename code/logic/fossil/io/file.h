@@ -272,6 +272,28 @@ int32_t fossil_io_file_save(fossil_io_file_t *stream, const char *new_filename);
 int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename);
 
 /**
+ * Swap the contents of two files.
+ *
+ * This function swaps the contents of two files, effectively exchanging their data.
+ *
+ * @param filename1 The name of the first file.
+ * @param filename2 The name of the second file.
+ * @return          0 on success, non-zero on failure.
+ */
+int32_t fossil_io_file_swap(const char *filename1, const char *filename2);
+
+/**
+ * Move a file from source to destination.
+ *
+ * This function moves a file from a source path to a destination path.
+ *
+ * @param source_filename      The name of the source file.
+ * @param destination_filename The name of the destination file.
+ * @return                     0 on success, non-zero on failure.
+ */
+int32_t fossil_io_file_move(const char *source_filename, const char *destination_filename);
+
+/**
  * Remove a file stream.
  *
  * This function removes a file stream.
@@ -1207,6 +1229,58 @@ namespace fossil {
              */
             static int decompress(fossil_io_file_t *f) {
                 return fossil_io_file_decompress(f);
+            }
+
+            /**
+             * Swap the contents of two files.
+             *
+             * This function swaps the contents of two files, effectively exchanging their data.
+             *
+             * @param filename1 The name of the first file.
+             * @param filename2 The name of the second file.
+             * @return          0 on success, non-zero on failure.
+             */
+            static int32_t swap(const char *filename1, const char *filename2) {
+                return fossil_io_file_swap(filename1, filename2);
+            }
+
+            /**
+             * Swap the contents of two files.
+             *
+             * This function swaps the contents of two files, effectively exchanging their data.
+             *
+             * @param filename1 The name of the first file.
+             * @param filename2 The name of the second file.
+             * @return          0 on success, non-zero on failure.
+             */
+            static int32_t swap(const std::string &filename1, const std::string &filename2) {
+                return fossil_io_file_swap(filename1.c_str(), filename2.c_str());
+            }
+
+            /**
+             * Move a file from source to destination.
+             *
+             * This function moves a file from a source path to a destination path.
+             *
+             * @param source_filename      The name of the source file.
+             * @param destination_filename The name of the destination file.
+             * @return                     0 on success, non-zero on failure.
+             */
+            static int32_t move(const char *source_filename, const char *destination_filename) {
+                return fossil_io_file_move(source_filename, destination_filename);
+            }
+
+            /**
+             * Move a file from source to destination.
+             *
+             * This function moves a file from a source path to a destination path.
+             *
+             * @param source_filename      The name of the source file.
+             * @param destination_filename The name of the destination file.
+             * @return                     0 on success, non-zero on failure.
+             */
+            static int32_t move(const std::string &source_filename, const std::string &destination_filename) {
+                return fossil_io_file_move(source_filename.c_str(), destination_filename.c_str());
             }
 
         };

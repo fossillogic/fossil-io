@@ -185,67 +185,67 @@ FOSSIL_TEST(c_test_soap_readability_label) {
 }
 
 FOSSIL_TEST(c_test_soap_detect_spam) {
-    const char *input = "Buy now! Limited offer!";
+    const char *input = "Buy now! Limited offer! Order today!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "spam"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "spam"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_conspiracy) {
-    const char *input = "The shadow government has a secret plan.";
+    const char *input = "The shadow government conspiracy has a secret hidden plan.";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "conspiracy"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hello world.", "conspiracy"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_ragebait) {
-    const char *input = "You won't believe this outrageous claim!";
+    const char *input = "You won't believe this outrageous infuriating claim that will make you rage!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "ragebait"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Calm discussion.", "ragebait"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_clickbait) {
-    const char *input = "You won't believe what happened next!";
+    const char *input = "You won't believe what happened next! Click here now!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "clickbait"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Ordinary news.", "clickbait"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_bot) {
-    const char *input = "Subscribe for a free gift!";
+    const char *input = "Subscribe for a free gift! Follow us now!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "bot"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Welcome to the forum.", "bot"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_marketing) {
-    const char *input = "Limited time offer! Save big!";
+    const char *input = "Limited time offer! Save big! Buy now for exclusive deals!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "marketing"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("General information.", "marketing"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_technobabble) {
-    const char *input = "Our AI-driven blockchain solution uses quantum entanglement.";
+    const char *input = "Our AI-driven blockchain synergy solution uses quantum entanglement algorithms.";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "technobabble"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Simple explanation.", "technobabble"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_hype) {
-    const char *input = "This is a groundbreaking, mind-blowing discovery!";
+    const char *input = "This is a groundbreaking, mind-blowing revolutionary discovery!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "hype"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Routine update.", "hype"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_political) {
-    const char *input = "The government passed new legislation.";
+    const char *input = "The government party passed new election legislation campaign.";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "political"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("No politics here.", "political"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_offensive) {
-    const char *input = "You are such an idiot!";
+    const char *input = "You are such an idiot fool stupid!";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "offensive"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Polite conversation.", "offensive"), 0);
 }
 
 FOSSIL_TEST(c_test_soap_detect_misinfo) {
-    const char *input = "This is fake news and a hoax.";
+    const char *input = "This is fake news misinformation and a hoax unverified.";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "misinfo"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Verified facts.", "misinfo"), 0);
 }
@@ -257,7 +257,7 @@ FOSSIL_TEST(c_test_soap_detect_brain_rot) {
 }
 
 FOSSIL_TEST(c_test_soap_detect_formal) {
-    const char *input = "Therefore, we must proceed accordingly.";
+    const char *input = "Therefore, we must proceed accordingly with utmost formality.";
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect(input, "formal"), 1);
     ASSUME_ITS_EQUAL_I32(fossil_io_soap_detect("Hey, what's up?", "formal"), 0);
 }

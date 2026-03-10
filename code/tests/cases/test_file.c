@@ -341,6 +341,100 @@ FOSSIL_TEST(c_test_stream_compress_and_decompress) {
     fossil_io_file_close(&c_stream);
 }
 
+FOSSIL_TEST(c_test_stream_swap_files) {
+    const char *filename1 = "testfile_swap1.txt";
+    const char *filename2 = "testfile_swap2.txt";
+    const char *content1 = "Content of file 1.";
+    const char *content2 = "Content of file 2.";
+
+    // Clean up any existing files
+    fossil_io_file_remove(filename1);
+    fossil_io_file_remove(filename2);
+
+    // Create and write to the first file
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename1, "w"));
+    fossil_io_file_write(&c_stream, content1, strlen(content1), 1);
+    fossil_io_file_close(&c_stream);
+
+    // Create and write to the second file
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename2, "w"));
+    fossil_io_file_write(&c_stream, content2, strlen(content2), 1);
+    fossil_io_file_close(&c_stream);
+
+    // Swap the files
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_swap(filename1, filename2));
+
+    // Verify the swap
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename1, "r"));
+    fossil_io_file_seek(&c_stream, 0, SEEK_SET);
+    fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
+    ASSUME_ITS_EQUAL_CSTR(content2, buffer);
+    fossil_io_file_close(&c_stream);
+
+    memset(buffer, 0, sizeof(buffer));
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, filename2, "r"));
+    fossil_io_file_seek(&c_stream, 0, SEEK_SET);
+    fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
+    ASSUME_ITS_EQUAL_CSTR(content1, buffer);
+    fossil_io_file_close(&c_stream);
+}
+
+FOSSIL_TEST(c_test_stream_move_file) {
+    const char *source_filename = "testfile_move_source.txt";
+    const char *destination_filename = "testfile_move_dest.txt";
+    const char *content = "Content to be moved.";
+
+    // Clean up any existing files
+    fossil_io_file_remove(source_filename);
+    fossil_io_file_remove(destination_filename);
+
+    // Create and write to the source file
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, source_filename, "w"));
+    fossil_io_file_write(&c_stream, content, strlen(content), 1);
+    fossil_io_file_close(&c_stream);
+
+    // Move the file
+    int32_t move_result = fossil_io_file_move(source_filename, destination_filename);
+    ASSUME_ITS_EQUAL_I32(0, move_result);
+
+    // Verify the destination file exists and contains the correct content
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, destination_filename, "r"));
+    fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
+    ASSUME_ITS_EQUAL_CSTR(content, buffer);
+    fossil_io_file_close(&c_stream);
+
+    // Verify the source file no longer exists
+    ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(source_filename));
+}
+
+FOSSIL_TEST(c_test_stream_move_file_overwrite) {
+    const char *source_filename = "testfile_move_src_ow.txt";
+    const char *destination_filename = "testfile_move_dst_ow.txt";
+    const char *source_content = "Source content.";
+
+    // Clean up any existing files
+    fossil_io_file_remove(source_filename);
+    fossil_io_file_remove(destination_filename);
+
+    // Create source file
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, source_filename, "w"));
+    fossil_io_file_write(&c_stream, source_content, strlen(source_content), 1);
+    fossil_io_file_close(&c_stream);
+
+    // Move source to destination
+    int32_t move_result = fossil_io_file_move(source_filename, destination_filename);
+    ASSUME_ITS_EQUAL_I32(0, move_result);
+
+    // Verify destination now contains source content
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(0, fossil_io_file_open(&c_stream, destination_filename, "r"));
+    fossil_io_file_read(&c_stream, buffer, sizeof(buffer), 1);
+    ASSUME_ITS_EQUAL_CSTR(source_content, buffer);
+    fossil_io_file_close(&c_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -366,6 +460,9 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_add_tag);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_detect_binary);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_compress_and_decompress);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_swap_files);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_move_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_move_file_overwrite);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);
 }
