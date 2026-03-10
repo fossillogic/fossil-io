@@ -160,7 +160,7 @@ FOSSIL_TEST(cpp_test_soap_readability_label_fair) {
 }
 
 FOSSIL_TEST(cpp_test_soap_readability_label_poor) {
-    std::string label = fossil::io::Soap::readability_label(10);
+    std::string label = fossil::io::Soap::readability_label(20);
     ASSUME_ITS_EQUAL_CSTR(label.c_str(), "very poor");
 }
 

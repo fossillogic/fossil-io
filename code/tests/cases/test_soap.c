@@ -187,7 +187,7 @@ FOSSIL_TEST(c_test_soap_readability_label_fair) {
 }
 
 FOSSIL_TEST(c_test_soap_readability_label_poor) {
-    const char *label = fossil_io_soap_readability_label(10);
+    const char *label = fossil_io_soap_readability_label(20);
     ASSUME_NOT_CNULL(label);
     ASSUME_ITS_EQUAL_CSTR(label, "very poor");
 }

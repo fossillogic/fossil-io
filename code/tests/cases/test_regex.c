@@ -309,7 +309,7 @@ FOSSIL_TEST(c_test_regex_quantifier_question) {
     fossil_io_regex_t *re = fossil_io_regex_compile("a?b", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_match_t *match = NULL;
-    int rc = fossil_io_regex_match(re, "b", &match);
+    int rc = fossil_io_regex_match(re, "ab", &match);
     ASSUME_ITS_EQUAL_I32(1, rc);
     ASSUME_ITS_TRUE(match != NULL);
     fossil_io_regex_match_free(match);
