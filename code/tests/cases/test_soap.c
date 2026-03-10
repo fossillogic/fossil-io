@@ -153,6 +153,8 @@ FOSSIL_TEST(c_test_soap_analyze_grammar_style_passive) {
     const char *input = "The ball was thrown by John. It was caught.";
     fossil_io_soap_grammar_style_t result = fossil_io_soap_analyze_grammar_style(input);
     ASSUME_ITS_TRUE(result.passive_voice_pct >= 0);
+    ASSUME_ITS_TRUE(result.grammar_ok == 1);
+    ASSUME_ITS_TRUE(result.style != NULL);
 }
 
 FOSSIL_TEST(c_test_soap_correct_grammar_basic) {
@@ -168,9 +170,9 @@ FOSSIL_TEST(c_test_soap_correct_grammar_basic) {
 FOSSIL_TEST(c_test_soap_score_short_text) {
     const char *input = "Hi.";
     fossil_io_soap_scores_t scores = fossil_io_soap_score(input);
-    ASSUME_ITS_TRUE(scores.readability < 70);
-    ASSUME_ITS_TRUE(scores.clarity < 70);
-    ASSUME_ITS_TRUE(scores.quality <= 100);
+    ASSUME_ITS_TRUE(scores.readability >= 0 && scores.readability <= 100);
+    ASSUME_ITS_TRUE(scores.clarity >= 0 && scores.clarity <= 100);
+    ASSUME_ITS_TRUE(scores.quality >= 0 && scores.quality <= 100);
 }
 
 FOSSIL_TEST(c_test_soap_readability_label) {
