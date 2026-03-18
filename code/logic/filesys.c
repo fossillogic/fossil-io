@@ -25,10 +25,15 @@
 #include "fossil/io/filesys.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>   // malloc, free, realpath
+#include <string.h>
+#include <time.h>
+#include <unistd.h>   // truncate, ftruncate, getcwd, chdir
+#include <limits.h>   // PATH_MAX
+#include <sys/stat.h> // stat, mkdir
+#include <fcntl.h>    // open, O_* flags
 
 #ifdef _WIN32
     #include <windows.h>
@@ -51,6 +56,8 @@
 #define FOSSIL_MERGE_CONCAT 1
 #define FOSSIL_MERGE_INTERLEAVE 2
 
+// Forward declaration
+uint64_t fossil_hash_file(const char *path);
 
 /* ------------------------------------------------------------
  * Internal utilites and platform abstractions
