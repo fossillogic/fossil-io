@@ -56,8 +56,75 @@
 #define FOSSIL_MERGE_CONCAT 1
 #define FOSSIL_MERGE_INTERLEAVE 2
 
-// Forward declaration
-uint64_t fossil_hash_file(const char *path);
+/* ------------------------------------------------------------
+ * Internal hash algorithms
+ * ------------------------------------------------------------ */
+
+
+static inline uint64_t rotl64(uint64_t x, unsigned int r) {
+    return (x << r) | (x >> (64 - r));
+}
+
+static uint64_t fossil_hash_file(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+
+    uint64_t hash = 14695981039346656037ULL;  // FNV offset basis
+    const uint64_t prime = 1099511628211ULL;
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+        for (size_t i = 0; i < n; ++i)
+        {
+            hash ^= buf[i];
+            hash *= prime;
+            hash ^= (hash >> 33);
+            hash = rotl64(hash, 27);
+        }
+    }
+
+    fclose(f);
+
+    // final avalanche
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+
+    return hash;
+}
+
+static uint64_t hash_fnv1a(FILE *f)
+{
+    if (!f) return 0;
+
+    uint64_t hash = 14695981039346656037ULL; // FNV offset basis
+    const uint64_t prime = 1099511628211ULL;
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+        for (size_t i = 0; i < n; i++)
+        {
+            hash ^= buf[i];
+            hash *= prime;
+            hash ^= (hash >> 33);
+            hash = rotl64(hash, 27);
+        }
+    }
+
+    // final avalanche
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+
+    return hash;
+}
 
 /* ------------------------------------------------------------
  * Internal utilites and platform abstractions
@@ -447,71 +514,6 @@ static int dedup_walk(
 #endif
 
     return 0;
-}
-
-static inline uint64_t rotl64(uint64_t x, unsigned int r) {
-    return (x << r) | (x >> (64 - r));
-}
-
-static uint64_t fossil_hash_file(const char *path)
-{
-    FILE *f = fopen(path, "rb");
-    if (!f) return 0;
-
-    uint64_t hash = 14695981039346656037ULL;  // FNV offset basis
-    const uint64_t prime = 1099511628211ULL;
-
-    unsigned char buf[8192];
-    size_t n;
-
-    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
-    {
-        for (size_t i = 0; i < n; ++i)
-        {
-            hash ^= buf[i];
-            hash *= prime;
-            hash ^= (hash >> 33);
-            hash = rotl64(hash, 27);
-        }
-    }
-
-    fclose(f);
-
-    // final avalanche
-    hash ^= hash >> 33;
-    hash *= 0xff51afd7ed558ccdULL;
-    hash ^= hash >> 33;
-
-    return hash;
-}
-
-static uint64_t hash_fnv1a(FILE *f)
-{
-    if (!f) return 0;
-
-    uint64_t hash = 14695981039346656037ULL; // FNV offset basis
-    const uint64_t prime = 1099511628211ULL;
-
-    unsigned char buf[8192];
-    size_t n;
-
-    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
-    {
-        for (size_t i = 0; i < n; i++)
-        {
-            hash ^= buf[i];
-            hash *= prime;
-            hash ^= (hash >> 33);
-            hash = rotl64(hash, 27);
-        }
-    }
-
-    // final avalanche
-    hash ^= hash >> 33;
-    hash *= 0xff51afd7ed558ccdULL;
-    hash ^= hash >> 33;
-
-    return hash;
 }
 
 static int remove_recursive(const char *path)
