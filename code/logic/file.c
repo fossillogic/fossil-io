@@ -765,6 +765,9 @@ int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename
     if (!old_filename || !new_filename)
         return fossil_io_code("system.contract");
 
+    if (strcmp(old_filename, new_filename) == 0)
+        return fossil_io_code("system.ok");
+
     if (rename(old_filename, new_filename) != 0)
     {
         if (errno == ENOENT)
@@ -1708,28 +1711,29 @@ int32_t fossil_io_file_swap(const char *filename1, const char *filename2)
     temp_filename[sizeof(temp_filename) - 1] = '\0';
     fossil_io_file_close(&temp_file);
 
-    // Copy filename1 to temp
-    if (fossil_io_file_copy(filename1, temp_filename) != fossil_io_code("system.ok"))
+    // Move filename1 to temp (atomic rename)
+    if (rename(filename1, temp_filename) != 0)
     {
         remove(temp_filename);
         return fossil_io_code("io.write");
     }
 
-    // Copy filename2 to filename1
-    if (fossil_io_file_copy(filename2, filename1) != fossil_io_code("system.ok"))
+    // Move filename2 to filename1 (atomic rename)
+    if (rename(filename2, filename1) != 0)
     {
+        rename(temp_filename, filename1);
         remove(temp_filename);
         return fossil_io_code("io.write");
     }
 
-    // Copy temp to filename2
-    if (fossil_io_file_copy(temp_filename, filename2) != fossil_io_code("system.ok"))
+    // Move temp to filename2 (atomic rename)
+    if (rename(temp_filename, filename2) != 0)
     {
-        remove(temp_filename);
+        rename(filename1, filename2);
+        rename(temp_filename, filename1);
         return fossil_io_code("io.write");
     }
 
-    remove(temp_filename);
     return fossil_io_code("system.ok");
 }
 
@@ -1745,6 +1749,13 @@ int32_t fossil_io_file_move(const char *source_filename, const char *destination
         return fossil_io_code("system.ok");
     }
 
+    // Verify source file exists before attempting move
+    if (fossil_io_file_file_exists(source_filename) != fossil_io_code("fs.exists"))
+    {
+        return fossil_io_code("fs.not_found");
+    }
+
+    // Attempt atomic rename first (fastest and most reliable)
     if (rename(source_filename, destination_filename) == 0)
     {
         return fossil_io_code("system.ok");
@@ -1756,6 +1767,13 @@ int32_t fossil_io_file_move(const char *source_filename, const char *destination
         return fossil_io_code("io.write");
     }
 
+    // Verify destination exists before deleting source
+    if (fossil_io_file_file_exists(destination_filename) != fossil_io_code("fs.exists"))
+    {
+        return fossil_io_code("io.write");
+    }
+
+    // Now safely delete the source
     if (fossil_io_file_remove(source_filename) != fossil_io_code("system.ok"))
     {
         fossil_io_file_remove(destination_filename);
