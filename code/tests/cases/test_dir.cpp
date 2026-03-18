@@ -26,7 +26,6 @@
 
 #include "fossil/io/framework.h"
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,12 +37,14 @@
 FOSSIL_SUITE(cpp_dir_suite);
 
 // Setup function for the test suite
-FOSSIL_SETUP(cpp_dir_suite) {
+FOSSIL_SETUP(cpp_dir_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(cpp_dir_suite) {
+FOSSIL_TEARDOWN(cpp_dir_suite)
+{
     // Teardown code here
 }
 
@@ -55,7 +56,8 @@ FOSSIL_TEARDOWN(cpp_dir_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(cpp_test_dir_create_and_exists) {
+FOSSIL_TEST(cpp_test_dir_create_and_exists)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_create";
     Dir::remove_recursive(dirname);
@@ -65,7 +67,8 @@ FOSSIL_TEST(cpp_test_dir_create_and_exists) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_remove_and_remove_recursive) {
+FOSSIL_TEST(cpp_test_dir_remove_and_remove_recursive)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_remove";
     Dir::remove_recursive(dirname);
@@ -80,7 +83,8 @@ FOSSIL_TEST(cpp_test_dir_remove_and_remove_recursive) {
     ASSUME_ITS_EQUAL_I32(0, Dir::exists(dirname));
 }
 
-FOSSIL_TEST(cpp_test_dir_clear) {
+FOSSIL_TEST(cpp_test_dir_clear)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_clear";
     Dir::remove_recursive(dirname);
@@ -97,7 +101,8 @@ FOSSIL_TEST(cpp_test_dir_clear) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_copy_and_copy_recursive) {
+FOSSIL_TEST(cpp_test_dir_copy_and_copy_recursive)
+{
     using fossil::io::Dir;
     const std::string src = "test_dir_src";
     const std::string dst = "test_dir_dst";
@@ -117,7 +122,8 @@ FOSSIL_TEST(cpp_test_dir_copy_and_copy_recursive) {
     Dir::remove_recursive(dst);
 }
 
-FOSSIL_TEST(cpp_test_dir_move_and_rename) {
+FOSSIL_TEST(cpp_test_dir_move_and_rename)
+{
     using fossil::io::Dir;
     const std::string src = "test_dir_move_src";
     const std::string dst = "test_dir_move_dst";
@@ -139,7 +145,8 @@ FOSSIL_TEST(cpp_test_dir_move_and_rename) {
     Dir::remove_recursive(renamed);
 }
 
-FOSSIL_TEST(cpp_test_dir_iter_and_list) {
+FOSSIL_TEST(cpp_test_dir_iter_and_list)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_iter";
     Dir::remove_recursive(dirname);
@@ -154,8 +161,10 @@ FOSSIL_TEST(cpp_test_dir_iter_and_list) {
     fossil_io_dir_iter_t it;
     ASSUME_ITS_EQUAL_I32(0, Dir::iter_open(&it, dirname));
     int found = 0;
-    while (Dir::iter_next(&it)) {
-        if (strcmp(it.current.name, "file.txt") == 0) {
+    while (Dir::iter_next(&it))
+    {
+        if (strcmp(it.current.name, "file.txt") == 0)
+        {
             found = 1;
             ASSUME_ITS_EQUAL_I32(0, it.current.type);
             ASSUME_ITS_TRUE(it.current.size > 0);
@@ -170,8 +179,10 @@ FOSSIL_TEST(cpp_test_dir_iter_and_list) {
     ASSUME_ITS_EQUAL_I32(0, Dir::list(dirname, entries, &count, 10));
     ASSUME_ITS_TRUE(count > 0);
     int listed = 0;
-    for (size_t i = 0; i < count; ++i) {
-        if (strcmp(entries[i].name, "file.txt") == 0) {
+    for (size_t i = 0; i < count; ++i)
+    {
+        if (strcmp(entries[i].name, "file.txt") == 0)
+        {
             listed = 1;
             ASSUME_ITS_EQUAL_I32(0, entries[i].type);
             ASSUME_ITS_TRUE(entries[i].size > 0);
@@ -183,7 +194,8 @@ FOSSIL_TEST(cpp_test_dir_iter_and_list) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_path_utilities) {
+FOSSIL_TEST(cpp_test_dir_path_utilities)
+{
     char out[256];
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_join(".", "file.txt", out, sizeof(out)));
     ASSUME_ITS_TRUE(strstr(out, "file.txt") != NULL);
@@ -197,7 +209,8 @@ FOSSIL_TEST(cpp_test_dir_path_utilities) {
     ASSUME_ITS_TRUE(strlen(out) > 0);
 }
 
-FOSSIL_TEST(cpp_test_dir_is_empty_and_count_and_size) {
+FOSSIL_TEST(cpp_test_dir_is_empty_and_count_and_size)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_empty";
     Dir::remove_recursive(dirname);
@@ -218,7 +231,8 @@ FOSSIL_TEST(cpp_test_dir_is_empty_and_count_and_size) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_permissions) {
+FOSSIL_TEST(cpp_test_dir_permissions)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_perm";
     Dir::remove_recursive(dirname);
@@ -230,7 +244,8 @@ FOSSIL_TEST(cpp_test_dir_permissions) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_temp_and_create_temp) {
+FOSSIL_TEST(cpp_test_dir_temp_and_create_temp)
+{
     using fossil::io::Dir;
     char tempdir[256];
     ASSUME_ITS_EQUAL_I32(0, Dir::temp(tempdir, sizeof(tempdir)));
@@ -241,7 +256,8 @@ FOSSIL_TEST(cpp_test_dir_temp_and_create_temp) {
     Dir::remove_recursive(tempcreated);
 }
 
-FOSSIL_TEST(cpp_test_dir_metadata) {
+FOSSIL_TEST(cpp_test_dir_metadata)
+{
     using fossil::io::Dir;
     const std::string dirname = "test_dir_meta";
     Dir::remove_recursive(dirname);
@@ -254,7 +270,8 @@ FOSSIL_TEST(cpp_test_dir_metadata) {
     Dir::remove_recursive(dirname);
 }
 
-FOSSIL_TEST(cpp_test_dir_backup_mirror_sync) {
+FOSSIL_TEST(cpp_test_dir_backup_mirror_sync)
+{
     using fossil::io::Dir;
     const std::string src = "test_dir_syncpp_src";
     const std::string dst = "test_dir_syncpp_dst";
@@ -273,12 +290,12 @@ FOSSIL_TEST(cpp_test_dir_backup_mirror_sync) {
     Dir::remove_recursive(dst);
 }
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(cpp_dir_tests) {
+FOSSIL_TEST_GROUP(cpp_dir_tests)
+{
     FOSSIL_TEST_ADD(cpp_dir_suite, cpp_test_dir_create_and_exists);
     FOSSIL_TEST_ADD(cpp_dir_suite, cpp_test_dir_remove_and_remove_recursive);
     FOSSIL_TEST_ADD(cpp_dir_suite, cpp_test_dir_clear);

@@ -27,7 +27,6 @@
 #include "fossil/io/framework.h"
 #include <stdio.h> // for fpos_t or fpos64_t if needed
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -40,12 +39,14 @@ FOSSIL_SUITE(c_stream_suite);
 fossil_io_file_t c_stream;
 
 // Setup function for the test suite
-FOSSIL_SETUP(c_stream_suite) {
+FOSSIL_SETUP(c_stream_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(c_stream_suite) {
+FOSSIL_TEARDOWN(c_stream_suite)
+{
     // Teardown code here
 }
 
@@ -57,7 +58,8 @@ FOSSIL_TEARDOWN(c_stream_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(c_test_stream_tempfile_creation) {
+FOSSIL_TEST(c_test_stream_tempfile_creation)
+{
     // Create a temporary file
     fossil_io_file_t temp_stream = fossil_io_file_tempfile();
 
@@ -68,7 +70,8 @@ FOSSIL_TEST(c_test_stream_tempfile_creation) {
     fossil_io_file_close(&temp_stream);
 }
 
-FOSSIL_TEST(c_test_stream_tempfile_cleanup) {
+FOSSIL_TEST(c_test_stream_tempfile_cleanup)
+{
     // Create a temporary file
     fossil_io_file_t temp_stream = fossil_io_file_tempfile();
 
@@ -82,7 +85,8 @@ FOSSIL_TEST(c_test_stream_tempfile_cleanup) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_file_exists(temp_filename));
 }
 
-FOSSIL_TEST(c_test_stream_let_write_and_read_file) {
+FOSSIL_TEST(c_test_stream_let_write_and_read_file)
+{
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
 
@@ -98,7 +102,8 @@ FOSSIL_TEST(c_test_stream_let_write_and_read_file) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_redirect_to_devnull) {
+FOSSIL_TEST(c_test_stream_redirect_to_devnull)
+{
     const char *filename = "testfile_redirect.txt";
     const char *content = "This is a test.";
 
@@ -125,8 +130,8 @@ FOSSIL_TEST(c_test_stream_redirect_to_devnull) {
     ASSUME_ITS_EQUAL_CSTR(content, buffer);
 }
 
-
-FOSSIL_TEST(c_test_stream_let_open_and_close_file) {
+FOSSIL_TEST(c_test_stream_let_open_and_close_file)
+{
     const char *filename = "testfile.txt";
 
     // Open the file
@@ -134,7 +139,8 @@ FOSSIL_TEST(c_test_stream_let_open_and_close_file) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_multiple_files) {
+FOSSIL_TEST(c_test_stream_multiple_files)
+{
     const char *filename1 = "testfile1.txt";
     const char *filename2 = "testfile2.txt";
 
@@ -147,7 +153,8 @@ FOSSIL_TEST(c_test_stream_multiple_files) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_seek_and_tell) {
+FOSSIL_TEST(c_test_stream_seek_and_tell)
+{
     const char *filename = "testfile.txt";
     const char *content = "This is a test.";
 
@@ -171,7 +178,8 @@ FOSSIL_TEST(c_test_stream_seek_and_tell) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_get_type) {
+FOSSIL_TEST(c_test_stream_get_type)
+{
     const char *filename = "testfile_type.txt";
 
     // Create the file
@@ -179,10 +187,11 @@ FOSSIL_TEST(c_test_stream_get_type) {
     fossil_io_file_close(&c_stream);
 
     // Check the file type
-    ASSUME_ITS_EQUAL_I32(2, fossil_io_file_get_type(filename));  // Regular file
+    ASSUME_ITS_EQUAL_I32(2, fossil_io_file_get_type(filename)); // Regular file
 }
 
-FOSSIL_TEST(c_test_stream_is_readable) {
+FOSSIL_TEST(c_test_stream_is_readable)
+{
     const char *filename = "testfile_readable.txt";
 
     // Create the file
@@ -193,7 +202,8 @@ FOSSIL_TEST(c_test_stream_is_readable) {
     ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_readable(filename));
 }
 
-FOSSIL_TEST(c_test_stream_is_writable) {
+FOSSIL_TEST(c_test_stream_is_writable)
+{
     const char *filename = "testfile_writable.txt";
 
     // Create the file
@@ -204,7 +214,8 @@ FOSSIL_TEST(c_test_stream_is_writable) {
     ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_writable(filename));
 }
 
-FOSSIL_TEST(c_test_stream_is_executable) {
+FOSSIL_TEST(c_test_stream_is_executable)
+{
     const char *filename = "testfile_executable.txt";
 
     // Create the file
@@ -215,7 +226,8 @@ FOSSIL_TEST(c_test_stream_is_executable) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_is_executable(filename));
 }
 
-FOSSIL_TEST(c_test_stream_set_permissions) {
+FOSSIL_TEST(c_test_stream_set_permissions)
+{
     const char *filename = "testfile_permissions.txt";
 
     // Create the file
@@ -230,7 +242,8 @@ FOSSIL_TEST(c_test_stream_set_permissions) {
     ASSUME_ITS_EQUAL_I32(1, fossil_io_file_is_writable(filename));
 }
 
-FOSSIL_TEST(c_test_stream_get_permissions) {
+FOSSIL_TEST(c_test_stream_get_permissions)
+{
     const char *filename = "testfile_get_permissions.txt";
     int32_t mode;
 
@@ -245,7 +258,8 @@ FOSSIL_TEST(c_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_file_get_permissions(filename, &mode));
 }
 
-FOSSIL_TEST(c_test_stream_flush_file) {
+FOSSIL_TEST(c_test_stream_flush_file)
+{
     const char *filename = "testfile_flush.txt";
     const char *content = "This is a test.";
 
@@ -258,7 +272,8 @@ FOSSIL_TEST(c_test_stream_flush_file) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_ai_analyze) {
+FOSSIL_TEST(c_test_stream_ai_analyze)
+{
     const char *filename = "testfile_ai.txt";
     const char *content = "This is a test for AI analysis.";
 
@@ -273,7 +288,8 @@ FOSSIL_TEST(c_test_stream_ai_analyze) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_ai_compute_embedding) {
+FOSSIL_TEST(c_test_stream_ai_compute_embedding)
+{
     const char *filename = "testfile_ai_embed.txt";
     const char *content = "Embedding test content.";
     char dummy_model[16] = {0};
@@ -287,7 +303,8 @@ FOSSIL_TEST(c_test_stream_ai_compute_embedding) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_ai_ready_and_reset) {
+FOSSIL_TEST(c_test_stream_ai_ready_and_reset)
+{
     const char *filename = "testfile_ai_ready.txt";
     const char *content = "Ready/reset test.";
 
@@ -301,7 +318,8 @@ FOSSIL_TEST(c_test_stream_ai_ready_and_reset) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_add_tag) {
+FOSSIL_TEST(c_test_stream_add_tag)
+{
     const char *filename = "testfile_add_tag.txt";
     const char *content = "Tag add test.";
 
@@ -314,7 +332,8 @@ FOSSIL_TEST(c_test_stream_add_tag) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_detect_binary) {
+FOSSIL_TEST(c_test_stream_detect_binary)
+{
     const char *filename = "testfile_detect_binary.txt";
     const char *content = "Binary detection test.";
 
@@ -327,7 +346,8 @@ FOSSIL_TEST(c_test_stream_detect_binary) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_compress_and_decompress) {
+FOSSIL_TEST(c_test_stream_compress_and_decompress)
+{
     const char *filename = "testfile_compress.txt";
     const char *content = "Compression test.";
 
@@ -341,7 +361,8 @@ FOSSIL_TEST(c_test_stream_compress_and_decompress) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_swap_files) {
+FOSSIL_TEST(c_test_stream_swap_files)
+{
     const char *filename1 = "testfile_swap1.txt";
     const char *filename2 = "testfile_swap2.txt";
     const char *content1 = "Content of file 1.";
@@ -380,7 +401,8 @@ FOSSIL_TEST(c_test_stream_swap_files) {
     fossil_io_file_close(&c_stream);
 }
 
-FOSSIL_TEST(c_test_stream_move_file) {
+FOSSIL_TEST(c_test_stream_move_file)
+{
     const char *source_filename = "testfile_move_source.txt";
     const char *destination_filename = "testfile_move_dest.txt";
     const char *content = "Content to be moved.";
@@ -409,7 +431,8 @@ FOSSIL_TEST(c_test_stream_move_file) {
     ASSUME_NOT_EQUAL_I32(0, fossil_io_file_file_exists(source_filename));
 }
 
-FOSSIL_TEST(c_test_stream_move_file_overwrite) {
+FOSSIL_TEST(c_test_stream_move_file_overwrite)
+{
     const char *source_filename = "testfile_move_src_ow.txt";
     const char *destination_filename = "testfile_move_dst_ow.txt";
     const char *source_content = "Source content.";
@@ -439,7 +462,8 @@ FOSSIL_TEST(c_test_stream_move_file_overwrite) {
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(c_file_tests) {
+FOSSIL_TEST_GROUP(c_file_tests)
+{
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempfile_creation);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_tempfile_cleanup);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_let_write_and_read_file);

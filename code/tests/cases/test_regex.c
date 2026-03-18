@@ -26,7 +26,6 @@
 
 #include "fossil/io/framework.h"
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,12 +37,14 @@
 FOSSIL_SUITE(c_regex_suite);
 
 // Setup function for the test suite
-FOSSIL_SETUP(c_regex_suite) {
+FOSSIL_SETUP(c_regex_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(c_regex_suite) {
+FOSSIL_TEARDOWN(c_regex_suite)
+{
     // Teardown code here
 }
 
@@ -55,23 +56,28 @@ FOSSIL_TEARDOWN(c_regex_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(c_test_regex_compile_and_free) {
+FOSSIL_TEST(c_test_regex_compile_and_free)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_compile_null_pattern) {
+FOSSIL_TEST(c_test_regex_compile_null_pattern)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile(NULL, NULL, &error);
     ASSUME_ITS_TRUE(re == NULL);
     ASSUME_ITS_TRUE(error != NULL);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_success) {
+FOSSIL_TEST(c_test_regex_match_success)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("hello", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -81,10 +87,12 @@ FOSSIL_TEST(c_test_regex_match_success) {
     ASSUME_ITS_TRUE(match != NULL);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_failure) {
+FOSSIL_TEST(c_test_regex_match_failure)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -93,17 +101,20 @@ FOSSIL_TEST(c_test_regex_match_failure) {
     ASSUME_ITS_EQUAL_I32(0, rc);
     ASSUME_ITS_TRUE(match == NULL);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_null_args) {
+FOSSIL_TEST(c_test_regex_match_null_args)
+{
     int rc = fossil_io_regex_match(NULL, "abc", NULL);
     ASSUME_ITS_TRUE(rc < 0);
     rc = fossil_io_regex_match((fossil_io_regex_t *)1, NULL, NULL);
     ASSUME_ITS_TRUE(rc < 0);
 }
 
-FOSSIL_TEST(c_test_regex_group_count_and_group) {
+FOSSIL_TEST(c_test_regex_group_count_and_group)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -117,27 +128,33 @@ FOSSIL_TEST(c_test_regex_group_count_and_group) {
     ASSUME_ITS_TRUE(group == NULL);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_compile_empty_pattern) {
+FOSSIL_TEST(c_test_regex_compile_empty_pattern)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_compile_with_options) {
+FOSSIL_TEST(c_test_regex_compile_with_options)
+{
     char *error = NULL;
-    const char *opts[] = { "icase", "multiline", NULL };
+    const char *opts[] = {"icase", "multiline", NULL};
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", opts, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_partial) {
+FOSSIL_TEST(c_test_regex_match_partial)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -147,10 +164,12 @@ FOSSIL_TEST(c_test_regex_match_partial) {
     ASSUME_ITS_TRUE(match != NULL);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_empty_text) {
+FOSSIL_TEST(c_test_regex_match_empty_text)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -159,20 +178,24 @@ FOSSIL_TEST(c_test_regex_match_empty_text) {
     ASSUME_ITS_EQUAL_I32(0, rc);
     ASSUME_ITS_TRUE(match == NULL);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_null_out_match) {
+FOSSIL_TEST(c_test_regex_match_null_out_match)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
     int rc = fossil_io_regex_match(re, "abc", NULL);
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_dot_any_char) {
+FOSSIL_TEST(c_test_regex_dot_any_char)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("a.c", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -181,10 +204,12 @@ FOSSIL_TEST(c_test_regex_dot_any_char) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_caret_anchor) {
+FOSSIL_TEST(c_test_regex_caret_anchor)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("^abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -193,10 +218,12 @@ FOSSIL_TEST(c_test_regex_caret_anchor) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_dollar_anchor) {
+FOSSIL_TEST(c_test_regex_dollar_anchor)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc$", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -205,10 +232,12 @@ FOSSIL_TEST(c_test_regex_dollar_anchor) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_char_class) {
+FOSSIL_TEST(c_test_regex_char_class)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("[abc]", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -217,10 +246,12 @@ FOSSIL_TEST(c_test_regex_char_class) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_negated_char_class) {
+FOSSIL_TEST(c_test_regex_negated_char_class)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("[^abc]", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -229,10 +260,12 @@ FOSSIL_TEST(c_test_regex_negated_char_class) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_escape_digit) {
+FOSSIL_TEST(c_test_regex_escape_digit)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("\\d", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -241,10 +274,12 @@ FOSSIL_TEST(c_test_regex_escape_digit) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_escape_not_digit) {
+FOSSIL_TEST(c_test_regex_escape_not_digit)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("\\D", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -253,10 +288,12 @@ FOSSIL_TEST(c_test_regex_escape_not_digit) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_escape_whitespace) {
+FOSSIL_TEST(c_test_regex_escape_whitespace)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("\\s", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -265,10 +302,12 @@ FOSSIL_TEST(c_test_regex_escape_whitespace) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_escape_word_char) {
+FOSSIL_TEST(c_test_regex_escape_word_char)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("\\w", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -277,10 +316,12 @@ FOSSIL_TEST(c_test_regex_escape_word_char) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_quantifier_star) {
+FOSSIL_TEST(c_test_regex_quantifier_star)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("a*b", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -289,10 +330,12 @@ FOSSIL_TEST(c_test_regex_quantifier_star) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_quantifier_plus) {
+FOSSIL_TEST(c_test_regex_quantifier_plus)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("a+b", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -301,10 +344,12 @@ FOSSIL_TEST(c_test_regex_quantifier_plus) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_quantifier_question) {
+FOSSIL_TEST(c_test_regex_quantifier_question)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("a?b", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -314,12 +359,14 @@ FOSSIL_TEST(c_test_regex_quantifier_question) {
     ASSUME_ITS_TRUE(match != NULL);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_icase_option) {
+FOSSIL_TEST(c_test_regex_icase_option)
+{
     char *error = NULL;
-    const char *opts[] = { "icase", NULL };
+    const char *opts[] = {"icase", NULL};
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", opts, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_match_t *match = NULL;
@@ -327,22 +374,26 @@ FOSSIL_TEST(c_test_regex_icase_option) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_anchored_option) {
+FOSSIL_TEST(c_test_regex_anchored_option)
+{
     char *error = NULL;
-    const char *opts[] = { "anchored", NULL };
+    const char *opts[] = {"anchored", NULL};
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", opts, &error);
     ASSUME_ITS_TRUE(re != NULL);
     fossil_io_regex_match_t *match = NULL;
     int rc = fossil_io_regex_match(re, "xyzabc", &match);
     ASSUME_ITS_EQUAL_I32(0, rc);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_group_length) {
+FOSSIL_TEST(c_test_regex_group_length)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("abc", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -353,10 +404,12 @@ FOSSIL_TEST(c_test_regex_group_length) {
     ASSUME_ITS_EQUAL_I32(0, len);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_match_length) {
+FOSSIL_TEST(c_test_regex_match_length)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("hello", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -365,10 +418,12 @@ FOSSIL_TEST(c_test_regex_match_length) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
-FOSSIL_TEST(c_test_regex_escape_literal) {
+FOSSIL_TEST(c_test_regex_escape_literal)
+{
     char *error = NULL;
     fossil_io_regex_t *re = fossil_io_regex_compile("\\.", NULL, &error);
     ASSUME_ITS_TRUE(re != NULL);
@@ -377,14 +432,16 @@ FOSSIL_TEST(c_test_regex_escape_literal) {
     ASSUME_ITS_EQUAL_I32(1, rc);
     fossil_io_regex_match_free(match);
     fossil_io_regex_free(re);
-    if (error) free(error);
+    if (error)
+        free(error);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(c_regex_tests) {
+FOSSIL_TEST_GROUP(c_regex_tests)
+{
     FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_and_free);
     FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_null_pattern);
     FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_success);

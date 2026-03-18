@@ -26,7 +26,6 @@
 
 #include "fossil/io/framework.h"
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,12 +37,14 @@
 FOSSIL_SUITE(c_dir_suite);
 
 // Setup function for the test suite
-FOSSIL_SETUP(c_dir_suite) {
+FOSSIL_SETUP(c_dir_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(c_dir_suite) {
+FOSSIL_TEARDOWN(c_dir_suite)
+{
     // Teardown code here
 }
 
@@ -55,7 +56,8 @@ FOSSIL_TEARDOWN(c_dir_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(c_test_dir_create_and_exists) {
+FOSSIL_TEST(c_test_dir_create_and_exists)
+{
     const char *dirname = "test_dir_create";
     // Ensure directory does not exist
     fossil_io_dir_remove_recursive(dirname);
@@ -68,7 +70,8 @@ FOSSIL_TEST(c_test_dir_create_and_exists) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_remove_and_remove_recursive) {
+FOSSIL_TEST(c_test_dir_remove_and_remove_recursive)
+{
     const char *dirname = "test_dir_remove";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -85,7 +88,8 @@ FOSSIL_TEST(c_test_dir_remove_and_remove_recursive) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_exists(dirname));
 }
 
-FOSSIL_TEST(c_test_dir_clear) {
+FOSSIL_TEST(c_test_dir_clear)
+{
     const char *dirname = "test_dir_clear";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -103,7 +107,8 @@ FOSSIL_TEST(c_test_dir_clear) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_copy_and_copy_recursive) {
+FOSSIL_TEST(c_test_dir_copy_and_copy_recursive)
+{
     const char *src = "test_dir_src";
     const char *dst = "test_dir_dst";
     fossil_io_dir_remove_recursive(src);
@@ -124,7 +129,8 @@ FOSSIL_TEST(c_test_dir_copy_and_copy_recursive) {
     fossil_io_dir_remove_recursive(dst);
 }
 
-FOSSIL_TEST(c_test_dir_move_and_rename) {
+FOSSIL_TEST(c_test_dir_move_and_rename)
+{
     const char *src = "test_dir_move_src";
     const char *dst = "test_dir_move_dst";
     fossil_io_dir_remove_recursive(src);
@@ -150,7 +156,8 @@ FOSSIL_TEST(c_test_dir_move_and_rename) {
     fossil_io_dir_remove_recursive(renamed);
 }
 
-FOSSIL_TEST(c_test_dir_iter_and_list) {
+FOSSIL_TEST(c_test_dir_iter_and_list)
+{
     const char *dirname = "test_dir_iter";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -168,9 +175,11 @@ FOSSIL_TEST(c_test_dir_iter_and_list) {
     fossil_io_dir_iter_t it;
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_iter_open(&it, dirname));
     int found = 0;
-    while (fossil_io_dir_iter_next(&it)) {
+    while (fossil_io_dir_iter_next(&it))
+    {
         // Check if the entry is "file.txt"
-        if (strcmp(it.current.name, "file.txt") == 0) {
+        if (strcmp(it.current.name, "file.txt") == 0)
+        {
             found = 1;
             // Optionally, check entry fields
             ASSUME_ITS_EQUAL_I32(0, it.current.type); // 0=file
@@ -187,8 +196,10 @@ FOSSIL_TEST(c_test_dir_iter_and_list) {
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_list(dirname, entries, &count, 10));
     ASSUME_ITS_TRUE(count > 0);
     int listed = 0;
-    for (size_t i = 0; i < count; ++i) {
-        if (strcmp(entries[i].name, "file.txt") == 0) {
+    for (size_t i = 0; i < count; ++i)
+    {
+        if (strcmp(entries[i].name, "file.txt") == 0)
+        {
             listed = 1;
             ASSUME_ITS_EQUAL_I32(0, entries[i].type); // 0=file
             ASSUME_ITS_TRUE(entries[i].size > 0);
@@ -200,7 +211,8 @@ FOSSIL_TEST(c_test_dir_iter_and_list) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_path_utilities) {
+FOSSIL_TEST(c_test_dir_path_utilities)
+{
     char out[256];
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_is_absolute("relative/path"));
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_join("/tmp", "file.txt", out, sizeof(out)));
@@ -214,7 +226,8 @@ FOSSIL_TEST(c_test_dir_path_utilities) {
     ASSUME_ITS_TRUE(strlen(out) > 0);
 }
 
-FOSSIL_TEST(c_test_dir_is_empty_and_count_and_size) {
+FOSSIL_TEST(c_test_dir_is_empty_and_count_and_size)
+{
     const char *dirname = "test_dir_empty";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -236,7 +249,8 @@ FOSSIL_TEST(c_test_dir_is_empty_and_count_and_size) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_permissions) {
+FOSSIL_TEST(c_test_dir_permissions)
+{
     const char *dirname = "test_dir_perm";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -247,7 +261,8 @@ FOSSIL_TEST(c_test_dir_permissions) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_temp_and_create_temp) {
+FOSSIL_TEST(c_test_dir_temp_and_create_temp)
+{
     char tempdir[256];
     ASSUME_ITS_EQUAL_I32(0, fossil_io_dir_temp(tempdir, sizeof(tempdir)));
     ASSUME_ITS_TRUE(strlen(tempdir) > 0);
@@ -257,7 +272,8 @@ FOSSIL_TEST(c_test_dir_temp_and_create_temp) {
     fossil_io_dir_remove_recursive(tempcreated);
 }
 
-FOSSIL_TEST(c_test_dir_metadata) {
+FOSSIL_TEST(c_test_dir_metadata)
+{
     const char *dirname = "test_dir_meta";
     fossil_io_dir_remove_recursive(dirname);
     fossil_io_dir_create(dirname);
@@ -269,7 +285,8 @@ FOSSIL_TEST(c_test_dir_metadata) {
     fossil_io_dir_remove_recursive(dirname);
 }
 
-FOSSIL_TEST(c_test_dir_backup_mirror_sync) {
+FOSSIL_TEST(c_test_dir_backup_mirror_sync)
+{
     const char *src = "test_dir_sync_src";
     const char *dst = "test_dir_sync_dst";
     fossil_io_dir_remove_recursive(src);
@@ -293,7 +310,8 @@ FOSSIL_TEST(c_test_dir_backup_mirror_sync) {
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(c_dir_tests) {
+FOSSIL_TEST_GROUP(c_dir_tests)
+{
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_create_and_exists);
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_remove_and_remove_recursive);
     FOSSIL_TEST_ADD(c_dir_suite, c_test_dir_clear);

@@ -26,7 +26,6 @@
 
 #include "fossil/io/framework.h"
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,12 +37,14 @@
 FOSSIL_SUITE(cpp_regex_suite);
 
 // Setup function for the test suite
-FOSSIL_SETUP(cpp_regex_suite) {
+FOSSIL_SETUP(cpp_regex_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(cpp_regex_suite) {
+FOSSIL_TEARDOWN(cpp_regex_suite)
+{
     // Teardown code here
 }
 
@@ -55,7 +56,8 @@ FOSSIL_TEARDOWN(cpp_regex_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(cpp_test_regex_compile_and_free) {
+FOSSIL_TEST(cpp_test_regex_compile_and_free)
+{
     fossil::io::Regex re;
     ASSUME_ITS_TRUE(!re.is_compiled());
     re.compile("abc");
@@ -64,46 +66,60 @@ FOSSIL_TEST(cpp_test_regex_compile_and_free) {
     ASSUME_ITS_TRUE(!re.is_compiled());
 }
 
-FOSSIL_TEST(cpp_test_regex_compile_null_pattern) {
+FOSSIL_TEST(cpp_test_regex_compile_null_pattern)
+{
     fossil::io::Regex re;
-    try {
+    try
+    {
         re.compile(std::string());
         ASSUME_ITS_TRUE(re.is_compiled());
-    } catch (const std::exception &ex) {
+    }
+    catch (const std::exception &ex)
+    {
         ASSUME_ITS_TRUE(true);
     }
 }
 
-FOSSIL_TEST(cpp_test_regex_match_success) {
+FOSSIL_TEST(cpp_test_regex_match_success)
+{
     fossil::io::Regex re("hello");
     ASSUME_ITS_TRUE(re.is_compiled());
     ASSUME_ITS_TRUE(re.match("hello"));
 }
 
-FOSSIL_TEST(cpp_test_regex_match_failure) {
+FOSSIL_TEST(cpp_test_regex_match_failure)
+{
     fossil::io::Regex re("abc");
     ASSUME_ITS_TRUE(re.is_compiled());
     ASSUME_ITS_TRUE(!re.match("def"));
 }
 
-FOSSIL_TEST(cpp_test_regex_match_null_args) {
+FOSSIL_TEST(cpp_test_regex_match_null_args)
+{
     fossil::io::Regex re;
-    try {
+    try
+    {
         re.match("abc");
         ASSUME_ITS_TRUE(false);
-    } catch (const std::logic_error &) {
+    }
+    catch (const std::logic_error &)
+    {
         ASSUME_ITS_TRUE(true);
     }
-    try {
+    try
+    {
         fossil::io::Regex re2("abc");
         re2.match("");
         ASSUME_ITS_TRUE(true);
-    } catch (...) {
+    }
+    catch (...)
+    {
         ASSUME_ITS_TRUE(false);
     }
 }
 
-FOSSIL_TEST(cpp_test_regex_group_count_and_group) {
+FOSSIL_TEST(cpp_test_regex_group_count_and_group)
+{
     fossil::io::Regex re("abc");
     ASSUME_ITS_TRUE(re.is_compiled());
     std::vector<std::string> groups;
@@ -112,31 +128,36 @@ FOSSIL_TEST(cpp_test_regex_group_count_and_group) {
     ASSUME_ITS_EQUAL_I32(0, (int)groups.size()); // No groups supported in minimal compiler
 }
 
-FOSSIL_TEST(cpp_test_regex_compile_empty_pattern) {
+FOSSIL_TEST(cpp_test_regex_compile_empty_pattern)
+{
     fossil::io::Regex re;
     re.compile("");
     ASSUME_ITS_TRUE(re.is_compiled());
 }
 
-FOSSIL_TEST(cpp_test_regex_compile_with_options) {
-    std::vector<std::string> opts = { "icase", "multiline" };
+FOSSIL_TEST(cpp_test_regex_compile_with_options)
+{
+    std::vector<std::string> opts = {"icase", "multiline"};
     fossil::io::Regex re("abc", opts);
     ASSUME_ITS_TRUE(re.is_compiled());
 }
 
-FOSSIL_TEST(cpp_test_regex_match_partial) {
+FOSSIL_TEST(cpp_test_regex_match_partial)
+{
     fossil::io::Regex re("abc");
     ASSUME_ITS_TRUE(re.is_compiled());
     ASSUME_ITS_TRUE(re.match("abcdef"));
 }
 
-FOSSIL_TEST(cpp_test_regex_match_empty_text) {
+FOSSIL_TEST(cpp_test_regex_match_empty_text)
+{
     fossil::io::Regex re("abc");
     ASSUME_ITS_TRUE(re.is_compiled());
     ASSUME_ITS_TRUE(!re.match(""));
 }
 
-FOSSIL_TEST(cpp_test_regex_match_null_out_match) {
+FOSSIL_TEST(cpp_test_regex_match_null_out_match)
+{
     fossil::io::Regex re("abc");
     ASSUME_ITS_TRUE(re.is_compiled());
     ASSUME_ITS_TRUE(re.match("abc"));
@@ -146,7 +167,8 @@ FOSSIL_TEST(cpp_test_regex_match_null_out_match) {
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(cpp_regex_tests) {
+FOSSIL_TEST_GROUP(cpp_regex_tests)
+{
     FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_and_free);
     FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_null_pattern);
     FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_success);

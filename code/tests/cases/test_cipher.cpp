@@ -26,7 +26,6 @@
 
 #include "fossil/io/framework.h"
 
-
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,12 +37,14 @@
 FOSSIL_SUITE(cpp_cipher_suite);
 
 // Setup function for the test suite
-FOSSIL_SETUP(cpp_cipher_suite) {
+FOSSIL_SETUP(cpp_cipher_suite)
+{
     // Setup code here
 }
 
 // Teardown function for the test suite
-FOSSIL_TEARDOWN(cpp_cipher_suite) {
+FOSSIL_TEARDOWN(cpp_cipher_suite)
+{
     // Teardown code here
 }
 
@@ -59,7 +60,8 @@ FOSSIL_TEARDOWN(cpp_cipher_suite) {
 
 using fossil::io::Cipher;
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_caesar) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_caesar)
+{
     const std::string plain = "HelloWorld";
     std::string encoded = Cipher::encode(plain, "caesar");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -68,7 +70,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_caesar) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_vigenere) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_vigenere)
+{
     const std::string plain = "OpenAI";
     std::string encoded = Cipher::encode(plain, "vigenere");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -77,7 +80,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_vigenere) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_base64) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_base64)
+{
     const std::string plain = "Encode this!";
     std::string encoded = Cipher::encode(plain, "base64");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -86,7 +90,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_base64) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_base32) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_base32)
+{
     const std::string plain = "Base32Test";
     std::string encoded = Cipher::encode(plain, "base32");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -95,7 +100,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_base32) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_binary) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_binary)
+{
     const std::string plain = "Bin";
     std::string encoded = Cipher::encode(plain, "binary");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -104,7 +110,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_binary) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_morse) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_morse)
+{
     const std::string plain = "SOS";
     std::string encoded = Cipher::encode(plain, "morse");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -113,7 +120,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_morse) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_baconian) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_baconian)
+{
     const std::string plain = "abc";
     std::string encoded = Cipher::encode(plain, "baconian");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -122,7 +130,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_baconian) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_railfence) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_railfence)
+{
     const std::string plain = "railfence";
     std::string encoded = Cipher::encode(plain, "railfence");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -131,7 +140,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_railfence) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_haxor) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_haxor)
+{
     const std::string plain = "leet";
     std::string encoded = Cipher::encode(plain, "haxor");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -140,7 +150,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_haxor) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_leet) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_leet)
+{
     const std::string plain = "elite";
     std::string encoded = Cipher::encode(plain, "leet");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -149,7 +160,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_leet) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_rot13) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_rot13)
+{
     const std::string plain = "rot13test";
     std::string encoded = Cipher::encode(plain, "rot13");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -158,7 +170,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_rot13) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_atbash) {
+FOSSIL_TEST(cpp_test_cipher_encode_decode_atbash)
+{
     const std::string plain = "atbash";
     std::string encoded = Cipher::encode(plain, "atbash");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -167,7 +180,8 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_atbash) {
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_case_insensitive_id) {
+FOSSIL_TEST(cpp_test_cipher_case_insensitive_id)
+{
     const std::string plain = "CaseTest";
     std::string encoded = Cipher::encode(plain, "CaEsAr");
     ASSUME_ITS_TRUE(!encoded.empty());
@@ -180,7 +194,8 @@ FOSSIL_TEST(cpp_test_cipher_case_insensitive_id) {
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_GROUP(cpp_cipher_tests) {
+FOSSIL_TEST_GROUP(cpp_cipher_tests)
+{
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_caesar);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_vigenere);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base64);
