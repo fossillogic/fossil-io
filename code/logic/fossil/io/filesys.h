@@ -193,6 +193,16 @@ typedef struct
  * @return 0 on success, negative on failure
  */
 int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path);
+
+/**
+ * Refresh the metadata of an existing filesystem object.
+ *
+ * Updates all metadata (size, permissions, timestamps) for an already
+ * initialized filesystem object.
+ *
+ * @param obj Pointer to filesystem object to refresh
+ * @return 0 on success, negative on failure
+ */
 int32_t fossil_io_filesys_refresh(fossil_io_filesys_obj_t *obj);
 
 /**
