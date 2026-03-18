@@ -65,7 +65,7 @@ FOSSIL_TEST(cpp_test_archive_class_create)
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
     ASSUME_ITS_TRUE(archive.is_valid());
 
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_open)
@@ -81,7 +81,7 @@ FOSSIL_TEST(cpp_test_archive_class_open)
     fossil::io::Archive open_archive(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
     ASSUME_ITS_TRUE(open_archive.is_valid());
 
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_move_constructor)
@@ -96,7 +96,7 @@ FOSSIL_TEST(cpp_test_archive_class_move_constructor)
     fossil::io::Archive archive2 = std::move(archive1);
     ASSUME_ITS_TRUE(archive2.is_valid());
 
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_move_assignment)
@@ -114,8 +114,8 @@ FOSSIL_TEST(cpp_test_archive_class_move_assignment)
     archive2 = std::move(archive1);
     ASSUME_ITS_TRUE(archive2.is_valid());
 
-    fossil::io::Stream::remove(archive_path1);
-    fossil::io::Stream::remove(archive_path2);
+    fossil::io::File::remove(archive_path1);
+    fossil::io::File::remove(archive_path2);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_get_type)
@@ -124,17 +124,17 @@ FOSSIL_TEST(cpp_test_archive_class_get_type)
 
     // Create a ZIP file with header
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, zip_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, zip_path, "wb"));
     unsigned char zip_header[] = {0x50, 0x4B, 0x03, 0x04};
-    fossil::io::Stream::write(&stream, zip_header, sizeof(zip_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, zip_header, sizeof(zip_header), 1);
+    fossil::io::File::close(&stream);
 
     // Test type detection using C++ class
     fossil::io::Archive archive(zip_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
     fossil_io_archive_type_t detected_type = archive.get_type(zip_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_ZIP, detected_type);
 
-    fossil::io::Stream::remove(zip_path);
+    fossil::io::File::remove(zip_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_extract_all)
@@ -145,9 +145,9 @@ FOSSIL_TEST(cpp_test_archive_class_extract_all)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "C++ extract all", 15, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "C++ extract all", 15, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and add file
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -160,8 +160,8 @@ FOSSIL_TEST(cpp_test_archive_class_extract_all)
     ASSUME_ITS_TRUE(read_archive.is_valid());
     ASSUME_ITS_TRUE(read_archive.extract_all(extract_dir));
 
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_add_directory)
@@ -176,7 +176,7 @@ FOSSIL_TEST(cpp_test_archive_class_add_directory)
     // Test adding directory
     archive.add_directory(test_dir, "testdir");
 
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_exists)
@@ -186,9 +186,9 @@ FOSSIL_TEST(cpp_test_archive_class_exists)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "C++ exists test", 15, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "C++ exists test", 15, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and test existence using C++ class
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -199,8 +199,8 @@ FOSSIL_TEST(cpp_test_archive_class_exists)
     ASSUME_ITS_TRUE(archive.exists("exists.txt"));
     ASSUME_ITS_FALSE(archive.exists("nonexistent.txt"));
 
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_entry_size)
@@ -211,9 +211,9 @@ FOSSIL_TEST(cpp_test_archive_class_entry_size)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, content.c_str(), content.length(), 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, content.c_str(), content.length(), 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and test entry size using C++ class
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -228,8 +228,8 @@ FOSSIL_TEST(cpp_test_archive_class_entry_size)
     ssize_t bad_size = archive.entry_size("nonexistent.txt");
     ASSUME_ITS_EQUAL_I32(-1, bad_size);
 
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_remove)
@@ -239,9 +239,9 @@ FOSSIL_TEST(cpp_test_archive_class_remove)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "C++ remove test", 15, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "C++ remove test", 15, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and test removal using C++ class
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -255,8 +255,8 @@ FOSSIL_TEST(cpp_test_archive_class_remove)
     ASSUME_ITS_TRUE(archive.remove("to_remove.txt"));
     ASSUME_ITS_FALSE(archive.exists("to_remove.txt"));
 
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_class_print)
@@ -266,9 +266,9 @@ FOSSIL_TEST(cpp_test_archive_class_print)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "C++ print test", 14, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "C++ print test", 14, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and test print using C++ class
     auto archive = fossil::io::Archive::create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -278,8 +278,8 @@ FOSSIL_TEST(cpp_test_archive_class_print)
     // Test print method (should not crash)
     archive.print();
 
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 // Test archive type detection function
@@ -293,17 +293,17 @@ FOSSIL_TEST(cpp_test_archive_get_type_zip)
 
     // Write ZIP signature (PK) to file
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, zip_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, zip_path, "wb"));
     unsigned char zip_header[] = {0x50, 0x4B, 0x03, 0x04};
-    fossil::io::Stream::write(&stream, zip_header, sizeof(zip_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, zip_header, sizeof(zip_header), 1);
+    fossil::io::File::close(&stream);
     fossil_io_archive_close(archive);
 
     // Test type detection
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(zip_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_ZIP, detected_type);
 
-    fossil::io::Stream::remove(zip_path);
+    fossil::io::File::remove(zip_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_gzip)
@@ -312,15 +312,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_gzip)
 
     // Write GZIP signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, gz_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, gz_path, "wb"));
     unsigned char gz_header[] = {0x1F, 0x8B, 0x08, 0x00};
-    fossil::io::Stream::write(&stream, gz_header, sizeof(gz_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, gz_header, sizeof(gz_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(gz_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_GZ, detected_type);
 
-    fossil::io::Stream::remove(gz_path);
+    fossil::io::File::remove(gz_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_bzip2)
@@ -329,15 +329,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_bzip2)
 
     // Write BZIP2 signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, bz2_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, bz2_path, "wb"));
     unsigned char bz2_header[] = {0x42, 0x5A, 0x68, 0x39};
-    fossil::io::Stream::write(&stream, bz2_header, sizeof(bz2_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, bz2_header, sizeof(bz2_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(bz2_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_BZ2, detected_type);
 
-    fossil::io::Stream::remove(bz2_path);
+    fossil::io::File::remove(bz2_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_xz)
@@ -346,15 +346,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_xz)
 
     // Write XZ signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, xz_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, xz_path, "wb"));
     unsigned char xz_header[] = {0xFD, '7', 'z', 'X', 'Z', 0x00};
-    fossil::io::Stream::write(&stream, xz_header, sizeof(xz_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, xz_header, sizeof(xz_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(xz_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_XZ, detected_type);
 
-    fossil::io::Stream::remove(xz_path);
+    fossil::io::File::remove(xz_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_lz4)
@@ -363,15 +363,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_lz4)
 
     // Write LZ4 signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, lz4_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, lz4_path, "wb"));
     unsigned char lz4_header[] = {0x04, 0x22, 0x4D, 0x18};
-    fossil::io::Stream::write(&stream, lz4_header, sizeof(lz4_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, lz4_header, sizeof(lz4_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(lz4_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_LZ4, detected_type);
 
-    fossil::io::Stream::remove(lz4_path);
+    fossil::io::File::remove(lz4_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_zstd)
@@ -380,15 +380,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_zstd)
 
     // Write ZSTD signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, zst_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, zst_path, "wb"));
     unsigned char zst_header[] = {0x28, 0xB5, 0x2F, 0xFD};
-    fossil::io::Stream::write(&stream, zst_header, sizeof(zst_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, zst_header, sizeof(zst_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(zst_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_ZSTD, detected_type);
 
-    fossil::io::Stream::remove(zst_path);
+    fossil::io::File::remove(zst_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_7z)
@@ -397,15 +397,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_7z)
 
     // Write 7Z signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, sz_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, sz_path, "wb"));
     unsigned char sz_header[] = {'7', 'z', 0xBC, 0xAF, 0x27, 0x1C};
-    fossil::io::Stream::write(&stream, sz_header, sizeof(sz_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, sz_header, sizeof(sz_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(sz_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_7Z, detected_type);
 
-    fossil::io::Stream::remove(sz_path);
+    fossil::io::File::remove(sz_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_rar)
@@ -414,15 +414,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_rar)
 
     // Write RAR signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, rar_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, rar_path, "wb"));
     unsigned char rar_header[] = {'R', 'a', 'r', '!', 0x1A, 0x07, 0x00};
-    fossil::io::Stream::write(&stream, rar_header, sizeof(rar_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, rar_header, sizeof(rar_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(rar_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_RAR, detected_type);
 
-    fossil::io::Stream::remove(rar_path);
+    fossil::io::File::remove(rar_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_rar5)
@@ -431,15 +431,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_rar5)
 
     // Write RAR5 signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, rar5_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, rar5_path, "wb"));
     unsigned char rar5_header[] = {'R', 'a', 'r', '!', 0x1A, 0x07, 0x01};
-    fossil::io::Stream::write(&stream, rar5_header, sizeof(rar5_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, rar5_header, sizeof(rar5_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(rar5_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_RAR5, detected_type);
 
-    fossil::io::Stream::remove(rar5_path);
+    fossil::io::File::remove(rar5_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_tar)
@@ -448,21 +448,21 @@ FOSSIL_TEST(cpp_test_archive_get_type_tar)
 
     // Write TAR ustar signature at offset 257
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, tar_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, tar_path, "wb"));
 
     // Write 257 bytes of zeros first
     unsigned char zeros[257] = {0};
-    fossil::io::Stream::write(&stream, zeros, sizeof(zeros), 1);
+    fossil::io::File::write(&stream, zeros, sizeof(zeros), 1);
 
     // Write ustar signature
     const char *ustar = "ustar";
-    fossil::io::Stream::write(&stream, ustar, 5, 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, ustar, 5, 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(tar_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_TAR, detected_type);
 
-    fossil::io::Stream::remove(tar_path);
+    fossil::io::File::remove(tar_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_targz)
@@ -471,15 +471,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_targz)
 
     // Write GZIP signature for tar.gz detection
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, targz_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, targz_path, "wb"));
     unsigned char gz_header[] = {0x1F, 0x8B, 0x08, 0x00};
-    fossil::io::Stream::write(&stream, gz_header, sizeof(gz_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, gz_header, sizeof(gz_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(targz_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_TARGZ, detected_type);
 
-    fossil::io::Stream::remove(targz_path);
+    fossil::io::File::remove(targz_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_cab)
@@ -488,15 +488,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_cab)
 
     // Write CAB signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, cab_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, cab_path, "wb"));
     unsigned char cab_header[] = {'M', 'S', 'C', 'F'};
-    fossil::io::Stream::write(&stream, cab_header, sizeof(cab_header), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, cab_header, sizeof(cab_header), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(cab_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_CAB, detected_type);
 
-    fossil::io::Stream::remove(cab_path);
+    fossil::io::File::remove(cab_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_iso)
@@ -505,21 +505,21 @@ FOSSIL_TEST(cpp_test_archive_get_type_iso)
 
     // Write ISO 9660 signature at offset 32769
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, iso_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, iso_path, "wb"));
 
     // Write padding to reach offset 32769
     unsigned char zeros[32769] = {0};
-    fossil::io::Stream::write(&stream, zeros, sizeof(zeros), 1);
+    fossil::io::File::write(&stream, zeros, sizeof(zeros), 1);
 
     // Write ISO signature
     const char *iso_sig = "CD001";
-    fossil::io::Stream::write(&stream, iso_sig, 5, 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, iso_sig, 5, 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(iso_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_ISO, detected_type);
 
-    fossil::io::Stream::remove(iso_path);
+    fossil::io::File::remove(iso_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_unknown)
@@ -528,15 +528,15 @@ FOSSIL_TEST(cpp_test_archive_get_type_unknown)
 
     // Write random data that doesn't match any signature
     fossil_io_file_t stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&stream, unknown_path, "wb"));
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&stream, unknown_path, "wb"));
     unsigned char random_data[] = {0xDE, 0xAD, 0xBE, 0xEF};
-    fossil::io::Stream::write(&stream, random_data, sizeof(random_data), 1);
-    fossil::io::Stream::close(&stream);
+    fossil::io::File::write(&stream, random_data, sizeof(random_data), 1);
+    fossil::io::File::close(&stream);
 
     fossil_io_archive_type_t detected_type = fossil_io_archive_get_type(unknown_path);
     ASSUME_ITS_EQUAL_I32(FOSSIL_IO_ARCHIVE_UNKNOWN, detected_type);
 
-    fossil::io::Stream::remove(unknown_path);
+    fossil::io::File::remove(unknown_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_get_type_null_path)
@@ -566,7 +566,7 @@ FOSSIL_TEST(cpp_test_archive_open_and_close)
     ASSUME_NOT_CNULL(archive);
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_create)
@@ -578,7 +578,7 @@ FOSSIL_TEST(cpp_test_archive_create)
     ASSUME_NOT_CNULL(archive);
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_create_compression_levels)
@@ -598,7 +598,7 @@ FOSSIL_TEST(cpp_test_archive_create_compression_levels)
         fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, levels[i]);
         ASSUME_NOT_CNULL(archive);
         fossil_io_archive_close(archive);
-        fossil::io::Stream::remove(archive_path);
+        fossil::io::File::remove(archive_path);
     }
 }
 
@@ -629,7 +629,7 @@ FOSSIL_TEST(cpp_test_archive_get_stats_null_params)
     ASSUME_ITS_FALSE(fossil_io_archive_get_stats(archive, NULL));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_list_entries)
@@ -646,13 +646,13 @@ FOSSIL_TEST(cpp_test_archive_list_entries)
     const char *test_file2 = "temp_test2.txt";
 
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file1, "w"));
-    fossil::io::Stream::write(&temp_stream, "Content 1", 9, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file1, "w"));
+    fossil::io::File::write(&temp_stream, "Content 1", 9, 1);
+    fossil::io::File::close(&temp_stream);
 
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file2, "w"));
-    fossil::io::Stream::write(&temp_stream, "Content 2", 9, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file2, "w"));
+    fossil::io::File::write(&temp_stream, "Content 2", 9, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Add files to archive
     ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file1, "file1.txt"));
@@ -686,9 +686,9 @@ FOSSIL_TEST(cpp_test_archive_list_entries)
     fossil_io_archive_close(archive);
 
     // Cleanup
-    fossil::io::Stream::remove(test_file1);
-    fossil::io::Stream::remove(test_file2);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file1);
+    fossil::io::File::remove(test_file2);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_list_empty)
@@ -704,7 +704,7 @@ FOSSIL_TEST(cpp_test_archive_list_empty)
     ASSUME_ITS_CNULL(entries);
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_extract_all)
@@ -721,13 +721,13 @@ FOSSIL_TEST(cpp_test_archive_extract_all)
     const char *test_file2 = "temp_all2.txt";
 
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file1, "w"));
-    fossil::io::Stream::write(&temp_stream, "All test 1", 10, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file1, "w"));
+    fossil::io::File::write(&temp_stream, "All test 1", 10, 1);
+    fossil::io::File::close(&temp_stream);
 
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file2, "w"));
-    fossil::io::Stream::write(&temp_stream, "All test 2", 10, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file2, "w"));
+    fossil::io::File::write(&temp_stream, "All test 2", 10, 1);
+    fossil::io::File::close(&temp_stream);
 
     ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file1, "all1.txt"));
     ASSUME_ITS_TRUE(fossil_io_archive_add_file(archive, test_file2, "all2.txt"));
@@ -740,9 +740,9 @@ FOSSIL_TEST(cpp_test_archive_extract_all)
     fossil_io_archive_close(archive);
 
     // Cleanup
-    fossil::io::Stream::remove(test_file1);
-    fossil::io::Stream::remove(test_file2);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file1);
+    fossil::io::File::remove(test_file2);
+    fossil::io::File::remove(archive_path);
 }
 
 // Test modification functions
@@ -753,9 +753,9 @@ FOSSIL_TEST(cpp_test_archive_add_file)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "Add file test", 13, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "Add file test", 13, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and add file
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -766,8 +766,8 @@ FOSSIL_TEST(cpp_test_archive_add_file)
     ASSUME_ITS_TRUE(fossil_io_archive_exists(archive, "added.txt"));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_add_directory)
@@ -783,7 +783,7 @@ FOSSIL_TEST(cpp_test_archive_add_directory)
     fossil_io_archive_add_directory(archive, test_dir, "testdir");
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_add_file_null_params)
@@ -792,9 +792,9 @@ FOSSIL_TEST(cpp_test_archive_add_file_null_params)
     const char *test_file = "temp_add_null.txt";
 
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "test", 4, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "test", 4, 1);
+    fossil::io::File::close(&temp_stream);
 
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
     ASSUME_NOT_CNULL(archive);
@@ -805,8 +805,8 @@ FOSSIL_TEST(cpp_test_archive_add_file_null_params)
     ASSUME_ITS_FALSE(fossil_io_archive_add_file(archive, test_file, NULL));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_remove_entry)
@@ -816,9 +816,9 @@ FOSSIL_TEST(cpp_test_archive_remove_entry)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "Remove test", 11, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "Remove test", 11, 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and add file
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -833,8 +833,8 @@ FOSSIL_TEST(cpp_test_archive_remove_entry)
     ASSUME_ITS_FALSE(fossil_io_archive_exists(archive, "to_remove.txt"));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 // Test utility functions
@@ -845,9 +845,9 @@ FOSSIL_TEST(cpp_test_archive_exists)
 
     // Create test file and archive
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "Exists test", 11, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "Exists test", 11, 1);
+    fossil::io::File::close(&temp_stream);
 
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
     ASSUME_NOT_CNULL(archive);
@@ -862,8 +862,8 @@ FOSSIL_TEST(cpp_test_archive_exists)
     ASSUME_ITS_FALSE(fossil_io_archive_exists(archive, NULL));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_entry_size)
@@ -874,9 +874,9 @@ FOSSIL_TEST(cpp_test_archive_entry_size)
 
     // Create test file
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, test_content, strlen(test_content), 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, test_content, strlen(test_content), 1);
+    fossil::io::File::close(&temp_stream);
 
     // Create archive and add file
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
@@ -896,8 +896,8 @@ FOSSIL_TEST(cpp_test_archive_entry_size)
     ASSUME_ITS_EQUAL_I32(-1, fossil_io_archive_entry_size(archive, NULL));
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 FOSSIL_TEST(cpp_test_archive_print)
@@ -907,9 +907,9 @@ FOSSIL_TEST(cpp_test_archive_print)
 
     // Create test file and archive
     fossil_io_file_t temp_stream;
-    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&temp_stream, test_file, "w"));
-    fossil::io::Stream::write(&temp_stream, "Print test", 10, 1);
-    fossil::io::Stream::close(&temp_stream);
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::File::open(&temp_stream, test_file, "w"));
+    fossil::io::File::write(&temp_stream, "Print test", 10, 1);
+    fossil::io::File::close(&temp_stream);
 
     fossil_io_archive_t *archive = fossil_io_archive_create(archive_path, FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_COMPRESSION_NORMAL);
     ASSUME_NOT_CNULL(archive);
@@ -922,8 +922,8 @@ FOSSIL_TEST(cpp_test_archive_print)
     fossil_io_archive_print(NULL);
 
     fossil_io_archive_close(archive);
-    fossil::io::Stream::remove(test_file);
-    fossil::io::Stream::remove(archive_path);
+    fossil::io::File::remove(test_file);
+    fossil::io::File::remove(archive_path);
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
