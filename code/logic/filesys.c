@@ -36,9 +36,16 @@
     #include <sys/stat.h>
 #else
     #include <sys/stat.h>
+    #include <libgen.h>
     #include <unistd.h>
     #include <dirent.h>
     #include <errno.h>
+#endif
+
+#if defined(_WIN32)
+#define PATH_SEP '\\'
+#else
+#define PATH_SEP '/'
 #endif
 
 #define FOSSIL_MERGE_CONCAT 1
@@ -48,6 +55,281 @@
 /* ------------------------------------------------------------
  * Internal utilites and platform abstractions
  * ------------------------------------------------------------ */
+
+static int copy_file_stream(const char *src, const char *dest)
+{
+    FILE *in = fopen(src, "rb");
+    if (!in) return -1;
+
+    FILE *out = fopen(dest, "wb");
+    if (!out)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+    {
+        if (fwrite(buf, 1, n, out) != n)
+        {
+            fclose(in);
+            fclose(out);
+            return -1;
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+    return 0;
+}
+
+static int file_needs_update(const char *src, const char *dest)
+{
+#if defined(_WIN32)
+
+    WIN32_FILE_ATTRIBUTE_DATA s, d;
+
+    if (!GetFileAttributesExA(src, GetFileExInfoStandard, &s))
+        return 1;
+
+    if (!GetFileAttributesExA(dest, GetFileExInfoStandard, &d))
+        return 1;
+
+    uint64_t ssize = ((uint64_t)s.nFileSizeHigh << 32) | s.nFileSizeLow;
+    uint64_t dsize = ((uint64_t)d.nFileSizeHigh << 32) | d.nFileSizeLow;
+
+    if (ssize != dsize)
+        return 1;
+
+    return (CompareFileTime(&s.ftLastWriteTime, &d.ftLastWriteTime) != 0);
+
+#else
+
+    struct stat s, d;
+
+    if (stat(src, &s) != 0)
+        return 1;
+
+    if (stat(dest, &d) != 0)
+        return 1;
+
+    if (s.st_size != d.st_size)
+        return 1;
+
+    return (s.st_mtime != d.st_mtime);
+
+#endif
+}
+
+static int remove_path(const char *path)
+{
+#if defined(_WIN32)
+    WIN32_FILE_ATTRIBUTE_DATA attr;
+    if (!GetFileAttributesExA(path, GetFileExInfoStandard, &attr))
+        return -1;
+
+    if (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        char search[MAX_PATH];
+        snprintf(search, sizeof(search), "%s\\*", path);
+
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(search, &fd);
+
+        if (h != INVALID_HANDLE_VALUE)
+        {
+            do {
+                if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+                    continue;
+
+                char full[MAX_PATH];
+                snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+                remove_path(full);
+
+            } while (FindNextFileA(h, &fd));
+
+            FindClose(h);
+        }
+
+        return RemoveDirectoryA(path);
+    }
+    else
+    {
+        return DeleteFileA(path);
+    }
+
+#else
+
+    struct stat st;
+    if (lstat(path, &st) != 0)
+        return -1;
+
+    if (S_ISDIR(st.st_mode))
+    {
+        DIR *dir = opendir(path);
+        if (!dir) return -1;
+
+        struct dirent *entry;
+        char full[512];
+
+        while ((entry = readdir(dir)))
+        {
+            if (!strcmp(entry->d_name, ".") ||
+                !strcmp(entry->d_name, ".."))
+                continue;
+
+            snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+            remove_path(full);
+        }
+
+        closedir(dir);
+        return rmdir(path);
+    }
+    else
+    {
+        return unlink(path);
+    }
+
+#endif
+}
+
+static int mirror_recursive(
+    const char *src,
+    const char *dest,
+    bool delete_extras)
+{
+    /* ensure destination exists */
+    fossil_io_filesys_dir_create(dest, true);
+
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", src);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char sfull[MAX_PATH], dfull[MAX_PATH];
+        snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
+        snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            mirror_recursive(sfull, dfull, delete_extras);
+        }
+        else
+        {
+            if (file_needs_update(sfull, dfull))
+                copy_file_stream(sfull, dfull);
+        }
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    DIR *dir = opendir(src);
+    if (!dir) return -1;
+
+    struct dirent *entry;
+    char sfull[512], dfull[512];
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(sfull, sizeof(sfull), "%s/%s", src, entry->d_name);
+        snprintf(dfull, sizeof(dfull), "%s/%s", dest, entry->d_name);
+
+        struct stat st;
+        if (lstat(sfull, &st) != 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode))
+        {
+            mirror_recursive(sfull, dfull, delete_extras);
+        }
+        else if (S_ISREG(st.st_mode))
+        {
+            if (file_needs_update(sfull, dfull))
+                copy_file_stream(sfull, dfull);
+        }
+    }
+
+    closedir(dir);
+
+#endif
+
+    /* delete extras */
+    if (delete_extras)
+    {
+#if defined(_WIN32)
+
+        char search[MAX_PATH];
+        snprintf(search, sizeof(search), "%s\\*", dest);
+
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(search, &fd);
+
+        if (h != INVALID_HANDLE_VALUE)
+        {
+            do {
+                if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+                    continue;
+
+                char dfull[MAX_PATH], sfull[MAX_PATH];
+                snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
+                snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
+
+                if (GetFileAttributesA(sfull) == INVALID_FILE_ATTRIBUTES)
+                    remove_path(dfull);
+
+            } while (FindNextFileA(h, &fd));
+
+            FindClose(h);
+        }
+
+#else
+
+        DIR *dir2 = opendir(dest);
+        if (dir2)
+        {
+            struct dirent *entry;
+            char dfull[512], sfull[512];
+
+            while ((entry = readdir(dir2)))
+            {
+                if (!strcmp(entry->d_name, ".") ||
+                    !strcmp(entry->d_name, ".."))
+                    continue;
+
+                snprintf(dfull, sizeof(dfull), "%s/%s", dest, entry->d_name);
+                snprintf(sfull, sizeof(sfull), "%s/%s", src, entry->d_name);
+
+                if (access(sfull, F_OK) != 0)
+                    remove_path(dfull);
+            }
+
+            closedir(dir2);
+        }
+
+#endif
+    }
+
+    return 0;
+}
 
 typedef struct dedup_entry
 {
@@ -984,53 +1266,330 @@ int32_t fossil_io_filesys_file_split(
     return (int32_t)part;
 }
 
-int32_t fossil_io_filesys_file_join(const char **parts, size_t count, const char *dest) {
-    (void)parts;
-    (void)count;
-    (void)dest;
-    /* TODO: Implement file join logic */
+int32_t fossil_io_filesys_file_join(
+    const char **parts,
+    size_t count,
+    const char *dest)
+{
+    if (!parts || count == 0 || !dest)
+        return -1;
+
+    FILE *out = fopen(dest, "wb");
+    if (!out) return -1;
+
+    unsigned char buffer[8192];
+
+    for (size_t i = 0; i < count; ++i)
+    {
+        FILE *in = fopen(parts[i], "rb");
+        if (!in)
+        {
+            fclose(out);
+            return -1;
+        }
+
+        size_t n;
+        while ((n = fread(buffer, 1, sizeof(buffer), in)) > 0)
+        {
+            fwrite(buffer, 1, n, out);
+        }
+
+        fclose(in);
+    }
+
+    fclose(out);
     return 0;
 }
 
-int32_t fossil_io_filesys_file_compress(const char *src, const char *dest, const char *algorithm) {
-    (void)src;
-    (void)dest;
-    (void)algorithm;
-    /* TODO: Implement file compress logic */
+int32_t fossil_io_filesys_file_compress(
+    const char *src,
+    const char *dest,
+    const char *algorithm)
+{
+    if (!src || !dest) return -1;
+
+    FILE *in = fopen(src, "rb");
+    FILE *out = fopen(dest, "wb");
+
+    if (!in || !out)
+    {
+        if (in) fclose(in);
+        if (out) fclose(out);
+        return -1;
+    }
+
+    /* Only RLE for now */
+    if (algorithm && strcmp(algorithm, "rle") != 0)
+    {
+        fclose(in);
+        fclose(out);
+        return -1;
+    }
+
+    int prev = fgetc(in);
+    if (prev == EOF)
+    {
+        fclose(in);
+        fclose(out);
+        return 0;
+    }
+
+    uint8_t count = 1;
+    int c;
+
+    while ((c = fgetc(in)) != EOF)
+    {
+        if (c == prev && count < 255)
+        {
+            count++;
+        }
+        else
+        {
+            fputc(count, out);
+            fputc(prev, out);
+
+            prev = c;
+            count = 1;
+        }
+    }
+
+    /* flush last */
+    fputc(count, out);
+    fputc(prev, out);
+
+    fclose(in);
+    fclose(out);
     return 0;
 }
 
-int32_t fossil_io_filesys_file_decompress(const char *src, const char *dest) {
-    (void)src;
-    (void)dest;
-    /* TODO: Implement file decompress logic */
+int32_t fossil_io_filesys_file_decompress(
+    const char *src,
+    const char *dest)
+{
+    if (!src || !dest) return -1;
+
+    FILE *in = fopen(src, "rb");
+    FILE *out = fopen(dest, "wb");
+
+    if (!in || !out)
+    {
+        if (in) fclose(in);
+        if (out) fclose(out);
+        return -1;
+    }
+
+    int count, value;
+
+    while ((count = fgetc(in)) != EOF)
+    {
+        value = fgetc(in);
+        if (value == EOF)
+            break;
+
+        for (int i = 0; i < count; ++i)
+            fputc(value, out);
+    }
+
+    fclose(in);
+    fclose(out);
     return 0;
 }
 
 /* Directory Operations */
 
-int32_t fossil_io_filesys_dir_create(const char *path, bool recursive) {
-    (void)path;
-    (void)recursive;
-    /* TODO: Implement directory create logic */
+int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
+{
+    if (!path || !*path) return -1;
+
+#if defined(_WIN32)
+    #define MKDIR(p) _mkdir(p)
+#else
+    #define MKDIR(p) mkdir(p, 0755)
+#endif
+
+    if (!recursive)
+        return MKDIR(path);
+
+    char tmp[512];
+    snprintf(tmp, sizeof(tmp), "%s", path);
+
+    size_t len = strlen(tmp);
+    if (len == 0) return -1;
+
+    /* strip trailing slash */
+    if (tmp[len - 1] == '/' || tmp[len - 1] == '\\')
+        tmp[len - 1] = '\0';
+
+    for (char *p = tmp + 1; *p; ++p)
+    {
+        if (*p == '/' || *p == '\\')
+        {
+            *p = '\0';
+            MKDIR(tmp); /* ignore errors (exists) */
+            *p = '/';
+        }
+    }
+
+    return MKDIR(tmp);
+}
+
+int32_t fossil_io_filesys_dir_list(
+    const char *path,
+    fossil_io_filesys_obj_t *entries,
+    size_t max_entries,
+    size_t *out_count)
+{
+    if (!path || !entries || !out_count)
+        return -1;
+
+    *out_count = 0;
+
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        if (*out_count >= max_entries)
+            break;
+
+        char full[MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        fossil_io_filesys_stat(full, &entries[*out_count]);
+        (*out_count)++;
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    DIR *dir = opendir(path);
+    if (!dir) return -1;
+
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        if (*out_count >= max_entries)
+            break;
+
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        fossil_io_filesys_stat(full, &entries[*out_count]);
+        (*out_count)++;
+    }
+
+    closedir(dir);
+
+#endif
+
     return 0;
 }
 
-int32_t fossil_io_filesys_dir_list(const char *path, fossil_io_filesys_obj_t *entries, size_t max_entries, size_t *out_count) {
-    (void)path;
-    (void)entries;
-    (void)max_entries;
-    (void)out_count;
-    /* TODO: Implement directory list logic */
+static int dir_walk_internal(
+    const char *path,
+    int (*callback)(const fossil_io_filesys_obj_t *, void *),
+    void *user_data)
+{
+    fossil_io_filesys_obj_t obj;
+
+    if (fossil_io_filesys_stat(path, &obj) != 0)
+        return -1;
+
+    /* invoke callback */
+    int rc = callback(&obj, user_data);
+    if (rc != 0)
+        return rc;
+
+#if defined(_WIN32)
+
+    if (!(obj.flags & FOSSIL_FILESYS_FLAG_DIR))
+        return 0;
+
+    WIN32_FIND_DATAA fd;
+    char search[MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char full[MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        rc = dir_walk_internal(full, callback, user_data);
+        if (rc != 0)
+        {
+            FindClose(h);
+            return rc;
+        }
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    if (!S_ISDIR(obj.mode))
+        return 0;
+
+    DIR *dir = opendir(path);
+    if (!dir) return -1;
+
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        rc = dir_walk_internal(full, callback, user_data);
+        if (rc != 0)
+        {
+            closedir(dir);
+            return rc;
+        }
+    }
+
+    closedir(dir);
+
+#endif
+
     return 0;
 }
 
-int32_t fossil_io_filesys_dir_walk(const char *path, int (*callback)(const fossil_io_filesys_obj_t *, void *), void *user_data) {
-    (void)path;
-    (void)callback;
-    (void)user_data;
-    /* TODO: Implement directory walk logic */
-    return 0;
+int32_t fossil_io_filesys_dir_walk(
+    const char *path,
+    int (*callback)(const fossil_io_filesys_obj_t *, void *),
+    void *user_data)
+{
+    if (!path || !callback)
+        return -1;
+
+    return dir_walk_internal(path, callback, user_data);
 }
 
 int32_t fossil_io_filesys_dir_merge(
@@ -1074,45 +1633,181 @@ int32_t fossil_io_filesys_dir_merge(
     return 0;
 }
 
-int32_t fossil_io_filesys_dir_mirror(const char *src, const char *dest, bool delete_extras) {
-    (void)src;
-    (void)dest;
-    (void)delete_extras;
-    /* TODO: Implement directory mirror logic */
-    return 0;
+int32_t fossil_io_filesys_dir_mirror(
+    const char *src,
+    const char *dest,
+    bool delete_extras)
+{
+    if (!src || !dest)
+        return -1;
+
+    return mirror_recursive(src, dest, delete_extras);
 }
 
 /* Link Operations */
 
-int32_t fossil_io_filesys_link_create(const char *target, const char *link_path, bool symbolic) {
-    (void)target;
-    (void)link_path;
-    (void)symbolic;
-    /* TODO: Implement link create logic */
-    return 0;
+int32_t fossil_io_filesys_link_create(
+    const char *target,
+    const char *link_path,
+    bool symbolic)
+{
+    if (!target || !link_path)
+        return -1;
+
+#if defined(_WIN32)
+
+    if (symbolic)
+    {
+        DWORD flags = 0;
+
+        /* detect directory target */
+        DWORD attr = GetFileAttributesA(target);
+        if (attr != INVALID_FILE_ATTRIBUTES &&
+            (attr & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+        }
+
+        /* allow unprivileged (Windows 10+) */
+#ifdef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+        flags |= SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+#endif
+
+        return CreateSymbolicLinkA(link_path, target, flags) ? 0 : -1;
+    }
+    else
+    {
+        return CreateHardLinkA(link_path, target, NULL) ? 0 : -1;
+    }
+
+#else
+
+    if (symbolic)
+        return symlink(target, link_path);
+    else
+        return link(target, link_path);
+
+#endif
 }
 
-int32_t fossil_io_filesys_link_read(const char *link_path, char *target_out, size_t max_len) {
-    (void)link_path;
-    (void)target_out;
-    (void)max_len;
-    /* TODO: Implement link read logic */
+int32_t fossil_io_filesys_link_read(
+    const char *link_path,
+    char *target_out,
+    size_t max_len)
+{
+    if (!link_path || !target_out || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+
+    HANDLE h = CreateFileA(
+        link_path,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    DWORD len = GetFinalPathNameByHandleA(
+        h,
+        target_out,
+        (DWORD)max_len,
+        FILE_NAME_NORMALIZED);
+
+    CloseHandle(h);
+
+    if (len == 0 || len >= max_len)
+        return -1;
+
     return 0;
+
+#else
+
+    ssize_t len = readlink(link_path, target_out, max_len - 1);
+    if (len < 0)
+        return -1;
+
+    target_out[len] = '\0';
+    return 0;
+
+#endif
 }
 
-int32_t fossil_io_filesys_link_resolve(const char *link_path, char *target_out, size_t max_len) {
-    (void)link_path;
-    (void)target_out;
-    (void)max_len;
-    /* TODO: Implement link resolve logic */
+int32_t fossil_io_filesys_link_resolve(
+    const char *link_path,
+    char *target_out,
+    size_t max_len)
+{
+    if (!link_path || !target_out || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+
+    HANDLE h = CreateFileA(
+        link_path,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    DWORD len = GetFinalPathNameByHandleA(
+        h,
+        target_out,
+        (DWORD)max_len,
+        FILE_NAME_NORMALIZED);
+
+    CloseHandle(h);
+
+    if (len == 0 || len >= max_len)
+        return -1;
+
     return 0;
+
+#else
+
+    if (!realpath(link_path, target_out))
+        return -1;
+
+    return 0;
+
+#endif
 }
 
-int32_t fossil_io_filesys_link_is_symbolic(const char *link_path, bool *is_symbolic) {
-    (void)link_path;
-    (void)is_symbolic;
-    /* TODO: Implement link is_symbolic check logic */
+int32_t fossil_io_filesys_link_is_symbolic(
+    const char *link_path,
+    bool *is_symbolic)
+{
+    if (!link_path || !is_symbolic)
+        return -1;
+
+#if defined(_WIN32)
+
+    DWORD attr = GetFileAttributesA(link_path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return -1;
+
+    *is_symbolic = (attr & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
     return 0;
+
+#else
+
+    struct stat st;
+    if (lstat(link_path, &st) != 0)
+        return -1;
+
+    *is_symbolic = S_ISLNK(st.st_mode);
+    return 0;
+
+#endif
 }
 
 /* Transaction Operations */
@@ -1137,52 +1832,122 @@ int32_t fossil_io_filesys_tx_rollback(void)
 /* Path / Utility Operations */
 
 int32_t fossil_io_filesys_getcwd(char *buf, size_t size) {
-    (void)buf;
-    (void)size;
-    /* TODO: Implement getcwd logic */
+    if (!buf || size == 0)
+        return -1;
+
+#if defined(_WIN32)
+    if (!_getcwd(buf, (int)size))
+        return -1;
+#else
+    if (!getcwd(buf, size))
+        return -1;
+#endif
     return 0;
 }
 
 int32_t fossil_io_filesys_chdir(const char *path) {
-    (void)path;
-    /* TODO: Implement chdir logic */
-    return 0;
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+    return _chdir(path);
+#else
+    return chdir(path);
+#endif
 }
 
 int32_t fossil_io_filesys_abspath(const char *path, char *abs_path, size_t max_len) {
-    (void)path;
-    (void)abs_path;
-    (void)max_len;
-    /* TODO: Implement abspath logic */
+    if (!path || !abs_path || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+    if (!_fullpath(abs_path, path, max_len))
+        return -1;
+#else
+    char *res = realpath(path, abs_path);
+    if (!res)
+        return -1;
+#endif
     return 0;
 }
 
 int32_t fossil_io_filesys_dirname(const char *path, char *dir_out, size_t max_len) {
-    (void)path;
-    (void)dir_out;
-    (void)max_len;
-    /* TODO: Implement dirname logic */
+    if (!path || !dir_out || max_len == 0)
+        return -1;
+
+    char tmp[PATH_MAX];
+    strncpy(tmp, path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+#if defined(_WIN32)
+    char *last_sep = strrchr(tmp, '\\');
+#else
+    char *last_sep = strrchr(tmp, '/');
+#endif
+
+    if (!last_sep) {
+        /* no separator, return "." */
+        strncpy(dir_out, ".", max_len);
+        dir_out[max_len - 1] = '\0';
+    } else {
+        size_t len = (size_t)(last_sep - tmp);
+        if (len >= max_len)
+            len = max_len - 1;
+        strncpy(dir_out, tmp, len);
+        dir_out[len] = '\0';
+    }
+
     return 0;
 }
 
 int32_t fossil_io_filesys_basename(const char *path, char *name_out, size_t max_len) {
-    (void)path;
-    (void)name_out;
-    (void)max_len;
-    /* TODO: Implement basename logic */
+    if (!path || !name_out || max_len == 0)
+        return -1;
+
+    const char *base = path;
+
+#if defined(_WIN32)
+    const char *last_sep = strrchr(path, '\\');
+#else
+    const char *last_sep = strrchr(path, '/');
+#endif
+    if (last_sep)
+        base = last_sep + 1;
+
+    strncpy(name_out, base, max_len);
+    name_out[max_len - 1] = '\0';
     return 0;
 }
 
 int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_len) {
-    (void)path;
-    (void)ext_out;
-    (void)max_len;
-    /* TODO: Implement extension logic */
+    if (!path || !ext_out || max_len == 0)
+        return -1;
+
+    const char *base = path;
+#if defined(_WIN32)
+    const char *last_sep = strrchr(path, '\\');
+#else
+    const char *last_sep = strrchr(path, '/');
+#endif
+    if (last_sep)
+        base = last_sep + 1;
+
+    const char *dot = strrchr(base, '.');
+    if (!dot || dot == base) {
+        ext_out[0] = '\0';
+    } else {
+        strncpy(ext_out, dot, max_len);
+        ext_out[max_len - 1] = '\0';
+    }
+
     return 0;
 }
 
 const char *fossil_io_filesys_type_string(fossil_io_filesys_type_t type) {
-    (void)type;
-    /* TODO: Implement type_string logic */
-    return "unknown";
+    switch (type) {
+        case FOSSIL_FILESYS_TYPE_FILE: return "file";
+        case FOSSIL_FILESYS_TYPE_DIR: return "directory";
+        case FOSSIL_FILESYS_TYPE_LINK: return "link";
+        default: return "unknown";
+    }
 }
