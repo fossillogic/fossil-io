@@ -578,25 +578,9 @@ namespace fossil::io
     /**
      * Class for file stream functions.
      */
-    class Stream
+    class File
     {
     public:
-        /**
-         * Reopen a stream with a new file.
-         *
-         * This function reopens a stream with a new file.
-         *
-         * @param stream   Pointer to the fossil_io_file_t structure to reopen.
-         * @param filename The name of the file to reopen.
-         * @param mode     The mode in which to reopen the file.
-         * @param file     Pointer to the FILE structure to reopen.
-         * @return         0 on success, non-zero on failure.
-         */
-        static int32_t freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file)
-        {
-            return fossil_io_file_freopen(stream, filename, mode, file);
-        }
-
         /**
          * Reopen a stream with a new file.
          *
@@ -611,21 +595,6 @@ namespace fossil::io
         static int32_t freopen(fossil_io_file_t *stream, const std::string &filename, const std::string &mode, FILE *file)
         {
             return fossil_io_file_freopen(stream, filename.c_str(), mode.c_str(), file);
-        }
-
-        /**
-         * Open a stream for file operations.
-         *
-         * This function opens a file stream, allowing read or write operations on the specified file.
-         *
-         * @param stream   Pointer to the fossil_io_file_t structure to store the opened stream.
-         * @param filename The name of the file to be opened.
-         * @param mode     The mode in which to open the file (e.g., "r" for read, "w" for write).
-         * @return         0 on success, non-zero on failure.
-         */
-        static int32_t open(fossil_io_file_t *stream, const char *filename, const char *mode)
-        {
-            return fossil_io_file_open(stream, filename, mode);
         }
 
         /**
@@ -766,37 +735,9 @@ namespace fossil::io
          * @param new_filename The name of the new file to save to.
          * @return             0 on success, non-zero on failure.
          */
-        static int32_t save(fossil_io_file_t *stream, const char *new_filename)
-        {
-            return fossil_io_file_save(stream, new_filename);
-        }
-
-        /**
-         * Save an open stream to a new file.
-         *
-         * This function saves the contents of an open stream to a new file.
-         *
-         * @param stream       Pointer to the fossil_io_file_t structure to be saved.
-         * @param new_filename The name of the new file to save to.
-         * @return             0 on success, non-zero on failure.
-         */
         static int32_t save(fossil_io_file_t *stream, const std::string &new_filename)
         {
             return fossil_io_file_save(stream, new_filename.c_str());
-        }
-
-        /**
-         * Copy a file from the source to the destination.
-         *
-         * This function copies a file from a source file to a destination file.
-         *
-         * @param source_filename      The name of the source file.
-         * @param destination_filename The name of the destination file.
-         * @return                     0 on success, non-zero on failure.
-         */
-        static int32_t copy(const char *source_filename, const char *destination_filename)
-        {
-            return fossil_io_file_copy(source_filename, destination_filename);
         }
 
         /**
@@ -821,36 +762,9 @@ namespace fossil::io
          * @param filename The name of the file to remove.
          * @return         0 on success, non-zero on failure.
          */
-        static int32_t remove(const char *filename)
-        {
-            return fossil_io_file_remove(filename);
-        }
-
-        /**
-         * Remove a file stream.
-         *
-         * This function removes a file stream.
-         *
-         * @param filename The name of the file to remove.
-         * @return         0 on success, non-zero on failure.
-         */
         static int32_t remove(const std::string &filename)
         {
             return fossil_io_file_remove(filename.c_str());
-        }
-
-        /**
-         * Rename a file or directory.
-         *
-         * This function renames a file or directory.
-         *
-         * @param old_filename The current name of the file or directory.
-         * @param new_filename The new name to assign to the file or directory.
-         * @return             0 on success, non-zero on failure.
-         */
-        static int32_t rename(const char *old_filename, const char *new_filename)
-        {
-            return fossil_io_file_rename(old_filename, new_filename);
         }
 
         /**
@@ -889,20 +803,6 @@ namespace fossil::io
          * @param n        The number of rotations to perform.
          * @return         0 on success, non-zero on failure.
          */
-        static int32_t rotate(const char *filename, int32_t n)
-        {
-            return fossil_io_file_rotate(filename, n);
-        }
-
-        /**
-         * Rotate a file stream.
-         *
-         * This function rotates a file stream.
-         *
-         * @param filename The name of the file to rotate.
-         * @param n        The number of rotations to perform.
-         * @return         0 on success, non-zero on failure.
-         */
         static int32_t rotate(const std::string &filename, int32_t n)
         {
             return fossil_io_file_rotate(filename.c_str(), n);
@@ -917,36 +817,9 @@ namespace fossil::io
          * @param backup_suffix The suffix to be appended to the backup file.
          * @return              0 on success, non-zero on failure.
          */
-        static int32_t backup(const char *filename, const char *backup_suffix)
-        {
-            return fossil_io_file_backup(filename, backup_suffix);
-        }
-
-        /**
-         * Create a backup of a file with a specified backup suffix.
-         *
-         * This function creates a backup of a file with the given suffix.
-         *
-         * @param filename      The name of the file to create a backup for.
-         * @param backup_suffix The suffix to be appended to the backup file.
-         * @return              0 on success, non-zero on failure.
-         */
         static int32_t backup(const std::string &filename, const std::string &backup_suffix)
         {
             return fossil_io_file_backup(filename.c_str(), backup_suffix.c_str());
-        }
-
-        /**
-         * Check if a file exists.
-         *
-         * This function checks if a file exists.
-         *
-         * @param filename The name of the file to check for existence.
-         * @return         1 if the file exists, 0 if not.
-         */
-        static int32_t file_exists(const char *filename)
-        {
-            return fossil_io_file_file_exists(filename);
         }
 
         /**
@@ -983,35 +856,9 @@ namespace fossil::io
          * @param filename The name of the file to be deleted.
          * @return         0 on success, non-zero on failure.
          */
-        static int32_t delete_file(const char *filename)
-        {
-            return fossil_io_file_delete(filename);
-        }
-
-        /**
-         * Delete a file.
-         *
-         * This function deletes a file.
-         *
-         * @param filename The name of the file to be deleted.
-         * @return         0 on success, non-zero on failure.
-         */
         static int32_t delete_file(const std::string &filename)
         {
             return fossil_io_file_delete(filename.c_str());
-        }
-
-        /**
-         * Get the type of a file stream.
-         *
-         * This function retrieves the type of a file stream.
-         *
-         * @param filename The name of the file to get the type of.
-         * @return         The type of the file stream.
-         */
-        static int get_type(const char *filename)
-        {
-            return fossil_io_file_get_type(filename);
         }
 
         /**
@@ -1047,19 +894,6 @@ namespace fossil::io
          * @param filename The name of the file to check.
          * @return         1 if readable, 0 otherwise.
          */
-        static int32_t is_readable(const char *filename)
-        {
-            return fossil_io_file_is_readable(filename);
-        }
-
-        /**
-         * Check if a file is readable.
-         *
-         * This function checks if a file has read permissions.
-         *
-         * @param filename The name of the file to check.
-         * @return         1 if readable, 0 otherwise.
-         */
         static int32_t is_readable(const std::string &filename)
         {
             return fossil_io_file_is_readable(filename.c_str());
@@ -1073,35 +907,9 @@ namespace fossil::io
          * @param filename The name of the file to check.
          * @return         1 if writable, 0 otherwise.
          */
-        static int32_t is_writable(const char *filename)
-        {
-            return fossil_io_file_is_writable(filename);
-        }
-
-        /**
-         * Check if a file is writable.
-         *
-         * This function checks if a file has write permissions.
-         *
-         * @param filename The name of the file to check.
-         * @return         1 if writable, 0 otherwise.
-         */
         static int32_t is_writable(const std::string &filename)
         {
             return fossil_io_file_is_writable(filename.c_str());
-        }
-
-        /**
-         * Check if a file is executable.
-         *
-         * This function checks if a file has execute permissions.
-         *
-         * @param filename The name of the file to check.
-         * @return         1 if executable, 0 otherwise.
-         */
-        static int32_t is_executable(const char *filename)
-        {
-            return fossil_io_file_is_executable(filename);
         }
 
         /**
@@ -1126,37 +934,9 @@ namespace fossil::io
          * @param mode     The permissions to set (POSIX: chmod-style).
          * @return         0 on success, non-zero on failure.
          */
-        static int32_t set_permissions(const char *filename, int32_t mode)
-        {
-            return fossil_io_file_set_permissions(filename, mode);
-        }
-
-        /**
-         * Set file permissions.
-         *
-         * This function sets the permissions for a file.
-         *
-         * @param filename The name of the file to set permissions for.
-         * @param mode     The permissions to set (POSIX: chmod-style).
-         * @return         0 on success, non-zero on failure.
-         */
         static int32_t set_permissions(const std::string &filename, int32_t mode)
         {
             return fossil_io_file_set_permissions(filename.c_str(), mode);
-        }
-
-        /**
-         * Get file permissions.
-         *
-         * This function retrieves the permissions of a file.
-         *
-         * @param filename The name of the file to retrieve permissions for.
-         * @param mode     Pointer to store the retrieved permissions (POSIX style).
-         * @return         0 on success, non-zero on failure.
-         */
-        static int32_t get_permissions(const char *filename, int32_t *mode)
-        {
-            return fossil_io_file_get_permissions(filename, mode);
         }
 
         /**
@@ -1290,37 +1070,9 @@ namespace fossil::io
          * @param filename2 The name of the second file.
          * @return          0 on success, non-zero on failure.
          */
-        static int32_t swap(const char *filename1, const char *filename2)
-        {
-            return fossil_io_file_swap(filename1, filename2);
-        }
-
-        /**
-         * Swap the contents of two files.
-         *
-         * This function swaps the contents of two files, effectively exchanging their data.
-         *
-         * @param filename1 The name of the first file.
-         * @param filename2 The name of the second file.
-         * @return          0 on success, non-zero on failure.
-         */
         static int32_t swap(const std::string &filename1, const std::string &filename2)
         {
             return fossil_io_file_swap(filename1.c_str(), filename2.c_str());
-        }
-
-        /**
-         * Move a file from source to destination.
-         *
-         * This function moves a file from a source path to a destination path.
-         *
-         * @param source_filename      The name of the source file.
-         * @param destination_filename The name of the destination file.
-         * @return                     0 on success, non-zero on failure.
-         */
-        static int32_t move(const char *source_filename, const char *destination_filename)
-        {
-            return fossil_io_file_move(source_filename, destination_filename);
         }
 
         /**
