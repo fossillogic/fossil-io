@@ -47,6 +47,19 @@
     #include <errno.h>
 #endif
 
+#ifdef _WIN32
+  #include <direct.h>
+#else
+  #include <unistd.h>
+  #include <dirent.h>
+#endif
+
+#ifdef _WIN32
+    _mkdir(path);
+#else
+    mkdir(path, 0755);
+#endif
+
 #if defined(_WIN32)
 #define PATH_SEP '\\'
 #else
