@@ -33,6 +33,8 @@
 #include <unistd.h>   // truncate, ftruncate, getcwd, chdir
 #include <limits.h>   // PATH_MAX
 #include <sys/stat.h> // stat, mkdir
+#include <sys/types.h> // sometimes needed for mode_t
+#include <errno.h>     // optional, if checking errors
 #include <fcntl.h>    // open, O_* flags
 
 #ifdef _WIN32
