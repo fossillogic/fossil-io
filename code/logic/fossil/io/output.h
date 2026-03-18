@@ -29,10 +29,11 @@
 #include "file.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern int32_t FOSSIL_IO_COLOR_ENABLE; // Flag to enable/disable color output
+extern int32_t FOSSIL_IO_COLOR_ENABLE;  // Flag to enable/disable color output
 extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testing
 
 /**
@@ -93,7 +94,7 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
  *
  * -----------------------------------------------------------------------------
  *
-*/
+ */
 
 /**
  * Redirects the output to a specified stream.
@@ -107,7 +108,7 @@ void fossil_io_redirect_output(fossil_io_file_t *stream);
 
 /**
  * Prints a string to the output.
- * 
+ *
  * This function outputs the provided string `str` to the terminal or console. It is a simple utility function
  * that can be used for printing plain text to the screen. The string is printed as-is, with no formatting or
  * color modifications applied.
@@ -116,13 +117,13 @@ void fossil_io_redirect_output(fossil_io_file_t *stream);
  */
 void fossil_io_puts(const char *str);
 
-/** 
+/**
  * Prints a formatted string to the output.
  *
  * This function allows for formatted output, similar to `printf`. It takes a format string that can include
  * format specifiers (e.g., `%d`, `%s`, `%f`), and the additional arguments provided will be formatted accordingly.
  * The function uses a variable argument list (`...`) to handle a wide variety of format specifiers and argument types.
- * 
+ *
  * The format string can also include custom formatting markers enclosed in curly braces `{}`, such as `{red}` for
  * color or `{bold}` for text attributes, which will be processed and applied to the output.
  *
@@ -139,7 +140,7 @@ void fossil_io_printf(const char *format, ...);
 
 /**
  * Prints a character to the output.
- * 
+ *
  * This function is a basic utility to print a single character to the output. It is especially useful when you
  * need to print individual characters rather than strings or formatted text.
  *
@@ -154,7 +155,7 @@ void fossil_io_putchar(char c);
 
 /**
  * Prints a string to the specified output stream.
- * 
+ *
  * This function is similar to `fossil_io_puts`, but instead of printing to the standard output, it allows you
  * to specify an output stream (like a file or a custom output stream). This can be useful when writing to files
  * or other output destinations.
@@ -173,7 +174,7 @@ void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
 
 /**
  * Prints a formatted string to the specified output stream.
- * 
+ *
  * This function is similar to `fossil_io_printf`, but instead of printing to the standard output, it allows you
  * to specify an output stream. The format string can include format specifiers and custom formatting markers, just
  * like `fossil_io_printf`. This can be useful when writing formatted text to files or other output destinations.
@@ -269,274 +270,293 @@ void fossil_io_flush(void);
 #include <cstdarg>
 #include <iostream>
 
-namespace fossil {
+namespace fossil::io
+{
 
-    namespace io {
+    /**
+     * @class Output
+     * @brief C++ wrapper class for fossil_io output and terminal control functions.
+     *
+     * Provides convenient static methods and stream-style operators for
+     * writing text output and controlling terminal behavior.
+     */
+    class Output
+    {
+    public:
+        /**
+         * @brief Default constructor.
+         */
+        Output() = default;
 
         /**
-         * @class Output
-         * @brief C++ wrapper class for fossil_io output and terminal control functions.
+         * @brief Writes a null-terminated C string to the default output stream.
          *
-         * Provides convenient static methods and stream-style operators for
-         * writing text output and controlling terminal behavior.
+         * @param str Pointer to the null-terminated string to be printed.
          */
-        class Output {
-        public:
-            /**
-             * @brief Default constructor.
-             */
-            Output() = default;
-
-            /**
-             * @brief Writes a null-terminated C string to the default output stream.
-             *
-             * @param str Pointer to the null-terminated string to be printed.
-             */
-            static void puts(const char *str) {
-                fossil_io_puts(str);
-            }
-
-            /**
-             * @brief Writes an STL string to the default output stream.
-             *
-             * @param str The std::string to be printed.
-             */
-            static void puts(const std::string &str) {
-                fossil_io_puts(str.c_str());
-            }
-
-            /**
-             * @brief Prints a formatted string using a format specifier and variadic arguments.
-             *
-             * @param format A printf-style format string.
-             * @param ... Additional arguments to be formatted according to the format string.
-             */
-            static void printf(const char *format, ...) {
-                va_list args;
-                va_start(args, format);
-                fossil_io_printf(format, args);
-                va_end(args);
-            }
-
-            /**
-             * @brief Prints a single character to the default output stream.
-             *
-             * @param c The character to be printed.
-             */
-            static void putchar(char c) {
-                fossil_io_putchar(c);
-            }
-
-            /**
-             * @brief Writes a null-terminated string to a specified fossil output stream.
-             *
-             * @param stream A pointer to the fossil_io_file_t stream.
-             * @param str A null-terminated C string.
-             */
-            static void fputs(fossil_io_file_t *stream, const char *str) {
-                fossil_io_fputs(stream, str);
-            }
-
-            /**
-             * @brief Prints a formatted string to a specified fossil output stream.
-             *
-             * @param stream A pointer to the fossil_io_file_t stream.
-             * @param format A printf-style format string.
-             * @param ... Additional arguments to be formatted.
-             */
-            static void fprintf(fossil_io_file_t *stream, const char *format, ...) {
-                va_list args;
-                va_start(args, format);
-                fossil_io_fprintf(stream, format, args);
-                va_end(args);
-            }
-
-            /**
-             * @brief Formats a string and stores it in the provided buffer.
-             *
-             * This method works like snprintf, formatting the string according to the format specifiers
-             * and storing the result in the buffer. It ensures that no more than `size` characters are written,
-             * including the null terminator.
-             *
-             * @param buffer The buffer where the formatted string will be stored.
-             * @param size The size of the buffer.
-             * @param format The format string.
-             * @param ... Additional arguments to be formatted.
-             * @return The number of characters written (excluding the null terminator), or a negative value on error.
-             */
-            static int snprintf(char *buffer, size_t size, const char *format, ...) {
-                va_list args;
-                va_start(args, format);
-                int result = fossil_io_snprintf(buffer, size, format, args);
-                va_end(args);
-                return result;
-            }
-
-            /**
-             * @brief Stream operator for outputting an STL string.
-             *
-             * @param str The string to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(const std::string& str) {
-                fossil_io_puts(str.c_str());
-                return *this;
-            }
-
-            /**
-             * @brief Stream operator for outputting a C-style string.
-             *
-             * @param str The null-terminated C string to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(const char* str) {
-                fossil_io_puts(str);
-                return *this;
-            }
-
-            /**
-             * @brief Stream operator for outputting a single character.
-             *
-             * @param c The character to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(char c) {
-                fossil_io_putchar(c);
-                return *this;
-            }
-
-            /**
-             * @brief Stream operator for outputting an integer.
-             *
-             * @param value The integer to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(int value) {
-                std::stringstream ss;
-                ss << value;
-                fossil_io_puts(ss.str().c_str());
-                return *this;
-            }
-
-            /**
-             * @brief Stream operator for outputting a double.
-             *
-             * @param value The double-precision floating point number to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(double value) {
-                std::stringstream ss;
-                ss << value;
-                fossil_io_puts(ss.str().c_str());
-                return *this;
-            }
-
-            /**
-             * @brief Stream operator for outputting a float.
-             *
-             * @param value The single-precision floating point number to output.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(float value) {
-                return (*this) << static_cast<double>(value);
-            }
-
-            /**
-             * @brief Stream operator for handling manipulators (like std::endl).
-             *
-             * @param manip A stream manipulator function.
-             * @return Reference to this Output object.
-             */
-            Output& operator<<(std::ostream& (*manip)(std::ostream&)) {
-                if (manip == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
-                    fossil_io_putchar('\n');
-                }
-                return *this;
-            }
-
-            // ------------------
-            // TUI CONTROL METHODS
-            // ------------------
-
-            /**
-             * @brief Clears the terminal screen and moves the cursor to the top-left corner.
-             *
-             * Sends the ANSI escape sequence to perform a full screen clear.
-             */
-            static void clear_screen() {
-                fossil_io_clear_screen();
-            }
-
-            /**
-             * @brief Moves the terminal cursor to the specified position.
-             *
-             * @param row The 1-based row number.
-             * @param col The 1-based column number.
-             */
-            static void move_cursor(int row, int col) {
-                fossil_io_move_cursor(row, col);
-            }
-
-            /**
-             * @brief Hides the terminal cursor.
-             *
-             * Useful when rendering full-screen UIs or animations.
-             */
-            static void hide_cursor() {
-                fossil_io_hide_cursor();
-            }
-
-            /**
-             * @brief Shows the terminal cursor if previously hidden.
-             */
-            static void show_cursor() {
-                fossil_io_show_cursor();
-            }
-
-            /**
-             * @brief Draws a horizontal line using a specified character.
-             *
-             * @param length The number of times to repeat the character.
-             * @param ch The character to draw.
-             */
-            static void draw_horizontal_line(int length, char ch) {
-                fossil_io_draw_horizontal_line(length, ch);
-            }
-
-            /**
-             * @brief Draws a vertical line using a specified character.
-             *
-             * @param length The number of times to repeat the character vertically.
-             * @param ch The character to draw.
-             */
-            static void draw_vertical_line(int length, char ch) {
-                fossil_io_draw_vertical_line(length, ch);
-            }
-
-            /**
-             * @brief Flushes the output stream.
-             *
-             * Ensures all buffered output is written immediately.
-             */
-            static void flush() {
-                fossil_io_flush();
-            }
-        };
+        static void puts(const char *str)
+        {
+            fossil_io_puts(str);
+        }
 
         /**
-         * @brief Global output instance for stream-style usage.
+         * @brief Writes an STL string to the default output stream.
          *
-         * Example:
-         * @code
-         *     fossil::io::out << "Hello, World!" << std::endl;
-         * @endcode
+         * @param str The std::string to be printed.
          */
-        inline Output out;
+        static void puts(const std::string &str)
+        {
+            fossil_io_puts(str.c_str());
+        }
 
-    } // namespace io
+        /**
+         * @brief Prints a formatted string using a format specifier and variadic arguments.
+         *
+         * @param format A printf-style format string.
+         * @param ... Additional arguments to be formatted according to the format string.
+         */
+        static void printf(const char *format, ...)
+        {
+            va_list args;
+            va_start(args, format);
+            fossil_io_printf(format, args);
+            va_end(args);
+        }
+
+        /**
+         * @brief Prints a single character to the default output stream.
+         *
+         * @param c The character to be printed.
+         */
+        static void putchar(char c)
+        {
+            fossil_io_putchar(c);
+        }
+
+        /**
+         * @brief Writes a null-terminated string to a specified fossil output stream.
+         *
+         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param str A null-terminated C string.
+         */
+        static void fputs(fossil_io_file_t *stream, const char *str)
+        {
+            fossil_io_fputs(stream, str);
+        }
+
+        /**
+         * @brief Prints a formatted string to a specified fossil output stream.
+         *
+         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param format A printf-style format string.
+         * @param ... Additional arguments to be formatted.
+         */
+        static void fprintf(fossil_io_file_t *stream, const char *format, ...)
+        {
+            va_list args;
+            va_start(args, format);
+            fossil_io_fprintf(stream, format, args);
+            va_end(args);
+        }
+
+        /**
+         * @brief Formats a string and stores it in the provided buffer.
+         *
+         * This method works like snprintf, formatting the string according to the format specifiers
+         * and storing the result in the buffer. It ensures that no more than `size` characters are written,
+         * including the null terminator.
+         *
+         * @param buffer The buffer where the formatted string will be stored.
+         * @param size The size of the buffer.
+         * @param format The format string.
+         * @param ... Additional arguments to be formatted.
+         * @return The number of characters written (excluding the null terminator), or a negative value on error.
+         */
+        static int snprintf(char *buffer, size_t size, const char *format, ...)
+        {
+            va_list args;
+            va_start(args, format);
+            int result = fossil_io_snprintf(buffer, size, format, args);
+            va_end(args);
+            return result;
+        }
+
+        /**
+         * @brief Stream operator for outputting an STL string.
+         *
+         * @param str The string to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(const std::string &str)
+        {
+            fossil_io_puts(str.c_str());
+            return *this;
+        }
+
+        /**
+         * @brief Stream operator for outputting a C-style string.
+         *
+         * @param str The null-terminated C string to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(const char *str)
+        {
+            fossil_io_puts(str);
+            return *this;
+        }
+
+        /**
+         * @brief Stream operator for outputting a single character.
+         *
+         * @param c The character to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(char c)
+        {
+            fossil_io_putchar(c);
+            return *this;
+        }
+
+        /**
+         * @brief Stream operator for outputting an integer.
+         *
+         * @param value The integer to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(int value)
+        {
+            std::stringstream ss;
+            ss << value;
+            fossil_io_puts(ss.str().c_str());
+            return *this;
+        }
+
+        /**
+         * @brief Stream operator for outputting a double.
+         *
+         * @param value The double-precision floating point number to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(double value)
+        {
+            std::stringstream ss;
+            ss << value;
+            fossil_io_puts(ss.str().c_str());
+            return *this;
+        }
+
+        /**
+         * @brief Stream operator for outputting a float.
+         *
+         * @param value The single-precision floating point number to output.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(float value)
+        {
+            return (*this) << static_cast<double>(value);
+        }
+
+        /**
+         * @brief Stream operator for handling manipulators (like std::endl).
+         *
+         * @param manip A stream manipulator function.
+         * @return Reference to this Output object.
+         */
+        Output &operator<<(std::ostream &(*manip)(std::ostream &))
+        {
+            if (manip == static_cast<std::ostream &(*)(std::ostream &)>(std::endl))
+            {
+                fossil_io_putchar('\n');
+            }
+            return *this;
+        }
+
+        // ------------------
+        // TUI CONTROL METHODS
+        // ------------------
+
+        /**
+         * @brief Clears the terminal screen and moves the cursor to the top-left corner.
+         *
+         * Sends the ANSI escape sequence to perform a full screen clear.
+         */
+        static void clear_screen()
+        {
+            fossil_io_clear_screen();
+        }
+
+        /**
+         * @brief Moves the terminal cursor to the specified position.
+         *
+         * @param row The 1-based row number.
+         * @param col The 1-based column number.
+         */
+        static void move_cursor(int row, int col)
+        {
+            fossil_io_move_cursor(row, col);
+        }
+
+        /**
+         * @brief Hides the terminal cursor.
+         *
+         * Useful when rendering full-screen UIs or animations.
+         */
+        static void hide_cursor()
+        {
+            fossil_io_hide_cursor();
+        }
+
+        /**
+         * @brief Shows the terminal cursor if previously hidden.
+         */
+        static void show_cursor()
+        {
+            fossil_io_show_cursor();
+        }
+
+        /**
+         * @brief Draws a horizontal line using a specified character.
+         *
+         * @param length The number of times to repeat the character.
+         * @param ch The character to draw.
+         */
+        static void draw_horizontal_line(int length, char ch)
+        {
+            fossil_io_draw_horizontal_line(length, ch);
+        }
+
+        /**
+         * @brief Draws a vertical line using a specified character.
+         *
+         * @param length The number of times to repeat the character vertically.
+         * @param ch The character to draw.
+         */
+        static void draw_vertical_line(int length, char ch)
+        {
+            fossil_io_draw_vertical_line(length, ch);
+        }
+
+        /**
+         * @brief Flushes the output stream.
+         *
+         * Ensures all buffered output is written immediately.
+         */
+        static void flush()
+        {
+            fossil_io_flush();
+        }
+    };
+
+    /**
+     * @brief Global output instance for stream-style usage.
+     *
+     * Example:
+     * @code
+     *     fossil::io::out << "Hello, World!" << std::endl;
+     * @endcode
+     */
+    inline Output out;
 
 } // namespace fossil
-
 
 #endif
 

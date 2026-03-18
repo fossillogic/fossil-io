@@ -50,53 +50,67 @@ fossil_io_file_t *FOSSIL_STDIN;
 fossil_io_file_t *FOSSIL_STDOUT;
 fossil_io_file_t *FOSSIL_STDERR;
 
-typedef enum {
-    FOSSIL_BUFFER_SMALL  = 100,
+typedef enum
+{
+    FOSSIL_BUFFER_SMALL = 100,
     FOSSIL_BUFFER_MEDIUM = 500,
-    FOSSIL_BUFFER_LARGE  = 1000,
-    FOSSIL_BUFFER_HUGE   = 5000,
-    FOSSIL_BUFFER_GIANT  = 10000
+    FOSSIL_BUFFER_LARGE = 1000,
+    FOSSIL_BUFFER_HUGE = 5000,
+    FOSSIL_BUFFER_GIANT = 10000
 } fossil_limit_t;
 
-typedef struct {
+typedef struct
+{
     const char *keyword;
     const char *mode;
 } fossil_io_file_mode_entry_t;
 
 static const fossil_io_file_mode_entry_t fossil_io_file_mode_table[] = {
     // Classic C modes (standard fopen strings)
-    { "r",     "r"   }, { "rb",    "rb"  },
-    { "w",     "w"   }, { "wb",    "wb"  },
-    { "a",     "a"   }, { "ab",    "ab"  },
-    { "r+",    "r+"  }, { "rb+",   "r+b" }, { "r+b", "r+b" },
-    { "w+",    "w+"  }, { "wb+",   "w+b" }, { "w+b", "w+b" },
-    { "a+",    "a+"  }, { "ab+",   "a+b" }, { "a+b", "a+b" },
+    {"r", "r"},
+    {"rb", "rb"},
+    {"w", "w"},
+    {"wb", "wb"},
+    {"a", "a"},
+    {"ab", "ab"},
+    {"r+", "r+"},
+    {"rb+", "r+b"},
+    {"r+b", "r+b"},
+    {"w+", "w+"},
+    {"wb+", "w+b"},
+    {"w+b", "w+b"},
+    {"a+", "a+"},
+    {"ab+", "a+b"},
+    {"a+b", "a+b"},
 
     // Extended readable modes
-    { "read",          "r"   },
-    { "readb",         "rb"  },
-    { "write",         "w"   },
-    { "writeb",        "wb"  },
-    { "append",        "a"   },
-    { "appendb",       "ab"  },
-    { "read+write",    "r+"  },
-    { "read+writeb",   "r+b" },
-    { "write+read",    "w+"  },
-    { "write+readb",   "w+b" },
-    { "append+read",   "a+"  },
-    { "append+readb",  "a+b" },
-    { "read+t",        "rt"  },
-    { "write+t",       "wt"  },
-    { "read+write+t",  "r+t" },
+    {"read", "r"},
+    {"readb", "rb"},
+    {"write", "w"},
+    {"writeb", "wb"},
+    {"append", "a"},
+    {"appendb", "ab"},
+    {"read+write", "r+"},
+    {"read+writeb", "r+b"},
+    {"write+read", "w+"},
+    {"write+readb", "w+b"},
+    {"append+read", "a+"},
+    {"append+readb", "a+b"},
+    {"read+t", "rt"},
+    {"write+t", "wt"},
+    {"read+write+t", "r+t"},
 
     // Optional end-of-table sentinel
-    { NULL, NULL }
-};
+    {NULL, NULL}};
 
-static const char *fossil_io_file_mode_from_keyword(const char *keyword) {
-    if (keyword == NULL) return NULL;
-    for (int i = 0; fossil_io_file_mode_table[i].keyword != NULL; i++) {
-        if (strcmp(keyword, fossil_io_file_mode_table[i].keyword) == 0) {
+static const char *fossil_io_file_mode_from_keyword(const char *keyword)
+{
+    if (keyword == NULL)
+        return NULL;
+    for (int i = 0; fossil_io_file_mode_table[i].keyword != NULL; i++)
+    {
+        if (strcmp(keyword, fossil_io_file_mode_table[i].keyword) == 0)
+        {
             return fossil_io_file_mode_table[i].mode;
         }
     }
@@ -106,20 +120,24 @@ static const char *fossil_io_file_mode_from_keyword(const char *keyword) {
 /**
  * Open a stream for file operations, populating extended file metadata.
  */
-int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, const char *mode) {
-    if (stream == NULL || filename == NULL || mode == NULL) {
+int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, const char *mode)
+{
+    if (stream == NULL || filename == NULL || mode == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
 
-    if (strlen(filename) >= sizeof(stream->filename)) {
+    if (strlen(filename) >= sizeof(stream->filename))
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Limit reached\n");
         return fossil_io_code("system.limit");
     }
 
     memset(stream, 0, sizeof(fossil_io_file_t));
     stream->file = fopen(filename, fossil_io_file_mode_from_keyword(mode));
-    if (stream->file == NULL) {
+    if (stream->file == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", filename);
         stream->is_open = false;
         return fossil_io_code("fs.not_found");
@@ -133,10 +151,13 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
     stream->fd = fileno(stream->file);
 
     // Set file type and is_binary
-    if (strchr(mode, 'b')) {
+    if (strchr(mode, 'b'))
+    {
         strncpy(stream->type, "binary", sizeof(stream->type) - 1);
         stream->is_binary = true;
-    } else {
+    }
+    else
+    {
         strncpy(stream->type, "text", sizeof(stream->type) - 1);
         stream->is_binary = false;
     }
@@ -147,10 +168,14 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
 
     // Set flags (basic, not all possible flags)
     stream->flags = 0;
-    if (strchr(mode, 'r')) stream->flags |= O_RDONLY;
-    if (strchr(mode, 'w')) stream->flags |= O_WRONLY;
-    if (strchr(mode, '+')) stream->flags |= O_RDWR;
-    if (stream->append_mode) stream->flags |= O_APPEND;
+    if (strchr(mode, 'r'))
+        stream->flags |= O_RDONLY;
+    if (strchr(mode, 'w'))
+        stream->flags |= O_WRONLY;
+    if (strchr(mode, '+'))
+        stream->flags |= O_RDWR;
+    if (stream->append_mode)
+        stream->flags |= O_APPEND;
 
     // Set readable/writable/executable
     stream->readable = fossil_io_file_is_readable(filename);
@@ -178,26 +203,35 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
     stream->accessed_at = 0;
 #else
     struct stat st;
-    if (stat(filename, &st) == 0) {
+    if (stat(filename, &st) == 0)
+    {
         stream->mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
         stream->created_at = st.st_ctime;
         stream->modified_at = st.st_mtime;
         stream->accessed_at = st.st_atime;
         struct passwd *pw = getpwuid(st.st_uid);
         struct group *gr = getgrgid(st.st_gid);
-        if (pw) {
+        if (pw)
+        {
             strncpy(stream->owner, pw->pw_name, sizeof(stream->owner) - 1);
             stream->owner[sizeof(stream->owner) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             stream->owner[0] = '\0';
         }
-        if (gr) {
+        if (gr)
+        {
             strncpy(stream->group, gr->gr_name, sizeof(stream->group) - 1);
             stream->group[sizeof(stream->group) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             stream->group[0] = '\0';
         }
-    } else {
+    }
+    else
+    {
         stream->mode = 0;
         stream->owner[0] = '\0';
         stream->group[0] = '\0';
@@ -220,7 +254,8 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
     stream->analyzed = false;
     stream->language[0] = '\0';
     stream->sentiment = 0.0f;
-    for (int i = 0; i < 16; ++i) stream->tags[i] = NULL;
+    for (int i = 0; i < 16; ++i)
+        stream->tags[i] = NULL;
     stream->tag_count = 0;
     stream->compressed = false;
     stream->embedding = NULL;
@@ -230,8 +265,10 @@ int32_t fossil_io_file_open(fossil_io_file_t *stream, const char *filename, cons
 }
 
 // Close an open stream
-void fossil_io_file_close(fossil_io_file_t *stream) {
-    if (stream == NULL || stream->file == NULL) {
+void fossil_io_file_close(fossil_io_file_t *stream)
+{
+    if (stream == NULL || stream->file == NULL)
+    {
         return;
     }
 
@@ -263,7 +300,8 @@ void fossil_io_file_close(fossil_io_file_t *stream) {
     stream->analyzed = false;
     stream->language[0] = '\0';
     stream->sentiment = 0.0f;
-    for (int i = 0; i < 16; ++i) stream->tags[i] = NULL;
+    for (int i = 0; i < 16; ++i)
+        stream->tags[i] = NULL;
     stream->tag_count = 0;
     stream->compressed = false;
     stream->embedding = NULL;
@@ -271,8 +309,10 @@ void fossil_io_file_close(fossil_io_file_t *stream) {
     stream->is_binary = false;
 }
 
-int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream) {
-    if (!stream) {
+int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream)
+{
+    if (!stream)
+    {
         return -1; // Invalid stream
     }
 
@@ -282,11 +322,13 @@ int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream) {
     FILE *devnull = fopen("/dev/null", "w");
 #endif
 
-    if (!devnull) {
+    if (!devnull)
+    {
         return -1; // Failed to open null device
     }
 
-    if (stream->file) {
+    if (stream->file)
+    {
         fclose(stream->file);
     }
 
@@ -325,7 +367,8 @@ int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream) {
     stream->analyzed = false;
     stream->language[0] = '\0';
     stream->sentiment = 0.0f;
-    for (int i = 0; i < 16; ++i) stream->tags[i] = NULL;
+    for (int i = 0; i < 16; ++i)
+        stream->tags[i] = NULL;
     stream->tag_count = 0;
     stream->compressed = false;
     stream->embedding = NULL;
@@ -335,14 +378,17 @@ int32_t fossil_io_file_redirect_to_devnull(fossil_io_file_t *stream) {
     return 0;
 }
 
-int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file) {
-    if (stream == NULL || filename == NULL || mode == NULL || file == NULL) {
+int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, const char *mode, FILE *file)
+{
+    if (stream == NULL || filename == NULL || mode == NULL || file == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
 
     FILE *new_file = freopen(filename, fossil_io_file_mode_from_keyword(mode), file);
-    if (new_file == NULL) {
+    if (new_file == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: File not found - %s\n", filename);
         stream->is_open = false;
         return fossil_io_code("fs.not_found");
@@ -358,10 +404,13 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
     stream->filename[sizeof(stream->filename) - 1] = '\0';
 
     // Set file type and is_binary
-    if (strchr(mode, 'b')) {
+    if (strchr(mode, 'b'))
+    {
         strncpy(stream->type, "binary", sizeof(stream->type) - 1);
         stream->is_binary = true;
-    } else {
+    }
+    else
+    {
         strncpy(stream->type, "text", sizeof(stream->type) - 1);
         stream->is_binary = false;
     }
@@ -372,10 +421,14 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
 
     // Set flags
     stream->flags = 0;
-    if (strchr(mode, 'r')) stream->flags |= O_RDONLY;
-    if (strchr(mode, 'w')) stream->flags |= O_WRONLY;
-    if (strchr(mode, '+')) stream->flags |= O_RDWR;
-    if (stream->append_mode) stream->flags |= O_APPEND;
+    if (strchr(mode, 'r'))
+        stream->flags |= O_RDONLY;
+    if (strchr(mode, 'w'))
+        stream->flags |= O_WRONLY;
+    if (strchr(mode, '+'))
+        stream->flags |= O_RDWR;
+    if (stream->append_mode)
+        stream->flags |= O_APPEND;
 
     // Set readable/writable/executable
     stream->readable = fossil_io_file_is_readable(filename);
@@ -403,26 +456,35 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
     stream->accessed_at = 0;
 #else
     struct stat st;
-    if (stat(filename, &st) == 0) {
+    if (stat(filename, &st) == 0)
+    {
         stream->mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
         stream->created_at = st.st_ctime;
         stream->modified_at = st.st_mtime;
         stream->accessed_at = st.st_atime;
         struct passwd *pw = getpwuid(st.st_uid);
         struct group *gr = getgrgid(st.st_gid);
-        if (pw) {
+        if (pw)
+        {
             strncpy(stream->owner, pw->pw_name, sizeof(stream->owner) - 1);
             stream->owner[sizeof(stream->owner) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             stream->owner[0] = '\0';
         }
-        if (gr) {
+        if (gr)
+        {
             strncpy(stream->group, gr->gr_name, sizeof(stream->group) - 1);
             stream->group[sizeof(stream->group) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             stream->group[0] = '\0';
         }
-    } else {
+    }
+    else
+    {
         stream->mode = 0;
         stream->owner[0] = '\0';
         stream->group[0] = '\0';
@@ -445,7 +507,8 @@ int32_t fossil_io_file_freopen(fossil_io_file_t *stream, const char *filename, c
     stream->analyzed = false;
     stream->language[0] = '\0';
     stream->sentiment = 0.0f;
-    for (int i = 0; i < 16; ++i) stream->tags[i] = NULL;
+    for (int i = 0; i < 16; ++i)
+        stream->tags[i] = NULL;
     stream->tag_count = 0;
     stream->compressed = false;
     stream->embedding = NULL;
@@ -459,16 +522,18 @@ size_t fossil_io_file_read(
     fossil_io_file_t *stream,
     void *buffer,
     size_t size,
-    size_t count
-) {
+    size_t count)
+{
     /* Match fread(): undefined behavior on NULL is avoided,
        but no diagnostics are emitted */
-    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0)
+    {
         return 0;
     }
 
     /* Enforce Fossil IO access policy, but preserve fread semantics */
-    if (!stream->readable) {
+    if (!stream->readable)
+    {
         errno = EBADF;
         return 0;
     }
@@ -480,7 +545,8 @@ size_t fossil_io_file_read(
 
     /* Update stream position if available */
     long pos = ftell(stream->file);
-    if (pos >= 0) {
+    if (pos >= 0)
+    {
         stream->position = (size_t)pos;
     }
 
@@ -494,15 +560,17 @@ size_t fossil_io_file_write(
     fossil_io_file_t *stream,
     const void *buffer,
     size_t size,
-    size_t count
-) {
+    size_t count)
+{
     /* fread/fwrite return 0 on invalid input without diagnostics */
-    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0)
+    {
         return 0;
     }
 
     /* Enforce Fossil IO policy without breaking fwrite semantics */
-    if (!stream->writable) {
+    if (!stream->writable)
+    {
         errno = EBADF;
         return 0;
     }
@@ -514,7 +582,8 @@ size_t fossil_io_file_write(
 
     /* Update position if seekable */
     long pos = ftell(stream->file);
-    if (pos >= 0) {
+    if (pos >= 0)
+    {
         stream->position = (size_t)pos;
     }
 
@@ -524,12 +593,15 @@ size_t fossil_io_file_write(
 }
 
 // Append data to the end of an open stream
-int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count) {
-    if (!stream || !buffer || !stream->file || size == 0 || count == 0) {
+int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size_t size, int32_t count)
+{
+    if (!stream || !buffer || !stream->file || size == 0 || count == 0)
+    {
         return 0;
     }
 
-    if (!stream->writable) {
+    if (!stream->writable)
+    {
         errno = EBADF;
         return 0;
     }
@@ -540,7 +612,8 @@ int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size
     size_t items_written = fwrite(buffer, size, count, stream->file);
 
     long pos = ftell(stream->file);
-    if (pos >= 0) {
+    if (pos >= 0)
+    {
         stream->position = (size_t)pos;
     }
 
@@ -548,8 +621,10 @@ int32_t fossil_io_file_append(fossil_io_file_t *stream, const void *buffer, size
 }
 
 // Seek to a specified position in an open stream
-int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t origin) {
-    if (!stream || !stream->file) {
+int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t origin)
+{
+    if (!stream || !stream->file)
+    {
         errno = EINVAL;
         return -1;
     }
@@ -564,8 +639,10 @@ int32_t fossil_io_file_seek(fossil_io_file_t *stream, int64_t offset, int32_t or
 }
 
 // Get the current position of the file pointer in an open stream
-int32_t fossil_io_file_tell(fossil_io_file_t *stream) {
-    if (!stream || !stream->file) {
+int32_t fossil_io_file_tell(fossil_io_file_t *stream)
+{
+    if (!stream || !stream->file)
+    {
         errno = EINVAL;
         return -1L;
     }
@@ -574,7 +651,8 @@ int32_t fossil_io_file_tell(fossil_io_file_t *stream) {
 
     int32_t pos = ftell(stream->file);
 
-    if (pos >= 0) {
+    if (pos >= 0)
+    {
         stream->position = (int32_t)pos;
     }
 
@@ -585,20 +663,23 @@ int32_t fossil_io_file_tell(fossil_io_file_t *stream) {
 // Save an open stream to a new file
 int32_t fossil_io_file_save(
     fossil_io_file_t *stream,
-    const char *new_filename
-) {
-    if (!stream || !stream->file || !new_filename) {
+    const char *new_filename)
+{
+    if (!stream || !stream->file || !new_filename)
+    {
         errno = EINVAL;
         return -1;
     }
 
-    if (strlen(new_filename) >= sizeof(stream->filename)) {
+    if (strlen(new_filename) >= sizeof(stream->filename))
+    {
         errno = ENAMETOOLONG;
         return -1;
     }
 
     /* Flush stdio buffers */
-    if (fflush(stream->file) != 0) {
+    if (fflush(stream->file) != 0)
+    {
         return -1;
     }
 
@@ -607,7 +688,8 @@ int32_t fossil_io_file_save(
     strncpy(old_name, stream->filename, sizeof(old_name));
 
     /* Rename atomically */
-    if (rename(old_name, new_filename) != 0) {
+    if (rename(old_name, new_filename) != 0)
+    {
         return -1;
     }
 
@@ -619,14 +701,18 @@ int32_t fossil_io_file_save(
 }
 
 // Copy a file from the source to the destination
-int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename) {
-    if (!source_filename || !destination_filename) return fossil_io_code("system.contract");
+int32_t fossil_io_file_copy(const char *source_filename, const char *destination_filename)
+{
+    if (!source_filename || !destination_filename)
+        return fossil_io_code("system.contract");
 
     FILE *in = fopen(source_filename, "rb");
-    if (!in) return fossil_io_code("fs.not_found");
+    if (!in)
+        return fossil_io_code("fs.not_found");
 
     FILE *out = fopen(destination_filename, "wb");
-    if (!out) {
+    if (!out)
+    {
         fclose(in);
         return fossil_io_code("io.write");
     }
@@ -635,19 +721,23 @@ int32_t fossil_io_file_copy(const char *source_filename, const char *destination
     size_t n;
     int error = 0;
 
-    while ((n = fread(buf, 1, sizeof buf, in)) > 0) {
-        if (fwrite(buf, 1, n, out) != n) {
+    while ((n = fread(buf, 1, sizeof buf, in)) > 0)
+    {
+        if (fwrite(buf, 1, n, out) != n)
+        {
             error = 1;
             break;
         }
     }
 
-    if (ferror(in)) error = 1;
+    if (ferror(in))
+        error = 1;
 
     fclose(in);
     fclose(out);
 
-    if (error) {
+    if (error)
+    {
         remove(destination_filename); /* prevent partial copy */
         return fossil_io_code("io.write");
     }
@@ -655,11 +745,13 @@ int32_t fossil_io_file_copy(const char *source_filename, const char *destination
     return fossil_io_code("system.ok");
 }
 
-int32_t fossil_io_file_remove(const char *filename) {
+int32_t fossil_io_file_remove(const char *filename)
+{
     if (!filename)
         return fossil_io_code("system.contract");
 
-    if (remove(filename) != 0) {
+    if (remove(filename) != 0)
+    {
         if (errno == ENOENT)
             return fossil_io_code("fs.not_found");
         return fossil_io_code("io.write");
@@ -668,11 +760,13 @@ int32_t fossil_io_file_remove(const char *filename) {
     return fossil_io_code("system.ok");
 }
 
-int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename) {
+int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename)
+{
     if (!old_filename || !new_filename)
         return fossil_io_code("system.contract");
 
-    if (rename(old_filename, new_filename) != 0) {
+    if (rename(old_filename, new_filename) != 0)
+    {
         if (errno == ENOENT)
             return fossil_io_code("fs.not_found");
         return fossil_io_code("io.write");
@@ -681,10 +775,13 @@ int32_t fossil_io_file_rename(const char *old_filename, const char *new_filename
     return fossil_io_code("system.ok");
 }
 
-int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
-    if (!stream || !stream->file) return -1;
+int32_t fossil_io_file_flush(fossil_io_file_t *stream)
+{
+    if (!stream || !stream->file)
+        return -1;
 
-    if (fflush(stream->file) != 0) return -1;
+    if (fflush(stream->file) != 0)
+        return -1;
 
     long pos = ftell(stream->file);
     if (pos >= 0)
@@ -692,7 +789,8 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
 
 #ifndef _WIN32
     struct stat st;
-    if (stat(stream->filename, &st) == 0) {
+    if (stat(stream->filename, &st) == 0)
+    {
         stream->mode = st.st_mode & 0777;
         stream->modified_at = st.st_mtime;
         stream->accessed_at = st.st_atime;
@@ -706,8 +804,10 @@ int32_t fossil_io_file_flush(fossil_io_file_t *stream) {
  * Rotate a file by renaming filename to filename.1, filename.1 to filename.2, ..., up to n.
  * Oldest file (filename.n) is overwritten.
  */
-int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
-    if (filename == NULL) {
+int32_t fossil_io_file_rotate(const char *filename, int32_t n)
+{
+    if (filename == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
@@ -715,15 +815,20 @@ int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
     char old_filename[FOSSIL_BUFFER_MEDIUM];
     char new_filename[FOSSIL_BUFFER_MEDIUM];
 
-    for (int32_t i = n; i > 0; i--) {
-        if (i == 1) {
+    for (int32_t i = n; i > 0; i--)
+    {
+        if (i == 1)
+        {
             snprintf(old_filename, sizeof(old_filename), "%s", filename);
-        } else {
+        }
+        else
+        {
             snprintf(old_filename, sizeof(old_filename), "%s.%d", filename, i - 1);
         }
 
         snprintf(new_filename, sizeof(new_filename), "%s.%d", filename, i);
-        if (fossil_io_file_rename(old_filename, new_filename) != fossil_io_code("system.ok")) {
+        if (fossil_io_file_rename(old_filename, new_filename) != fossil_io_code("system.ok"))
+        {
             fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to rotate file %s\n", filename);
             return fossil_io_code("io.write");
         }
@@ -735,8 +840,10 @@ int32_t fossil_io_file_rotate(const char *filename, int32_t n) {
 /**
  * Create a backup of a file with a specified backup suffix.
  */
-int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix) {
-    if (filename == NULL || backup_suffix == NULL) {
+int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix)
+{
+    if (filename == NULL || backup_suffix == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
@@ -744,7 +851,8 @@ int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix) {
     char backup_filename[FOSSIL_BUFFER_MEDIUM + 32];
     snprintf(backup_filename, sizeof(backup_filename), "%s%s", filename, backup_suffix);
 
-    if (fossil_io_file_copy(filename, backup_filename) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_copy(filename, backup_filename) != fossil_io_code("system.ok"))
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to create backup for %s\n", filename);
         return fossil_io_code("io.write");
     }
@@ -756,14 +864,17 @@ int32_t fossil_io_file_backup(const char *filename, const char *backup_suffix) {
  * Check if a file exists.
  * Returns fossil_io_code("system.ok") if not found, fossil_io_code("fs.exists") if found.
  */
-int32_t fossil_io_file_file_exists(const char *filename) {
-    if (filename == NULL) {
+int32_t fossil_io_file_file_exists(const char *filename)
+{
+    if (filename == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
 
     FILE *file = fopen(filename, "r");
-    if (file) {
+    if (file)
+    {
         fclose(file);
         return fossil_io_code("fs.exists");
     }
@@ -774,30 +885,36 @@ int32_t fossil_io_file_file_exists(const char *filename) {
  * Get the size of an open stream (updates stream->size).
  * Returns the size on success, or a negative error code.
  */
-int32_t fossil_io_file_get_size(fossil_io_file_t *stream) {
-    if (stream == NULL || stream->file == NULL) {
+int32_t fossil_io_file_get_size(fossil_io_file_t *stream)
+{
+    if (stream == NULL || stream->file == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
 
     long current_pos = ftell(stream->file);
-    if (current_pos == -1L) {
+    if (current_pos == -1L)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from ftell\n");
         return fossil_io_code("io.seek");
     }
 
-    if (fseek(stream->file, 0, SEEK_END) != 0) {
+    if (fseek(stream->file, 0, SEEK_END) != 0)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from seeking to end\n");
         return fossil_io_code("io.seek");
     }
     long size = ftell(stream->file);
-    if (size == -1L) {
+    if (size == -1L)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from getting file size\n");
         fseek(stream->file, current_pos, SEEK_SET);
         return fossil_io_code("io.read");
     }
 
-    if (fseek(stream->file, current_pos, SEEK_SET) != 0) {
+    if (fseek(stream->file, current_pos, SEEK_SET) != 0)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: IO error from restoring file position\n");
         return fossil_io_code("io.seek");
     }
@@ -810,13 +927,16 @@ int32_t fossil_io_file_get_size(fossil_io_file_t *stream) {
 /**
  * Delete a file.
  */
-int32_t fossil_io_file_delete(const char *filename) {
-    if (filename == NULL) {
+int32_t fossil_io_file_delete(const char *filename)
+{
+    if (filename == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return fossil_io_code("system.contract");
     }
 
-    if (remove(filename) == 0) {
+    if (remove(filename) == 0)
+    {
         return fossil_io_code("system.ok");
     }
 
@@ -825,46 +945,57 @@ int32_t fossil_io_file_delete(const char *filename) {
 }
 
 // Detect file type (Regular file, Directory, Symbolic link)
-int fossil_io_file_get_type(const char *filename) {
-    if (filename == NULL) {
+int fossil_io_file_get_type(const char *filename)
+{
+    if (filename == NULL)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Null pointer\n");
         return -1;
     }
 
 #ifdef _WIN32
     DWORD attributes = GetFileAttributesA(filename);
-    if (attributes == INVALID_FILE_ATTRIBUTES) {
+    if (attributes == INVALID_FILE_ATTRIBUTES)
+    {
         return -1;
     }
 
-    if (attributes & FILE_ATTRIBUTE_DIRECTORY) {
-        return 1;  // Directory
+    if (attributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        return 1; // Directory
     }
 
-    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-        return 3;  // Symbolic Link (or Junction)
+    if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
+    {
+        return 3; // Symbolic Link (or Junction)
     }
 
-    return 2;  // Regular File
+    return 2; // Regular File
 #else
     struct stat file_stat;
-    if (stat(filename, &file_stat) != 0) {
+    if (stat(filename, &file_stat) != 0)
+    {
         return -1;
     }
 
-    if (S_ISDIR(file_stat.st_mode)) return 1;  // Directory
-    if (S_ISREG(file_stat.st_mode)) return 2;  // Regular file
-    if (S_ISLNK(file_stat.st_mode)) return 3;  // Symbolic link
+    if (S_ISDIR(file_stat.st_mode))
+        return 1; // Directory
+    if (S_ISREG(file_stat.st_mode))
+        return 2; // Regular file
+    if (S_ISLNK(file_stat.st_mode))
+        return 3; // Symbolic link
 
-    return 0;  // Unknown
+    return 0; // Unknown
 #endif
 }
 
-int32_t fossil_io_file_is_open(const fossil_io_file_t *stream) {
+int32_t fossil_io_file_is_open(const fossil_io_file_t *stream)
+{
     return stream != NULL && stream->file != NULL && stream->is_open;
 }
 
-int32_t fossil_io_file_is_readable(const char *filename) {
+int32_t fossil_io_file_is_readable(const char *filename)
+{
 #ifdef _WIN32
     DWORD attrs = GetFileAttributesA(filename);
     return (attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY));
@@ -873,14 +1004,16 @@ int32_t fossil_io_file_is_readable(const char *filename) {
 #endif
 }
 
-fossil_io_file_t fossil_io_file_tempfile(void) {
+fossil_io_file_t fossil_io_file_tempfile(void)
+{
     fossil_io_file_t temp_stream;
     memset(&temp_stream, 0, sizeof(fossil_io_file_t));
     char temp_filename[FOSSIL_BUFFER_MEDIUM] = {0};
 
 #ifdef _WIN32
     // Use GetTempFileName for Windows
-    if (GetTempFileNameA(".", "fossil", 0, temp_filename) == 0) {
+    if (GetTempFileNameA(".", "fossil", 0, temp_filename) == 0)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to create temporary file\n");
         temp_stream.file = NULL;
         temp_stream.is_open = false;
@@ -891,8 +1024,10 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
     snprintf(temp_filename, FOSSIL_BUFFER_MEDIUM, "/tmp/fossil_tempfile_XXXXXX");
     FILE *tmp_fp = fopen(temp_filename, "wb+");
     int fd = tmp_fp ? fileno(tmp_fp) : -1;
-    if (tmp_fp) fclose(tmp_fp);
-    if (fd == -1) {
+    if (tmp_fp)
+        fclose(tmp_fp);
+    if (fd == -1)
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to create temporary file\n");
         temp_stream.file = NULL;
         temp_stream.is_open = false;
@@ -902,7 +1037,8 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
 #endif
 
     // Open the temporary file
-    if (fossil_io_file_open(&temp_stream, temp_filename, "wb+") != fossil_io_code("system.ok")) {
+    if (fossil_io_file_open(&temp_stream, temp_filename, "wb+") != fossil_io_code("system.ok"))
+    {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to open temporary file - %s\n", temp_filename);
         temp_stream.file = NULL;
         temp_stream.is_open = false;
@@ -929,7 +1065,8 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
     temp_stream.analyzed = false;
     temp_stream.language[0] = '\0';
     temp_stream.sentiment = 0.0f;
-    for (int i = 0; i < 16; ++i) temp_stream.tags[i] = NULL;
+    for (int i = 0; i < 16; ++i)
+        temp_stream.tags[i] = NULL;
     temp_stream.tag_count = 0;
     temp_stream.compressed = false;
     temp_stream.embedding = NULL;
@@ -938,23 +1075,32 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
 #ifndef _WIN32
     // Set permissions, owner, and group if possible
     struct stat st;
-    if (stat(temp_filename, &st) == 0) {
+    if (stat(temp_filename, &st) == 0)
+    {
         temp_stream.mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
         struct passwd *pw = getpwuid(st.st_uid);
         struct group *gr = getgrgid(st.st_gid);
-        if (pw) {
+        if (pw)
+        {
             strncpy(temp_stream.owner, pw->pw_name, sizeof(temp_stream.owner) - 1);
             temp_stream.owner[sizeof(temp_stream.owner) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             temp_stream.owner[0] = '\0';
         }
-        if (gr) {
+        if (gr)
+        {
             strncpy(temp_stream.group, gr->gr_name, sizeof(temp_stream.group) - 1);
             temp_stream.group[sizeof(temp_stream.group) - 1] = '\0';
-        } else {
+        }
+        else
+        {
             temp_stream.group[0] = '\0';
         }
-    } else {
+    }
+    else
+    {
         temp_stream.mode = 0600;
         temp_stream.owner[0] = '\0';
         temp_stream.group[0] = '\0';
@@ -971,10 +1117,12 @@ fossil_io_file_t fossil_io_file_tempfile(void) {
     return temp_stream;
 }
 
-int32_t fossil_io_file_is_writable(const char *filename) {
+int32_t fossil_io_file_is_writable(const char *filename)
+{
 #ifdef _WIN32
     DWORD attrs = GetFileAttributesA(filename);
-    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+    if (attrs == INVALID_FILE_ATTRIBUTES || (attrs & FILE_ATTRIBUTE_DIRECTORY))
+    {
         return 0;
     }
     return !(attrs & FILE_ATTRIBUTE_READONLY);
@@ -983,7 +1131,8 @@ int32_t fossil_io_file_is_writable(const char *filename) {
 #endif
 }
 
-int32_t fossil_io_file_is_executable(const char *filename) {
+int32_t fossil_io_file_is_executable(const char *filename)
+{
 #ifdef _WIN32
     // On Windows, executables typically have extensions like .exe, .bat, .cmd
     const char *ext = strrchr(filename, '.');
@@ -993,16 +1142,21 @@ int32_t fossil_io_file_is_executable(const char *filename) {
 #endif
 }
 
-int32_t fossil_io_file_set_permissions(const char *filename, int32_t mode) {
+int32_t fossil_io_file_set_permissions(const char *filename, int32_t mode)
+{
 #ifdef _WIN32
     DWORD attrs = GetFileAttributesA(filename);
-    if (attrs == INVALID_FILE_ATTRIBUTES) {
+    if (attrs == INVALID_FILE_ATTRIBUTES)
+    {
         return -1; // File not found or other error
     }
 
-    if (mode & _S_IWRITE) {
+    if (mode & _S_IWRITE)
+    {
         attrs &= ~FILE_ATTRIBUTE_READONLY; // Remove readonly
-    } else {
+    }
+    else
+    {
         attrs |= FILE_ATTRIBUTE_READONLY; // Add readonly
     }
 
@@ -1012,25 +1166,30 @@ int32_t fossil_io_file_set_permissions(const char *filename, int32_t mode) {
 #endif
 }
 
-int32_t fossil_io_file_get_permissions(const char *filename, int32_t *mode) {
-    if (!mode) {
+int32_t fossil_io_file_get_permissions(const char *filename, int32_t *mode)
+{
+    if (!mode)
+    {
         return -1; // Null pointer error
     }
 
 #ifdef _WIN32
     DWORD attrs = GetFileAttributesA(filename);
-    if (attrs == INVALID_FILE_ATTRIBUTES) {
+    if (attrs == INVALID_FILE_ATTRIBUTES)
+    {
         return -1; // File not found or other error
     }
 
     *mode = _S_IREAD;
-    if (!(attrs & FILE_ATTRIBUTE_READONLY)) {
+    if (!(attrs & FILE_ATTRIBUTE_READONLY))
+    {
         *mode |= _S_IWRITE;
     }
     return 0;
 #else
     struct stat st;
-    if (stat(filename, &st) != 0) {
+    if (stat(filename, &st) != 0)
+    {
         return -1; // File not found or error
     }
     *mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO); // User, Group, Other permissions
@@ -1038,14 +1197,17 @@ int32_t fossil_io_file_get_permissions(const char *filename, int32_t *mode) {
 #endif
 }
 
-void fossil_io_file_rewind(fossil_io_file_t *stream) {
-    if (stream && stream->file) {
+void fossil_io_file_rewind(fossil_io_file_t *stream)
+{
+    if (stream && stream->file)
+    {
         rewind(stream->file);
         stream->position = 0;
 
         // Optionally update cached size as well
         long current_pos = ftell(stream->file);
-        if (fseek(stream->file, 0, SEEK_END) == 0) {
+        if (fseek(stream->file, 0, SEEK_END) == 0)
+        {
             stream->size = (size_t)ftell(stream->file);
             fseek(stream->file, current_pos, SEEK_SET);
         }
@@ -1054,7 +1216,8 @@ void fossil_io_file_rewind(fossil_io_file_t *stream) {
 
 int fossil_io_file_ai_analyze(fossil_io_file_t *f)
 {
-    if (!f || !f->file || !f->readable) {
+    if (!f || !f->file || !f->readable)
+    {
         return -1;
     }
 
@@ -1064,7 +1227,8 @@ int fossil_io_file_ai_analyze(fossil_io_file_t *f)
     f->sentiment = 0.0f;
 
     // Only analyze text files
-    if (f->is_binary) {
+    if (f->is_binary)
+    {
         strncpy(f->language, "binary", sizeof(f->language) - 1);
         f->language[sizeof(f->language) - 1] = '\0';
         f->analyzed = true;
@@ -1082,17 +1246,21 @@ int fossil_io_file_ai_analyze(fossil_io_file_t *f)
 
     // Use cstring API for language detection
     size_t ascii_count = 0, non_ascii_count = 0;
-    for (size_t i = 0; i < bytes; ++i) {
+    for (size_t i = 0; i < bytes; ++i)
+    {
         if ((unsigned char)buffer[i] < 128)
             ascii_count++;
         else
             non_ascii_count++;
     }
-    if (ascii_count > non_ascii_count) {
+    if (ascii_count > non_ascii_count)
+    {
         cstring lang = fossil_io_cstring_create("en");
         strncpy(f->language, lang, sizeof(f->language) - 1);
         fossil_io_cstring_free(lang);
-    } else {
+    }
+    else
+    {
         cstring lang = fossil_io_cstring_create("unknown");
         strncpy(f->language, lang, sizeof(f->language) - 1);
         fossil_io_cstring_free(lang);
@@ -1100,14 +1268,18 @@ int fossil_io_file_ai_analyze(fossil_io_file_t *f)
     f->language[sizeof(f->language) - 1] = '\0';
 
     // Sentiment analysis using cstring API
-    const char *positive[] = { "good", "great", "excellent", "happy", "love", "success", "positive" };
-    const char *negative[] = { "bad", "poor", "sad", "hate", "fail", "negative", "terrible" };
+    const char *positive[] = {"good", "great", "excellent", "happy", "love", "success", "positive"};
+    const char *negative[] = {"bad", "poor", "sad", "hate", "fail", "negative", "terrible"};
     int pos_score = 0, neg_score = 0;
-    for (size_t i = 0; i < sizeof(positive)/sizeof(positive[0]); ++i) {
-        if (fossil_io_cstring_contains(buffer, positive[i])) pos_score++;
+    for (size_t i = 0; i < sizeof(positive) / sizeof(positive[0]); ++i)
+    {
+        if (fossil_io_cstring_contains(buffer, positive[i]))
+            pos_score++;
     }
-    for (size_t i = 0; i < sizeof(negative)/sizeof(negative[0]); ++i) {
-        if (fossil_io_cstring_contains(buffer, negative[i])) neg_score++;
+    for (size_t i = 0; i < sizeof(negative) / sizeof(negative[0]); ++i)
+    {
+        if (fossil_io_cstring_contains(buffer, negative[i]))
+            neg_score++;
     }
     if (pos_score + neg_score > 0)
         f->sentiment = (float)(pos_score - neg_score) / (pos_score + neg_score);
@@ -1122,27 +1294,31 @@ int fossil_io_file_ai_analyze(fossil_io_file_t *f)
 
 int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, size_t model_size)
 {
-    if (!f || !f->file || !f->readable) {
+    if (!f || !f->file || !f->readable)
+    {
         return -1;
     }
 
     // Use model and model_size to influence embedding dimension (dummy usage)
     size_t embedding_dim = 32;
-    if (model && model_size > 0) {
+    if (model && model_size > 0)
+    {
         // For demonstration, use the first byte of model (if available) to alter embedding_dim
         const unsigned char *model_bytes = (const unsigned char *)model;
         embedding_dim = 16 + (model_bytes[0] % 48); // Range: 16-63
     }
 
     // Free previous embedding if present
-    if (f->embedding) {
+    if (f->embedding)
+    {
         free(f->embedding);
         f->embedding = NULL;
         f->embedding_size = 0;
     }
 
     // Only process text files
-    if (f->is_binary) {
+    if (f->is_binary)
+    {
         f->embedding = NULL;
         f->embedding_size = 0;
         return 0;
@@ -1158,16 +1334,20 @@ int fossil_io_file_ai_compute_embedding(fossil_io_file_t *f, const void *model, 
 
     // Dummy embedding: for demonstration, just hash the buffer and fill a float array
     float *embedding_vec = (float *)malloc(sizeof(float) * embedding_dim);
-    if (!embedding_vec) {
+    if (!embedding_vec)
+    {
         return -1;
     }
-    for (size_t i = 0; i < embedding_dim; ++i) {
+    for (size_t i = 0; i < embedding_dim; ++i)
+    {
         unsigned int hash = 0;
-        for (size_t j = i; j < bytes; j += embedding_dim) {
+        for (size_t j = i; j < bytes; j += embedding_dim)
+        {
             hash += (unsigned char)buffer[j];
         }
         // Mix in model data if available
-        if (model && model_size > 0) {
+        if (model && model_size > 0)
+        {
             hash ^= ((const unsigned char *)model)[i % model_size];
         }
         embedding_vec[i] = (float)(hash % 997) / 997.0f;
@@ -1199,11 +1379,14 @@ bool fossil_io_file_ai_ready(fossil_io_file_t *f)
 
 void fossil_io_file_ai_reset(fossil_io_file_t *f)
 {
-    if (!f) return;
+    if (!f)
+        return;
 
     // Free AI-generated tags
-    for (int i = 0; i < 16; ++i) {
-        if (f->tags[i]) {
+    for (int i = 0; i < 16; ++i)
+    {
+        if (f->tags[i])
+        {
             fossil_io_cstring_free(f->tags[i]);
             f->tags[i] = NULL;
         }
@@ -1211,7 +1394,8 @@ void fossil_io_file_ai_reset(fossil_io_file_t *f)
     f->tag_count = 0;
 
     // Free embedding vector
-    if (f->embedding) {
+    if (f->embedding)
+    {
         free(f->embedding);
         f->embedding = NULL;
         f->embedding_size = 0;
@@ -1241,7 +1425,8 @@ int fossil_io_file_add_tag(fossil_io_file_t *f, const char *tag)
 
 void fossil_io_file_detect_binary(fossil_io_file_t *f)
 {
-    if (!f || !f->file) {
+    if (!f || !f->file)
+    {
         return;
     }
 
@@ -1254,18 +1439,23 @@ void fossil_io_file_detect_binary(fossil_io_file_t *f)
 
     // Heuristic: if any byte is 0 or in the range of typical binary values, mark as binary
     size_t nontext = 0;
-    for (size_t i = 0; i < bytes; ++i) {
-        if (buffer[i] == 0 || (buffer[i] < 8 || (buffer[i] > 13 && buffer[i] < 32))) {
+    for (size_t i = 0; i < bytes; ++i)
+    {
+        if (buffer[i] == 0 || (buffer[i] < 8 || (buffer[i] > 13 && buffer[i] < 32)))
+        {
             nontext++;
         }
     }
 
-    if (nontext > 0) {
+    if (nontext > 0)
+    {
         f->is_binary = true;
         cstring type = fossil_io_cstring_create("binary");
         strncpy(f->type, type, sizeof(f->type) - 1);
         fossil_io_cstring_free(type);
-    } else {
+    }
+    else
+    {
         f->is_binary = false;
         cstring type = fossil_io_cstring_create("text");
         strncpy(f->type, type, sizeof(f->type) - 1);
@@ -1280,7 +1470,8 @@ int fossil_io_file_compress(fossil_io_file_t *f)
         return -1;
 
     // Only compress text files
-    if (f->is_binary) {
+    if (f->is_binary)
+    {
         f->compressed = false;
         return 0;
     }
@@ -1299,7 +1490,8 @@ int fossil_io_file_compress(fossil_io_file_t *f)
         return -2;
 
     size_t ci = 0;
-    for (size_t i = 0; i < bytes;) {
+    for (size_t i = 0; i < bytes;)
+    {
         char c = buffer[i];
         size_t run = 1;
         while (i + run < bytes && buffer[i + run] == c && run < 255)
@@ -1311,7 +1503,8 @@ int fossil_io_file_compress(fossil_io_file_t *f)
     compressed[ci] = '\0';
 
     // Free previous embedding if present
-    if (f->embedding) {
+    if (f->embedding)
+    {
         free(f->embedding);
         f->embedding = NULL;
         f->embedding_size = 0;
@@ -1339,10 +1532,12 @@ int fossil_io_file_decompress(fossil_io_file_t *f)
     if (!decompressed)
         return -2;
 
-    while (ci + 1 < f->embedding_size) {
+    while (ci + 1 < f->embedding_size)
+    {
         char c = compressed[ci];
         unsigned char run = (unsigned char)compressed[ci + 1];
-        for (unsigned char j = 0; j < run; ++j) {
+        for (unsigned char j = 0; j < run; ++j)
+        {
             decompressed[out_size++] = c;
         }
         ci += 2;
@@ -1361,7 +1556,8 @@ int fossil_io_file_decompress(fossil_io_file_t *f)
 // ------------------------------------------------------------
 // Internal helpers
 // ------------------------------------------------------------
-static int fossil_copy_file_metadata(const char *src, const char *dest) {
+static int fossil_copy_file_metadata(const char *src, const char *dest)
+{
 #ifndef _WIN32
     struct stat st;
     if (stat(src, &st) != 0)
@@ -1373,9 +1569,9 @@ static int fossil_copy_file_metadata(const char *src, const char *dest) {
 
     // timestamps
     struct timeval times[2];
-    times[0].tv_sec  = st.st_atime;
+    times[0].tv_sec = st.st_atime;
     times[0].tv_usec = 0;
-    times[1].tv_sec  = st.st_mtime;
+    times[1].tv_sec = st.st_mtime;
     times[1].tv_usec = 0;
 
     if (utimes(dest, times) != 0)
@@ -1393,7 +1589,8 @@ static int fossil_copy_file_metadata(const char *src, const char *dest) {
 #endif
 }
 
-static void fossil_io_file_reset(fossil_io_file_t *f, const char *path) {
+static void fossil_io_file_reset(fossil_io_file_t *f, const char *path)
+{
     memset(f, 0, sizeof(*f));
     f->fd = -1;
     f->file = NULL;
@@ -1404,11 +1601,11 @@ static void fossil_io_file_reset(fossil_io_file_t *f, const char *path) {
 // Main function
 // ------------------------------------------------------------
 int fossil_io_file_link(
-        const fossil_io_file_t *src,
-        fossil_io_file_t *dest,
-        const char *dest_path,
-        bool symbolic,
-        bool copy_meta)
+    const fossil_io_file_t *src,
+    fossil_io_file_t *dest,
+    const char *dest_path,
+    bool symbolic,
+    bool copy_meta)
 {
     if (!src || !dest_path)
         return -EINVAL;
@@ -1416,19 +1613,25 @@ int fossil_io_file_link(
     int rc = 0;
 
 #ifdef _WIN32
-    if (symbolic) {
-        DWORD flags = 0;   // no SYMBOLIC_LINK_FLAG_FILE — safe for Windows 7–11
+    if (symbolic)
+    {
+        DWORD flags = 0; // no SYMBOLIC_LINK_FLAG_FILE — safe for Windows 7–11
         if (!CreateSymbolicLinkA(dest_path, src->filename, flags))
             return -(int)GetLastError();
-    } else {
+    }
+    else
+    {
         if (!CreateHardLinkA(dest_path, src->filename, NULL))
             return -(int)GetLastError();
     }
 #else
-    if (symbolic) {
+    if (symbolic)
+    {
         if (symlink(src->filename, dest_path) != 0)
             return -errno;
-    } else {
+    }
+    else
+    {
         if (link(src->filename, dest_path) != 0)
             return -errno;
     }
@@ -1437,14 +1640,15 @@ int fossil_io_file_link(
     // --------------------------------------------------------
     // Populate destination structure (optional)
     // --------------------------------------------------------
-    if (dest != NULL) {
+    if (dest != NULL)
+    {
         fossil_io_file_reset(dest, dest_path);
 
         // Hard link → real file, Symlink → metadata follows actual target
         strncpy(dest->type, src->type, sizeof(dest->type));
         dest->mode = src->mode;
-        dest->readable  = src->readable;
-        dest->writable  = src->writable;
+        dest->readable = src->readable;
+        dest->writable = src->writable;
         dest->executable = src->executable;
 
         dest->is_open = false;
@@ -1452,7 +1656,7 @@ int fossil_io_file_link(
         dest->analyzed = false;
 
         dest->size = src->size;
-        dest->created_at  = src->created_at;
+        dest->created_at = src->created_at;
         dest->modified_at = src->modified_at;
         dest->accessed_at = src->accessed_at;
 
@@ -1470,7 +1674,8 @@ int fossil_io_file_link(
     // --------------------------------------------------------
     // Metadata propagation (optional)
     // --------------------------------------------------------
-    if (copy_meta) {
+    if (copy_meta)
+    {
         rc = fossil_copy_file_metadata(src->filename, dest_path);
         if (rc < 0)
             return rc;
@@ -1479,18 +1684,22 @@ int fossil_io_file_link(
     return 0;
 }
 
-int32_t fossil_io_file_swap(const char *filename1, const char *filename2) {
-    if (!filename1 || !filename2) {
+int32_t fossil_io_file_swap(const char *filename1, const char *filename2)
+{
+    if (!filename1 || !filename2)
+    {
         return fossil_io_code("system.contract");
     }
 
-    if (strcmp(filename1, filename2) == 0) {
+    if (strcmp(filename1, filename2) == 0)
+    {
         return fossil_io_code("system.ok");
     }
 
     // Create temporary file
     fossil_io_file_t temp_file = fossil_io_file_tempfile();
-    if (!temp_file.file) {
+    if (!temp_file.file)
+    {
         return fossil_io_code("io.write");
     }
 
@@ -1500,19 +1709,22 @@ int32_t fossil_io_file_swap(const char *filename1, const char *filename2) {
     fossil_io_file_close(&temp_file);
 
     // Copy filename1 to temp
-    if (fossil_io_file_copy(filename1, temp_filename) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_copy(filename1, temp_filename) != fossil_io_code("system.ok"))
+    {
         remove(temp_filename);
         return fossil_io_code("io.write");
     }
 
     // Copy filename2 to filename1
-    if (fossil_io_file_copy(filename2, filename1) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_copy(filename2, filename1) != fossil_io_code("system.ok"))
+    {
         remove(temp_filename);
         return fossil_io_code("io.write");
     }
 
     // Copy temp to filename2
-    if (fossil_io_file_copy(temp_filename, filename2) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_copy(temp_filename, filename2) != fossil_io_code("system.ok"))
+    {
         remove(temp_filename);
         return fossil_io_code("io.write");
     }
@@ -1521,25 +1733,31 @@ int32_t fossil_io_file_swap(const char *filename1, const char *filename2) {
     return fossil_io_code("system.ok");
 }
 
-int32_t fossil_io_file_move(const char *source_filename, const char *destination_filename) {
-    if (!source_filename || !destination_filename) {
+int32_t fossil_io_file_move(const char *source_filename, const char *destination_filename)
+{
+    if (!source_filename || !destination_filename)
+    {
         return fossil_io_code("system.contract");
     }
 
-    if (strcmp(source_filename, destination_filename) == 0) {
+    if (strcmp(source_filename, destination_filename) == 0)
+    {
         return fossil_io_code("system.ok");
     }
 
-    if (rename(source_filename, destination_filename) == 0) {
+    if (rename(source_filename, destination_filename) == 0)
+    {
         return fossil_io_code("system.ok");
     }
 
     // If rename fails, try copy + delete as fallback
-    if (fossil_io_file_copy(source_filename, destination_filename) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_copy(source_filename, destination_filename) != fossil_io_code("system.ok"))
+    {
         return fossil_io_code("io.write");
     }
 
-    if (fossil_io_file_remove(source_filename) != fossil_io_code("system.ok")) {
+    if (fossil_io_file_remove(source_filename) != fossil_io_code("system.ok"))
+    {
         fossil_io_file_remove(destination_filename);
         return fossil_io_code("io.write");
     }

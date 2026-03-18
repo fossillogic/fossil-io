@@ -26,7 +26,8 @@
 #define FOSSIL_IO_CIPHER_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -130,83 +131,84 @@ char *fossil_io_cipher_decode(const char *text, const char *cipher_id);
 
 #include <string>
 
-namespace fossil {
-    namespace io {
-    
-        /**
-         * Cipher
-         *
-         * Thin C++ wrapper around Fossil IO cipher encode/decode API.
-         *
-         * This class:
-         *  - Owns returned buffers safely
-         *  - Does not throw
-         *  - Does not allocate unless the C layer does
-         *  - Is header-only and ABI-neutral
-         */
-        class Cipher {
-        public:
-            /**
-             * Encode text using a named cipher.
-             *
-             * Internal logic:
-             *   - Ciphers are registered in cipher_table[].
-             *   - Lookup is performed by string ID (case-insensitive).
-             *   - The encode API selects the cipher and calls its function.
-             *   - Returns a newly allocated string (caller must free).
-             *   - If an unknown cipher ID is provided, returns an empty string.
-             *
-             * Available cipher string IDs:
-             *   - "caesar"
-             *   - "vigenere"
-             *   - "base64"
-             *   - "base32"
-             *   - "binary"
-             *   - "morse"
-             *   - "baconian"
-             *   - "railfence"
-             *   - "haxor"
-             *   - "leet"
-             *   - "rot13"
-             *   - "atbash"
-             */
-            static std::string encode(const std::string &text,
-                                      const std::string &cipher_id) {
-                return fossil_io_cipher_encode(text.c_str(), cipher_id.c_str());
-            }
+namespace fossil::io
+{
 
-            /**
-             * Decode text using a named cipher.
-             *
-             * Internal logic:
-             *   - Ciphers are registered in cipher_table[].
-             *   - Lookup is performed by string ID (case-insensitive).
-             *   - The decode API selects the cipher and calls its function.
-             *   - Returns a newly allocated string (caller must free).
-             *   - If an unknown cipher ID is provided, returns an empty string.
-             *
-             * Available cipher string IDs:
-             *   - "caesar"
-             *   - "vigenere"
-             *   - "base64"
-             *   - "base32"
-             *   - "binary"
-             *   - "morse"
-             *   - "baconian"
-             *   - "railfence"
-             *   - "haxor"
-             *   - "leet"
-             *   - "rot13"
-             *   - "atbash"
-             */
-            static std::string decode(const std::string &text,
-                                      const std::string &cipher_id) {
-                return fossil_io_cipher_decode(text.c_str(), cipher_id.c_str());
-            }
-        
-        };
-    
-    } // namespace io
+    /**
+     * Cipher
+     *
+     * Thin C++ wrapper around Fossil IO cipher encode/decode API.
+     *
+     * This class:
+     *  - Owns returned buffers safely
+     *  - Does not throw
+     *  - Does not allocate unless the C layer does
+     *  - Is header-only and ABI-neutral
+     */
+    class Cipher
+    {
+    public:
+        /**
+         * Encode text using a named cipher.
+         *
+         * Internal logic:
+         *   - Ciphers are registered in cipher_table[].
+         *   - Lookup is performed by string ID (case-insensitive).
+         *   - The encode API selects the cipher and calls its function.
+         *   - Returns a newly allocated string (caller must free).
+         *   - If an unknown cipher ID is provided, returns an empty string.
+         *
+         * Available cipher string IDs:
+         *   - "caesar"
+         *   - "vigenere"
+         *   - "base64"
+         *   - "base32"
+         *   - "binary"
+         *   - "morse"
+         *   - "baconian"
+         *   - "railfence"
+         *   - "haxor"
+         *   - "leet"
+         *   - "rot13"
+         *   - "atbash"
+         */
+        static std::string encode(const std::string &text,
+                                  const std::string &cipher_id)
+        {
+            return fossil_io_cipher_encode(text.c_str(), cipher_id.c_str());
+        }
+
+        /**
+         * Decode text using a named cipher.
+         *
+         * Internal logic:
+         *   - Ciphers are registered in cipher_table[].
+         *   - Lookup is performed by string ID (case-insensitive).
+         *   - The decode API selects the cipher and calls its function.
+         *   - Returns a newly allocated string (caller must free).
+         *   - If an unknown cipher ID is provided, returns an empty string.
+         *
+         * Available cipher string IDs:
+         *   - "caesar"
+         *   - "vigenere"
+         *   - "base64"
+         *   - "base32"
+         *   - "binary"
+         *   - "morse"
+         *   - "baconian"
+         *   - "railfence"
+         *   - "haxor"
+         *   - "leet"
+         *   - "rot13"
+         *   - "atbash"
+         */
+        static std::string decode(const std::string &text,
+                                  const std::string &cipher_id)
+        {
+            return fossil_io_cipher_decode(text.c_str(), cipher_id.c_str());
+        }
+    };
+
 } // namespace fossil
 
 #endif

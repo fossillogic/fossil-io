@@ -60,7 +60,7 @@ static const char *fossil_error_codes[] = {
     "system.downgrade",
     "system.permission",
     "system.capability",
-    
+
     /* ======================================================================= */
     /* IO                                                                       */
     /* ======================================================================= */
@@ -90,7 +90,7 @@ static const char *fossil_error_codes[] = {
     "io.direct",
     "io.stream",
     "io.pipe",
-    
+
     /* ======================================================================= */
     /* MEMORY                                                                   */
     /* ======================================================================= */
@@ -118,7 +118,7 @@ static const char *fossil_error_codes[] = {
     "memory.poison",
     "memory.swap",
     "memory.numa",
-    
+
     /* ======================================================================= */
     /* CPU / EXECUTION                                                          */
     /* ======================================================================= */
@@ -133,7 +133,7 @@ static const char *fossil_error_codes[] = {
     "cpu.pipeline",
     "cpu.affinity",
     "cpu.throttle",
-    
+
     /* ======================================================================= */
     /* MATH / NUMERIC                                                           */
     /* ======================================================================= */
@@ -152,7 +152,7 @@ static const char *fossil_error_codes[] = {
     "math.singularity",
     "math.condition",
     "math.approximation",
-    
+
     /* ======================================================================= */
     /* PARSING / LEXING / GRAMMAR                                               */
     /* ======================================================================= */
@@ -171,14 +171,14 @@ static const char *fossil_error_codes[] = {
     "parse.depth",
     "parse.stack",
     "parse.overflow",
-    
+
     "lexer.invalid",
     "lexer.token",
     "lexer.state",
     "lexer.encoding",
     "lexer.buffer",
     "lexer.escape",
-    
+
     /* ======================================================================= */
     /* TYPE SYSTEM                                                              */
     /* ======================================================================= */
@@ -194,7 +194,7 @@ static const char *fossil_error_codes[] = {
     "type.generic",
     "type.polymorphic",
     "type.variance",
-    
+
     /* ======================================================================= */
     /* FORMAT / ENCODING                                                        */
     /* ======================================================================= */
@@ -207,7 +207,7 @@ static const char *fossil_error_codes[] = {
     "format.footer",
     "format.padding",
     "format.layout",
-    
+
     "encoding.invalid",
     "encoding.unsupported",
     "encoding.incomplete",
@@ -216,7 +216,7 @@ static const char *fossil_error_codes[] = {
     "encoding.normalization",
     "encoding.compression",
     "encoding.decompression",
-    
+
     /* ======================================================================= */
     /* DATA / CONTENT                                                           */
     /* ======================================================================= */
@@ -236,7 +236,7 @@ static const char *fossil_error_codes[] = {
     "data.schema",
     "data.version",
     "data.migration",
-    
+
     /* ======================================================================= */
     /* FILESYSTEM / STORAGE                                                     */
     /* ======================================================================= */
@@ -260,7 +260,7 @@ static const char *fossil_error_codes[] = {
     "fs.hardlink",
     "fs.inode",
     "fs.filesystem",
-    
+
     /* ======================================================================= */
     /* PROCESS / SIGNAL                                                         */
     /* ======================================================================= */
@@ -276,7 +276,7 @@ static const char *fossil_error_codes[] = {
     "process.limit",
     "process.priority",
     "process.affinity",
-    
+
     /* ======================================================================= */
     /* THREAD / CONCURRENCY                                                     */
     /* ======================================================================= */
@@ -285,7 +285,7 @@ static const char *fossil_error_codes[] = {
     "thread.detach",
     "thread.cancel",
     "thread.signal",
-    
+
     "concurrency.race",
     "concurrency.deadlock",
     "concurrency.livelock",
@@ -297,7 +297,7 @@ static const char *fossil_error_codes[] = {
     "concurrency.barrier",
     "concurrency.scheduler",
     "concurrency.preemption",
-    
+
     /* ======================================================================= */
     /* RESOURCE                                                                 */
     /* ======================================================================= */
@@ -312,7 +312,7 @@ static const char *fossil_error_codes[] = {
     "resource.bandwidth",
     "resource.quota",
     "resource.limit",
-    
+
     /* ======================================================================= */
     /* TIME / CLOCK                                                             */
     /* ======================================================================= */
@@ -326,7 +326,7 @@ static const char *fossil_error_codes[] = {
     "time.realtime",
     "time.resolution",
     "time.wrap",
-    
+
     /* ======================================================================= */
     /* CONFIG / ENVIRONMENT                                                     */
     /* ======================================================================= */
@@ -341,7 +341,7 @@ static const char *fossil_error_codes[] = {
     "config.override",
     "config.default",
     "config.locked",
-    
+
     /* ======================================================================= */
     /* API / ABI                                                                */
     /* ======================================================================= */
@@ -360,7 +360,7 @@ static const char *fossil_error_codes[] = {
     "api.deserialization",
     "abi.mismatch",
     "abi.incompatible",
-    
+
     /* ======================================================================= */
     /* PROTOCOL / IPC                                                           */
     /* ======================================================================= */
@@ -375,7 +375,7 @@ static const char *fossil_error_codes[] = {
     "protocol.timeout",
     "protocol.reset",
     "protocol.flow_control",
-    
+
     /* ======================================================================= */
     /* NETWORK                                                                  */
     /* ======================================================================= */
@@ -395,7 +395,7 @@ static const char *fossil_error_codes[] = {
     "network.session",
     "network.stream",
     "network.packet",
-    
+
     /* ======================================================================= */
     /* SECURITY / CRYPTO                                                        */
     /* ======================================================================= */
@@ -417,7 +417,7 @@ static const char *fossil_error_codes[] = {
     "security.integrity",
     "security.tamper",
     "security.replay",
-    
+
     /* ======================================================================= */
     /* DATABASE / STORAGE ENGINE                                                */
     /* ======================================================================= */
@@ -439,7 +439,7 @@ static const char *fossil_error_codes[] = {
     "database.replication",
     "database.consistency",
     "database.timeout",
-    
+
     /* ======================================================================= */
     /* AI / ML                                                                  */
     /* ======================================================================= */
@@ -461,7 +461,7 @@ static const char *fossil_error_codes[] = {
     "ai.prompt",
     "ai.token_limit",
     "ai.context_overflow",
-    
+
     /* ======================================================================= */
     /* UI / UX                                                                  */
     /* ======================================================================= */
@@ -477,7 +477,7 @@ static const char *fossil_error_codes[] = {
     "ui.theme",
     "ui.font",
     "ui.image",
-    
+
     /* ======================================================================= */
     /* OBSERVABILITY / OPS                                                      */
     /* ======================================================================= */
@@ -496,7 +496,7 @@ static const char *fossil_error_codes[] = {
     "diagnostics.collect",
     "diagnostics.dump",
     "profile.sample",
-    
+
     /* ======================================================================= */
     /* BUILD / DEPLOY                                                           */
     /* ======================================================================= */
@@ -512,7 +512,7 @@ static const char *fossil_error_codes[] = {
     "deploy.orchestration",
     "deploy.container",
     "deploy.image",
-    
+
     /* ======================================================================= */
     /* USER                                                                     */
     /* ======================================================================= */
@@ -524,7 +524,7 @@ static const char *fossil_error_codes[] = {
     "user.conflict",
     "user.invalid_state",
     "user.rate_limit",
-    
+
     /* ======================================================================= */
     /* LEGAL / POLICY                                                           */
     /* ======================================================================= */
@@ -539,7 +539,7 @@ static const char *fossil_error_codes[] = {
     "privacy.redaction",
     "compliance.failure",
     "audit.failure",
-    
+
     /* ======================================================================= */
     /* FALLBACK / GUARANTEES                                                    */
     /* ======================================================================= */
@@ -547,16 +547,17 @@ static const char *fossil_error_codes[] = {
     "meta.assumption",
     "meta.placeholder",
     "meta.future",
-    
-    NULL
-};
 
-enum {
+    NULL};
+
+enum
+{
     FOSSIL_IO_BUFFER_SIZE = 1024
 };
 
 // Function to print sanitized error messages
-void fossil_io_error(const char *format, ...) {
+void fossil_io_error(const char *format, ...)
+{
     va_list args;
     va_start(args, format);
 
@@ -570,7 +571,8 @@ void fossil_io_error(const char *format, ...) {
     va_end(args);
 }
 
-const char *fossil_io_what(const char *error_code) {
+const char *fossil_io_what(const char *error_code)
+{
     // Table of error messages: 5 variants per error code, indexed by [error_index][variant]
     static const char *fossil_error_messages[][5] = {
         // SYSTEM / META
@@ -1034,32 +1036,38 @@ const char *fossil_io_what(const char *error_code) {
         {"Meta unreachable.", "Unreachable error detected.", "Meta unreachable error.", "Unreachable error.", "Unreachable issue."},
         {"Meta assumption error.", "Assumption error detected.", "Meta assumption error.", "Assumption error.", "Assumption issue."},
         {"Meta placeholder error.", "Placeholder error detected.", "Meta placeholder error.", "Placeholder error.", "Placeholder issue."},
-        {"Meta future error.", "Future error detected.", "Meta future error.", "Future error.", "Future issue."}
-    };
+        {"Meta future error.", "Future error detected.", "Meta future error.", "Future error.", "Future issue."}};
 
     // Find the index of the error_code in fossil_error_codes
     int error_index = -1;
-    for (int i = 0; fossil_error_codes[i] != NULL; ++i) {
-        if (strcmp(error_code, fossil_error_codes[i]) == 0) {
+    for (int i = 0; fossil_error_codes[i] != NULL; ++i)
+    {
+        if (strcmp(error_code, fossil_error_codes[i]) == 0)
+        {
             error_index = i;
             break;
         }
     }
 
-    if (error_index >= 0) {
+    if (error_index >= 0)
+    {
         // Pick a random variant (0-4)
         int variant = rand() % 5;
         return fossil_error_messages[error_index][variant];
-    } else {
+    }
+    else
+    {
         return "Unknown error code.";
     }
 }
 
-int fossil_io_code(const char *error_code) {
+int fossil_io_code(const char *error_code)
+{
     if (!error_code)
         return -1;
 
-    for (int i = 0; fossil_error_codes[i]; ++i) {
+    for (int i = 0; fossil_error_codes[i]; ++i)
+    {
         if (strcmp(fossil_error_codes[i], error_code) == 0)
             return i;
     }

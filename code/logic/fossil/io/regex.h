@@ -33,17 +33,17 @@ extern "C"
 #endif
 
 /* ============================================================================
- * Opaque Types
- * ============================================================================
- */
+    * Opaque Types
+    * ============================================================================
+    */
 
 typedef struct fossil_io_regex fossil_io_regex_t;
 typedef struct fossil_io_regex_match fossil_io_regex_match_t;
 
 /* ============================================================================
- * Compile & Destroy
- * ============================================================================
- */
+    * Compile & Destroy
+    * ============================================================================
+    */
 
 /**
  * Compile a regular expression pattern into a regex object.
@@ -148,255 +148,251 @@ size_t fossil_io_regex_group_length(const fossil_io_regex_match_t *m, int index)
 #include <vector>
 #include <stdexcept>
 
-namespace fossil
+namespace fossil::io
 {
+    /* ============================================================================
+     * Regex (C++ Wrapper)
+     * ============================================================================
+     *
+     * RAII-safe wrapper around fossil_io_regex_t
+     * ABI-stable with the C implementation
+     */
 
-    namespace io
+    class Regex
     {
-        /* ============================================================================
-         * Regex (C++ Wrapper)
-         * ============================================================================
-         *
-         * RAII-safe wrapper around fossil_io_regex_t
-         * ABI-stable with the C implementation
+    public:
+        /* ========================================================================
+         * Constructors / Destructor
+         * ========================================================================
          */
 
-        class Regex
+        /**
+         * @brief Default constructor. Initializes an empty Regex object.
+         * The regex is not compiled until compile() is called.
+         */
+        Regex() noexcept
+            : re_(nullptr)
         {
-        public:
-            /* ========================================================================
-             * Constructors / Destructor
-             * ========================================================================
-             */
+        }
 
-            /**
-             * @brief Default constructor. Initializes an empty Regex object.
-             * The regex is not compiled until compile() is called.
-             */
-            Regex() noexcept
-                : re_(nullptr)
+        /**
+         * @brief Constructs and compiles a Regex object from a pattern and options.
+         *
+         * Supports option string IDs such as "icase", "multiline", "dotall",
+         * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
+         * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
+         * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
+         * Throws std::runtime_error if compilation fails.
+         *
+         * @param pattern Regular expression pattern.
+         * @param options Optional vector of option strings.
+         */
+        explicit Regex(
+            const std::string &pattern,
+            const std::vector<std::string> &options = {})
+            : re_(nullptr)
+        {
+            compile(pattern, options);
+        }
+
+        /**
+         * @brief Deleted copy constructor. Regex objects are non-copyable.
+         */
+        Regex(const Regex &) = delete;
+
+        /**
+         * @brief Deleted copy assignment operator. Regex objects are non-copyable.
+         */
+        Regex &operator=(const Regex &) = delete;
+
+        /**
+         * @brief Move constructor. Transfers ownership of the compiled regex.
+         *
+         * @param other Regex object to move from.
+         */
+        Regex(Regex &&other) noexcept
+            : re_(other.re_)
+        {
+            other.re_ = nullptr;
+        }
+
+        /**
+         * @brief Move assignment operator. Transfers ownership of the compiled regex.
+         *
+         * @param other Regex object to move from.
+         * @return Reference to this object.
+         */
+        Regex &operator=(Regex &&other) noexcept
+        {
+            if (this != &other)
             {
-            }
-
-            /**
-             * @brief Constructs and compiles a Regex object from a pattern and options.
-             *
-             * Supports option string IDs such as "icase", "multiline", "dotall",
-             * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
-             * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
-             * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
-             * Throws std::runtime_error if compilation fails.
-             *
-             * @param pattern Regular expression pattern.
-             * @param options Optional vector of option strings.
-             */
-            explicit Regex(
-                const std::string &pattern,
-                const std::vector<std::string> &options = {})
-                : re_(nullptr)
-            {
-                compile(pattern, options);
-            }
-
-            /**
-             * @brief Deleted copy constructor. Regex objects are non-copyable.
-             */
-            Regex(const Regex &) = delete;
-
-            /**
-             * @brief Deleted copy assignment operator. Regex objects are non-copyable.
-             */
-            Regex &operator=(const Regex &) = delete;
-
-            /**
-             * @brief Move constructor. Transfers ownership of the compiled regex.
-             *
-             * @param other Regex object to move from.
-             */
-            Regex(Regex &&other) noexcept
-                : re_(other.re_)
-            {
+                reset();
+                re_ = other.re_;
                 other.re_ = nullptr;
             }
+            return *this;
+        }
 
-            /**
-             * @brief Move assignment operator. Transfers ownership of the compiled regex.
-             *
-             * @param other Regex object to move from.
-             * @return Reference to this object.
-             */
-            Regex &operator=(Regex &&other) noexcept
+        /**
+         * @brief Destructor. Frees the compiled regex object if present.
+         */
+        ~Regex()
+        {
+            reset();
+        }
+
+        /* ========================================================================
+         * Compile & Destroy
+         * ========================================================================
+         */
+
+        /**
+         * @brief Compiles the given pattern and options into a regex object.
+         *
+         * Supports option string IDs such as "icase", "multiline", "dotall",
+         * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
+         * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
+         * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
+         * Throws std::runtime_error if compilation fails.
+         *
+         * @param pattern Regular expression pattern.
+         * @param options Optional vector of option strings.
+         */
+        void compile(
+            const std::string &pattern,
+            const std::vector<std::string> &options = {})
+        {
+            reset();
+
+            std::vector<const char *> opt_ids;
+            opt_ids.reserve(options.size() + 1);
+
+            for (const auto &o : options)
+                opt_ids.push_back(o.c_str());
+
+            opt_ids.push_back(nullptr);
+
+            char *err = nullptr;
+
+            re_ = fossil_io_regex_compile(
+                pattern.c_str(),
+                opt_ids.empty() ? nullptr : opt_ids.data(),
+                &err);
+
+            if (!re_)
             {
-                if (this != &other)
-                {
-                    reset();
-                    re_ = other.re_;
-                    other.re_ = nullptr;
-                }
-                return *this;
+                std::string msg = err ? err : "regex compilation failed";
+                if (err)
+                    free(err);
+                throw std::runtime_error(msg);
+            }
+        }
+
+        /**
+         * @brief Checks if the regex object is compiled.
+         *
+         * @return true if compiled, false otherwise.
+         */
+        bool is_compiled() const noexcept
+        {
+            return re_ != nullptr;
+        }
+
+        /**
+         * @brief Frees the compiled regex object and resets the internal pointer.
+         */
+        void reset() noexcept
+        {
+            if (re_)
+            {
+                fossil_io_regex_free(re_);
+                re_ = nullptr;
+            }
+        }
+
+        /* ========================================================================
+         * Matching
+         * ========================================================================
+         */
+
+        /**
+         * @brief Checks if the regex matches the given text.
+         *
+         * Executes the compiled regex against input text using a bytecode VM,
+         * supporting options such as "icase", "multiline", "dotall", "ungreedy",
+         * and "anchored". The VM supports literals, '.', '^', '$', character classes,
+         * escape sequences (\d, \s, \w, \b), and quantifiers (*, +, ?).
+         *
+         * @param text Input text to match against.
+         * @return true if match found, false otherwise.
+         * @throws std::logic_error if regex is not compiled.
+         */
+        bool match(const std::string &text)
+        {
+            ensure_compiled();
+
+            fossil_io_regex_match_t *m = nullptr;
+            int rc = fossil_io_regex_match(re_, text.c_str(), &m);
+
+            if (rc <= 0)
+                return false;
+
+            fossil_io_regex_match_free(m);
+            return true;
+        }
+
+        /**
+         * @brief Matches the regex against the given text and extracts capture groups.
+         *
+         * Executes the compiled regex and extracts all capture groups from a match object.
+         * The returned vector contains group strings indexed from 0. The match object
+         * is automatically freed after extraction.
+         *
+         * @param text Input text to match against.
+         * @param groups Output vector to receive capture group strings.
+         * @return true if match found, false otherwise.
+         * @throws std::logic_error if regex is not compiled.
+         */
+        bool match(
+            const std::string &text,
+            std::vector<std::string> &groups)
+        {
+            ensure_compiled();
+            groups.clear();
+
+            fossil_io_regex_match_t *m = nullptr;
+            int rc = fossil_io_regex_match(re_, text.c_str(), &m);
+
+            if (rc <= 0)
+                return false;
+
+            int count = fossil_io_regex_group_count(m);
+            groups.reserve(count);
+
+            for (int i = 0; i < count; ++i)
+            {
+                const char *g = fossil_io_regex_group(m, i);
+                groups.emplace_back(g ? g : "");
             }
 
-            /**
-             * @brief Destructor. Frees the compiled regex object if present.
-             */
-            ~Regex()
-            {
-                reset();
-            }
+            fossil_io_regex_match_free(m);
+            return true;
+        }
 
-            /* ========================================================================
-             * Compile & Destroy
-             * ========================================================================
-             */
+    private:
+        fossil_io_regex_t *re_;
 
-            /**
-             * @brief Compiles the given pattern and options into a regex object.
-             *
-             * Supports option string IDs such as "icase", "multiline", "dotall",
-             * "ungreedy", "anchored", "extended", and "global". The pattern is compiled
-             * into a bytecode VM supporting literals, '.', '^', '$', character classes [...],
-             * escape sequences (\d, \D, \s, \S, \w, \W, \b, \B), and quantifiers (*, +, ?).
-             * Throws std::runtime_error if compilation fails.
-             *
-             * @param pattern Regular expression pattern.
-             * @param options Optional vector of option strings.
-             */
-            void compile(
-                const std::string &pattern,
-                const std::vector<std::string> &options = {})
-            {
-                reset();
+        /**
+         * @brief Ensures that the regex object is compiled.
+         * Throws std::logic_error if not compiled.
+         */
+        void ensure_compiled() const
+        {
+            if (!re_)
+                throw std::logic_error("regex not compiled");
+        }
+    };
 
-                std::vector<const char *> opt_ids;
-                opt_ids.reserve(options.size() + 1);
-
-                for (const auto &o : options)
-                    opt_ids.push_back(o.c_str());
-
-                opt_ids.push_back(nullptr);
-
-                char *err = nullptr;
-
-                re_ = fossil_io_regex_compile(
-                    pattern.c_str(),
-                    opt_ids.empty() ? nullptr : opt_ids.data(),
-                    &err);
-
-                if (!re_)
-                {
-                    std::string msg = err ? err : "regex compilation failed";
-                    if (err)
-                        free(err);
-                    throw std::runtime_error(msg);
-                }
-            }
-
-            /**
-             * @brief Checks if the regex object is compiled.
-             *
-             * @return true if compiled, false otherwise.
-             */
-            bool is_compiled() const noexcept
-            {
-                return re_ != nullptr;
-            }
-
-            /**
-             * @brief Frees the compiled regex object and resets the internal pointer.
-             */
-            void reset() noexcept
-            {
-                if (re_)
-                {
-                    fossil_io_regex_free(re_);
-                    re_ = nullptr;
-                }
-            }
-
-            /* ========================================================================
-             * Matching
-             * ========================================================================
-             */
-
-            /**
-             * @brief Checks if the regex matches the given text.
-             *
-             * Executes the compiled regex against input text using a bytecode VM,
-             * supporting options such as "icase", "multiline", "dotall", "ungreedy",
-             * and "anchored". The VM supports literals, '.', '^', '$', character classes,
-             * escape sequences (\d, \s, \w, \b), and quantifiers (*, +, ?).
-             *
-             * @param text Input text to match against.
-             * @return true if match found, false otherwise.
-             * @throws std::logic_error if regex is not compiled.
-             */
-            bool match(const std::string &text)
-            {
-                ensure_compiled();
-
-                fossil_io_regex_match_t *m = nullptr;
-                int rc = fossil_io_regex_match(re_, text.c_str(), &m);
-
-                if (rc <= 0)
-                    return false;
-
-                fossil_io_regex_match_free(m);
-                return true;
-            }
-
-            /**
-             * @brief Matches the regex against the given text and extracts capture groups.
-             *
-             * Executes the compiled regex and extracts all capture groups from a match object.
-             * The returned vector contains group strings indexed from 0. The match object
-             * is automatically freed after extraction.
-             *
-             * @param text Input text to match against.
-             * @param groups Output vector to receive capture group strings.
-             * @return true if match found, false otherwise.
-             * @throws std::logic_error if regex is not compiled.
-             */
-            bool match(
-                const std::string &text,
-                std::vector<std::string> &groups)
-            {
-                ensure_compiled();
-                groups.clear();
-
-                fossil_io_regex_match_t *m = nullptr;
-                int rc = fossil_io_regex_match(re_, text.c_str(), &m);
-
-                if (rc <= 0)
-                    return false;
-
-                int count = fossil_io_regex_group_count(m);
-                groups.reserve(count);
-
-                for (int i = 0; i < count; ++i)
-                {
-                    const char *g = fossil_io_regex_group(m, i);
-                    groups.emplace_back(g ? g : "");
-                }
-
-                fossil_io_regex_match_free(m);
-                return true;
-            }
-
-        private:
-            fossil_io_regex_t *re_;
-
-            /**
-             * @brief Ensures that the regex object is compiled.
-             * Throws std::logic_error if not compiled.
-             */
-            void ensure_compiled() const
-            {
-                if (!re_)
-                    throw std::logic_error("regex not compiled");
-            }
-        };
-
-    } /* namespace io */
 } /* namespace fossil */
 
 #endif
