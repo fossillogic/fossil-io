@@ -737,7 +737,6 @@ const char *fossil_io_filesys_type_string(fossil_io_filesys_type_t type);
 #ifdef __cplusplus
 }
 
-#include "error.h"
 #include <string>
 
 namespace fossil::io
@@ -754,7 +753,7 @@ namespace fossil::io
          * @brief Initialize a filesystem object from a given path.
          *
          * Populates metadata (type, size, permissions, timestamps) for the object
-         * at the specified path. Reports errors via Error::report on failure.
+         * at the specified path.
          *
          * @param obj Pointer to filesystem object to initialize
          * @param path Path to the filesystem object
@@ -762,31 +761,21 @@ namespace fossil::io
          */
         int32_t init(fossil_io_filesys_obj_t *obj, const std::string &path)
         {
-            int32_t result = fossil_io_filesys_init(obj, path.c_str());
-            if (result != 0)
-            {
-                Error::report("[%s] %s\n", "fs.not_found", Error::what("fs.not_found"));
-            }
-            return result;
+            return fossil_io_filesys_init(obj, path.c_str());
         }
 
         /**
          * @brief Refresh the metadata of an existing filesystem object.
          *
          * Updates all metadata (size, permissions, timestamps) for an already
-         * initialized filesystem object. Reports errors via Error::report on failure.
+         * initialized filesystem object.
          *
          * @param obj Pointer to filesystem object to refresh
          * @return 0 on success, negative on failure
          */
         int32_t refresh(fossil_io_filesys_obj_t *obj)
         {
-            int32_t result = fossil_io_filesys_refresh(obj);
-            if (result != 0)
-            {
-                Error::report("[%s] %s\n", "fs.not_found", Error::what("fs.not_found"));
-            }
-            return result;
+            return fossil_io_filesys_refresh(obj);
         }
 
         /**
@@ -808,7 +797,6 @@ namespace fossil::io
          *
          * Deletes the filesystem object at the specified path. If recursive is true
          * and the object is a directory, removes all contents recursively.
-         * Reports permission errors via Error::report on failure.
          *
          * @param path Path to the object to remove
          * @param recursive If true, recursively remove directory contents
@@ -816,12 +804,7 @@ namespace fossil::io
          */
         int32_t remove(const std::string &path, bool recursive = false)
         {
-            int32_t result = fossil_io_filesys_remove(path.c_str(), recursive);
-            if (result != 0)
-            {
-                Error::report("[%s] %s\n", "fs.permission", Error::what("fs.permission"));
-            }
-            return result;
+            return fossil_io_filesys_remove(path.c_str(), recursive);
         }
 
         /**
