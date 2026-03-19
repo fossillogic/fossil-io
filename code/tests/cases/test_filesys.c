@@ -26,6 +26,7 @@
 
 #include "fossil/io/framework.h"
 #include <stdio.h> // for fpos_t or fpos64_t if needed
+#include <string.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Utilites

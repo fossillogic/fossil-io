@@ -558,10 +558,16 @@ static int dedup_walk(
             (*count)++;
         }
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
     }
 
     closedir(dir);
+
 #endif
 
     return 0;
@@ -1525,17 +1531,18 @@ int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
     if (!path || !*path)
         return -1;
 
-#if defined(_WIN32)
-#define MKDIR(p) _mkdir(p)
-#else
-#define MKDIR(p) mkdir(p, 0755)
-#endif
-
     if (!recursive)
-        return MKDIR(path);
+    {
+#if defined(_WIN32)
+        return (_mkdir(path) == 0) ? 0 : -1;
+#else
+        return (mkdir(path, 0755) == 0) ? 0 : -1;
+#endif
+    }
 
-    char tmp[512];
-    snprintf(tmp, sizeof(tmp), "%s", path);
+    char tmp[PATH_MAX];
+    strncpy(tmp, path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
 
     size_t len = strlen(tmp);
     if (len == 0)
@@ -1550,12 +1557,20 @@ int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
         if (*p == '/' || *p == '\\')
         {
             *p = '\0';
-            MKDIR(tmp); /* ignore errors (exists) */
-            *p = '/';
+#if defined(_WIN32)
+            _mkdir(tmp);
+#else
+            mkdir(tmp, 0755);
+#endif
+            *p = PATH_SEP;
         }
     }
 
-    return MKDIR(tmp);
+#if defined(_WIN32)
+    return (_mkdir(tmp) == 0) ? 0 : -1;
+#else
+    return (mkdir(tmp, 0755) == 0) ? 0 : -1;
+#endif
 }
 
 int32_t fossil_io_filesys_dir_list(
