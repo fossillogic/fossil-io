@@ -40,6 +40,15 @@
 #include <errno.h>     // optional, if checking errors
 #include <fcntl.h>    // open, O_* flags
 
+/* Ensure realpath is available on all POSIX systems */
+#ifndef _WIN32
+    #define _DEFAULT_SOURCE
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 #ifdef _WIN32
     #include <windows.h>
     #include <fileapi.h>
@@ -516,6 +525,7 @@ static int dedup_walk(
             table[*count].hash = hash;
             table[*count].size = size;
             strncpy(table[*count].path, full, sizeof(table[*count].path)-1);
+            table[*count].path[sizeof(table[*count].path)-1] = '\0';
             (*count)++;
         }
 
@@ -1911,8 +1921,7 @@ int32_t fossil_io_filesys_abspath(const char *path, char *abs_path, size_t max_l
     if (!_fullpath(abs_path, path, max_len))
         return -1;
 #else
-    char *res = realpath(path, abs_path);
-    if (!res)
+    if (!realpath(path, abs_path))
         return -1;
 #endif
     return 0;
