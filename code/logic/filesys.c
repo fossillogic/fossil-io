@@ -251,7 +251,7 @@ static int remove_path(const char *path)
 
     if (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
-        char search[MAX_PATH];
+        char search[FOSSIL_FILESYS_MAX_PATH];
         snprintf(search, sizeof(search), "%s\\*", path);
 
         WIN32_FIND_DATAA fd;
@@ -264,7 +264,7 @@ static int remove_path(const char *path)
                 if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
                     continue;
 
-                char full[MAX_PATH];
+                char full[FOSSIL_FILESYS_MAX_PATH];
                 snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
                 remove_path(full);
 
@@ -472,7 +472,7 @@ static int dedup_walk(
 #if defined(_WIN32)
 
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", path);
 
     HANDLE h = FindFirstFileA(search, &fd);
@@ -484,7 +484,7 @@ static int dedup_walk(
         if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
             continue;
 
-        char full[MAX_PATH];
+        char full[FOSSIL_FILESYS_MAX_PATH];
         snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
 
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -577,7 +577,7 @@ static int remove_recursive(const char *path)
 {
 #if defined(_WIN32)
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", path);
 
     HANDLE h = FindFirstFileA(search, &fd);
@@ -589,7 +589,7 @@ static int remove_recursive(const char *path)
         if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
             continue;
 
-        char full[MAX_PATH];
+        char full[FOSSIL_FILESYS_MAX_PATH];
         snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
 
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -1587,7 +1587,7 @@ int32_t fossil_io_filesys_dir_list(
 #if defined(_WIN32)
 
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", path);
 
     HANDLE h = FindFirstFileA(search, &fd);
@@ -1602,7 +1602,7 @@ int32_t fossil_io_filesys_dir_list(
         if (*out_count >= max_entries)
             break;
 
-        char full[MAX_PATH];
+        char full[FOSSIL_FILESYS_MAX_PATH];
         snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
 
         fossil_io_filesys_stat(full, &entries[*out_count]);
@@ -1664,7 +1664,7 @@ static int dir_walk_internal(
         return 0;
 
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", path);
 
     HANDLE h = FindFirstFileA(search, &fd);
@@ -1676,7 +1676,7 @@ static int dir_walk_internal(
         if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
             continue;
 
-        char full[MAX_PATH];
+        char full[FOSSIL_FILESYS_MAX_PATH];
         snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
 
         rc = dir_walk_internal(full, callback, user_data);
@@ -1745,14 +1745,14 @@ int32_t fossil_io_filesys_dir_merge(
 #if defined(_WIN32)
 
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", src);
 
     HANDLE h = FindFirstFileA(search, &fd);
     if (h == INVALID_HANDLE_VALUE)
         return -1;
 
-    char src_path[MAX_PATH], dest_path[MAX_PATH];
+    char src_path[FOSSIL_FILESYS_MAX_PATH], dest_path[FOSSIL_FILESYS_MAX_PATH];
 
     do
     {
