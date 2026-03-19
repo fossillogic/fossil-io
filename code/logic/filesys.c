@@ -1742,6 +1742,48 @@ int32_t fossil_io_filesys_dir_merge(
     bool overwrite,
     bool recursive)
 {
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", src);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    char src_path[MAX_PATH], dest_path[MAX_PATH];
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        snprintf(src_path, sizeof(src_path), "%s\\%s", src, fd.cFileName);
+        snprintf(dest_path, sizeof(dest_path), "%s\\%s", dest, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            if (recursive)
+            {
+                CreateDirectoryA(dest_path, NULL);
+                fossil_io_filesys_dir_merge(src_path, dest_path, overwrite, true);
+            }
+        }
+        else
+        {
+            if (!overwrite && GetFileAttributesA(dest_path) != INVALID_FILE_ATTRIBUTES)
+                continue;
+
+            fossil_io_filesys_copy(src_path, dest_path, true);
+        }
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+    return 0;
+
+#else
+
     DIR *dir = opendir(src);
     if (!dir)
         return -1;
@@ -1776,6 +1818,8 @@ int32_t fossil_io_filesys_dir_merge(
 
     closedir(dir);
     return 0;
+
+#endif
 }
 
 int32_t fossil_io_filesys_dir_mirror(
