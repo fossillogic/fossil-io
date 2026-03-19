@@ -26,6 +26,7 @@
 #define FOSSIL_IO_FRAMEWORK_H
 
 // Include the necessary headers
+#include "filesys.h"
 #include "regex.h"
 #include "output.h"
 #include "input.h"
@@ -33,9 +34,7 @@
 #include "archive.h"
 #include "cstring.h"
 #include "cipher.h"
-#include "file.h"
 #include "soap.h"
-#include "dir.h"
 
 enum {
     FOSSIL_IO_SUCCESS = 0,

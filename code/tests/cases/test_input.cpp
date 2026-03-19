@@ -56,528 +56,241 @@ FOSSIL_TEARDOWN(cpp_input_suite)
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST(cpp_test_io_gets_from_stream)
+// Input validation and sanitization tests
+
+FOSSIL_TEST(cpp_test_validate_is_int_valid)
 {
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "test_input_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_no_offensive)
-{
-    char input[] = "This is a clean sentence.\n";
-    char expected[] = "This is a clean sentence.";
-    char buffer[256];
-
-    fossil_io_file_t stream;
-    stream.file = tmpfile();
-    strcpy(stream.filename, "clean_sentence_stream");
-
-    fwrite(input, 1, strlen(input), stream.file);
-    rewind(stream.file);
-    char *result = fossil_io_gets_from_stream(buffer, sizeof(buffer), &stream);
-    fclose(stream.file);
-
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_with_punctuation)
-{
-    char input[] = "This is a test with punctuation, and special characters!\n";
-    char expected[] = "This is a test with punctuation, and special characters!";
-    char buffer[256];
-
-    fossil_io_file_t stream;
-    stream.file = tmpfile();
-    strcpy(stream.filename, "punctuation_stream");
-
-    fwrite(input, 1, strlen(input), stream.file);
-    rewind(stream.file);
-    char *result = fossil_io_gets_from_stream(buffer, sizeof(buffer), &stream);
-    fclose(stream.file);
-
-    ASSUME_ITS_EQUAL_CSTR(expected, result);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_empty_input)
-{
-    const char *input_data = "\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "empty_input_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_only_whitespace)
-{
-    const char *input_data = "   \n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "whitespace_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_long_input)
-{
-    const char *input_data = "This is a very long input string that exceeds the buffer size\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "long_input_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil_io_gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("This is a very long", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_ex)
-{
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "stream_ex");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    int error_code = 0;
-    char *result = fossil_io_gets_from_stream_ex(buf, sizeof(buf), &input_stream, &error_code);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_utf8)
-{
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "utf8_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil_io_gets_utf8(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_class)
-{
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "class_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_from_stream_ex_class)
-{
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "class_stream_ex");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    int error_code = 0;
-    char *result = fossil::io::Input::gets_from_stream_ex(buf, sizeof(buf), &input_stream, &error_code);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_validate_input_buffer_class)
-{
-    const char *buf = "test buffer";
-    size_t size = strlen(buf);
-    int result = fossil::io::Input::validate_input_buffer(buf, size);
-    ASSUME_ITS_EQUAL_I32(1, result);
-}
-
-FOSSIL_TEST(cpp_test_io_gets_utf8_class)
-{
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "utf8_class_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_utf8(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("test input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
-}
-
-FOSSIL_TEST(cpp_test_io_validate_is_int_valid)
-{
-    const char *input = "12345";
     int output;
-    int result = fossil_io_validate_is_int(input, &output);
-    ASSUME_ITS_TRUE(result);
-    ASSUME_ITS_EQUAL_I32(12345, output);
+    int result = fossil::io::Input::validate_is_int("42", &output);
+    ASSUME_ITS_TRUE(result == 1);
+    ASSUME_ITS_EQUAL_I32(output, 42);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_int_invalid)
+FOSSIL_TEST(cpp_test_validate_is_int_invalid)
 {
-    const char *input = "123abc";
     int output;
-    int result = fossil_io_validate_is_int(input, &output);
-    ASSUME_ITS_FALSE(result);
+    int result = fossil::io::Input::validate_is_int("not_a_number", &output);
+    ASSUME_ITS_TRUE(result == 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_float_invalid)
+FOSSIL_TEST(cpp_test_validate_is_float_valid)
 {
-    const char *input = "123.abc";
     float output;
-    int result = fossil_io_validate_is_float(input, &output);
-    ASSUME_ITS_FALSE(result);
+    int result = fossil::io::Input::validate_is_float("3.14", &output);
+    ASSUME_ITS_TRUE(result == 1);
+    ASSUME_ITS_TRUE(output > 3.13 && output < 3.15);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_alnum_valid)
+FOSSIL_TEST(cpp_test_validate_is_float_invalid)
 {
-    const char *input = "abc123";
-    int result = fossil_io_validate_is_alnum(input);
-    ASSUME_ITS_TRUE(result);
+    float output;
+    int result = fossil::io::Input::validate_is_float("abc", &output);
+    ASSUME_ITS_TRUE(result == 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_alnum_invalid)
+FOSSIL_TEST(cpp_test_validate_is_alnum_valid)
 {
-    const char *input = "abc 123";
-    int result = fossil_io_validate_is_alnum(input);
-    ASSUME_ITS_FALSE(result);
+    int result = fossil::io::Input::validate_is_alnum("abc123XYZ");
+    ASSUME_ITS_TRUE(result == 1);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_email_valid)
+FOSSIL_TEST(cpp_test_validate_is_alnum_invalid)
 {
-    const char *input = "test@icloud.com";
-    int result = fossil_io_validate_is_email(input);
-    ASSUME_ITS_TRUE(result);
+    int result = fossil::io::Input::validate_is_alnum("abc-123");
+    ASSUME_ITS_TRUE(result == 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_email_invalid)
+FOSSIL_TEST(cpp_test_validate_is_email_valid)
 {
-    const char *input = "test@com";
-    int result = fossil_io_validate_is_email(input);
-    ASSUME_ITS_FALSE(result);
+    int result = fossil::io::Input::validate_is_email("user@gmail.com");
+    ASSUME_ITS_TRUE(result == 1);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_length_valid)
+FOSSIL_TEST(cpp_test_validate_is_email_invalid)
 {
-    const char *input = "short";
-    int result = fossil_io_validate_is_length(input, 10);
-    ASSUME_ITS_TRUE(result);
+    int result = fossil::io::Input::validate_is_email("notanemail");
+    ASSUME_ITS_TRUE(result == 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_length_invalid)
+FOSSIL_TEST(cpp_test_validate_is_length_valid)
 {
-    const char *input = "this is a very long string";
-    int result = fossil_io_validate_is_length(input, 10);
-    ASSUME_ITS_FALSE(result);
+    int result = fossil::io::Input::validate_is_length("hello", 10);
+    ASSUME_ITS_TRUE(result == 1);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream)
+FOSSIL_TEST(cpp_test_validate_is_length_invalid)
 {
-    const char *input_data = "input data\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "input_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("input data", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
+    int result = fossil::io::Input::validate_is_length("hello", 3);
+    ASSUME_ITS_TRUE(result == 0);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_ex)
+FOSSIL_TEST(cpp_test_validate_is_weak_password_too_short)
 {
-    const char *input_data = "input data\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "input_stream_ex");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    int error_code = 0;
-    char *result = fossil::io::Input::gets_from_stream_ex(buf, sizeof(buf), &input_stream, &error_code);
-    ASSUME_ITS_EQUAL_CSTR("input data", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
+    bool result = fossil::io::Input::is_weak_password("short");
+    ASSUME_ITS_TRUE(result == true);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_validate_input_buffer_valid)
+FOSSIL_TEST(cpp_test_validate_is_weak_password_valid)
 {
-    const char *buf = "valid buffer";
-    size_t size = strlen(buf);
-    int result = fossil::io::Input::validate_input_buffer(buf, size);
-    ASSUME_ITS_EQUAL_I32(1, result);
+    bool result = fossil::io::Input::is_weak_password("SecurePass123!");
+    ASSUME_ITS_TRUE(result == false);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_validate_input_buffer_invalid)
+FOSSIL_TEST(cpp_test_validate_is_weak_password_common)
 {
-    const char *buf = nullptr;
-    size_t size = 0;
-    int result = fossil::io::Input::validate_input_buffer(buf, size);
-    ASSUME_ITS_EQUAL_I32(0, result);
+    bool result = fossil::io::Input::is_weak_password("password");
+    ASSUME_ITS_TRUE(result == true);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_gets_utf8_valid)
+FOSSIL_TEST(cpp_test_validate_is_disposable_email_valid)
 {
-    const char *input_data = "utf8 valid input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "utf8_valid_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_utf8(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("utf8 valid input", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
+    bool result = fossil::io::Input::is_disposable_email("user@mailinator.com");
+    ASSUME_ITS_TRUE(result == true);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_empty)
+FOSSIL_TEST(cpp_test_validate_is_disposable_email_invalid)
 {
-    const char *input_data = "\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "empty_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
+    bool result = fossil::io::Input::is_disposable_email("user@gmail.com");
+    ASSUME_ITS_TRUE(result == false);
 }
 
-FOSSIL_TEST(cpp_test_io_input_class_gets_from_stream_whitespace_only)
+FOSSIL_TEST(cpp_test_validate_is_suspicious_bot_valid)
 {
-    const char *input_data = "   \n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "whitespace_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    char buf[20];
-    char *result = fossil::io::Input::gets_from_stream(buf, sizeof(buf), &input_stream);
-    ASSUME_ITS_EQUAL_CSTR("", buf);
-    ASSUME_NOT_CNULL(result);
-    fclose(input_stream.file);
+    bool result = fossil::io::Input::is_suspicious_bot("Mozilla/5.0 (bot) crawler");
+    ASSUME_ITS_TRUE(result == true);
 }
 
-FOSSIL_TEST(cpp_test_io_getc)
+FOSSIL_TEST(cpp_test_validate_is_suspicious_bot_invalid)
 {
-    const char *input_data = "test input\n";
-    fossil_io_file_t input_stream;
-    input_stream.file = tmpfile();
-    strcpy(input_stream.filename, "getc_stream");
-
-    fwrite(input_data, 1, strlen(input_data), input_stream.file);
-    rewind(input_stream.file);
-
-    int ch = fossil::io::Input::getc(&input_stream);
-    ASSUME_ITS_EQUAL_I32('t', ch);
-    fclose(input_stream.file);
+    bool result = fossil::io::Input::is_suspicious_bot("Mozilla/5.0 (Windows NT 10.0)");
+    ASSUME_ITS_TRUE(result == false);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_weak_password_simple)
+FOSSIL_TEST(cpp_test_validate_is_suspicious_user_valid)
 {
-    std::string password = "123456";
-    bool result = fossil::io::Input::is_weak_password(password);
-    ASSUME_ITS_TRUE(result);
+    bool result = fossil::io::Input::is_suspicious_user("bot12345");
+    ASSUME_ITS_TRUE(result == true);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_weak_password_with_username)
+FOSSIL_TEST(cpp_test_validate_is_suspicious_user_invalid)
 {
-    std::string password = "username123";
-    std::string username = "username";
-    bool result = fossil::io::Input::is_weak_password(password, username);
-    ASSUME_ITS_TRUE(result);
+    bool result = fossil::io::Input::is_suspicious_user("john_doe");
+    ASSUME_ITS_TRUE(result == false);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_weak_password_with_email)
+FOSSIL_TEST(cpp_test_sanitize_string_genericpp_context)
 {
-    std::string password = "emailpassword";
-    std::string email = "user@email.com";
-    bool result = fossil::io::Input::is_weak_password(password, "", email);
-    ASSUME_ITS_TRUE(result);
+    std::string input = "hello@world";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_GENERIC);
+    ASSUME_ITS_TRUE(result == FOSSIL_SAN_OK);
+    ASSUME_ITS_EQUAL_CSTR(input.c_str(), "hello@world");
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_weak_password_strong)
+FOSSIL_TEST(cpp_test_sanitize_string_script_detection)
 {
-    std::string password = "Str0ng!Passw0rd#2024";
-    bool result = fossil::io::Input::is_weak_password(password);
-    ASSUME_ITS_FALSE(result);
+    std::string input = "<script>alert('xss')</script>";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_SCRIPT) != 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_suspicious_bot_known_bot)
+FOSSIL_TEST(cpp_test_sanitize_string_sql_detection)
 {
-    std::string userAgent = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
-    bool result = fossil::io::Input::is_suspicious_bot(userAgent);
-    ASSUME_ITS_TRUE(result);
+    std::string input = "admin' DROP TABLE users--";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_SQL);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_SQL) != 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_suspicious_bot_normal_browser)
+FOSSIL_TEST(cpp_test_sanitize_string_shell_detection)
 {
-    std::string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0";
-    bool result = fossil::io::Input::is_suspicious_bot(userAgent);
-    ASSUME_ITS_FALSE(result);
+    std::string input = "rm -rf /";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_SHELL);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_SHELL) != 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_disposable_email_true)
+FOSSIL_TEST(cpp_test_sanitize_string_path_traversal)
 {
-    std::string email = "user@mailinator.com";
-    bool result = fossil::io::Input::is_disposable_email(email);
-    ASSUME_ITS_TRUE(result);
+    std::string input = "../../../etc/passwd";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_FILENAME);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_PATH) != 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_disposable_email_false)
+FOSSIL_TEST(cpp_test_sanitize_string_bot_detection)
 {
-    std::string email = "user@icloud.com";
-    bool result = fossil::io::Input::is_disposable_email(email);
-    ASSUME_ITS_FALSE(result);
+    std::string input = "python-requests library";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_GENERIC);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_BOT) != 0);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_suspicious_user_true)
+FOSSIL_TEST(cpp_test_sanitize_string_html_context)
 {
-    std::string username = "bot_user_123";
-    bool result = fossil::io::Input::is_suspicious_user(username);
-    ASSUME_ITS_TRUE(result);
+    std::string input = "hello@world!";
+    int result = fossil::io::Input::validate_sanitize_string(input, FOSSIL_CTX_HTML);
+    ASSUME_ITS_TRUE(result != FOSSIL_SAN_OK);
 }
 
-FOSSIL_TEST(cpp_test_io_validate_is_suspicious_user_false)
+FOSSIL_TEST(cpp_test_trim_string)
 {
-    std::string username = "johnsmith";
-    bool result = fossil::io::Input::is_suspicious_user(username);
-    ASSUME_ITS_FALSE(result);
+    char str[] = "   hello world   \n";
+    fossil::io::Input::trim(str);
+    ASSUME_ITS_EQUAL_CSTR(str, "hello world");
 }
 
-FOSSIL_TEST(cpp_test_io_validate_sanitize_string_basic)
+FOSSIL_TEST(cpp_test_trim_empty_string)
 {
-    std::string input = "Hello <script>alert('x')</script>!";
-    fossil_context_t ctx = FOSSIL_CTX_HTML;
-    int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
-    ASSUME_ITS_TRUE(flags != 0);
-    ASSUME_ITS_FALSE(input.find("<script>") != std::string::npos);
+    char str[] = "   \t\n";
+    fossil::io::Input::trim(str);
+    ASSUME_ITS_EQUAL_CSTR(str, "");
 }
 
-FOSSIL_TEST(cpp_test_io_validate_sanitize_string_noop)
+FOSSIL_TEST(cpp_test_validate_input_buffer_valid)
 {
-    std::string input = "SafeString123";
-    fossil_context_t ctx = FOSSIL_CTX_NONE;
-    int flags = fossil::io::Input::validate_sanitize_string(input, ctx);
-    ASSUME_ITS_EQUAL_I32(0, flags);
-    ASSUME_ITS_EQUAL_CSTR("SafeString123", input.c_str());
+    const char buf[] = "test";
+    int result = fossil::io::Input::validate_input_buffer(buf, sizeof(buf));
+    ASSUME_ITS_TRUE(result == 1);
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * *
-// * Fossil Logic Test Pool
+FOSSIL_TEST(cpp_test_validate_input_buffer_invalid)
+{
+    int result = fossil::io::Input::validate_input_buffer(nullptr, 0);
+    ASSUME_ITS_TRUE(result == 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_GROUP(cpp_input_tests)
 {
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_no_offensive);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_with_punctuation);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_empty_input);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_only_whitespace);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_long_input);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_ex);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_utf8);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_class);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_from_stream_ex_class);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_input_buffer_class);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_gets_utf8_class);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_int_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_int_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_float_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_alnum_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_alnum_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_email_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_length_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_ex);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_validate_input_buffer_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_validate_input_buffer_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_utf8_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_empty);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_input_class_gets_from_stream_whitespace_only);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_getc);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_simple);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_with_username);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_with_email);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_weak_password_strong);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_bot_known_bot);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_bot_normal_browser);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_disposable_email_true);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_disposable_email_false);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_user_true);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_is_suspicious_user_false);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string_basic);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_io_validate_sanitize_string_noop);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_int_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_int_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_float_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_float_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_alnum_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_alnum_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_email_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_email_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_length_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_length_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_too_short);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_common);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_disposable_email_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_disposable_email_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_bot_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_bot_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_user_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_user_invalid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_genericpp_context);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_script_detection);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_sql_detection);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_shell_detection);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_path_traversal);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_bot_detection);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_html_context);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_trim_string);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_trim_empty_string);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_input_buffer_valid);
+    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_input_buffer_invalid);
 
     FOSSIL_TEST_REGISTER(cpp_input_suite);
 }

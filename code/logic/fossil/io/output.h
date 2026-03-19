@@ -26,7 +26,7 @@
 #define FOSSIL_IO_OUTPUT_H
 
 #include <stdarg.h>
-#include "file.h"
+#include "filesys.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -77,7 +77,7 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
  *     Moves the cursor to a named position (top, bottom, left, right, center, etc.).
  *   - fossil_io_print_with_attributes(const char *str)
  *     Prints text with inline markup for color, background, attributes, and position.
- *   - fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str)
+ *   - fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, const char *str)
  *     Prints sanitized text (without escape codes) to a file stream.
  *
  * Markup Syntax:
@@ -104,7 +104,7 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
  *
  * @param stream The output stream where subsequent output should be redirected.
  */
-void fossil_io_redirect_output(fossil_io_file_t *stream);
+void fossil_io_redirect_output(fossil_io_filesys_file_t *stream);
 
 /**
  * Prints a string to the output.
@@ -162,15 +162,16 @@ void fossil_io_putchar(char c);
  *
  * Example usage:
  * ```c
- * FILE *file = fopen("output.txt", "w");
- * fossil_io_fputs(file, "Hello, File Output!\n");
- * fclose(file);
+ * fossil_io_filesys_file_t file;
+ * fossil_io_filesys_file_open(&file, "output.txt", "w");
+ * fossil_io_fputs(&file, "Hello, File Output!\n");
+ * fossil_io_filesys_file_close(&file);
  * ```
  *
- * @param stream The output stream where the string should be printed. This should be a valid pointer to a `FILE` object.
+ * @param stream The output stream where the string should be printed. This should be a valid pointer to a `fossil_io_filesys_file_t` object.
  * @param str The string to be printed. This should be a null-terminated string.
  */
-void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
+void fossil_io_fputs(fossil_io_filesys_file_t *stream, const char *str);
 
 /**
  * Prints a formatted string to the specified output stream.
@@ -181,17 +182,18 @@ void fossil_io_fputs(fossil_io_file_t *stream, const char *str);
  *
  * Example usage:
  * ```c
- * FILE *file = fopen("output.txt", "w");
- * fossil_io_fprintf(file, "Hello, %s! Your score is %d\n", "Alice", 95);
- * fclose(file);
+ * fossil_io_filesys_file_t file;
+ * fossil_io_filesys_file_open(&file, "output.txt", "w");
+ * fossil_io_fprintf(&file, "Hello, %s! Your score is %d\n", "Alice", 95);
+ * fossil_io_filesys_file_close(&file);
  * ```
  *
- * @param stream The output stream where the formatted string should be printed. This should be a valid pointer to a `FILE` object.
+ * @param stream The output stream where the formatted string should be printed. This should be a valid pointer to a `fossil_io_filesys_file_t` object.
  * @param format The format string, which contains the text to be printed, along with format specifiers.
  * @param ... The additional arguments to be formatted. These arguments are inserted into the format string
  *            in the order they appear, based on the format specifiers.
  */
-void fossil_io_fprintf(fossil_io_file_t *stream, const char *format, ...);
+void fossil_io_fprintf(fossil_io_filesys_file_t *stream, const char *format, ...);
 
 /**
  * Formats a string and stores it in the provided buffer.
@@ -335,10 +337,10 @@ namespace fossil::io
         /**
          * @brief Writes a null-terminated string to a specified fossil output stream.
          *
-         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param stream A pointer to the fossil_io_filesys_file_t stream.
          * @param str A null-terminated C string.
          */
-        static void fputs(fossil_io_file_t *stream, const char *str)
+        static void fputs(fossil_io_filesys_file_t *stream, const char *str)
         {
             fossil_io_fputs(stream, str);
         }
@@ -346,11 +348,11 @@ namespace fossil::io
         /**
          * @brief Prints a formatted string to a specified fossil output stream.
          *
-         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param stream A pointer to the fossil_io_filesys_file_t stream.
          * @param format A printf-style format string.
          * @param ... Additional arguments to be formatted.
          */
-        static void fprintf(fossil_io_file_t *stream, const char *format, ...)
+        static void fprintf(fossil_io_filesys_file_t *stream, const char *format, ...)
         {
             va_list args;
             va_start(args, format);

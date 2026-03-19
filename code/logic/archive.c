@@ -182,7 +182,7 @@ fossil_io_archive_type_t fossil_io_archive_get_type(const char *path)
         }
         if (fossil_io_cstring_icmp(ext, "rar") == 0)
         {
-            return FOSSIL_IO_ARCHIVE_RAR; // Will check version in magic bytes
+            return FOSSIL_IO_ARCHIVE_RAR;
         }
         if (fossil_io_cstring_icmp(ext, "7z") == 0)
         {
@@ -222,98 +222,10 @@ fossil_io_archive_type_t fossil_io_archive_get_type(const char *path)
         }
     }
 
-    // If extension-based detection fails, try magic byte detection
-    fossil_io_file_t stream;
-    if (fossil_io_file_open(&stream, path, "rb") != 0)
+    // If extension-based detection fails, return based on extension if recognizable
+    if (ext)
     {
         return FOSSIL_IO_ARCHIVE_UNKNOWN;
-    }
-
-    unsigned char header[512]; // Increased buffer for TAR magic at offset 257
-    size_t read = fossil_io_file_read(&stream, header, 1, sizeof(header));
-    fossil_io_file_close(&stream);
-
-    if (read < 4)
-        return FOSSIL_IO_ARCHIVE_UNKNOWN;
-
-    // ZIP signature (PK)
-    if (header[0] == 0x50 && header[1] == 0x4B)
-    {
-        return FOSSIL_IO_ARCHIVE_ZIP;
-    }
-
-    // TAR (check for ustar magic at offset 257)
-    if (read >= 265 && memcmp(header + 257, "ustar", 5) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_TAR;
-    }
-
-    // GZIP
-    if (header[0] == 0x1F && header[1] == 0x8B)
-    {
-        return FOSSIL_IO_ARCHIVE_GZ;
-    }
-
-    // BZIP2
-    if (header[0] == 0x42 && header[1] == 0x5A && header[2] == 0x68)
-    {
-        return FOSSIL_IO_ARCHIVE_BZ2;
-    }
-
-    // XZ
-    if (read >= 6 && memcmp(header, "\xFD"
-                                    "7zXZ\x00",
-                            6) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_XZ;
-    }
-
-    // LZ4
-    if (read >= 4 && memcmp(header, "\x04\"M\x18", 4) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_LZ4;
-    }
-
-    // ZSTD
-    if (read >= 4 && memcmp(header, "\x28\xB5\x2F\xFD", 4) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_ZSTD;
-    }
-
-    // 7Z
-    if (read >= 6 && memcmp(header, "7z\xBC\xAF\x27\x1C", 6) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_7Z;
-    }
-
-    // RAR (distinguish between RAR and RAR5)
-    if (read >= 7 && memcmp(header, "Rar!\x1A\x07", 6) == 0)
-    {
-        return header[6] == 0x00 ? FOSSIL_IO_ARCHIVE_RAR : FOSSIL_IO_ARCHIVE_RAR5;
-    }
-
-    // CAB
-    if (read >= 4 && memcmp(header, "MSCF", 4) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_CAB;
-    }
-
-    // ACE
-    if (read >= 7 && memcmp(header, "**ACE**", 7) == 0)
-    {
-        return FOSSIL_IO_ARCHIVE_ACE;
-    }
-
-    // ISO (CD001 signature can appear at different offsets)
-    if (read >= 5)
-    {
-        for (size_t i = 0; i <= read - 5; i++)
-        {
-            if (memcmp(header + i, "CD001", 5) == 0)
-            {
-                return FOSSIL_IO_ARCHIVE_ISO;
-            }
-        }
     }
 
     return FOSSIL_IO_ARCHIVE_UNKNOWN;
@@ -493,7 +405,7 @@ ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_e
     }
 
     *entries = entry_copy;
-    return unique_count;
+    return (ssize_t)unique_count;
 }
 
 void fossil_io_archive_free_entries(fossil_io_archive_entry_t *entries, size_t count)
@@ -536,7 +448,7 @@ ssize_t fossil_io_archive_entry_size(fossil_io_archive_t *archive, const char *e
     {
         if (archive->entries[i].name && strcmp(archive->entries[i].name, entry_name) == 0)
         {
-            return archive->entries[i].size;
+            return (ssize_t)archive->entries[i].size;
         }
     }
     return -1;
@@ -553,21 +465,22 @@ bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_pa
     if (!(archive->mode & (FOSSIL_IO_ARCHIVE_WRITE | FOSSIL_IO_ARCHIVE_APPEND)))
         return false;
 
-    fossil_io_file_t stream;
-    if (fossil_io_file_open(&stream, src_path, "rb") != 0)
+    fossil_io_filesys_file_t file;
+    if (fossil_io_filesys_file_open(&file, src_path, "rb") != 0)
     {
         return false;
     }
 
     // Get file size
-    if (fossil_io_file_seek(&stream, 0, SEEK_END) != 0)
+    if (fossil_io_filesys_file_seek(&file, 0, SEEK_END) != 0)
     {
-        fossil_io_file_close(&stream);
+        fossil_io_filesys_file_close(&file);
         return false;
     }
 
-    int32_t file_size = fossil_io_file_tell(&stream);
-    fossil_io_file_close(&stream);
+    int64_t file_size = fossil_io_filesys_file_tell(&file);
+    fossil_io_filesys_file_seek(&file, 0, SEEK_SET);
+    fossil_io_filesys_file_close(&file);
 
     if (file_size < 0)
         return false;
@@ -593,13 +506,13 @@ bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_pa
     if (!entry->name)
         return false;
 
-    entry->size = file_size;
-    entry->compressed_size = file_size; // Simplified: no actual compression
+    entry->size = (size_t)file_size;
+    entry->compressed_size = (size_t)file_size;
     entry->is_directory = false;
     entry->is_encrypted = false;
     entry->modified_time = time(NULL);
     entry->created_time = time(NULL);
-    entry->crc32 = 0; // Simplified: no CRC calculation
+    entry->crc32 = 0;
     entry->permissions = 0644;
 
     archive->entry_count++;
@@ -611,8 +524,38 @@ bool fossil_io_archive_add_directory(fossil_io_archive_t *archive, const char *s
     if (!archive || !src_dir || !archive_dir)
         return false;
 
-    // Simplified implementation: just add directory entry
-    return fossil_io_archive_add_file(archive, src_dir, archive_dir);
+    // Resize entries array if needed
+    if (archive->entry_count >= archive->entry_capacity)
+    {
+        size_t new_capacity = archive->entry_capacity == 0 ? 8 : archive->entry_capacity * 2;
+        fossil_io_archive_entry_t *new_entries = realloc(archive->entries,
+                                                         sizeof(fossil_io_archive_entry_t) * new_capacity);
+        if (!new_entries)
+            return false;
+
+        archive->entries = new_entries;
+        archive->entry_capacity = new_capacity;
+    }
+
+    // Add directory entry
+    fossil_io_archive_entry_t *entry = &archive->entries[archive->entry_count];
+    memset(entry, 0, sizeof(fossil_io_archive_entry_t));
+
+    entry->name = fossil_io_archive_strdup(archive_dir);
+    if (!entry->name)
+        return false;
+
+    entry->size = 0;
+    entry->compressed_size = 0;
+    entry->is_directory = true;
+    entry->is_encrypted = false;
+    entry->modified_time = time(NULL);
+    entry->created_time = time(NULL);
+    entry->crc32 = 0;
+    entry->permissions = 0755;
+
+    archive->entry_count++;
+    return true;
 }
 
 bool fossil_io_archive_extract_file(fossil_io_archive_t *archive, const char *entry_name, const char *dest_path)

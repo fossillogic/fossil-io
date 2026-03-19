@@ -1,7 +1,7 @@
 dir = include_directories('.')
 cc = meson.get_compiler('c')
-add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'c')
-add_project_arguments('-D_POSIX_C_SOURCE=200112L', language: 'cpp')
+add_project_arguments('-D_POSIX_C_SOURCE=200809L', language: 'c')
+add_project_arguments('-D_POSIX_C_SOURCE=200809L', language: 'cpp')
 
 fossil_io_lib = library('fossil_io',
     files(
@@ -12,8 +12,6 @@ fossil_io_lib = library('fossil_io',
         'error.c',
         'soap.c',
         'filesys.c',
-        'file.c',
-        'dir.c',
         'cstring.c',
         'cipher.c'
     ),

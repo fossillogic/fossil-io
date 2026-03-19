@@ -35,8 +35,6 @@
 #ifndef HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen)
 {
-    if (!s)
-        return 0;
     size_t i;
     for (i = 0; i < maxlen && s[i]; i++)
         ;
