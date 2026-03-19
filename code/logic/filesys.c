@@ -327,7 +327,7 @@ static int mirror_recursive(
 #if defined(_WIN32)
 
     WIN32_FIND_DATAA fd;
-    char search[MAX_PATH];
+    char search[FOSSIL_FILESYS_MAX_PATH];
     snprintf(search, sizeof(search), "%s\\*", src);
 
     HANDLE h = FindFirstFileA(search, &fd);
@@ -339,7 +339,7 @@ static int mirror_recursive(
         if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
             continue;
 
-        char sfull[MAX_PATH], dfull[MAX_PATH];
+        char sfull[FOSSIL_FILESYS_MAX_PATH], dfull[FOSSIL_FILESYS_MAX_PATH];
         snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
         snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
 
@@ -399,7 +399,7 @@ static int mirror_recursive(
     {
 #if defined(_WIN32)
 
-        char search[MAX_PATH];
+        char search[FOSSIL_FILESYS_MAX_PATH];
         snprintf(search, sizeof(search), "%s\\*", dest);
 
         WIN32_FIND_DATAA fd;
@@ -412,7 +412,7 @@ static int mirror_recursive(
                 if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
                     continue;
 
-                char dfull[MAX_PATH], sfull[MAX_PATH];
+                char dfull[FOSSIL_FILESYS_MAX_PATH], sfull[FOSSIL_FILESYS_MAX_PATH];
                 snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
                 snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
 
@@ -1649,6 +1649,7 @@ static int dir_walk_internal(
     void *user_data)
 {
     fossil_io_filesys_obj_t obj;
+    memset(&obj, 0, sizeof(obj));
 
     if (fossil_io_filesys_stat(path, &obj) != 0)
         return -1;
