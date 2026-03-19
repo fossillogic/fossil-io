@@ -730,6 +730,7 @@ int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path)
 
     /* copy path safely */
     strncpy(obj->path, path, FOSSIL_FILESYS_MAX_PATH - 1);
+    obj->path[FOSSIL_FILESYS_MAX_PATH - 1] = '\0';
 
     /* init lock */
     if (fossil_mutex_init(&obj->lock) != 0)
@@ -738,9 +739,32 @@ int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path)
     /* generate stable ID */
     fossil_generate_id(path, obj->id, sizeof(obj->id));
 
-    /* initial metadata load */
-    if (fossil_io_filesys_refresh(obj) != 0)
-        return -1;
+    /* initialize default values */
+    obj->type = FOSSIL_FILESYS_TYPE_UNKNOWN;
+    obj->size = 0;
+    obj->mode = 0;
+    obj->flags = 0;
+    obj->created_at = 0;
+    obj->modified_at = 0;
+    obj->accessed_at = 0;
+
+    /* infer type from path hints */
+    size_t len = strlen(path);
+    if (len > 0 && (path[len - 1] == '/' || path[len - 1] == '\\'))
+    {
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+    }
+    else if (len > 0)
+    {
+        const char *dot = strrchr(path, '.');
+        if (dot && (strcmp(dot, ".lnk") == 0 || strcmp(dot, ".link") == 0))
+            obj->type = FOSSIL_FILESYS_TYPE_LINK;
+        else
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+    }
+
+    /* initial metadata load (don't fail if path doesn't exist) */
+    fossil_io_filesys_refresh(obj);
 
     return 0;
 }
@@ -1571,9 +1595,13 @@ int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
     }
 
 #if defined(_WIN32)
-    return (_mkdir(tmp) == 0) ? 0 : -1;
+    if (_mkdir(tmp) == 0)
+        return 0;
+    return (GetLastError() == ERROR_ALREADY_EXISTS) ? 0 : -1;
 #else
-    return (mkdir(tmp, 0755) == 0) ? 0 : -1;
+    if (mkdir(tmp, 0755) == 0)
+        return 0;
+    return (errno == EEXIST) ? 0 : -1;
 #endif
 }
 

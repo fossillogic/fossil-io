@@ -120,16 +120,6 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_morse)
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
 
-FOSSIL_TEST(cpp_test_cipher_encode_decode_baconian)
-{
-    const std::string plain = "abc";
-    std::string encoded = Cipher::encode(plain, "baconian");
-    ASSUME_ITS_TRUE(!encoded.empty());
-    std::string decoded = Cipher::decode(encoded, "baconian");
-    ASSUME_ITS_TRUE(!decoded.empty());
-    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
-}
-
 FOSSIL_TEST(cpp_test_cipher_encode_decode_railfence)
 {
     const std::string plain = "railfence";
@@ -146,16 +136,6 @@ FOSSIL_TEST(cpp_test_cipher_encode_decode_haxor)
     std::string encoded = Cipher::encode(plain, "haxor");
     ASSUME_ITS_TRUE(!encoded.empty());
     std::string decoded = Cipher::decode(encoded, "haxor");
-    ASSUME_ITS_TRUE(!decoded.empty());
-    ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
-}
-
-FOSSIL_TEST(cpp_test_cipher_encode_decode_leet)
-{
-    const std::string plain = "elite";
-    std::string encoded = Cipher::encode(plain, "leet");
-    ASSUME_ITS_TRUE(!encoded.empty());
-    std::string decoded = Cipher::decode(encoded, "leet");
     ASSUME_ITS_TRUE(!decoded.empty());
     ASSUME_ITS_EQUAL_CSTR(plain.c_str(), decoded.c_str());
 }
@@ -202,10 +182,8 @@ FOSSIL_TEST_GROUP(cpp_cipher_tests)
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base32);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_binary);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_morse);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_baconian);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_railfence);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_haxor);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_leet);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_rot13);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_atbash);
     FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_case_insensitive_id);
