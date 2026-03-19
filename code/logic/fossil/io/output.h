@@ -77,7 +77,7 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
  *     Moves the cursor to a named position (top, bottom, left, right, center, etc.).
  *   - fossil_io_print_with_attributes(const char *str)
  *     Prints text with inline markup for color, background, attributes, and position.
- *   - fossil_io_fprint_with_attributes(fossil_io_file_t *stream, const char *str)
+ *   - fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, const char *str)
  *     Prints sanitized text (without escape codes) to a file stream.
  *
  * Markup Syntax:
@@ -337,10 +337,10 @@ namespace fossil::io
         /**
          * @brief Writes a null-terminated string to a specified fossil output stream.
          *
-         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param stream A pointer to the fossil_io_filesys_file_t stream.
          * @param str A null-terminated C string.
          */
-        static void fputs(fossil_io_file_t *stream, const char *str)
+        static void fputs(fossil_io_filesys_file_t *stream, const char *str)
         {
             fossil_io_fputs(stream, str);
         }
@@ -348,11 +348,11 @@ namespace fossil::io
         /**
          * @brief Prints a formatted string to a specified fossil output stream.
          *
-         * @param stream A pointer to the fossil_io_file_t stream.
+         * @param stream A pointer to the fossil_io_filesys_file_t stream.
          * @param format A printf-style format string.
          * @param ... Additional arguments to be formatted.
          */
-        static void fprintf(fossil_io_file_t *stream, const char *format, ...)
+        static void fprintf(fossil_io_filesys_file_t *stream, const char *format, ...)
         {
             va_list args;
             va_start(args, format);

@@ -310,7 +310,7 @@ namespace fossil::io
          * @param input_stream  Pointer to the input stream to read from.
          * @return              The character read as an unsigned char cast to an int, or EOF on end-of-file or error.
          */
-        static int getc(fossil_io_file_t *input_stream)
+        static int getc(fossil_io_filesys_file_t *input_stream)
         {
             return fossil_io_getc(input_stream);
         }
@@ -348,7 +348,7 @@ namespace fossil::io
          * @param input_stream  Pointer to the input stream to read from.
          * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
          */
-        static char *gets_from_stream(char *buf, size_t size, fossil_io_file_t *input_stream)
+        static char *gets_from_stream(char *buf, size_t size, fossil_io_filesys_file_t *input_stream)
         {
             return fossil_io_gets_from_stream(buf, size, input_stream);
         }
@@ -362,7 +362,7 @@ namespace fossil::io
          * @param error_code    Pointer to an integer to store the error code (e.g., EOF, input error).
          * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
          */
-        static char *gets_from_stream_ex(char *buf, size_t size, fossil_io_file_t *input_stream, int *error_code)
+        static char *gets_from_stream_ex(char *buf, size_t size, fossil_io_filesys_file_t *input_stream, int *error_code)
         {
             return fossil_io_gets_from_stream_ex(buf, size, input_stream, error_code);
         }
@@ -387,7 +387,7 @@ namespace fossil::io
          * @param input_stream  Pointer to the input stream to read from.
          * @return              On success, the function returns 'buf'. If the end-of-file is reached or an error occurs, it returns NULL.
          */
-        static char *gets_utf8(char *buf, size_t size, fossil_io_file_t *input_stream)
+        static char *gets_utf8(char *buf, size_t size, fossil_io_filesys_file_t *input_stream)
         {
             return fossil_io_gets_utf8(buf, size, input_stream);
         }
@@ -433,7 +433,7 @@ namespace fossil::io
          * @return              On success, the number of input items successfully matched and assigned is returned.
          *                      On failure, EOF is returned.
          */
-        static int fscanf(fossil_io_file_t *input_stream, const char *format, ...)
+        static int fscanf(fossil_io_filesys_file_t *input_stream, const char *format, ...)
         {
             va_list args;
             va_start(args, format);

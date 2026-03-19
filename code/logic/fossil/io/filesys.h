@@ -556,11 +556,11 @@ int32_t fossil_io_filesys_dir_mirror(const char *src, const char *dest, bool del
  * @brief Create a hard or symbolic link to a file, with optional metadata propagation.
  *
  * This function creates a new link (hard or symbolic) from `src->filename` to `dest_path`.
- * It optionally populates a fossil_io_file_t structure for the destination link and can
+ * It optionally populates a fossil_io_filesys_file_t structure for the destination link and can
  * propagate file metadata such as timestamps and mode.
  *
- * @param src        Pointer to source fossil_io_file_t representing the existing file.
- * @param dest       Pointer to destination fossil_io_file_t to populate (may be NULL).
+ * @param src        Pointer to source fossil_io_filesys_file_t representing the existing file.
+ * @param dest       Pointer to destination fossil_io_filesys_file_t to populate (may be NULL).
  * @param dest_path  Path to the file to create.
  * @param symbolic   If true, create a symbolic link; else create a hard link.
  * @param copy_meta  If true, copy metadata (mode, timestamps).

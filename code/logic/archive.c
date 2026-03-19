@@ -261,7 +261,7 @@ fossil_io_archive_type_t fossil_io_archive_get_type(const char *path)
     }
 
     // XZ
-    if (read >= 6 && memcmp(header, "\xFD7zXZ\x00", 6) == 0)
+    if (read >= 6 && memcmp(header, "\xFD" "7zXZ\x00", 6) == 0)
     {
         return FOSSIL_IO_ARCHIVE_XZ;
     }
