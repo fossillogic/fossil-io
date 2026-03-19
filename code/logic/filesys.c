@@ -1660,7 +1660,7 @@ static int dir_walk_internal(
 
 #if defined(_WIN32)
 
-    if (!(obj.flags & FOSSIL_FILESYS_FLAG_DIR))
+    if (obj.type != FOSSIL_FILESYS_TYPE_DIR)
         return 0;
 
     WIN32_FIND_DATAA fd;
