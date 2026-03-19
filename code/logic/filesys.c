@@ -1977,19 +1977,38 @@ int32_t fossil_io_filesys_link_is_symbolic(
 
 static fossil_io_filesys_lock_t g_tx_lock;
 
+int32_t fossil_io_filesys_tx_init(void)
+{
+    return fossil_mutex_init(&g_tx_lock);
+}
+
 int32_t fossil_io_filesys_tx_begin(void)
 {
+    if (!g_tx_lock.handle)
+        return fossil_io_filesys_tx_init();
+    
     return fossil_mutex_lock(&g_tx_lock);
 }
 
 int32_t fossil_io_filesys_tx_commit(void)
 {
+    if (!g_tx_lock.handle || !g_tx_lock.locked)
+        return -1;
+    
     return fossil_mutex_unlock(&g_tx_lock);
 }
 
 int32_t fossil_io_filesys_tx_rollback(void)
 {
+    if (!g_tx_lock.handle || !g_tx_lock.locked)
+        return -1;
+    
     return fossil_mutex_unlock(&g_tx_lock);
+}
+
+int32_t fossil_io_filesys_tx_is_active(void)
+{
+    return (g_tx_lock.locked) ? 1 : 0;
 }
 
 /* Path / Utility Operations */
@@ -2027,12 +2046,31 @@ int32_t fossil_io_filesys_abspath(const char *path, char *abs_path, size_t max_l
         return -1;
 
 #if defined(_WIN32)
+
     if (!_fullpath(abs_path, path, max_len))
         return -1;
+
 #else
-        if (!realpath(path, abs_path))
-            return -1;
+
+    // Already absolute
+    if (path[0] == '/')
+    {
+        strncpy(abs_path, path, max_len - 1);
+        abs_path[max_len - 1] = '\0';
+        return 0;
+    }
+
+    // Relative → prepend cwd
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, sizeof(cwd)))
+        return -1;
+
+    int written = snprintf(abs_path, max_len, "%s/%s", cwd, path);
+    if (written < 0 || (size_t)written >= max_len)
+        return -1;
+
 #endif
+
     return 0;
 }
 
