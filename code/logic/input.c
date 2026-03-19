@@ -120,7 +120,7 @@ static int long_base64_run(const char *s, size_t len, size_t threshold)
     return 0;
 }
 
-char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_file_t *input_stream, int *error_code)
+char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_filesys_file_t *input_stream, int *error_code)
 {
     if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL)
     {
@@ -128,29 +128,38 @@ char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_file_t *in
         return NULL;
     }
 
-    // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream->file) == NULL)
+    // Use filesys file read to get the input from the stream
+    size_t bytes_read = fossil_io_filesys_file_read(input_stream, buf, 1, size - 1);
+    
+    if (bytes_read == 0)
     {
-        if (feof(input_stream->file))
+        // Check if EOF or error
+        int64_t pos = fossil_io_filesys_file_tell(input_stream);
+        if (pos < 0)
+        {
+            *error_code = (int)pos; // error code
+            fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
+        }
+        else
         {
             *error_code = EOF;
-            return NULL; // End of file reached
         }
-        *error_code = ferror(input_stream->file);
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
         return NULL;
     }
 
-    // Ensure the string is null-terminated
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len - 1] == '\n')
+    // Null-terminate the buffer
+    buf[bytes_read] = '\0';
+
+    // Remove trailing newline if present
+    if (bytes_read > 0 && buf[bytes_read - 1] == '\n')
     {
-        buf[len - 1] = '\0'; // Remove the newline character
+        buf[bytes_read - 1] = '\0';
     }
 
     // Trim any leading or trailing whitespace
     fossil_io_trim(buf);
 
+    *error_code = 0; // success
     return buf;
 }
 
@@ -252,7 +261,7 @@ void fossil_io_show_progress(int progress)
     fflush(stdout);
 }
 
-int fossil_io_getc(fossil_io_file_t *input_stream)
+int fossil_io_getc(fossil_io_filesys_file_t *input_stream)
 {
     if (input_stream == NULL)
     {
@@ -260,17 +269,19 @@ int fossil_io_getc(fossil_io_file_t *input_stream)
         return EOF;
     }
 
-    int c = fgetc(input_stream->file);
-    if (c == EOF && ferror(input_stream->file))
+    unsigned char c;
+    size_t bytes_read = fossil_io_filesys_file_read(input_stream, &c, 1, 1);
+    
+    if (bytes_read == 0)
     {
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
+        return EOF;
     }
 
-    return c;
+    return (int)c;
 }
 
 // Function to get a sanitized line of input from a provided stream (or stdin by default)
-char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_file_t *input_stream)
+char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_filesys_file_t *input_stream)
 {
     if (buf == NULL || size == 0 || input_stream == NULL)
     {
@@ -278,23 +289,30 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_file_t *input
         return NULL;
     }
 
-    // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream->file) == NULL)
+    // Read input character by character until newline or EOF
+    size_t i = 0;
+    while (i < size - 1)
     {
-        if (feof(input_stream->file))
+        unsigned char c;
+        size_t bytes_read = fossil_io_filesys_file_read(input_stream, &c, 1, 1);
+        
+        if (bytes_read == 0)
         {
-            return NULL; // End of file reached
+            // EOF reached
+            if (i == 0)
+                return NULL;
+            break;
         }
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
-        return NULL;
+
+        if (c == '\n')
+        {
+            break;
+        }
+
+        buf[i++] = c;
     }
 
-    // Ensure the string is null-terminated
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len - 1] == '\n')
-    {
-        buf[len - 1] = '\0'; // Remove the newline character
-    }
+    buf[i] = '\0';
 
     // Trim any leading or trailing whitespace
     fossil_io_trim(buf);
@@ -451,11 +469,20 @@ int fossil_io_scanf(const char *format, ...)
     return result;
 }
 
-int fossil_io_fscanf(fossil_io_file_t *input_stream, const char *format, ...)
+int fossil_io_fscanf(fossil_io_filesys_file_t *input_stream, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    int result = vfscanf(input_stream->file, format, args);
+    int result = 0;
+    
+    if (input_stream == NULL || input_stream->handle == NULL)
+    {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid input stream.\n");
+        va_end(args);
+        return -1;
+    }
+    
+    result = vfscanf((FILE *)input_stream->handle, format, args);
     va_end(args);
     return result;
 }
@@ -470,29 +497,34 @@ int fossil_io_validate_input_buffer(const char *buf, size_t size)
     return 1;
 }
 
-char *fossil_io_gets_utf8(char *buf, size_t size, fossil_io_file_t *input_stream)
+char *fossil_io_gets_utf8(char *buf, size_t size, fossil_io_filesys_file_t *input_stream)
 {
     if (!fossil_io_validate_input_buffer(buf, size))
     {
         return NULL;
     }
 
-    // Use fgets to get the input from the stream
-    if (fgets(buf, size, input_stream->file) == NULL)
+    // Use filesys file read to get the input from the stream
+    size_t bytes_read = fossil_io_filesys_file_read(input_stream, buf, 1, size - 1);
+    
+    if (bytes_read == 0)
     {
-        if (feof(input_stream->file))
+        // Check if EOF or error
+        int64_t pos = fossil_io_filesys_file_tell(input_stream);
+        if (pos < 0)
         {
-            return NULL; // End of file reached
+            fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
         }
-        fossil_io_fprintf(FOSSIL_STDERR, "Error: Failed to read from input stream.\n");
-        return NULL;
+        return NULL; // End of file reached
     }
 
-    // Ensure the string is null-terminated
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len - 1] == '\n')
+    // Null-terminate the buffer
+    buf[bytes_read] = '\0';
+
+    // Remove trailing newline if present
+    if (bytes_read > 0 && buf[bytes_read - 1] == '\n')
     {
-        buf[len - 1] = '\0'; // Remove the newline character
+        buf[bytes_read - 1] = '\0';
     }
 
     // Trim any leading or trailing whitespace

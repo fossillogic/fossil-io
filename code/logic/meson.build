@@ -12,8 +12,6 @@ fossil_io_lib = library('fossil_io',
         'error.c',
         'soap.c',
         'filesys.c',
-        'file.c',
-        'dir.c',
         'cstring.c',
         'cipher.c'
     ),

@@ -25,7 +25,8 @@
 #ifndef FOSSIL_IO_ARCHIVE_H
 #define FOSSIL_IO_ARCHIVE_H
 
-#include "file.h"
+#include "filesys.h"
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C"

@@ -568,7 +568,7 @@ void fossil_io_print_with_attributes(ccstring str)
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
-void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str)
+void fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, ccstring str)
 {
     if (str != NULL && stream != NULL)
     {
@@ -582,7 +582,7 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str)
         while ((start = strchr(current_pos, '{')) != NULL)
         {
             // Write text before '{' to the file
-            fossil_io_file_write(stream, current_pos, 1, start - current_pos);
+            fossil_io_filesys_file_write(stream, current_pos, 1, start - current_pos);
             end = strchr(start, '}');
             if (end && end > start)
             {
@@ -592,12 +592,12 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str)
             else
             {
                 // No matching '}', write '{' and continue searching
-                fossil_io_file_write(stream, start, 1, 1);
+                fossil_io_filesys_file_write(stream, start, 1, 1);
                 current_pos = start + 1;
             }
         }
         // Write remaining text after last '}'
-        fossil_io_file_write(stream, current_pos, 1, strlen(current_pos));
+        fossil_io_filesys_file_write(stream, current_pos, 1, strlen(current_pos));
     }
 }
 
@@ -652,7 +652,7 @@ void fossil_io_printf(ccstring format, ...)
 }
 
 // Function to print a sanitized string to a specific file stream
-void fossil_io_fputs(fossil_io_file_t *stream, ccstring str)
+void fossil_io_fputs(fossil_io_filesys_file_t *stream, ccstring str)
 {
     if (!FOSSIL_IO_OUTPUT_ENABLE)
         return;
@@ -667,15 +667,20 @@ void fossil_io_fputs(fossil_io_file_t *stream, ccstring str)
     }
     else
     {
-        fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+        fossil_io_filesys_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
 }
 
 // Function to print a sanitized formatted string to a specific file stream
-void fossil_io_fprintf(fossil_io_file_t *stream, ccstring format, ...)
+void fossil_io_fprintf(fossil_io_filesys_file_t *stream, ccstring format, ...)
 {
     if (!FOSSIL_IO_OUTPUT_ENABLE)
         return;
+    if (format == NULL || stream == NULL)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+        return;
+    }
     va_list args;
     va_start(args, format);
 

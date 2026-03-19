@@ -68,6 +68,10 @@
 #include <dirent.h>
 #endif
 
+fossil_io_filesys_file_t *_FOSSIL_STDIN;
+fossil_io_filesys_file_t *_FOSSIL_STDOUT;
+fossil_io_filesys_file_t *_FOSSIL_STDERR;
+
 #if defined(_WIN32)
 #define PATH_SEP '\\'
 #else

@@ -179,6 +179,16 @@ typedef struct
 
 } fossil_io_filesys_link_t;
 
+
+
+extern fossil_io_filesys_file_t *_FOSSIL_STDIN;
+extern fossil_io_filesys_file_t *_FOSSIL_STDOUT;
+extern fossil_io_filesys_file_t *_FOSSIL_STDERR;
+
+#define FOSSIL_STDIN (_FOSSIL_STDIN)
+#define FOSSIL_STDOUT (_FOSSIL_STDOUT)
+#define FOSSIL_STDERR (_FOSSIL_STDERR)
+
 /* ------------------------------------------------------------
     * General Filesystem Operations
     * ------------------------------------------------------------ */
