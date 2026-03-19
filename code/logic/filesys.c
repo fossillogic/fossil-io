@@ -24,8 +24,8 @@
  */
 #include "fossil/io/filesys.h"
 
+#define _DEFAULT_SOURCE
 #define _POSIX_C_SOURCE 200809L
-#define _XOPEN_SOURCE 700
 
 #include <stdio.h>
 #include <stdint.h>
@@ -524,8 +524,7 @@ static int dedup_walk(
         {
             table[*count].hash = hash;
             table[*count].size = size;
-            strncpy(table[*count].path, full, sizeof(table[*count].path)-1);
-            table[*count].path[sizeof(table[*count].path)-1] = '\0';
+            snprintf(table[*count].path, sizeof(table[*count].path), "%s", full);
             (*count)++;
         }
 
