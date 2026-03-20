@@ -2,11 +2,6 @@
 
 Fossil IO is a robust C library designed for seamless input, output, and error management across major operating systems. It delivers a unified API for secure data handling, efficient file operations, and comprehensive error diagnostics. With a focus on reliability and performance, Fossil IO empowers developers to build cross-platform applications with predictable I/O behavior.
 
-- **Supported Platforms:** Windows, macOS, Linux
-- **Language:** C
-- **Purpose:** Consistent, secure, and high-performance I/O operations
-
-
 ## Key Features
 
 1. **Cross-Platform Compatibility**: Consistent I/O operations across Windows, macOS, and Linux.
