@@ -29,11 +29,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stddef.h>
+#include <string.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #else
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -42,18 +45,6 @@
 #ifndef AT_FDCWD
 #define AT_FDCWD -100
 #endif
-#endif
-
-// ======================================================
-// Required headers for portability
-// ======================================================
-#include <string.h>
-#include <stdbool.h>
-
-#ifndef _WIN32
-#include <sys/types.h>
-#else
-typedef long ssize_t;
 #endif
 
 // ======================================================
