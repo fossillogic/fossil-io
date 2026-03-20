@@ -757,10 +757,30 @@ int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path)
     else if (len > 0)
     {
         const char *dot = strrchr(path, '.');
-        if (dot && (strcmp(dot, ".lnk") == 0 || strcmp(dot, ".link") == 0))
-            obj->type = FOSSIL_FILESYS_TYPE_LINK;
+        if (dot)
+        {
+            /* Enhanced link detection */
+            if (strcmp(dot, ".lnk") == 0 || strcmp(dot, ".link") == 0 ||
+                strcmp(dot, ".symlink") == 0)
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_LINK;
+            }
+            /* Detect common archive types */
+            else if (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                     strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                     strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0)
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+            }
+            else
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_FILE;
+            }
+        }
         else
+        {
             obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
     }
 
     /* initial metadata load (don't fail if path doesn't exist) */
@@ -795,7 +815,20 @@ int32_t fossil_io_filesys_refresh(fossil_io_filesys_obj_t *obj)
     if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         obj->type = FOSSIL_FILESYS_TYPE_DIR;
     else
-        obj->type = FOSSIL_FILESYS_TYPE_FILE;
+    {
+        /* Check if file is an archive based on extension */
+        const char *dot = strrchr(obj->path, '.');
+        if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                    strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                    strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+        }
+        else
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
+    }
 
 #else
 
@@ -814,7 +847,20 @@ int32_t fossil_io_filesys_refresh(fossil_io_filesys_obj_t *obj)
         obj->accessed_at = st.st_atime;
 
         if (S_ISREG(st.st_mode))
-            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        {
+            /* Check if file is an archive based on extension */
+            const char *dot = strrchr(obj->path, '.');
+            if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                        strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                        strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+            }
+            else
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_FILE;
+            }
+        }
         else if (S_ISDIR(st.st_mode))
             obj->type = FOSSIL_FILESYS_TYPE_DIR;
         else if (S_ISLNK(st.st_mode))
@@ -2257,6 +2303,8 @@ const char *fossil_io_filesys_type_string(fossil_io_filesys_type_t type)
         return "directory";
     case FOSSIL_FILESYS_TYPE_LINK:
         return "link";
+    case FOSSIL_FILESYS_TYPE_ARCHIVE:
+        return "archive";
     default:
         return "unknown";
     }
