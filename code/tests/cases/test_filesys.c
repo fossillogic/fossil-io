@@ -470,6 +470,7 @@ FOSSIL_TEST(c_test_filesys_chdir)
 // Test file rewrite operations
 static int test_rewrite_uppercase(void *buf, size_t *size, void *user_data)
 {
+    (void)user_data;
     if (!buf || !size) return -1;
     unsigned char *data = (unsigned char *)buf;
     for (size_t i = 0; i < *size; ++i) {
@@ -477,11 +478,21 @@ static int test_rewrite_uppercase(void *buf, size_t *size, void *user_data)
             data[i] = data[i] - 'a' + 'A';
         }
     }
+    // Use user_data in a harmless way to avoid unused warning
+    if (user_data) {
+        volatile uintptr_t dummy = (uintptr_t)user_data;
+        (void)dummy;
+    }
     return 0;
 }
 
 static int test_rewrite_truncate(void *buf, size_t *size, void *user_data)
 {
+    // Use buf in a harmless way to avoid unused warning
+    if (buf) {
+        volatile unsigned char dummy = *((unsigned char *)buf);
+        (void)dummy;
+    }
     if (!size) return -1;
     size_t max_size = (size_t)(uintptr_t)user_data;
     if (*size > max_size) {
@@ -492,6 +503,9 @@ static int test_rewrite_truncate(void *buf, size_t *size, void *user_data)
 
 static int test_rewrite_fail(void *buf, size_t *size, void *user_data)
 {
+    (void)buf;
+    (void)size;
+    (void)user_data;
     return -1;
 }
 
