@@ -30,6 +30,12 @@
 #include <stddef.h>
 #include <time.h>
 
+#ifdef _WIN32
+    #define FOSSIL_FILESYS_PATHSEP '\\'
+#else
+    #define FOSSIL_FILESYS_PATHSEP '/'
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {

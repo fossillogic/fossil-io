@@ -62,7 +62,7 @@ FOSSIL_TEARDOWN(c_filesys_suite)
 FOSSIL_TEST(c_test_filesys_init_file)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t result = fossil_io_filesys_init(&obj, "/tmp/test_file.txt");
+    int32_t result = fossil_io_filesys_init(&obj, "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_file.txt");
     ASSUME_ITS_EQUAL_I32(0, result);
     ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_FILE, obj.type);
 }
@@ -70,7 +70,7 @@ FOSSIL_TEST(c_test_filesys_init_file)
 FOSSIL_TEST(c_test_filesys_init_directory)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t result = fossil_io_filesys_init(&obj, "/tmp");
+    int32_t result = fossil_io_filesys_init(&obj, "." FOSSIL_FILESYS_PATHSEP "tmp");
     ASSUME_ITS_EQUAL_I32(0, result);
     ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_DIR, obj.type);
 }
@@ -78,14 +78,14 @@ FOSSIL_TEST(c_test_filesys_init_directory)
 FOSSIL_TEST(c_test_filesys_init_nonexistent)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t result = fossil_io_filesys_init(&obj, "/nonexistent/path/file.txt");
+    int32_t result = fossil_io_filesys_init(&obj, "." FOSSIL_FILESYS_PATHSEP "nonexistent" FOSSIL_FILESYS_PATHSEP "path" FOSSIL_FILESYS_PATHSEP "file.txt");
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_refresh)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t init_result = fossil_io_filesys_init(&obj, "/tmp");
+    int32_t init_result = fossil_io_filesys_init(&obj, "." FOSSIL_FILESYS_PATHSEP "tmp");
     ASSUME_ITS_EQUAL_I32(0, init_result);
     int32_t refresh_result = fossil_io_filesys_refresh(&obj);
     ASSUME_ITS_EQUAL_I32(0, refresh_result);
@@ -93,20 +93,20 @@ FOSSIL_TEST(c_test_filesys_refresh)
 
 FOSSIL_TEST(c_test_filesys_exists_true)
 {
-    int32_t result = fossil_io_filesys_exists("/tmp");
+    int32_t result = fossil_io_filesys_exists("." FOSSIL_FILESYS_PATHSEP "tmp");
     ASSUME_ITS_EQUAL_I32(1, result);
 }
 
 FOSSIL_TEST(c_test_filesys_exists_false)
 {
-    int32_t result = fossil_io_filesys_exists("/nonexistent/path/xyz");
+    int32_t result = fossil_io_filesys_exists("." FOSSIL_FILESYS_PATHSEP "nonexistent" FOSSIL_FILESYS_PATHSEP "path" FOSSIL_FILESYS_PATHSEP "xyz");
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
 FOSSIL_TEST(c_test_filesys_file_open_write)
 {
     fossil_io_filesys_file_t file;
-    int32_t result = fossil_io_filesys_file_open(&file, "/tmp/test_write.txt", "w");
+    int32_t result = fossil_io_filesys_file_open(&file, "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_write.txt", "w");
     ASSUME_NOT_EQUAL_I32(result, -1);
     if (result == 0) {
         fossil_io_filesys_file_close(&file);
@@ -116,7 +116,7 @@ FOSSIL_TEST(c_test_filesys_file_open_write)
 FOSSIL_TEST(c_test_filesys_file_write_read)
 {
     fossil_io_filesys_file_t file;
-    int32_t open_result = fossil_io_filesys_file_open(&file, "/tmp/test_rw.txt", "w+");
+    int32_t open_result = fossil_io_filesys_file_open(&file, "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_rw.txt", "w+");
     if (open_result == 0) {
         const char *data = "Hello World";
         size_t written = fossil_io_filesys_file_write(&file, data, 1, strlen(data));
@@ -128,7 +128,7 @@ FOSSIL_TEST(c_test_filesys_file_write_read)
 FOSSIL_TEST(c_test_filesys_file_seek)
 {
     fossil_io_filesys_file_t file;
-    int32_t open_result = fossil_io_filesys_file_open(&file, "/tmp/test_seek.txt", "w+");
+    int32_t open_result = fossil_io_filesys_file_open(&file, "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_seek.txt", "w+");
     if (open_result == 0) {
         fossil_io_filesys_file_seek(&file, 0, SEEK_SET);
         int64_t pos = fossil_io_filesys_file_tell(&file);
@@ -140,7 +140,7 @@ FOSSIL_TEST(c_test_filesys_file_seek)
 FOSSIL_TEST(c_test_filesys_file_flush)
 {
     fossil_io_filesys_file_t file;
-    int32_t open_result = fossil_io_filesys_file_open(&file, "/tmp/test_flush.txt", "w");
+    int32_t open_result = fossil_io_filesys_file_open(&file, "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_flush.txt", "w");
     if (open_result == 0) {
         int32_t flush_result = fossil_io_filesys_file_flush(&file);
         ASSUME_ITS_EQUAL_I32(flush_result, 0);
@@ -150,26 +150,25 @@ FOSSIL_TEST(c_test_filesys_file_flush)
 
 FOSSIL_TEST(c_test_filesys_file_size)
 {
-    int32_t size = fossil_io_filesys_file_size("/tmp/test.txt");
+    int32_t size = fossil_io_filesys_file_size("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test.txt");
     ASSUME_NOT_LESS_THAN_I32(size, -1);
 }
 
 FOSSIL_TEST(c_test_filesys_file_truncate)
 {
-    int32_t result = fossil_io_filesys_file_truncate("/tmp/test_truncate.txt", 100);
+    int32_t result = fossil_io_filesys_file_truncate("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_truncate.txt", 100);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
-// Test directory operations
 FOSSIL_TEST(c_test_filesys_dir_create_simple)
 {
-    int32_t result = fossil_io_filesys_dir_create("/tmp/test_dir_simple", true);
+    int32_t result = fossil_io_filesys_dir_create("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_dir_simple", true);
     ASSUME_NOT_EQUAL_I32(result, -1);
 }
 
 FOSSIL_TEST(c_test_filesys_dir_create_recursive)
 {
-    int32_t result = fossil_io_filesys_dir_create("/tmp/test_dir_a/b/c", true);
+    int32_t result = fossil_io_filesys_dir_create("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test_dir_a" FOSSIL_FILESYS_PATHSEP "b" FOSSIL_FILESYS_PATHSEP "c", true);
     ASSUME_NOT_EQUAL_I32(result, -1);
 }
 
@@ -177,17 +176,16 @@ FOSSIL_TEST(c_test_filesys_dir_list)
 {
     fossil_io_filesys_obj_t entries[256];
     size_t out_count = 0;
-    int32_t result = fossil_io_filesys_dir_list("/tmp", entries, 256, &out_count);
+    int32_t result = fossil_io_filesys_dir_list("." FOSSIL_FILESYS_PATHSEP "tmp", entries, 256, &out_count);
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
 FOSSIL_TEST(c_test_filesys_dir_walk)
 {
-    int32_t result = fossil_io_filesys_dir_walk("/tmp", NULL, NULL);
+    int32_t result = fossil_io_filesys_dir_walk("." FOSSIL_FILESYS_PATHSEP "tmp", NULL, NULL);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
-// Test path operations
 FOSSIL_TEST(c_test_filesys_getcwd)
 {
     char cwd[512];
@@ -206,15 +204,15 @@ FOSSIL_TEST(c_test_filesys_abspath)
 FOSSIL_TEST(c_test_filesys_dirname)
 {
     char dir[256];
-    int32_t result = fossil_io_filesys_dirname("/home/user/file.txt", dir, 256);
+    int32_t result = fossil_io_filesys_dirname("." FOSSIL_FILESYS_PATHSEP "home" FOSSIL_FILESYS_PATHSEP "user" FOSSIL_FILESYS_PATHSEP "file.txt", dir, 256);
     ASSUME_ITS_EQUAL_I32(result, 0);
-    ASSUME_ITS_CSTR_CONTAINS(dir, "/home/user");
+    ASSUME_ITS_CSTR_CONTAINS(dir, "home");
 }
 
 FOSSIL_TEST(c_test_filesys_basename)
 {
     char name[256];
-    int32_t result = fossil_io_filesys_basename("/home/user/file.txt", name, 256);
+    int32_t result = fossil_io_filesys_basename("." FOSSIL_FILESYS_PATHSEP "home" FOSSIL_FILESYS_PATHSEP "user" FOSSIL_FILESYS_PATHSEP "file.txt", name, 256);
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_CSTR(name, "file.txt");
 }
@@ -222,12 +220,11 @@ FOSSIL_TEST(c_test_filesys_basename)
 FOSSIL_TEST(c_test_filesys_extension)
 {
     char ext[64];
-    int32_t result = fossil_io_filesys_extension("/home/user/file.txt", ext, 64);
+    int32_t result = fossil_io_filesys_extension("." FOSSIL_FILESYS_PATHSEP "home" FOSSIL_FILESYS_PATHSEP "user" FOSSIL_FILESYS_PATHSEP "file.txt", ext, 64);
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_CSTR(ext, ".txt");
 }
 
-// Test utility functions
 FOSSIL_TEST(c_test_filesys_type_string_file)
 {
     const char *type_str = fossil_io_filesys_type_string(FOSSIL_FILESYS_TYPE_FILE);
@@ -254,56 +251,51 @@ FOSSIL_TEST(c_test_filesys_type_string_unknown)
     ASSUME_NOT_CNULL(type_str);
 }
 
-// Test stat operations
 FOSSIL_TEST(c_test_filesys_stat_file)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t result = fossil_io_filesys_stat("/tmp/test.txt", &obj);
+    int32_t result = fossil_io_filesys_stat("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "test.txt", &obj);
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
 FOSSIL_TEST(c_test_filesys_stat_directory)
 {
     fossil_io_filesys_obj_t obj;
-    int32_t result = fossil_io_filesys_stat("/tmp", &obj);
+    int32_t result = fossil_io_filesys_stat("." FOSSIL_FILESYS_PATHSEP "tmp", &obj);
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_I32(obj.type, FOSSIL_FILESYS_TYPE_DIR);
 }
 
-// Test move and copy operations
 FOSSIL_TEST(c_test_filesys_move)
 {
-    int32_t result = fossil_io_filesys_move("/tmp/old_name.txt", "/tmp/new_name.txt");
+    int32_t result = fossil_io_filesys_move("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "old_name.txt", "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "new_name.txt");
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(c_test_filesys_copy)
 {
-    int32_t result = fossil_io_filesys_copy("/tmp/source.txt", "/tmp/dest.txt", true);
+    int32_t result = fossil_io_filesys_copy("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "source.txt", "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "dest.txt", true);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
-// Test remove operations
 FOSSIL_TEST(c_test_filesys_remove_file)
 {
-    int32_t result = fossil_io_filesys_remove("/tmp/removable.txt", false);
+    int32_t result = fossil_io_filesys_remove("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "removable.txt", false);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(c_test_filesys_remove_directory_recursive)
 {
-    int32_t result = fossil_io_filesys_remove("/tmp/removable_dir", true);
+    int32_t result = fossil_io_filesys_remove("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "removable_dir", true);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
-// Test swap operation
 FOSSIL_TEST(c_test_filesys_swap)
 {
-    int32_t result = fossil_io_filesys_swap("/tmp/file1.txt", "/tmp/file2.txt");
+    int32_t result = fossil_io_filesys_swap("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "file1.txt", "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "file2.txt");
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
-// Test transaction operations
 FOSSIL_TEST(c_test_filesys_tx_begin_commit)
 {
     int32_t begin_result = fossil_io_filesys_tx_begin();
@@ -319,29 +311,28 @@ FOSSIL_TEST(c_test_filesys_tx_rollback)
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
-// Test link operations
 FOSSIL_TEST(c_test_filesys_link_create_symbolic)
 {
-    int32_t result = fossil_io_filesys_link_create("/tmp/original.txt", "/tmp/link.txt", true);
+    int32_t result = fossil_io_filesys_link_create("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "original.txt", "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "link.txt", true);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(c_test_filesys_link_create_hard)
 {
-    int32_t result = fossil_io_filesys_link_create("/tmp/original.txt", "/tmp/hardlink.txt", false);
+    int32_t result = fossil_io_filesys_link_create("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "original.txt", "." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "hardlink.txt", false);
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(c_test_filesys_link_is_symbolic)
 {
     bool is_sym = false;
-    int32_t result = fossil_io_filesys_link_is_symbolic("/tmp/link.txt", &is_sym);
+    int32_t result = fossil_io_filesys_link_is_symbolic("." FOSSIL_FILESYS_PATHSEP "tmp" FOSSIL_FILESYS_PATHSEP "link.txt", &is_sym);
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
 FOSSIL_TEST(c_test_filesys_chdir)
 {
-    int32_t result = fossil_io_filesys_chdir("/tmp");
+    int32_t result = fossil_io_filesys_chdir("." FOSSIL_FILESYS_PATHSEP "tmp");
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
