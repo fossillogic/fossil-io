@@ -63,7 +63,13 @@ FOSSIL_TEST(cpp_test_filesys_init_file)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t result = fs.init(&obj, "C:\\temp\\test_file.txt");
+#else
     int32_t result = fs.init(&obj, "/tmp/test_file.txt");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(0, result);
     ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_FILE, obj.type);
 }
@@ -72,7 +78,13 @@ FOSSIL_TEST(cpp_test_filesys_init_directory)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t result = fs.init(&obj, "C:\\temp");
+#else
     int32_t result = fs.init(&obj, "/tmp");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(0, result);
     ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_DIR, obj.type);
 }
@@ -81,7 +93,13 @@ FOSSIL_TEST(cpp_test_filesys_init_nonexistent)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t result = fs.init(&obj, "C:\\nonexistent\\path\\file.txt");
+#else
     int32_t result = fs.init(&obj, "/nonexistent/path/file.txt");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
@@ -89,7 +107,13 @@ FOSSIL_TEST(cpp_test_filesys_refresh)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t init_result = fs.init(&obj, "C:\\temp");
+#else
     int32_t init_result = fs.init(&obj, "/tmp");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(0, init_result);
     int32_t refresh_result = fs.refresh(&obj);
     ASSUME_ITS_EQUAL_I32(0, refresh_result);
@@ -98,14 +122,26 @@ FOSSIL_TEST(cpp_test_filesys_refresh)
 FOSSIL_TEST(cpp_test_filesys_exists_true)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.exists("C:\\temp");
+#else
     int32_t result = fs.exists("/tmp");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(1, result);
 }
 
 FOSSIL_TEST(cpp_test_filesys_exists_false)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.exists("C:\\nonexistent\\path\\xyz");
+#else
     int32_t result = fs.exists("/nonexistent/path/xyz");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(0, result);
 }
 
@@ -113,7 +149,13 @@ FOSSIL_TEST(cpp_test_filesys_file_open_write)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_file_t file;
+    
+#ifdef _WIN32
+    int32_t result = fs.file_open(&file, "C:\\temp\\test_write.txt", "w");
+#else
     int32_t result = fs.file_open(&file, "/tmp/test_write.txt", "w");
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -1);
     if (result == 0) {
         fs.file_close(&file);
@@ -124,7 +166,13 @@ FOSSIL_TEST(cpp_test_filesys_file_write_read)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_file_t file;
+    
+#ifdef _WIN32
+    int32_t open_result = fs.file_open(&file, "C:\\temp\\test_rw.txt", "w+");
+#else
     int32_t open_result = fs.file_open(&file, "/tmp/test_rw.txt", "w+");
+#endif
+    
     if (open_result == 0) {
         const char *data = "Hello World";
         size_t written = fs.file_write(&file, data, 1, strlen(data));
@@ -137,7 +185,13 @@ FOSSIL_TEST(cpp_test_filesys_file_seek)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_file_t file;
+    
+#ifdef _WIN32
+    int32_t open_result = fs.file_open(&file, "C:\\temp\\test_seek.txt", "w+");
+#else
     int32_t open_result = fs.file_open(&file, "/tmp/test_seek.txt", "w+");
+#endif
+    
     if (open_result == 0) {
         fs.file_seek(&file, 0, SEEK_SET);
         int64_t pos = fs.file_tell(&file);
@@ -150,7 +204,13 @@ FOSSIL_TEST(cpp_test_filesys_file_flush)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_file_t file;
+    
+#ifdef _WIN32
+    int32_t open_result = fs.file_open(&file, "C:\\temp\\test_flush.txt", "w");
+#else
     int32_t open_result = fs.file_open(&file, "/tmp/test_flush.txt", "w");
+#endif
+    
     if (open_result == 0) {
         int32_t flush_result = fs.file_flush(&file);
         ASSUME_ITS_EQUAL_I32(flush_result, 0);
@@ -161,14 +221,26 @@ FOSSIL_TEST(cpp_test_filesys_file_flush)
 FOSSIL_TEST(cpp_test_filesys_file_size)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t size = fs.file_size("C:\\temp\\test.txt");
+#else
     int32_t size = fs.file_size("/tmp/test.txt");
+#endif
+    
     ASSUME_NOT_LESS_THAN_I32(size, -1);
 }
 
 FOSSIL_TEST(cpp_test_filesys_file_truncate)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.file_truncate("C:\\temp\\test_truncate.txt", 100);
+#else
     int32_t result = fs.file_truncate("/tmp/test_truncate.txt", 100);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -176,14 +248,26 @@ FOSSIL_TEST(cpp_test_filesys_file_truncate)
 FOSSIL_TEST(cpp_test_filesys_dir_create_simple)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.dir_create("C:\\temp\\test_dir_simple", true);
+#else
     int32_t result = fs.dir_create("/tmp/test_dir_simple", true);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -1);
 }
 
 FOSSIL_TEST(cpp_test_filesys_dir_create_recursive)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.dir_create("C:\\temp\\test_dir_a\\b\\c", true);
+#else
     int32_t result = fs.dir_create("/tmp/test_dir_a/b/c", true);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -1);
 }
 
@@ -192,14 +276,26 @@ FOSSIL_TEST(cpp_test_filesys_dir_list)
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t entries[256];
     size_t out_count = 0;
+    
+#ifdef _WIN32
+    int32_t result = fs.dir_list("C:\\temp", entries, 256, &out_count);
+#else
     int32_t result = fs.dir_list("/tmp", entries, 256, &out_count);
+#endif
+    
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
 FOSSIL_TEST(cpp_test_filesys_dir_walk)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.dir_walk("C:\\temp", NULL, NULL);
+#else
     int32_t result = fs.dir_walk("/tmp", NULL, NULL);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -225,16 +321,29 @@ FOSSIL_TEST(cpp_test_filesys_dirname)
 {
     fossil::io::Filesys fs;
     char dir[256];
+    
+#ifdef _WIN32
+    int32_t result = fs.dirname("C:\\home\\user\\file.txt", dir, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_ITS_CSTR_CONTAINS(dir, "C:\\home\\user");
+#else
     int32_t result = fs.dirname("/home/user/file.txt", dir, 256);
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_CSTR_CONTAINS(dir, "/home/user");
+#endif
 }
 
 FOSSIL_TEST(cpp_test_filesys_basename)
 {
     fossil::io::Filesys fs;
     char name[256];
+    
+#ifdef _WIN32
+    int32_t result = fs.basename("C:\\home\\user\\file.txt", name, 256);
+#else
     int32_t result = fs.basename("/home/user/file.txt", name, 256);
+#endif
+    
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_CSTR(name, "file.txt");
 }
@@ -243,7 +352,13 @@ FOSSIL_TEST(cpp_test_filesys_extension)
 {
     fossil::io::Filesys fs;
     char ext[64];
+    
+#ifdef _WIN32
+    int32_t result = fs.extension("C:\\home\\user\\file.txt", ext, 64);
+#else
     int32_t result = fs.extension("/home/user/file.txt", ext, 64);
+#endif
+    
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_CSTR(ext, ".txt");
 }
@@ -284,7 +399,13 @@ FOSSIL_TEST(cpp_test_filesys_stat_file)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t result = fs.stat("C:\\temp\\test.txt", &obj);
+#else
     int32_t result = fs.stat("/tmp/test.txt", &obj);
+#endif
+    
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
@@ -292,7 +413,13 @@ FOSSIL_TEST(cpp_test_filesys_stat_directory)
 {
     fossil::io::Filesys fs;
     fossil_io_filesys_obj_t obj;
+    
+#ifdef _WIN32
+    int32_t result = fs.stat("C:\\temp", &obj);
+#else
     int32_t result = fs.stat("/tmp", &obj);
+#endif
+    
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_I32(obj.type, FOSSIL_FILESYS_TYPE_DIR);
 }
@@ -301,14 +428,26 @@ FOSSIL_TEST(cpp_test_filesys_stat_directory)
 FOSSIL_TEST(cpp_test_filesys_move)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.move("C:\\temp\\old_name.txt", "C:\\temp\\new_name.txt");
+#else
     int32_t result = fs.move("/tmp/old_name.txt", "/tmp/new_name.txt");
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(cpp_test_filesys_copy)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.copy("C:\\temp\\source.txt", "C:\\temp\\dest.txt", true);
+#else
     int32_t result = fs.copy("/tmp/source.txt", "/tmp/dest.txt", true);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -316,14 +455,26 @@ FOSSIL_TEST(cpp_test_filesys_copy)
 FOSSIL_TEST(cpp_test_filesys_remove_file)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.remove("C:\\temp\\removable.txt", false);
+#else
     int32_t result = fs.remove("/tmp/removable.txt", false);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(cpp_test_filesys_remove_directory_recursive)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.remove("C:\\temp\\removable_dir", true);
+#else
     int32_t result = fs.remove("/tmp/removable_dir", true);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -331,7 +482,13 @@ FOSSIL_TEST(cpp_test_filesys_remove_directory_recursive)
 FOSSIL_TEST(cpp_test_filesys_swap)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.swap("C:\\temp\\file1.txt", "C:\\temp\\file2.txt");
+#else
     int32_t result = fs.swap("/tmp/file1.txt", "/tmp/file2.txt");
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -357,14 +514,26 @@ FOSSIL_TEST(cpp_test_filesys_tx_rollback)
 FOSSIL_TEST(cpp_test_filesys_link_create_symbolic)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.link_create("C:\\temp\\original.txt", "C:\\temp\\link.txt", true);
+#else
     int32_t result = fs.link_create("/tmp/original.txt", "/tmp/link.txt", true);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
 FOSSIL_TEST(cpp_test_filesys_link_create_hard)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.link_create("C:\\temp\\original.txt", "C:\\temp\\hardlink.txt", false);
+#else
     int32_t result = fs.link_create("/tmp/original.txt", "/tmp/hardlink.txt", false);
+#endif
+    
     ASSUME_NOT_EQUAL_I32(result, -2);
 }
 
@@ -372,14 +541,26 @@ FOSSIL_TEST(cpp_test_filesys_link_is_symbolic)
 {
     fossil::io::Filesys fs;
     bool is_sym = false;
+    
+#ifdef _WIN32
+    int32_t result = fs.link_is_symbolic("C:\\temp\\link.txt", &is_sym);
+#else
     int32_t result = fs.link_is_symbolic("/tmp/link.txt", &is_sym);
+#endif
+    
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
 FOSSIL_TEST(cpp_test_filesys_chdir)
 {
     fossil::io::Filesys fs;
+    
+#ifdef _WIN32
+    int32_t result = fs.chdir("C:\\temp");
+#else
     int32_t result = fs.chdir("/tmp");
+#endif
+    
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
