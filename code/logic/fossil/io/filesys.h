@@ -289,34 +289,6 @@ int32_t fossil_io_filesys_deduplicate(const char *path, bool recursive);
  */
 int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj);
 
-/**
- * @brief Format a filesystem path according to platform conventions.
- *
- * Normalizes a path string by converting path separators to the platform-native
- * separator, removing redundant separators, and optionally expanding user home
- * directory (~). The result is stored in the provided output buffer.
- *
- * @param path Input path string to format
- * @param formatted_out Buffer to store the formatted path
- * @param max_len Maximum length of the formatted_out buffer in bytes
- * @return 0 on success, negative error code on failure
- */
-int32_t fossil_io_filesys_format(const char *path, char *formatted_out, size_t max_len);
-
-/**
- * @brief Rewrite file contents by applying a transformation function.
- *
- * Opens a file, reads its contents, applies a transformation function to the data,
- * and writes the transformed contents back to the file. Operates atomically using
- * a temporary file to preserve the original if an error occurs.
- *
- * @param path Path to the file to rewrite
- * @param transform Callback function that processes data (returns 0 on success, negative on failure)
- * @param user_data Pointer to user-defined data passed to the transform function
- * @return 0 on success, negative error code on failure
- */
-int32_t fossil_io_filesys_file_rewrite(const char *path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data);
-
 /* ------------------------------------------------------------
     * File-Specific Operations
     * ------------------------------------------------------------ */
@@ -512,6 +484,33 @@ int32_t fossil_io_filesys_file_compress(const char *src, const char *dest, const
  * @return 0 on success, negative error code on failure
  */
 int32_t fossil_io_filesys_file_decompress(const char *src, const char *dest);
+
+/**
+ * @brief Rewrite file contents by applying a transformation function.
+ *
+ * Opens a file, reads its contents, applies a transformation function to the data,
+ * and writes the transformed contents back to the file. Operates atomically using
+ * a temporary file to preserve the original if an error occurs.
+ *
+ * @param path Path to the file to rewrite
+ * @param transform Callback function that processes data (returns 0 on success, negative on failure)
+ * @param user_data Pointer to user-defined data passed to the transform function
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_rewrite(const char *path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data);
+
+/**
+ * @brief Detect the format of a file based on its magic bytes or extension.
+ *
+ * Analyzes a file to determine its format by examining magic bytes (file signature)
+ * or file extension. Returns a string identifier for the detected format.
+ *
+ * @param path Path to the file to analyze
+ * @param format_out Buffer to store the detected format string
+ * @param max_len Maximum length of the format_out buffer in bytes
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_format(const char *path, char *format_out, size_t max_len);
 
 /* ------------------------------------------------------------
     * Directory-Specific Operations
@@ -919,20 +918,19 @@ namespace fossil::io
         }
 
         /**
-         * @brief Format a filesystem path according to platform conventions.
+         * @brief Detect the format of a file based on its magic bytes or extension.
          *
-         * Normalizes a path string by converting path separators to the platform-native
-         * separator, removing redundant separators, and optionally expanding user home
-         * directory (~). The result is stored in the provided output buffer.
+         * Analyzes a file to determine its format by examining magic bytes (file signature)
+         * or file extension. Returns a string identifier for the detected format.
          *
-         * @param path Input path string to format
-         * @param formatted_out Buffer to store the formatted path
-         * @param max_len Maximum length of the formatted_out buffer in bytes
+         * @param path Path to the file to analyze
+         * @param format_out Buffer to store the detected format string
+         * @param max_len Maximum length of the format_out buffer in bytes
          * @return 0 on success, negative error code on failure
          */
-        int32_t format(const std::string &path, char *formatted_out, size_t max_len)
+        int32_t file_format(const std::string &path, char *format_out, size_t max_len)
         {
-            return fossil_io_filesys_format(path.c_str(), formatted_out, max_len);
+            return fossil_io_filesys_file_format(path.c_str(), format_out, max_len);
         }
 
         /**

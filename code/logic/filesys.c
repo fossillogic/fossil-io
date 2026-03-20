@@ -1072,62 +1072,106 @@ int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj)
     return fossil_io_filesys_init(obj, path);
 }
 
-int32_t fossil_io_filesys_format(const char *path, char *formatted_out, size_t max_len)
+int32_t fossil_io_filesys_file_format(const char *path, char *format_out, size_t max_len)
 {
-    if (!path || !formatted_out || max_len == 0)
+    if (!path || !format_out || max_len == 0)
         return -1;
 
-    char tmp[PATH_MAX];
-    size_t src_idx = 0, dst_idx = 0;
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return -1;
 
-    /* Handle home directory expansion */
-    if (path[0] == '~' && (path[1] == PATH_SEP || path[1] == '\0'))
+    unsigned char magic[16];
+    size_t n = fread(magic, 1, sizeof(magic), f);
+    fclose(f);
+
+    if (n == 0)
     {
-        const char *home = getenv("HOME");
-        if (!home)
-            home = ".";
-        
-        size_t home_len = strlen(home);
-        if (home_len >= sizeof(tmp))
-            return -1;
-        
-        strcpy(tmp, home);
-        dst_idx = home_len;
-        src_idx = 1;
+        strncpy(format_out, "empty", max_len - 1);
+        format_out[max_len - 1] = '\0';
+        return 0;
     }
 
-    /* Copy and normalize path */
-    while (path[src_idx] && dst_idx < sizeof(tmp) - 1)
+    /* Check magic bytes */
+    if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x03 && magic[3] == 0x04)
     {
-        char c = path[src_idx];
-
-        /* Convert to platform separator */
-        if (c == '/' || c == '\\')
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x05 && magic[3] == 0x06)
+    {
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x07 && magic[3] == 0x08)
+    {
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0x1F && magic[1] == 0x8B && magic[2] == 0x08)
+    {
+        strncpy(format_out, "gzip", max_len - 1);
+    }
+    else if (n >= 6 && magic[0] == 0x37 && magic[1] == 0x7A && magic[2] == 0x58 && magic[3] == 0x5A && magic[4] == 0x00)
+    {
+        strncpy(format_out, "xz", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0x42 && magic[1] == 0x5A)
+    {
+        strncpy(format_out, "bzip2", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x89 && magic[1] == 0x50 && magic[2] == 0x4E && magic[3] == 0x47)
+    {
+        strncpy(format_out, "png", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0xFF && magic[1] == 0xD8 && magic[2] == 0xFF)
+    {
+        strncpy(format_out, "jpeg", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x47 && magic[1] == 0x49 && magic[2] == 0x46)
+    {
+        strncpy(format_out, "gif", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x25 && magic[1] == 0x50 && magic[2] == 0x44 && magic[3] == 0x46)
+    {
+        strncpy(format_out, "pdf", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x7F && magic[1] == 0x45 && magic[2] == 0x4C && magic[3] == 0x46)
+    {
+        strncpy(format_out, "elf", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0x4D && magic[1] == 0x5A)
+    {
+        strncpy(format_out, "pe", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0xFF && magic[1] == 0xFE)
+    {
+        strncpy(format_out, "utf16le", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0xFE && magic[1] == 0xFF)
+    {
+        strncpy(format_out, "utf16be", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0xEF && magic[1] == 0xBB && magic[2] == 0xBF)
+    {
+        strncpy(format_out, "utf8", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0xCA && magic[1] == 0xFE && magic[2] == 0xBA && magic[3] == 0xBE)
+    {
+        strncpy(format_out, "class", max_len - 1);
+    }
+    else
+    {
+        /* Fallback to extension */
+        const char *dot = strrchr(path, '.');
+        if (dot && *(dot + 1) != '\0')
         {
-            c = PATH_SEP;
-            
-            /* Skip consecutive separators */
-            while ((path[src_idx + 1] == '/' || path[src_idx + 1] == '\\'))
-                src_idx++;
+            strncpy(format_out, dot + 1, max_len - 1);
         }
-
-        tmp[dst_idx++] = c;
-        src_idx++;
+        else
+        {
+            strncpy(format_out, "unknown", max_len - 1);
+        }
     }
 
-    tmp[dst_idx] = '\0';
-
-    /* Remove trailing separator (except for root) */
-    if (dst_idx > 1 && (tmp[dst_idx - 1] == '/' || tmp[dst_idx - 1] == '\\'))
-    {
-        tmp[dst_idx - 1] = '\0';
-    }
-
-    /* Copy to output */
-    if (strlen(tmp) >= max_len)
-        return -1;
-
-    strcpy(formatted_out, tmp);
+    format_out[max_len - 1] = '\0';
     return 0;
 }
 
