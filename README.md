@@ -29,7 +29,7 @@ Add the `fossil-io.wrap` file in your `subprojects` directory and include the fo
 ```ini
 [wrap-git]
 url = https://github.com/fossillogic/fossil-io.git
-revision = v0.2.11
+revision = v0.2.12
 
 [provide]
 dependency_names = fossil-io
