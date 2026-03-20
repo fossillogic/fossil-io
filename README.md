@@ -1,14 +1,24 @@
 # **Fossil IO Library by Fossil Logic**
 
-Fossil IO is an extensive and versatile library meticulously crafted to manage input, output, and error handling across a multitude of platforms. This library offers a comprehensive array of functions dedicated to secure data handling, efficient file stream management, and detailed error reporting. Developed in the C programming language, Fossil IO is engineered to support high-performance and reliable I/O operations, ensuring uniform and predictable behavior across various operating systems, including Windows, macOS, and Linux. By leveraging Fossil IO, developers can achieve consistent and secure I/O operations, making it an indispensable tool for cross-platform software development.
+Fossil IO is a robust C library designed for seamless input, output, and error management across major operating systems. It delivers a unified API for secure data handling, efficient file operations, and comprehensive error diagnostics. With a focus on reliability and performance, Fossil IO empowers developers to build cross-platform applications with predictable I/O behavior.
+
+- **Supported Platforms:** Windows, macOS, Linux
+- **Language:** C
+- **Purpose:** Consistent, secure, and high-performance I/O operations
+
 
 ## Key Features
 
-1. **Cross-Platform Compatibility**: Provides consistent I/O operations across major operating systems, including Windows, macOS, and Linux.
-2. **Secure Input and Output**: Includes functions for secure data handling, preventing common vulnerabilities such as buffer overflows and format string attacks.
-3. **Modular Design**: Comprises separate modules for error handling, output, input, file streams, and SOAP functions, allowing for easy integration and customization.
-4. **Efficient File Handling**: Supports file stream operations with a focus on secure and reliable file I/O.
-5. **Error Reporting**: Includes a comprehensive set of error codes and a lookup function to provide detailed error messages.
+1. **Cross-Platform Compatibility**: Consistent I/O operations across Windows, macOS, and Linux.
+2. **Secure Input and Output**: Functions designed to prevent buffer overflows and format string vulnerabilities.
+3. **Modular Architecture**: Separate modules for input, output, error handling, file streams, and SOAP, enabling flexible integration.
+4. **Efficient File Handling**: Robust file stream support for secure and reliable file I/O.
+5. **Comprehensive Error Reporting**: Extensive error codes and lookup functions for detailed diagnostics.
+6. **High Performance**: Optimized for low-latency and high-throughput I/O operations.
+7. **Thread Safety**: Designed to support safe concurrent operations in multithreaded environments.
+8. **Customizable Logging**: Built-in logging facilities with configurable verbosity and output targets.
+9. **Extensive Documentation**: Well-documented APIs and usage examples for easy onboarding.
+10. **Test-Driven Examples**: Unit tests double as usage samples, demonstrating real-world scenarios.
 
 ## ***Prerequisites***
 
@@ -29,7 +39,7 @@ Add the `fossil-io.wrap` file in your `subprojects` directory and include the fo
 ```ini
 [wrap-git]
 url = https://github.com/fossillogic/fossil-io.git
-revision = v0.2.11
+revision = v0.2.12
 
 [provide]
 dependency_names = fossil-io
