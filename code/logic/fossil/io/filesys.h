@@ -58,7 +58,8 @@ typedef enum
     FOSSIL_FILESYS_TYPE_UNKNOWN = 0,
     FOSSIL_FILESYS_TYPE_FILE,
     FOSSIL_FILESYS_TYPE_DIR,
-    FOSSIL_FILESYS_TYPE_LINK
+    FOSSIL_FILESYS_TYPE_LINK,
+    FOSSIL_FILESYS_TYPE_ARCHIVE
 } fossil_io_filesys_type_t;
 
 /* ------------------------------------------------------------
