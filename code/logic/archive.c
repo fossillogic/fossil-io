@@ -78,13 +78,7 @@ struct fossil_io_archive
 static char *fossil_io_archive_strdup(const char *s)
 {
     if (!s) return NULL;
-
-    size_t len = strlen(s) + 1;
-    char *copy = malloc(len);
-    if (!copy) return NULL;
-
-    memcpy(copy, s, len);
-    return copy;
+    return fossil_io_cstring_dup(s);
 }
 
 // ======================================================
@@ -95,7 +89,7 @@ static bool fossil_io_create_directories(const char *path)
     if (!path)
         return false;
 
-    char *path_copy = fossil_io_archive_strdup(path);
+    char *path_copy = fossil_io_cstring_dup(path);
     if (!path_copy)
         return false;
 
@@ -141,7 +135,7 @@ static bool fossil_io_create_directories(const char *path)
 #endif
     }
 
-    free(path_copy);
+    fossil_io_cstring_free(path_copy);
     return true;
 }
 
@@ -150,9 +144,7 @@ static bool fossil_io_create_directories(const char *path)
 // ======================================================
 static bool ends_with(const char *str, const char *suffix)
 {
-    size_t len = strlen(str);
-    size_t slen = strlen(suffix);
-    return (len >= slen) && strcmp(str + len - slen, suffix) == 0;
+    return fossil_io_cstring_ends_with(str, suffix) == 1;
 }
 
 fossil_io_archive_type_t fossil_io_archive_get_type(const char *path)
@@ -190,7 +182,7 @@ fossil_io_archive_t *fossil_io_archive_open(const char *path, fossil_io_archive_
     if (!archive)
         return NULL;
 
-    archive->path = fossil_io_archive_strdup(path);
+    archive->path = fossil_io_cstring_dup(path);
     archive->type = (type == FOSSIL_IO_ARCHIVE_UNKNOWN) ? fossil_io_archive_get_type(path) : type;
     archive->mode = mode;
     archive->compression = compression;
@@ -212,13 +204,13 @@ void fossil_io_archive_close(fossil_io_archive_t *archive)
     if (!archive)
         return;
 
-    free(archive->path);
+    fossil_io_cstring_free(archive->path);
 
     if (archive->entries)
     {
         for (size_t i = 0; i < archive->entry_count; i++)
         {
-            free(archive->entries[i].name);
+            fossil_io_cstring_free(archive->entries[i].name);
         }
         free(archive->entries);
     }
@@ -232,7 +224,7 @@ fossil_io_archive_t *fossil_io_archive_create(const char *path, fossil_io_archiv
         return NULL;
 
     // Create parent directories
-    char *path_copy = fossil_io_archive_strdup(path);
+    char *path_copy = fossil_io_cstring_dup(path);
     if (path_copy)
     {
         char *last_slash = strrchr(path_copy, '/');
@@ -243,7 +235,7 @@ fossil_io_archive_t *fossil_io_archive_create(const char *path, fossil_io_archiv
             *last_slash = '\0';
             fossil_io_create_directories(path_copy);
         }
-        free(path_copy);
+        fossil_io_cstring_free(path_copy);
     }
 
     return fossil_io_archive_open(path, type, FOSSIL_IO_ARCHIVE_WRITE, compression);
@@ -296,7 +288,7 @@ ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_e
         for (size_t j = 0; j < i; j++)
         {
             if (archive->entries[i].name && archive->entries[j].name &&
-                strcmp(archive->entries[i].name, archive->entries[j].name) == 0)
+                fossil_io_cstring_equals(archive->entries[i].name, archive->entries[j].name))
             {
                 is_duplicate = true;
                 break;
@@ -328,7 +320,7 @@ ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_e
         for (size_t j = 0; j < i; j++)
         {
             if (archive->entries[i].name && archive->entries[j].name &&
-                strcmp(archive->entries[i].name, archive->entries[j].name) == 0)
+                fossil_io_cstring_equals(archive->entries[i].name, archive->entries[j].name))
             {
                 is_duplicate = true;
                 break;
@@ -341,13 +333,13 @@ ssize_t fossil_io_archive_list(fossil_io_archive_t *archive, fossil_io_archive_e
             fossil_io_archive_entry_t *src = &archive->entries[i];
 
             memcpy(dst, src, sizeof(*dst));
-            dst->name = fossil_io_archive_strdup(src->name);
+            dst->name = fossil_io_cstring_dup(src->name);
             if (!dst->name)
             {
                 // Cleanup on failure
                 for (size_t k = 0; k < copy_index; k++)
                 {
-                    free(entry_copy[k].name);
+                    fossil_io_cstring_free(entry_copy[k].name);
                 }
                 free(entry_copy);
                 return -1;
@@ -367,7 +359,7 @@ void fossil_io_archive_free_entries(fossil_io_archive_entry_t *entries, size_t c
 
     for (size_t i = 0; i < count; i++)
     {
-        free(entries[i].name);
+        fossil_io_cstring_free(entries[i].name);
     }
     free(entries);
 }
@@ -383,7 +375,7 @@ bool fossil_io_archive_exists(fossil_io_archive_t *archive, const char *entry_na
 
     for (size_t i = 0; i < archive->entry_count; i++)
     {
-        if (archive->entries[i].name && strcmp(archive->entries[i].name, entry_name) == 0)
+        if (archive->entries[i].name && fossil_io_cstring_equals(archive->entries[i].name, entry_name))
         {
             return true;
         }
@@ -398,7 +390,7 @@ ssize_t fossil_io_archive_entry_size(fossil_io_archive_t *archive, const char *e
 
     for (size_t i = 0; i < archive->entry_count; i++)
     {
-        if (archive->entries[i].name && strcmp(archive->entries[i].name, entry_name) == 0)
+        if (archive->entries[i].name && fossil_io_cstring_equals(archive->entries[i].name, entry_name))
         {
             return (ssize_t)archive->entries[i].size;
         }
@@ -455,7 +447,7 @@ bool fossil_io_archive_add_file(fossil_io_archive_t *archive, const char *src_pa
     fossil_io_archive_entry_t *entry = &archive->entries[archive->entry_count];
     memset(entry, 0, sizeof(fossil_io_archive_entry_t));
 
-    entry->name = fossil_io_archive_strdup(archive_path);
+    entry->name = fossil_io_cstring_dup(archive_path);
     if (!entry->name)
         return false;
 
@@ -500,7 +492,7 @@ bool fossil_io_archive_add_directory(fossil_io_archive_t *archive, const char *s
     fossil_io_archive_entry_t *entry = &archive->entries[archive->entry_count];
     memset(entry, 0, sizeof(fossil_io_archive_entry_t));
 
-    entry->name = fossil_io_archive_strdup(archive_dir);
+    entry->name = fossil_io_cstring_dup(archive_dir);
     if (!entry->name)
         return false;
 
@@ -529,7 +521,7 @@ bool fossil_io_archive_extract_file(fossil_io_archive_t *archive, const char *en
         return false;
 
     // Create destination directory
-    char *dest_copy = fossil_io_archive_strdup(dest_path);
+    char *dest_copy = fossil_io_cstring_dup(dest_path);
     if (dest_copy)
     {
         char *last_slash = strrchr(dest_copy, '/');
@@ -540,7 +532,7 @@ bool fossil_io_archive_extract_file(fossil_io_archive_t *archive, const char *en
             *last_slash = '\0';
             fossil_io_create_directories(dest_copy);
         }
-        free(dest_copy);
+        fossil_io_cstring_free(dest_copy);
     }
 
     // Simplified: create empty file
@@ -596,9 +588,9 @@ bool fossil_io_archive_remove(fossil_io_archive_t *archive, const char *entry_na
 
     for (size_t i = 0; i < archive->entry_count; i++)
     {
-        if (archive->entries[i].name && strcmp(archive->entries[i].name, entry_name) == 0)
+        if (archive->entries[i].name && fossil_io_cstring_equals(archive->entries[i].name, entry_name))
         {
-            free(archive->entries[i].name);
+            fossil_io_cstring_free(archive->entries[i].name);
 
             // Shift remaining entries
             for (size_t j = i; j < archive->entry_count - 1; j++)
