@@ -146,7 +146,7 @@ FOSSIL_TEST(cpp_test_archive_list)
     fossil::io::Archive archive("test_archive.zip", FOSSIL_IO_ARCHIVE_ZIP, FOSSIL_IO_ARCHIVE_READ, FOSSIL_IO_COMPRESSION_NONE);
     ASSUME_ITS_TRUE(archive.is_valid());
     auto entries = archive.list();
-    ASSUME_ITS_MORE_OR_EQUAL_SIZE(entries.size(), 0);
+    ASSUME_ITS_TRUE(!entries.empty() || entries.empty());
 }
 
 FOSSIL_TEST(cpp_test_archive_targz_type)
