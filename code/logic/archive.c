@@ -73,15 +73,6 @@ struct fossil_io_archive
 };
 
 // ======================================================
-// Utility: Duplicate string safely
-// ======================================================
-static char *fossil_io_archive_strdup(const char *s)
-{
-    if (!s) return NULL;
-    return fossil_io_cstring_dup(s);
-}
-
-// ======================================================
 // Helper: Create directory recursively
 // ======================================================
 static bool fossil_io_create_directories(const char *path)
