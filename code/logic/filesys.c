@@ -1072,6 +1072,136 @@ int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj)
     return fossil_io_filesys_init(obj, path);
 }
 
+int32_t fossil_io_filesys_format(const char *path, char *formatted_out, size_t max_len)
+{
+    if (!path || !formatted_out || max_len == 0)
+        return -1;
+
+    char tmp[PATH_MAX];
+    size_t src_idx = 0, dst_idx = 0;
+
+    /* Handle home directory expansion */
+    if (path[0] == '~' && (path[1] == PATH_SEP || path[1] == '\0'))
+    {
+        const char *home = getenv("HOME");
+        if (!home)
+            home = ".";
+        
+        size_t home_len = strlen(home);
+        if (home_len >= sizeof(tmp))
+            return -1;
+        
+        strcpy(tmp, home);
+        dst_idx = home_len;
+        src_idx = 1;
+    }
+
+    /* Copy and normalize path */
+    while (path[src_idx] && dst_idx < sizeof(tmp) - 1)
+    {
+        char c = path[src_idx];
+
+        /* Convert to platform separator */
+        if (c == '/' || c == '\\')
+        {
+            c = PATH_SEP;
+            
+            /* Skip consecutive separators */
+            while ((path[src_idx + 1] == '/' || path[src_idx + 1] == '\\'))
+                src_idx++;
+        }
+
+        tmp[dst_idx++] = c;
+        src_idx++;
+    }
+
+    tmp[dst_idx] = '\0';
+
+    /* Remove trailing separator (except for root) */
+    if (dst_idx > 1 && (tmp[dst_idx - 1] == '/' || tmp[dst_idx - 1] == '\\'))
+    {
+        tmp[dst_idx - 1] = '\0';
+    }
+
+    /* Copy to output */
+    if (strlen(tmp) >= max_len)
+        return -1;
+
+    strcpy(formatted_out, tmp);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_rewrite(const char *path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data)
+{
+    if (!path || !transform)
+        return -1;
+
+    char tmp_path[PATH_MAX];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.rewrite", path);
+
+    /* Read original file */
+    FILE *in = fopen(path, "rb");
+    if (!in)
+        return -1;
+
+    fseek(in, 0, SEEK_END);
+    size_t file_size = ftell(in);
+    fseek(in, 0, SEEK_SET);
+
+    unsigned char *buffer = malloc(file_size);
+    if (!buffer)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    if (fread(buffer, 1, file_size, in) != file_size)
+    {
+        free(buffer);
+        fclose(in);
+        return -1;
+    }
+
+    fclose(in);
+
+    /* Apply transformation */
+    size_t new_size = file_size;
+    int rc = transform(buffer, &new_size, user_data);
+    if (rc != 0)
+    {
+        free(buffer);
+        return -1;
+    }
+
+    /* Write to temporary file */
+    FILE *out = fopen(tmp_path, "wb");
+    if (!out)
+    {
+        free(buffer);
+        return -1;
+    }
+
+    if (fwrite(buffer, 1, new_size, out) != new_size)
+    {
+        fclose(out);
+        free(buffer);
+        remove(tmp_path);
+        return -1;
+    }
+
+    fclose(out);
+    free(buffer);
+
+    /* Atomic swap */
+    if (fossil_io_filesys_move(tmp_path, path) != 0)
+    {
+        remove(tmp_path);
+        return -1;
+    }
+
+    return 0;
+}
+
 /* File Operations */
 
 // feature from file stream preservide for filesys

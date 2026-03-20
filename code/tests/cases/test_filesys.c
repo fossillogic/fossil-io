@@ -467,6 +467,181 @@ FOSSIL_TEST(c_test_filesys_chdir)
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
+// Test format operations
+FOSSIL_TEST(c_test_filesys_format_absolute_path)
+{
+    char formatted[256];
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_format("C:/temp/test", formatted, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_ITS_CSTR_CONTAINS(formatted, "C:\\temp\\test");
+#else
+    int32_t result = fossil_io_filesys_format("/tmp/test", formatted, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_ITS_CSTR_CONTAINS(formatted, "/tmp/test");
+#endif
+}
+
+FOSSIL_TEST(c_test_filesys_format_relative_path)
+{
+    char formatted[256];
+    int32_t result = fossil_io_filesys_format("./test/file.txt", formatted, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_NOT_CNULL(formatted);
+}
+
+FOSSIL_TEST(c_test_filesys_format_home_expansion)
+{
+    char formatted[256];
+    int32_t result = fossil_io_filesys_format("~/documents/file.txt", formatted, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_NOT_CNULL(formatted);
+}
+
+FOSSIL_TEST(c_test_filesys_format_redundant_separators)
+{
+    char formatted[256];
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_format("C:\\\\temp\\\\\\test", formatted, 256);
+#else
+    int32_t result = fossil_io_filesys_format("//tmp///test", formatted, 256);
+#endif
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_NOT_CNULL(formatted);
+}
+
+FOSSIL_TEST(c_test_filesys_format_mixed_separators)
+{
+    char formatted[256];
+    int32_t result = fossil_io_filesys_format("tmp/test\\file.txt", formatted, 256);
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_NOT_CNULL(formatted);
+}
+
+FOSSIL_TEST(c_test_filesys_format_trailing_separator)
+{
+    char formatted[256];
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_format("C:\\temp\\", formatted, 256);
+#else
+    int32_t result = fossil_io_filesys_format("/tmp/", formatted, 256);
+#endif
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_NOT_CNULL(formatted);
+}
+
+FOSSIL_TEST(c_test_filesys_format_buffer_overflow)
+{
+    char formatted[5];
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_format("C:\\very\\long\\path", formatted, 5);
+#else
+    int32_t result = fossil_io_filesys_format("/very/long/path", formatted, 5);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_format_null_path)
+{
+    char formatted[256];
+    int32_t result = fossil_io_filesys_format(NULL, formatted, 256);
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_format_null_output)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_format("C:\\temp", NULL, 256);
+#else
+    int32_t result = fossil_io_filesys_format("/tmp", NULL, 256);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+// Test file rewrite operations
+static int test_rewrite_uppercase(void *buf, size_t *size, void *user_data)
+{
+    if (!buf || !size) return -1;
+    unsigned char *data = (unsigned char *)buf;
+    for (size_t i = 0; i < *size; ++i) {
+        if (data[i] >= 'a' && data[i] <= 'z') {
+            data[i] = data[i] - 'a' + 'A';
+        }
+    }
+    return 0;
+}
+
+static int test_rewrite_truncate(void *buf, size_t *size, void *user_data)
+{
+    if (!size) return -1;
+    size_t max_size = (size_t)(uintptr_t)user_data;
+    if (*size > max_size) {
+        *size = max_size;
+    }
+    return 0;
+}
+
+static int test_rewrite_fail(void *buf, size_t *size, void *user_data)
+{
+    return -1;
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_basic)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\rewrite_test.txt", test_rewrite_uppercase, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/rewrite_test.txt", test_rewrite_uppercase, NULL);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_with_userdata)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\rewrite_test.txt", test_rewrite_truncate, (void *)50);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/rewrite_test.txt", test_rewrite_truncate, (void *)50);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, -2);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_null_path)
+{
+    int32_t result = fossil_io_filesys_file_rewrite(NULL, test_rewrite_uppercase, NULL);
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_null_transform)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\test.txt", NULL, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/test.txt", NULL, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_nonexistent)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\nonexistent_rewrite.txt", test_rewrite_uppercase, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/nonexistent_rewrite.txt", test_rewrite_uppercase, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_transform_failure)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\test.txt", test_rewrite_fail, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/test.txt", test_rewrite_fail, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -511,7 +686,21 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_create_hard);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_is_symbolic);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_chdir);
-
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_absolute_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_relative_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_home_expansion);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_redundant_separators);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_mixed_separators);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_trailing_separator);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_buffer_overflow);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_null_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_format_null_output);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_basic);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_with_userdata);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_null_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_null_transform);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_nonexistent);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_transform_failure);
 
     FOSSIL_TEST_REGISTER(c_filesys_suite);
 }
