@@ -800,6 +800,111 @@ FOSSIL_TEST(c_test_filesys_file_format_large_buffer)
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
+// Permission-related tests for file, directory, and link operations
+
+FOSSIL_TEST(c_test_filesys_file_is_readable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_is_readable("C:\\temp\\test.txt");
+#else
+    int32_t result = fossil_io_filesys_file_is_readable("/tmp/test.txt");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_is_writable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_is_writable("C:\\temp\\test.txt");
+#else
+    int32_t result = fossil_io_filesys_file_is_writable("/tmp/test.txt");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 1, 0};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_set_perms("C:\\temp\\test.txt", perms);
+#else
+    int32_t result = fossil_io_filesys_file_set_perms("/tmp/test.txt", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_set_owner("C:\\temp\\test.txt", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_file_set_owner("/tmp/test.txt", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_is_readable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_is_readable("C:\\temp");
+#else
+    int32_t result = fossil_io_filesys_dir_is_readable("/tmp");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_is_writable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_is_writable("C:\\temp");
+#else
+    int32_t result = fossil_io_filesys_dir_is_writable("/tmp");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 1, 1};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_set_perms("C:\\temp", perms);
+#else
+    int32_t result = fossil_io_filesys_dir_set_perms("/tmp", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_set_owner("C:\\temp", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_dir_set_owner("/tmp", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_link_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 0, 0};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_link_set_perms("C:\\temp\\link.txt", perms);
+#else
+    int32_t result = fossil_io_filesys_link_set_perms("/tmp/link.txt", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_link_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_link_set_owner("C:\\temp\\link.txt", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_link_set_owner("/tmp/link.txt", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -870,6 +975,16 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_java_class);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_small_buffer);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_large_buffer);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_is_readable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_is_writable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_set_owner);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_is_readable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_is_writable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_set_owner);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_set_owner);
 
     FOSSIL_TEST_REGISTER(c_filesys_suite);
 }
