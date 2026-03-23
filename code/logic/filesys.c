@@ -60,6 +60,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <utime.h>
+#include <pwd.h>
+#include <grp.h>
 #endif
 
 #ifdef _WIN32
@@ -1775,6 +1777,126 @@ int32_t fossil_io_filesys_file_decompress(
     return 0;
 }
 
+int32_t fossil_io_filesys_file_is_readable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, R_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_file_is_writable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, W_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_file_set_perms(const char *path, fossil_io_filesys_perms_t perms)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Windows does not support POSIX permissions; no-op
+    (void)perms;
+    return 0;
+#else
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return chmod(path, mode);
+#endif
+}
+
+int32_t fossil_io_filesys_file_set_owner(const char *path, const char *owner, const char *group)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+    return chown(path, uid, gid);
+#endif
+}
+
 /* Directory Operations */
 
 int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
@@ -2089,6 +2211,150 @@ int32_t fossil_io_filesys_dir_mirror(
     return mirror_recursive(src, dest, delete_extras);
 }
 
+int32_t fossil_io_filesys_dir_exists(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND ||
+            GetLastError() == ERROR_PATH_NOT_FOUND)
+            return 0;
+        return -1;
+    }
+    return (attr & FILE_ATTRIBUTE_DIRECTORY) ? 1 : 0;
+#else
+    struct stat st;
+    if (stat(path, &st) == 0)
+        return S_ISDIR(st.st_mode) ? 1 : 0;
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_is_readable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || !(attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, R_OK | X_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_is_writable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || !(attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, W_OK | X_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_set_perms(const char *path, fossil_io_filesys_perms_t perms)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Windows does not support POSIX permissions; no-op
+    (void)perms;
+    return 0;
+#else
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return chmod(path, mode);
+#endif
+}
+
+int32_t fossil_io_filesys_dir_set_owner(const char *path, const char *owner, const char *group)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+    return chown(path, uid, gid);
+#endif
+}
+
 /* Link Operations */
 
 int32_t fossil_io_filesys_link_create(
@@ -2285,6 +2551,115 @@ int32_t fossil_io_filesys_link_is_symbolic(
     *is_symbolic = S_ISLNK(st.st_mode);
     return 0;
 
+#endif
+}
+
+int32_t fossil_io_filesys_link_remove(const char *link_path)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // On Windows, DeleteFileA removes both files and links (symbolic/hard)
+    return DeleteFileA(link_path) ? 0 : -1;
+#else
+    // Use unlink to remove the link itself, not the target
+    return (unlink(link_path) == 0) ? 0 : -1;
+#endif
+}
+
+int32_t fossil_io_filesys_link_exists(const char *link_path)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(link_path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return (GetLastError() == ERROR_FILE_NOT_FOUND ||
+                GetLastError() == ERROR_PATH_NOT_FOUND) ? 0 : -1;
+    // Check if it's a reparse point (symbolic link) or a file (hard link indistinguishable)
+    return (attr & FILE_ATTRIBUTE_REPARSE_POINT) ? 1 : 0;
+#else
+    struct stat st;
+    if (lstat(link_path, &st) == 0)
+        return (S_ISLNK(st.st_mode)) ? 1 : 0;
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_link_set_perms(const char *link_path, fossil_io_filesys_perms_t perms)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)perms;
+    return 0;
+#else
+# if defined(HAVE_LCHMOD)
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return lchmod(link_path, mode);
+# else
+    // Most systems do not support changing symlink perms
+    (void)perms;
+    return 0;
+# endif
+#endif
+}
+
+int32_t fossil_io_filesys_link_set_owner(const char *link_path, const char *owner, const char *group)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+# if defined(HAVE_LCHOWN)
+    return lchown(link_path, uid, gid);
+# else
+    // If lchown is not available, fallback is not possible
+    return -1;
+# endif
 #endif
 }
 
