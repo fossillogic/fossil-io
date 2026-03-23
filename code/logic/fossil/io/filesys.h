@@ -753,6 +753,33 @@ int32_t fossil_io_filesys_basename(const char *path, char *name_out, size_t max_
  */
 int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_len);
 
+/**
+ * @brief Normalize a file path by converting separators and removing redundant components.
+ *
+ * This function takes an input path string and normalizes it by converting all path
+ * separators to the platform-specific separator, removing redundant separators, and
+ * resolving any relative path components (., ..) where possible. The resulting normalized
+ * path is returned as a newly allocated string that must be freed by the caller.
+ *
+ * @param path Input path string to normalize
+ * @return Normalized path string on success (caller must free), or NULL on failure (invalid input, memory allocation failure, etc.)
+ */
+char *fossil_io_filesys_path_normalize(const char *path);
+
+/**
+ * @brief Set the access and modification times of a filesystem object.
+ *
+ * This function updates the access and modification timestamps of the filesystem
+ * object at the specified path to the provided time values. The created_at timestamp
+ * is typically not modified by this operation.
+ *
+ * @param path Path to the filesystem object to update
+ * @param accessed_at New access time (time_t value)
+ * @param modified_at New modification time (time_t value)
+ * @return 0 on success, negative error code on failure (invalid path, permission denied, etc.)
+ */
+int fossil_io_filesys_set_times(const char *path, time_t accessed_at, time_t modified_at);
+
 /* ------------------------------------------------------------
     * Utility Functions
     * ------------------------------------------------------------ */
@@ -1461,6 +1488,42 @@ namespace fossil::io
         int32_t extension(const std::string &path, char *ext_out, size_t max_len)
         {
             return fossil_io_filesys_extension(path.c_str(), ext_out, max_len);
+        }
+
+        /**
+         * @brief Normalize a file path by converting separators and removing redundant components.
+         *
+         * This method takes a std::string path, normalizes it by converting all path separators
+         * to the platform-specific separator, removing redundant separators, and resolving any
+         * relative path components (., ..) where possible. The result is returned as a std::string.
+         *
+         * @param path Input path string to normalize
+         * @return Normalized path string (empty if normalization fails)
+         */
+        std::string path_normalize(const std::string &path)
+        {
+            char *normalized = fossil_io_filesys_path_normalize(path.c_str());
+            if (!normalized)
+                return std::string();
+            std::string result(normalized);
+            free(normalized);
+            return result;
+        }
+
+        /**
+         * @brief Set the access and modification times of a filesystem object.
+         *
+         * Updates the access and modification timestamps of the object at the specified path.
+         * The created_at timestamp is not modified.
+         *
+         * @param path Path to the filesystem object to update
+         * @param accessed_at New access time (time_t value)
+         * @param modified_at New modification time (time_t value)
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t set_times(const std::string &path, time_t accessed_at, time_t modified_at)
+        {
+            return fossil_io_filesys_set_times(path.c_str(), accessed_at, modified_at);
         }
 
         /**

@@ -59,6 +59,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <utime.h>
 #endif
 
 #ifdef _WIN32
@@ -159,10 +160,12 @@ static uint64_t hash_fnv1a(FILE *f)
 
 int32_t fossil_path_resolve(const char *path, char *out, size_t max_len)
 {
-    if (!path || !out) return -1;
+    if (!path || !out)
+        return -1;
 
     // Absolute path → just copy
-    if (path[0] == '/') {
+    if (path[0] == '/')
+    {
         strncpy(out, path, max_len - 1);
         out[max_len - 1] = '\0';
         return 0;
@@ -613,37 +616,37 @@ static int remove_recursive(const char *path)
 
 #else
 
-        DIR *dir = opendir(path);
-        if (!dir)
-            return -1;
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
 
-        struct dirent *entry;
-        char full[512];
+    struct dirent *entry;
+    char full[512];
 
-        while ((entry = readdir(dir)))
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (lstat(full, &st) != 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode))
         {
-            if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
-                continue;
-
-            snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
-
-            struct stat st;
-            if (lstat(full, &st) != 0)
-                continue;
-
-            if (S_ISDIR(st.st_mode))
-            {
-                remove_recursive(full);
-                rmdir(full);
-            }
-            else
-            {
-                unlink(full);
-            }
+            remove_recursive(full);
+            rmdir(full);
         }
+        else
+        {
+            unlink(full);
+        }
+    }
 
-        closedir(dir);
-        return rmdir(path);
+    closedir(dir);
+    return rmdir(path);
 
 #endif
 }
@@ -657,7 +660,7 @@ static int remove_recursive(const char *path)
 typedef HANDLE fossil_mutex_native_t;
 #else
 #include <pthread.h>
-    typedef pthread_mutex_t fossil_mutex_native_t;
+typedef pthread_mutex_t fossil_mutex_native_t;
 #endif
 
 static int fossil_mutex_init(fossil_io_filesys_lock_t *lock)
@@ -670,11 +673,11 @@ static int fossil_mutex_init(fossil_io_filesys_lock_t *lock)
     if (!lock->handle)
         return -1;
 #else
-        lock->handle = malloc(sizeof(pthread_mutex_t));
-        if (!lock->handle)
-            return -1;
-        if (pthread_mutex_init((pthread_mutex_t *)lock->handle, NULL) != 0)
-            return -1;
+    lock->handle = malloc(sizeof(pthread_mutex_t));
+    if (!lock->handle)
+        return -1;
+    if (pthread_mutex_init((pthread_mutex_t *)lock->handle, NULL) != 0)
+        return -1;
 #endif
 
     lock->locked = false;
@@ -686,7 +689,7 @@ static int fossil_mutex_lock(fossil_io_filesys_lock_t *lock)
 #if defined(_WIN32)
     WaitForSingleObject(lock->handle, INFINITE);
 #else
-        pthread_mutex_lock((pthread_mutex_t *)lock->handle);
+    pthread_mutex_lock((pthread_mutex_t *)lock->handle);
 #endif
     lock->locked = true;
     return 0;
@@ -697,7 +700,7 @@ static int fossil_mutex_unlock(fossil_io_filesys_lock_t *lock)
 #if defined(_WIN32)
     ReleaseMutex(lock->handle);
 #else
-        pthread_mutex_unlock((pthread_mutex_t *)lock->handle);
+    pthread_mutex_unlock((pthread_mutex_t *)lock->handle);
 #endif
     lock->locked = false;
     return 0;
@@ -832,45 +835,45 @@ int32_t fossil_io_filesys_refresh(fossil_io_filesys_obj_t *obj)
 
 #else
 
-        struct stat st;
-        if (lstat(obj->path, &st) != 0)
+    struct stat st;
+    if (lstat(obj->path, &st) != 0)
+    {
+        fossil_mutex_unlock(&obj->lock);
+        return -1;
+    }
+
+    obj->size = st.st_size;
+    obj->mode = st.st_mode;
+
+    obj->created_at = st.st_ctime;
+    obj->modified_at = st.st_mtime;
+    obj->accessed_at = st.st_atime;
+
+    if (S_ISREG(st.st_mode))
+    {
+        /* Check if file is an archive based on extension */
+        const char *dot = strrchr(obj->path, '.');
+        if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                    strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                    strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
         {
-            fossil_mutex_unlock(&obj->lock);
-            return -1;
+            obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
         }
-
-        obj->size = st.st_size;
-        obj->mode = st.st_mode;
-
-        obj->created_at = st.st_ctime;
-        obj->modified_at = st.st_mtime;
-        obj->accessed_at = st.st_atime;
-
-        if (S_ISREG(st.st_mode))
-        {
-            /* Check if file is an archive based on extension */
-            const char *dot = strrchr(obj->path, '.');
-            if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
-                        strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
-                        strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
-            {
-                obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
-            }
-            else
-            {
-                obj->type = FOSSIL_FILESYS_TYPE_FILE;
-            }
-        }
-        else if (S_ISDIR(st.st_mode))
-            obj->type = FOSSIL_FILESYS_TYPE_DIR;
-        else if (S_ISLNK(st.st_mode))
-            obj->type = FOSSIL_FILESYS_TYPE_LINK;
         else
-            obj->type = FOSSIL_FILESYS_TYPE_UNKNOWN;
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
+    }
+    else if (S_ISDIR(st.st_mode))
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+    else if (S_ISLNK(st.st_mode))
+        obj->type = FOSSIL_FILESYS_TYPE_LINK;
+    else
+        obj->type = FOSSIL_FILESYS_TYPE_UNKNOWN;
 
-        obj->perms.read = (st.st_mode & S_IRUSR) != 0;
-        obj->perms.write = (st.st_mode & S_IWUSR) != 0;
-        obj->perms.execute = (st.st_mode & S_IXUSR) != 0;
+    obj->perms.read = (st.st_mode & S_IRUSR) != 0;
+    obj->perms.write = (st.st_mode & S_IWUSR) != 0;
+    obj->perms.execute = (st.st_mode & S_IXUSR) != 0;
 
 #endif
 
@@ -894,14 +897,14 @@ int32_t fossil_io_filesys_exists(const char *path)
     }
     return 1;
 #else
-        struct stat st;
-        if (lstat(path, &st) == 0)
-            return 1;
+    struct stat st;
+    if (lstat(path, &st) == 0)
+        return 1;
 
-        if (errno == ENOENT)
-            return 0;
+    if (errno == ENOENT)
+        return 0;
 
-        return -1;
+    return -1;
 #endif
 }
 
@@ -930,21 +933,21 @@ int32_t fossil_io_filesys_remove(const char *path, bool recursive)
 
 #else
 
-        struct stat st;
-        if (lstat(path, &st) != 0)
-            return -1;
+    struct stat st;
+    if (lstat(path, &st) != 0)
+        return -1;
 
-        if (S_ISDIR(st.st_mode))
-        {
-            if (!recursive)
-                return rmdir(path);
+    if (S_ISDIR(st.st_mode))
+    {
+        if (!recursive)
+            return rmdir(path);
 
-            return remove_recursive(path);
-        }
-        else
-        {
-            return unlink(path);
-        }
+        return remove_recursive(path);
+    }
+    else
+    {
+        return unlink(path);
+    }
 
 #endif
 }
@@ -959,9 +962,9 @@ int32_t fossil_io_filesys_move(const char *src, const char *dest)
         return 0;
     return -1;
 #else
-        if (rename(src, dest) == 0)
-            return 0;
-        return -1;
+    if (rename(src, dest) == 0)
+        return 0;
+    return -1;
 #endif
 }
 
@@ -1050,7 +1053,7 @@ int32_t fossil_io_filesys_deduplicate(const char *path, bool recursive)
 #if defined(_WIN32)
     removed += dedup_walk(path, recursive, table, &count);
 #else
-        removed += dedup_walk(path, recursive, table, &count);
+    removed += dedup_walk(path, recursive, table, &count);
 #endif
 
     return removed;
@@ -1412,7 +1415,7 @@ int32_t fossil_io_filesys_file_seek(
 #if defined(_WIN32)
     int rc = _fseeki64(fp, offset, origin);
 #else
-        int rc = fseeko(fp, offset, origin);
+    int rc = fseeko(fp, offset, origin);
 #endif
 
     if (rc == 0)
@@ -1434,7 +1437,7 @@ int64_t fossil_io_filesys_file_tell(fossil_io_filesys_file_t *f)
 #if defined(_WIN32)
     int64_t pos = _ftelli64(fp);
 #else
-        int64_t pos = ftello(fp);
+    int64_t pos = ftello(fp);
 #endif
 
     f->position = pos;
@@ -1456,7 +1459,7 @@ int32_t fossil_io_filesys_file_flush(fossil_io_filesys_file_t *f)
 #if defined(_WIN32)
     _commit(_fileno(fp));
 #else
-        fsync(fileno(fp));
+    fsync(fileno(fp));
 #endif
 
     fossil_mutex_unlock(&f->base.lock);
@@ -1475,11 +1478,11 @@ int32_t fossil_io_filesys_file_size(const char *path)
 
     return (int32_t)(((uint64_t)data.nFileSizeHigh << 32) | data.nFileSizeLow);
 #else
-        struct stat st;
-        if (stat(path, &st) != 0)
-            return -1;
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return -1;
 
-        return (int32_t)st.st_size;
+    return (int32_t)st.st_size;
 #endif
 }
 
@@ -1506,7 +1509,7 @@ int32_t fossil_io_filesys_file_truncate(const char *path, size_t size)
     CloseHandle(h);
     return 0;
 #else
-        return truncate(path, size);
+    return truncate(path, size);
 #endif
 }
 
@@ -1866,29 +1869,29 @@ int32_t fossil_io_filesys_dir_list(
 
 #else
 
-        DIR *dir = opendir(path);
-        if (!dir)
-            return -1;
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
 
-        struct dirent *entry;
+    struct dirent *entry;
 
-        while ((entry = readdir(dir)))
-        {
-            if (!strcmp(entry->d_name, ".") ||
-                !strcmp(entry->d_name, ".."))
-                continue;
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
 
-            if (*out_count >= max_entries)
-                break;
+        if (*out_count >= max_entries)
+            break;
 
-            char full[512];
-            snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
 
-            fossil_io_filesys_stat(full, &entries[*out_count]);
-            (*out_count)++;
-        }
+        fossil_io_filesys_stat(full, &entries[*out_count]);
+        (*out_count)++;
+    }
 
-        closedir(dir);
+    closedir(dir);
 
 #endif
 
@@ -1945,33 +1948,33 @@ static int dir_walk_internal(
 
 #else
 
-        if (!S_ISDIR(obj.mode))
-            return 0;
+    if (!S_ISDIR(obj.mode))
+        return 0;
 
-        DIR *dir = opendir(path);
-        if (!dir)
-            return -1;
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
 
-        struct dirent *entry;
+    struct dirent *entry;
 
-        while ((entry = readdir(dir)))
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        rc = dir_walk_internal(full, callback, user_data);
+        if (rc != 0)
         {
-            if (!strcmp(entry->d_name, ".") ||
-                !strcmp(entry->d_name, ".."))
-                continue;
-
-            char full[512];
-            snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
-
-            rc = dir_walk_internal(full, callback, user_data);
-            if (rc != 0)
-            {
-                closedir(dir);
-                return rc;
-            }
+            closedir(dir);
+            return rc;
         }
+    }
 
-        closedir(dir);
+    closedir(dir);
 
 #endif
 
@@ -2124,10 +2127,10 @@ int32_t fossil_io_filesys_link_create(
 
 #else
 
-        if (symbolic)
-            return symlink(target, link_path);
-        else
-            return link(target, link_path);
+    if (symbolic)
+        return symlink(target, link_path);
+    else
+        return link(target, link_path);
 
 #endif
 }
@@ -2169,12 +2172,12 @@ int32_t fossil_io_filesys_link_read(
 
 #else
 
-        ssize_t len = readlink(link_path, target_out, max_len - 1);
-        if (len < 0)
-            return -1;
+    ssize_t len = readlink(link_path, target_out, max_len - 1);
+    if (len < 0)
+        return -1;
 
-        target_out[len] = '\0';
-        return 0;
+    target_out[len] = '\0';
+    return 0;
 
 #endif
 }
@@ -2275,12 +2278,12 @@ int32_t fossil_io_filesys_link_is_symbolic(
 
 #else
 
-        struct stat st;
-        if (lstat(link_path, &st) != 0)
-            return -1;
+    struct stat st;
+    if (lstat(link_path, &st) != 0)
+        return -1;
 
-        *is_symbolic = S_ISLNK(st.st_mode);
-        return 0;
+    *is_symbolic = S_ISLNK(st.st_mode);
+    return 0;
 
 #endif
 }
@@ -2298,7 +2301,7 @@ int32_t fossil_io_filesys_tx_begin(void)
 {
     if (!g_tx_lock.handle)
         return fossil_io_filesys_tx_init();
-    
+
     return fossil_mutex_lock(&g_tx_lock);
 }
 
@@ -2306,7 +2309,7 @@ int32_t fossil_io_filesys_tx_commit(void)
 {
     if (!g_tx_lock.handle || !g_tx_lock.locked)
         return -1;
-    
+
     return fossil_mutex_unlock(&g_tx_lock);
 }
 
@@ -2314,7 +2317,7 @@ int32_t fossil_io_filesys_tx_rollback(void)
 {
     if (!g_tx_lock.handle || !g_tx_lock.locked)
         return -1;
-    
+
     return fossil_mutex_unlock(&g_tx_lock);
 }
 
@@ -2334,8 +2337,8 @@ int32_t fossil_io_filesys_getcwd(char *buf, size_t size)
     if (!_getcwd(buf, (int)size))
         return -1;
 #else
-        if (!getcwd(buf, size))
-            return -1;
+    if (!getcwd(buf, size))
+        return -1;
 #endif
     return 0;
 }
@@ -2348,7 +2351,7 @@ int32_t fossil_io_filesys_chdir(const char *path)
 #if defined(_WIN32)
     return _chdir(path);
 #else
-        return chdir(path);
+    return chdir(path);
 #endif
 }
 
@@ -2398,7 +2401,7 @@ int32_t fossil_io_filesys_dirname(const char *path, char *dir_out, size_t max_le
 #if defined(_WIN32)
     char *last_sep = strrchr(tmp, '\\');
 #else
-        char *last_sep = strrchr(tmp, '/');
+    char *last_sep = strrchr(tmp, '/');
 #endif
 
     if (!last_sep)
@@ -2429,7 +2432,7 @@ int32_t fossil_io_filesys_basename(const char *path, char *name_out, size_t max_
 #if defined(_WIN32)
     const char *last_sep = strrchr(path, '\\');
 #else
-        const char *last_sep = strrchr(path, '/');
+    const char *last_sep = strrchr(path, '/');
 #endif
     if (last_sep)
         base = last_sep + 1;
@@ -2448,7 +2451,7 @@ int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_
 #if defined(_WIN32)
     const char *last_sep = strrchr(path, '\\');
 #else
-        const char *last_sep = strrchr(path, '/');
+    const char *last_sep = strrchr(path, '/');
 #endif
     if (last_sep)
         base = last_sep + 1;
@@ -2465,6 +2468,69 @@ int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_
     }
 
     return 0;
+}
+
+char *fossil_io_filesys_path_normalize(const char *path)
+{
+    if (!path)
+        return NULL;
+
+    char *normalized = malloc(PATH_MAX);
+    if (!normalized)
+        return NULL;
+#if defined(_WIN32)
+    char *p = normalized;
+    for (const char *s = path; *s; ++s)
+    {
+        if (*s == '\\')
+            *p++ = '/';
+        else
+            *p++ = *s;
+    }
+    *p = '\0';
+#else
+    strncpy(normalized, path, PATH_MAX - 1);
+    normalized[PATH_MAX - 1] = '\0';
+#endif
+    return normalized;
+}
+
+int fossil_io_filesys_set_times(const char *path, time_t accessed_at, time_t modified_at)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32) || defined(_WIN64)
+    // Convert time_t to FILETIME
+    HANDLE hFile = CreateFileA(
+        path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return -1;
+
+    // Windows FILETIME is in 100-nanosecond intervals since Jan 1, 1601 (UTC)
+    ULONGLONG unix_epoch = 11644473600ULL;
+    ULONGLONG access_time = ((ULONGLONG)accessed_at + unix_epoch) * 10000000ULL;
+    ULONGLONG mod_time = ((ULONGLONG)modified_at + unix_epoch) * 10000000ULL;
+
+    FILETIME ftAccess, ftWrite;
+    ftAccess.dwLowDateTime = (DWORD)access_time;
+    ftAccess.dwHighDateTime = (DWORD)(access_time >> 32);
+    ftWrite.dwLowDateTime = (DWORD)mod_time;
+    ftWrite.dwHighDateTime = (DWORD)(mod_time >> 32);
+
+    int result = 0;
+    if (!SetFileTime(hFile, NULL, &ftAccess, &ftWrite))
+        result = -1;
+
+    CloseHandle(hFile);
+    return result;
+#else
+    struct utimbuf times;
+    times.actime = accessed_at;
+    times.modtime = modified_at;
+    return utime(path, &times);
+#endif
 }
 
 const char *fossil_io_filesys_type_string(fossil_io_filesys_type_t type)
