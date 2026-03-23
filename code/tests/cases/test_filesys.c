@@ -610,96 +610,152 @@ FOSSIL_TEST(c_test_filesys_file_format_nonexistent)
 FOSSIL_TEST(c_test_filesys_file_format_zip)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\archive.zip", format, sizeof(format));
+    const char *path = "C:\\temp\\archive.zip";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/archive.zip", format, sizeof(format));
+    const char *path = "/tmp/archive.zip";
 #endif
+    // Write minimal ZIP header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char zip_hdr[] = {0x50, 0x4B, 0x03, 0x04};
+        fwrite(zip_hdr, 1, sizeof(zip_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_gzip)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\file.tar.gz", format, sizeof(format));
+    const char *path = "C:\\temp\\file.tar.gz";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/file.tar.gz", format, sizeof(format));
+    const char *path = "/tmp/file.tar.gz";
 #endif
+    // Write minimal GZIP header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char gz_hdr[] = {0x1F, 0x8B, 0x08, 0x00};
+        fwrite(gz_hdr, 1, sizeof(gz_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_bzip2)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\file.tar.bz2", format, sizeof(format));
+    const char *path = "C:\\temp\\file.tar.bz2";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/file.tar.bz2", format, sizeof(format));
+    const char *path = "/tmp/file.tar.bz2";
 #endif
+    // Write minimal BZIP2 header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char bz2_hdr[] = {'B', 'Z', 'h'};
+        fwrite(bz2_hdr, 1, sizeof(bz2_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_xz)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\file.tar.xz", format, sizeof(format));
+    const char *path = "C:\\temp\\file.tar.xz";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/file.tar.xz", format, sizeof(format));
+    const char *path = "/tmp/file.tar.xz";
 #endif
+    // Write minimal XZ header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char xz_hdr[] = {0xFD, '7', 'z', 'X', 'Z', 0x00};
+        fwrite(xz_hdr, 1, sizeof(xz_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_png)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\image.png", format, sizeof(format));
+    const char *path = "C:\\temp\\image.png";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/image.png", format, sizeof(format));
+    const char *path = "/tmp/image.png";
 #endif
+    // Write minimal PNG header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char png_hdr[] = {0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        fwrite(png_hdr, 1, sizeof(png_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_jpeg)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\image.jpg", format, sizeof(format));
+    const char *path = "C:\\temp\\image.jpg";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/image.jpg", format, sizeof(format));
+    const char *path = "/tmp/image.jpg";
 #endif
+    // Write minimal JPEG header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char jpg_hdr[] = {0xFF, 0xD8, 0xFF};
+        fwrite(jpg_hdr, 1, sizeof(jpg_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_gif)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\image.gif", format, sizeof(format));
+    const char *path = "C:\\temp\\image.gif";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/image.gif", format, sizeof(format));
+    const char *path = "/tmp/image.gif";
 #endif
+    // Write minimal GIF header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char gif_hdr[] = {'G', 'I', 'F', '8', '9', 'a'};
+        fwrite(gif_hdr, 1, sizeof(gif_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_pdf)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\document.pdf", format, sizeof(format));
+    const char *path = "C:\\temp\\document.pdf";
 #else
-    char format[64];
-    int32_t result = fossil_io_filesys_file_format("/tmp/document.pdf", format, sizeof(format));
+    const char *path = "/tmp/document.pdf";
 #endif
+    // Write minimal PDF header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char pdf_hdr[] = {'%', 'P', 'D', 'F', '-'};
+        fwrite(pdf_hdr, 1, sizeof(pdf_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
@@ -778,12 +834,18 @@ FOSSIL_TEST(c_test_filesys_file_format_java_class)
 FOSSIL_TEST(c_test_filesys_file_format_small_buffer)
 {
 #if defined(_WIN32) || defined(_WIN64)
-    char format[2];
-    int32_t result = fossil_io_filesys_file_format("C:\\temp\\test.txt", format, sizeof(format));
+    const char *path = "C:\\temp\\test.txt";
 #else
-    char format[2];
-    int32_t result = fossil_io_filesys_file_format("/tmp/test.txt", format, sizeof(format));
+    const char *path = "/tmp/test.txt";
 #endif
+    // Write minimal text file
+    FILE *f = fopen(path, "w");
+    if (f) {
+        fputs("A", f);
+        fclose(f);
+    }
+    char format[2];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_ITS_EQUAL_I32(format[sizeof(format) - 1], '\0');
 }
