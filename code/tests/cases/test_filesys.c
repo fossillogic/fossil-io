@@ -71,6 +71,18 @@ FOSSIL_TEST(c_test_filesys_init_file)
     ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_FILE, obj.type);
 }
 
+FOSSIL_TEST(c_test_filesys_init_directory)
+{
+    fossil_io_filesys_obj_t obj;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_init(&obj, "C:\\temp");
+#else
+    int32_t result = fossil_io_filesys_init(&obj, "/tmp");
+#endif
+    ASSUME_ITS_EQUAL_I32(0, result);
+    ASSUME_ITS_EQUAL_I32(FOSSIL_FILESYS_TYPE_DIR, obj.type);
+}
+
 FOSSIL_TEST(c_test_filesys_init_nonexistent)
 {
     fossil_io_filesys_obj_t obj;
@@ -321,6 +333,17 @@ FOSSIL_TEST(c_test_filesys_type_string_unknown)
 }
 
 // Test stat operations
+FOSSIL_TEST(c_test_filesys_stat_file)
+{
+    fossil_io_filesys_obj_t obj;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_stat("C:\\temp\\test.txt", &obj);
+#else
+    int32_t result = fossil_io_filesys_stat("/tmp/test.txt", &obj);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
 FOSSIL_TEST(c_test_filesys_stat_directory)
 {
     fossil_io_filesys_obj_t obj;
@@ -951,6 +974,7 @@ FOSSIL_TEST(c_test_filesys_link_set_owner)
 FOSSIL_TEST_GROUP(c_filesys_tests)
 {
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_init_file);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_init_directory);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_init_nonexistent);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_refresh);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_exists_true);
@@ -974,6 +998,7 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_type_string_dir);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_type_string_link);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_type_string_unknown);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_stat_file);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_stat_directory);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_move);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_copy);
