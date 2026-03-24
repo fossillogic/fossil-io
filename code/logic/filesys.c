@@ -791,6 +791,11 @@ int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path)
     /* initial metadata load (don't fail if path doesn't exist) */
     fossil_io_filesys_refresh(obj);
 
+    /* If the path exists and is a directory, force type to DIR */
+    int32_t exists = fossil_io_filesys_dir_exists(obj->path);
+    if (exists == 1)
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+
     return 0;
 }
 
@@ -1066,15 +1071,15 @@ int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj)
     if (!path || !obj)
         return -1;
 
-    /* If already initialized, just refresh */
-    if (obj->path[0] != '\0')
-    {
-        if (strncmp(obj->path, path, FOSSIL_FILESYS_MAX_PATH) == 0)
-            return fossil_io_filesys_refresh(obj);
-    }
+    // Always initialize with the given path, then refresh metadata.
+    if (fossil_io_filesys_init(obj, path) != 0)
+        return -1;
 
-    /* Otherwise initialize fresh */
-    return fossil_io_filesys_init(obj, path);
+    // Refresh to get up-to-date type and metadata.
+    if (fossil_io_filesys_refresh(obj) != 0)
+        return -1;
+
+    return 0;
 }
 
 int32_t fossil_io_filesys_file_format(const char *path, char *format_out, size_t max_len)
