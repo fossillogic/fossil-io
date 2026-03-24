@@ -485,6 +485,76 @@ int32_t fossil_io_filesys_file_compress(const char *src, const char *dest, const
  */
 int32_t fossil_io_filesys_file_decompress(const char *src, const char *dest);
 
+/**
+ * @brief Rewrite file contents by applying a transformation function.
+ *
+ * Opens a file, reads its contents, applies a transformation function to the data,
+ * and writes the transformed contents back to the file. Operates atomically using
+ * a temporary file to preserve the original if an error occurs.
+ *
+ * @param path Path to the file to rewrite
+ * @param transform Callback function that processes data (returns 0 on success, negative on failure)
+ * @param user_data Pointer to user-defined data passed to the transform function
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_rewrite(const char *path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data);
+
+/**
+ * @brief Detect the format of a file based on its magic bytes or extension.
+ *
+ * Analyzes a file to determine its format by examining magic bytes (file signature)
+ * or file extension. Returns a string identifier for the detected format.
+ *
+ * @param path Path to the file to analyze
+ * @param format_out Buffer to store the detected format string
+ * @param max_len Maximum length of the format_out buffer in bytes
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_format(const char *path, char *format_out, size_t max_len);
+
+/**
+ * @brief Check if a file is readable.
+ *
+ * Determines whether the file at the specified path can be opened for reading.
+ *
+ * @param path Path to the file
+ * @return 1 if readable, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_file_is_readable(const char *path);
+
+/**
+ * @brief Check if a file is writable.
+ *
+ * Determines whether the file at the specified path can be opened for writing.
+ *
+ * @param path Path to the file
+ * @return 1 if writable, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_file_is_writable(const char *path);
+
+/**
+ * @brief Set the permissions of a file.
+ *
+ * Changes the access permissions of the file at the specified path.
+ *
+ * @param path Path to the file
+ * @param perms Permissions to set
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_set_perms(const char *path, fossil_io_filesys_perms_t perms);
+
+/**
+ * @brief Set the owner and group of a file.
+ *
+ * Changes the owner and group of the file at the specified path.
+ *
+ * @param path Path to the file
+ * @param owner New owner name or ID (platform-dependent)
+ * @param group New group name or ID (platform-dependent)
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_set_owner(const char *path, const char *owner, const char *group);
+
 /* ------------------------------------------------------------
     * Directory-Specific Operations
     * ------------------------------------------------------------ */
@@ -555,6 +625,59 @@ int32_t fossil_io_filesys_dir_merge(const char *src, const char *dest, bool over
  */
 int32_t fossil_io_filesys_dir_mirror(const char *src, const char *dest, bool delete_extras);
 
+/**
+ * @brief Check if a directory exists at the given path.
+ *
+ * Determines whether a directory exists at the specified path.
+ *
+ * @param path Path to the directory
+ * @return 1 if the directory exists, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_dir_exists(const char *path);
+
+/**
+ * @brief Check if a directory is readable.
+ *
+ * Determines whether the directory at the specified path can be opened for reading.
+ *
+ * @param path Path to the directory
+ * @return 1 if readable, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_dir_is_readable(const char *path);
+
+/**
+ * @brief Check if a directory is writable.
+ *
+ * Determines whether the directory at the specified path can be written to.
+ *
+ * @param path Path to the directory
+ * @return 1 if writable, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_dir_is_writable(const char *path);
+
+/**
+ * @brief Set the permissions of a directory.
+ *
+ * Changes the access permissions of the directory at the specified path.
+ *
+ * @param path Path to the directory
+ * @param perms Permissions to set
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_dir_set_perms(const char *path, fossil_io_filesys_perms_t perms);
+
+/**
+ * @brief Set the owner and group of a directory.
+ *
+ * Changes the owner and group of the directory at the specified path.
+ *
+ * @param path Path to the directory
+ * @param owner New owner name or ID (platform-dependent)
+ * @param group New group name or ID (platform-dependent)
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_dir_set_owner(const char *path, const char *owner, const char *group);
+
 /* ------------------------------------------------------------
     * Link-Specific Operations
     * ------------------------------------------------------------ */
@@ -612,6 +735,51 @@ int32_t fossil_io_filesys_link_resolve(const char *link_path, char *target_out, 
  * @return 0 on success, negative error code on failure
  */
 int32_t fossil_io_filesys_link_is_symbolic(const char *link_path, bool *is_symbolic);
+
+/**
+ * @brief Remove a link (symbolic or hard) at the specified path.
+ *
+ * Deletes the link at the given path. Does not affect the target file.
+ *
+ * @param link_path Path to the link to remove
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_link_remove(const char *link_path);
+
+/**
+ * @brief Check if a link exists at the specified path.
+ *
+ * Determines whether a link (symbolic or hard) exists at the given path.
+ *
+ * @param link_path Path to the link to check
+ * @return 1 if the link exists, 0 if not, negative on error
+ */
+int32_t fossil_io_filesys_link_exists(const char *link_path);
+
+/**
+ * @brief Set the permissions of a link (if supported).
+ *
+ * Changes the access permissions of the link itself (not the target).
+ * On most systems, this is only meaningful for symbolic links and may not be supported.
+ *
+ * @param link_path Path to the link
+ * @param perms Permissions to set
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_link_set_perms(const char *link_path, fossil_io_filesys_perms_t perms);
+
+/**
+ * @brief Set the owner and group of a link (if supported).
+ *
+ * Changes the owner and group of the link itself (not the target).
+ * On most systems, this is only meaningful for symbolic links and may not be supported.
+ *
+ * @param link_path Path to the link
+ * @param owner New owner name or ID (platform-dependent)
+ * @param group New group name or ID (platform-dependent)
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_link_set_owner(const char *link_path, const char *owner, const char *group);
 
 /* ------------------------------------------------------------
     * Transaction Operations
@@ -725,6 +893,33 @@ int32_t fossil_io_filesys_basename(const char *path, char *name_out, size_t max_
  * @return 0 on success, negative error code on failure (buffer too small, invalid path, etc.)
  */
 int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_len);
+
+/**
+ * @brief Normalize a file path by converting separators and removing redundant components.
+ *
+ * This function takes an input path string and normalizes it by converting all path
+ * separators to the platform-specific separator, removing redundant separators, and
+ * resolving any relative path components (., ..) where possible. The resulting normalized
+ * path is returned as a newly allocated string that must be freed by the caller.
+ *
+ * @param path Input path string to normalize
+ * @return Normalized path string on success (caller must free), or NULL on failure (invalid input, memory allocation failure, etc.)
+ */
+char *fossil_io_filesys_path_normalize(const char *path);
+
+/**
+ * @brief Set the access and modification times of a filesystem object.
+ *
+ * This function updates the access and modification timestamps of the filesystem
+ * object at the specified path to the provided time values. The created_at timestamp
+ * is typically not modified by this operation.
+ *
+ * @param path Path to the filesystem object to update
+ * @param accessed_at New access time (time_t value)
+ * @param modified_at New modification time (time_t value)
+ * @return 0 on success, negative error code on failure (invalid path, permission denied, etc.)
+ */
+int fossil_io_filesys_set_times(const char *path, time_t accessed_at, time_t modified_at);
 
 /* ------------------------------------------------------------
     * Utility Functions
@@ -888,6 +1083,39 @@ namespace fossil::io
         int32_t stat(const std::string &path, fossil_io_filesys_obj_t *obj)
         {
             return fossil_io_filesys_stat(path.c_str(), obj);
+        }
+
+        /**
+         * @brief Detect the format of a file based on its magic bytes or extension.
+         *
+         * Analyzes a file to determine its format by examining magic bytes (file signature)
+         * or file extension. Returns a string identifier for the detected format.
+         *
+         * @param path Path to the file to analyze
+         * @param format_out Buffer to store the detected format string
+         * @param max_len Maximum length of the format_out buffer in bytes
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t file_format(const std::string &path, char *format_out, size_t max_len)
+        {
+            return fossil_io_filesys_file_format(path.c_str(), format_out, max_len);
+        }
+
+        /**
+         * @brief Rewrite file contents by applying a transformation function.
+         *
+         * Opens a file, reads its contents, applies a transformation function to the data,
+         * and writes the transformed contents back to the file. Operates atomically using
+         * a temporary file to preserve the original if an error occurs.
+         *
+         * @param path Path to the file to rewrite
+         * @param transform Callback function that processes data (returns 0 on success, negative on failure)
+         * @param user_data Pointer to user-defined data passed to the transform function
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t file_rewrite(const std::string &path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data)
+        {
+            return fossil_io_filesys_file_rewrite(path.c_str(), transform, user_data);
         }
 
         /**
@@ -1125,6 +1353,61 @@ namespace fossil::io
         }
 
         /**
+         * @brief Check if a file is readable.
+         *
+         * Determines whether the file at the specified path can be opened for reading.
+         *
+         * @param path Path to the file
+         * @return 1 if readable, 0 if not, negative on error
+         */
+        int32_t file_is_readable(const std::string &path)
+        {
+            return fossil_io_filesys_file_is_readable(path.c_str());
+        }
+
+        /**
+         * @brief Check if a file is writable.
+         *
+         * Determines whether the file at the specified path can be opened for writing.
+         *
+         * @param path Path to the file
+         * @return 1 if writable, 0 if not, negative on error
+         */
+        int32_t file_is_writable(const std::string &path)
+        {
+            return fossil_io_filesys_file_is_writable(path.c_str());
+        }
+
+        /**
+         * @brief Set the permissions of a file.
+         *
+         * Changes the access permissions of the file at the specified path.
+         *
+         * @param path Path to the file
+         * @param perms Permissions to set
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t file_set_perms(const std::string &path, fossil_io_filesys_perms_t perms)
+        {
+            return fossil_io_filesys_file_set_perms(path.c_str(), perms);
+        }
+
+        /**
+         * @brief Set the owner and group of a file.
+         *
+         * Changes the owner and group of the file at the specified path.
+         *
+         * @param path Path to the file
+         * @param owner New owner name or ID (platform-dependent)
+         * @param group New group name or ID (platform-dependent)
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t file_set_owner(const std::string &path, const std::string &owner, const std::string &group)
+        {
+            return fossil_io_filesys_file_set_owner(path.c_str(), owner.c_str(), group.c_str());
+        }
+
+        /**
          * @brief Create a directory at the specified path.
          *
          * Creates a new directory. If recursive is true, also creates any necessary
@@ -1208,6 +1491,74 @@ namespace fossil::io
         }
 
         /**
+         * @brief Check if a directory exists at the given path.
+         *
+         * Determines whether a directory exists at the specified path.
+         *
+         * @param path Path to the directory
+         * @return 1 if the directory exists, 0 if not, negative on error
+         */
+        int32_t dir_exists(const std::string &path)
+        {
+            return fossil_io_filesys_dir_exists(path.c_str());
+        }
+
+        /**
+         * @brief Check if a directory is readable.
+         *
+         * Determines whether the directory at the specified path can be opened for reading.
+         *
+         * @param path Path to the directory
+         * @return 1 if readable, 0 if not, negative on error
+         */
+        int32_t dir_is_readable(const std::string &path)
+        {
+            return fossil_io_filesys_dir_is_readable(path.c_str());
+        }
+
+        /**
+         * @brief Check if a directory is writable.
+         *
+         * Determines whether the directory at the specified path can be written to.
+         *
+         * @param path Path to the directory
+         * @return 1 if writable, 0 if not, negative on error
+         */
+        int32_t dir_is_writable(const std::string &path)
+        {
+            return fossil_io_filesys_dir_is_writable(path.c_str());
+        }
+
+        /**
+         * @brief Set the permissions of a directory.
+         *
+         * Changes the access permissions of the directory at the specified path.
+         *
+         * @param path Path to the directory
+         * @param perms Permissions to set
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t dir_set_perms(const std::string &path, fossil_io_filesys_perms_t perms)
+        {
+            return fossil_io_filesys_dir_set_perms(path.c_str(), perms);
+        }
+
+        /**
+         * @brief Set the owner and group of a directory.
+         *
+         * Changes the owner and group of the directory at the specified path.
+         *
+         * @param path Path to the directory
+         * @param owner New owner name or ID (platform-dependent)
+         * @param group New group name or ID (platform-dependent)
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t dir_set_owner(const std::string &path, const std::string &owner, const std::string &group)
+        {
+            return fossil_io_filesys_dir_set_owner(path.c_str(), owner.c_str(), group.c_str());
+        }
+
+        /**
          * @brief Create a hard or symbolic link to a file.
          *
          * Creates a new link (hard or symbolic) from the target file to the link path.
@@ -1268,6 +1619,63 @@ namespace fossil::io
         int32_t link_is_symbolic(const std::string &link_path, bool *is_symbolic)
         {
             return fossil_io_filesys_link_is_symbolic(link_path.c_str(), is_symbolic);
+        }
+
+        /**
+         * @brief Remove a link (symbolic or hard) at the specified path.
+         *
+         * Deletes the link at the given path. Does not affect the target file.
+         *
+         * @param link_path Path to the link to remove
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t link_remove(const std::string &link_path)
+        {
+            return fossil_io_filesys_link_remove(link_path.c_str());
+        }
+
+        /**
+         * @brief Check if a link exists at the specified path.
+         *
+         * Determines whether a link (symbolic or hard) exists at the given path.
+         *
+         * @param link_path Path to the link to check
+         * @return 1 if the link exists, 0 if not, negative on error
+         */
+        int32_t link_exists(const std::string &link_path)
+        {
+            return fossil_io_filesys_link_exists(link_path.c_str());
+        }
+
+        /**
+         * @brief Set the permissions of a link (if supported).
+         *
+         * Changes the access permissions of the link itself (not the target).
+         * On most systems, this is only meaningful for symbolic links and may not be supported.
+         *
+         * @param link_path Path to the link
+         * @param perms Permissions to set
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t link_set_perms(const std::string &link_path, fossil_io_filesys_perms_t perms)
+        {
+            return fossil_io_filesys_link_set_perms(link_path.c_str(), perms);
+        }
+
+        /**
+         * @brief Set the owner and group of a link (if supported).
+         *
+         * Changes the owner and group of the link itself (not the target).
+         * On most systems, this is only meaningful for symbolic links and may not be supported.
+         *
+         * @param link_path Path to the link
+         * @param owner New owner name or ID (platform-dependent)
+         * @param group New group name or ID (platform-dependent)
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t link_set_owner(const std::string &link_path, const std::string &owner, const std::string &group)
+        {
+            return fossil_io_filesys_link_set_owner(link_path.c_str(), owner.c_str(), group.c_str());
         }
 
         /**
@@ -1401,6 +1809,42 @@ namespace fossil::io
         int32_t extension(const std::string &path, char *ext_out, size_t max_len)
         {
             return fossil_io_filesys_extension(path.c_str(), ext_out, max_len);
+        }
+
+        /**
+         * @brief Normalize a file path by converting separators and removing redundant components.
+         *
+         * This method takes a std::string path, normalizes it by converting all path separators
+         * to the platform-specific separator, removing redundant separators, and resolving any
+         * relative path components (., ..) where possible. The result is returned as a std::string.
+         *
+         * @param path Input path string to normalize
+         * @return Normalized path string (empty if normalization fails)
+         */
+        std::string path_normalize(const std::string &path)
+        {
+            char *normalized = fossil_io_filesys_path_normalize(path.c_str());
+            if (!normalized)
+                return std::string();
+            std::string result(normalized);
+            free(normalized);
+            return result;
+        }
+
+        /**
+         * @brief Set the access and modification times of a filesystem object.
+         *
+         * Updates the access and modification timestamps of the object at the specified path.
+         * The created_at timestamp is not modified.
+         *
+         * @param path Path to the filesystem object to update
+         * @param accessed_at New access time (time_t value)
+         * @param modified_at New modification time (time_t value)
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t set_times(const std::string &path, time_t accessed_at, time_t modified_at)
+        {
+            return fossil_io_filesys_set_times(path.c_str(), accessed_at, modified_at);
         }
 
         /**

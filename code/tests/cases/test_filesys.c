@@ -467,6 +467,506 @@ FOSSIL_TEST(c_test_filesys_chdir)
     ASSUME_ITS_EQUAL_I32(result, 0);
 }
 
+// Test file rewrite operations
+static int test_rewrite_uppercase(void *buf, size_t *size, void *user_data)
+{
+    (void)user_data;
+    if (!buf || !size) return -1;
+    unsigned char *data = (unsigned char *)buf;
+    for (size_t i = 0; i < *size; ++i) {
+        if (data[i] >= 'a' && data[i] <= 'z') {
+            data[i] = data[i] - 'a' + 'A';
+        }
+    }
+    // Use user_data in a harmless way to avoid unused warning
+    if (user_data) {
+        volatile uintptr_t dummy = (uintptr_t)user_data;
+        (void)dummy;
+    }
+    return 0;
+}
+
+static int test_rewrite_truncate(void *buf, size_t *size, void *user_data)
+{
+    // Use buf in a harmless way to avoid unused warning
+    if (buf) {
+        volatile unsigned char dummy = *((unsigned char *)buf);
+        (void)dummy;
+    }
+    if (!size) return -1;
+    size_t max_size = (size_t)(uintptr_t)user_data;
+    if (*size > max_size) {
+        *size = max_size;
+    }
+    return 0;
+}
+
+static int test_rewrite_fail(void *buf, size_t *size, void *user_data)
+{
+    (void)buf;
+    (void)size;
+    (void)user_data;
+    return -1;
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_basic)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\rewrite_test.txt", test_rewrite_uppercase, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/rewrite_test.txt", test_rewrite_uppercase, NULL);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_with_userdata)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\rewrite_test.txt", test_rewrite_truncate, (void *)50);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/rewrite_test.txt", test_rewrite_truncate, (void *)50);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, -2);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_null_path)
+{
+    int32_t result = fossil_io_filesys_file_rewrite(NULL, test_rewrite_uppercase, NULL);
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_null_transform)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\test.txt", NULL, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/test.txt", NULL, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_nonexistent)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\nonexistent_rewrite.txt", test_rewrite_uppercase, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/nonexistent_rewrite.txt", test_rewrite_uppercase, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_rewrite_transform_failure)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_rewrite("C:\\temp\\test.txt", test_rewrite_fail, NULL);
+#else
+    int32_t result = fossil_io_filesys_file_rewrite("/tmp/test.txt", test_rewrite_fail, NULL);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+// Test file format detection
+FOSSIL_TEST(c_test_filesys_file_format_null_path)
+{
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(NULL, format, sizeof(format));
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_null_output)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\test.txt", NULL, 64);
+#else
+    int32_t result = fossil_io_filesys_file_format("/tmp/test.txt", NULL, 64);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_zero_length)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\test.txt", format, 0);
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/test.txt", format, 0);
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_nonexistent)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\nonexistent_format.xyz", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/nonexistent_format.xyz", format, sizeof(format));
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_zip)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\archive.zip";
+#else
+    const char *path = "/tmp/archive.zip";
+#endif
+    // Write minimal ZIP header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char zip_hdr[] = {0x50, 0x4B, 0x03, 0x04};
+        fwrite(zip_hdr, 1, sizeof(zip_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_gzip)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\file.tar.gz";
+#else
+    const char *path = "/tmp/file.tar.gz";
+#endif
+    // Write minimal GZIP header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char gz_hdr[] = {0x1F, 0x8B, 0x08, 0x00};
+        fwrite(gz_hdr, 1, sizeof(gz_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_bzip2)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\file.tar.bz2";
+#else
+    const char *path = "/tmp/file.tar.bz2";
+#endif
+    // Write minimal BZIP2 header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char bz2_hdr[] = {'B', 'Z', 'h'};
+        fwrite(bz2_hdr, 1, sizeof(bz2_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_xz)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\file.tar.xz";
+#else
+    const char *path = "/tmp/file.tar.xz";
+#endif
+    // Write minimal XZ header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char xz_hdr[] = {0xFD, '7', 'z', 'X', 'Z', 0x00};
+        fwrite(xz_hdr, 1, sizeof(xz_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_png)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\image.png";
+#else
+    const char *path = "/tmp/image.png";
+#endif
+    // Write minimal PNG header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char png_hdr[] = {0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        fwrite(png_hdr, 1, sizeof(png_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_jpeg)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\image.jpg";
+#else
+    const char *path = "/tmp/image.jpg";
+#endif
+    // Write minimal JPEG header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char jpg_hdr[] = {0xFF, 0xD8, 0xFF};
+        fwrite(jpg_hdr, 1, sizeof(jpg_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_gif)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\image.gif";
+#else
+    const char *path = "/tmp/image.gif";
+#endif
+    // Write minimal GIF header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char gif_hdr[] = {'G', 'I', 'F', '8', '9', 'a'};
+        fwrite(gif_hdr, 1, sizeof(gif_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_pdf)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\document.pdf";
+#else
+    const char *path = "/tmp/document.pdf";
+#endif
+    // Write minimal PDF header
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        unsigned char pdf_hdr[] = {'%', 'P', 'D', 'F', '-'};
+        fwrite(pdf_hdr, 1, sizeof(pdf_hdr), f);
+        fclose(f);
+    }
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_elf)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\executable", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/executable", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_pe_executable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\program.exe", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/program.exe", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_utf16le)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\text_utf16le.txt", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/text_utf16le.txt", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_utf16be)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\text_utf16be.txt", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/text_utf16be.txt", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_utf8_bom)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\text_utf8_bom.txt", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/text_utf8_bom.txt", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_java_class)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\Main.class", format, sizeof(format));
+#else
+    char format[64];
+    int32_t result = fossil_io_filesys_file_format("/tmp/Main.class", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_small_buffer)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    const char *path = "C:\\temp\\test.txt";
+#else
+    const char *path = "/tmp/test.txt";
+#endif
+    // Write minimal text file
+    FILE *f = fopen(path, "w");
+    if (f) {
+        fputs("A", f);
+        fclose(f);
+    }
+    char format[2];
+    int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
+    ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_ITS_EQUAL_I32(format[sizeof(format) - 1], '\0');
+}
+
+FOSSIL_TEST(c_test_filesys_file_format_large_buffer)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    char format[1024];
+    int32_t result = fossil_io_filesys_file_format("C:\\temp\\test.txt", format, sizeof(format));
+#else
+    char format[1024];
+    int32_t result = fossil_io_filesys_file_format("/tmp/test.txt", format, sizeof(format));
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+// Permission-related tests for file, directory, and link operations
+
+FOSSIL_TEST(c_test_filesys_file_is_readable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_is_readable("C:\\temp\\test.txt");
+#else
+    int32_t result = fossil_io_filesys_file_is_readable("/tmp/test.txt");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_is_writable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_is_writable("C:\\temp\\test.txt");
+#else
+    int32_t result = fossil_io_filesys_file_is_writable("/tmp/test.txt");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 1, 0};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_set_perms("C:\\temp\\test.txt", perms);
+#else
+    int32_t result = fossil_io_filesys_file_set_perms("/tmp/test.txt", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_file_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_set_owner("C:\\temp\\test.txt", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_file_set_owner("/tmp/test.txt", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_is_readable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_is_readable("C:\\temp");
+#else
+    int32_t result = fossil_io_filesys_dir_is_readable("/tmp");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_is_writable)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_is_writable("C:\\temp");
+#else
+    int32_t result = fossil_io_filesys_dir_is_writable("/tmp");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 1, 1};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_set_perms("C:\\temp", perms);
+#else
+    int32_t result = fossil_io_filesys_dir_set_perms("/tmp", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_dir_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_dir_set_owner("C:\\temp", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_dir_set_owner("/tmp", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_link_set_perms)
+{
+    fossil_io_filesys_perms_t perms = {1, 0, 0};
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_link_set_perms("C:\\temp\\link.txt", perms);
+#else
+    int32_t result = fossil_io_filesys_link_set_perms("/tmp/link.txt", perms);
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
+FOSSIL_TEST(c_test_filesys_link_set_owner)
+{
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_link_set_owner("C:\\temp\\link.txt", "Administrator", "Administrators");
+#else
+    int32_t result = fossil_io_filesys_link_set_owner("/tmp/link.txt", "root", "root");
+#endif
+    ASSUME_NOT_LESS_THAN_I32(result, -1);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -511,7 +1011,42 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_create_hard);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_is_symbolic);
     FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_chdir);
-
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_basic);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_with_userdata);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_null_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_null_transform);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_nonexistent);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_rewrite_transform_failure);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_null_path);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_null_output);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_zero_length);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_nonexistent);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_zip);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_gzip);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_bzip2);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_xz);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_png);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_jpeg);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_gif);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_pdf);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_elf);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_pe_executable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_utf16le);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_utf16be);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_utf8_bom);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_java_class);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_small_buffer);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_format_large_buffer);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_is_readable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_is_writable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_file_set_owner);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_is_readable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_is_writable);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_dir_set_owner);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_set_perms);
+    FOSSIL_TEST_ADD(c_filesys_suite, c_test_filesys_link_set_owner);
 
     FOSSIL_TEST_REGISTER(c_filesys_suite);
 }
