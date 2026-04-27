@@ -31,6 +31,7 @@
 #include "output.h"
 #include "input.h"
 #include "error.h"
+#include "crabdb.h"
 #include "archive.h"
 #include "cstring.h"
 #include "cipher.h"
