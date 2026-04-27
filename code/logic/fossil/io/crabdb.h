@@ -153,36 +153,27 @@ typedef enum {
 } crabdb_type_t;
 
 /* ============================================================
-
  * Numeric Range Metadata
-
  * ============================================================ */
 
+typedef struct crabdb_numeric_range_signed_t {
+    int64_t min;
+    int64_t max;
+} crabdb_numeric_range_signed_t;
+
+typedef struct crabdb_numeric_range_unsigned_t {
+    uint64_t min;
+    uint64_t max;
+} crabdb_numeric_range_unsigned_t;
+
 typedef struct crabdb_numeric_range {
-
     uint8_t bits;        /* 8, 16, 32, 64 */
-
     uint8_t is_signed;   /* 1 = signed, 0 = unsigned */
 
     union {
-
-        struct {
-
-            int64_t min;
-
-            int64_t max;
-
-        } s;
-
-        struct {
-
-            uint64_t min;
-
-            uint64_t max;
-
-        } u;
-
-    };
+        crabdb_numeric_range_signed_t s;
+        crabdb_numeric_range_unsigned_t u;
+    } range;
 
 } crabdb_numeric_range_t;
 
