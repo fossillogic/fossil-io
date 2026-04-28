@@ -1,7 +1,7 @@
 project('Fossil Io', 'c', 'cpp',
     meson_version: '>=1.8.0',
     license: 'Apache-2.0',
-    version: '0.2.12',
+    version: '0.2.13',
     default_options: [
         'c_std=c11,c18',
         'cpp_std=c++20',
