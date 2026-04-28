@@ -34,57 +34,65 @@
 
 #if defined(_WIN32)
 
-    #include <windows.h>
+#include <windows.h>
 
-    typedef CRITICAL_SECTION crabdb_mutex_t;
+typedef CRITICAL_SECTION crabdb_mutex_t;
 
-    static void crabdb_mutex_init(crabdb_mutex_t *m) {
-        InitializeCriticalSection(m);
-    }
+static void crabdb_mutex_init(crabdb_mutex_t *m)
+{
+    InitializeCriticalSection(m);
+}
 
-    static void crabdb_mutex_lock(crabdb_mutex_t *m) {
-        EnterCriticalSection(m);
-    }
+static void crabdb_mutex_lock(crabdb_mutex_t *m)
+{
+    EnterCriticalSection(m);
+}
 
-    static void crabdb_mutex_unlock(crabdb_mutex_t *m) {
-        LeaveCriticalSection(m);
-    }
+static void crabdb_mutex_unlock(crabdb_mutex_t *m)
+{
+    LeaveCriticalSection(m);
+}
 
-    static void crabdb_mutex_destroy(crabdb_mutex_t *m) {
-        DeleteCriticalSection(m);
-    }
+static void crabdb_mutex_destroy(crabdb_mutex_t *m)
+{
+    DeleteCriticalSection(m);
+}
 
 #elif defined(__unix__) || defined(__APPLE__)
 
-    #include <pthread.h>
+#include <pthread.h>
 
-    typedef pthread_mutex_t crabdb_mutex_t;
+typedef pthread_mutex_t crabdb_mutex_t;
 
-    static void crabdb_mutex_init(crabdb_mutex_t *m) {
-        pthread_mutex_init(m, NULL);
-    }
+static void crabdb_mutex_init(crabdb_mutex_t *m)
+{
+    pthread_mutex_init(m, NULL);
+}
 
-    static void crabdb_mutex_lock(crabdb_mutex_t *m) {
-        pthread_mutex_lock(m);
-    }
+static void crabdb_mutex_lock(crabdb_mutex_t *m)
+{
+    pthread_mutex_lock(m);
+}
 
-    static void crabdb_mutex_unlock(crabdb_mutex_t *m) {
-        pthread_mutex_unlock(m);
-    }
+static void crabdb_mutex_unlock(crabdb_mutex_t *m)
+{
+    pthread_mutex_unlock(m);
+}
 
-    static void crabdb_mutex_destroy(crabdb_mutex_t *m) {
-        pthread_mutex_destroy(m);
-    }
+static void crabdb_mutex_destroy(crabdb_mutex_t *m)
+{
+    pthread_mutex_destroy(m);
+}
 
 #else
 
-    /* Fallback: single-thread no-op */
-    typedef int crabdb_mutex_t;
+/* Fallback: single-thread no-op */
+typedef int crabdb_mutex_t;
 
-    static void crabdb_mutex_init(crabdb_mutex_t *m) { (void)m; }
-    static void crabdb_mutex_lock(crabdb_mutex_t *m) { (void)m; }
-    static void crabdb_mutex_unlock(crabdb_mutex_t *m) { (void)m; }
-    static void crabdb_mutex_destroy(crabdb_mutex_t *m) { (void)m; }
+static void crabdb_mutex_init(crabdb_mutex_t *m) { (void)m; }
+static void crabdb_mutex_lock(crabdb_mutex_t *m) { (void)m; }
+static void crabdb_mutex_unlock(crabdb_mutex_t *m) { (void)m; }
+static void crabdb_mutex_destroy(crabdb_mutex_t *m) { (void)m; }
 
 #endif
 
@@ -92,7 +100,8 @@
  * Internal Structures
  * ============================================================ */
 
-struct crabdb_handle {
+struct crabdb_handle
+{
     crabdb_config_t config;
     char *path;
     char errmsg[256];
@@ -100,7 +109,8 @@ struct crabdb_handle {
     crabdb_mutex_t mutex;
 };
 
-struct crabdb_stmt {
+struct crabdb_stmt
+{
     crabdb_handle_t *db;
     char *query;
 
@@ -113,7 +123,8 @@ struct crabdb_stmt {
     int step_state;
 };
 
-struct crabdb_txn {
+struct crabdb_txn
+{
     crabdb_handle_t *db;
     int active;
 };
@@ -122,24 +133,31 @@ struct crabdb_txn {
  * Helpers
  * ============================================================ */
 
-static int crabdb_is_threaded(crabdb_handle_t *db) {
+static int crabdb_is_threaded(crabdb_handle_t *db)
+{
     return db && db->config.thread_mode != CRABDB_THREAD_SINGLE;
 }
 
-static void crabdb_lock(crabdb_handle_t *db) {
-    if (crabdb_is_threaded(db)) {
+static void crabdb_lock(crabdb_handle_t *db)
+{
+    if (crabdb_is_threaded(db))
+    {
         crabdb_mutex_lock(&db->mutex);
     }
 }
 
-static void crabdb_unlock(crabdb_handle_t *db) {
-    if (crabdb_is_threaded(db)) {
+static void crabdb_unlock(crabdb_handle_t *db)
+{
+    if (crabdb_is_threaded(db))
+    {
         crabdb_mutex_unlock(&db->mutex);
     }
 }
 
-static void crabdb_set_error(crabdb_handle_t *db, const char *msg) {
-    if (db && msg) {
+static void crabdb_set_error(crabdb_handle_t *db, const char *msg)
+{
+    if (db && msg)
+    {
         snprintf(db->errmsg, sizeof(db->errmsg), "%s", msg);
     }
 }
@@ -151,21 +169,26 @@ static void crabdb_set_error(crabdb_handle_t *db, const char *msg) {
 int fossil_io_crabdb_open(
     const char *path,
     const crabdb_config_t *config,
-    crabdb_handle_t **out_db
-) {
-    if (!path || !out_db) return CRABDB_INVALID;
+    crabdb_handle_t **out_db)
+{
+    if (!path || !out_db)
+        return CRABDB_INVALID;
 
     crabdb_handle_t *db = calloc(1, sizeof(*db));
-    if (!db) return CRABDB_NOMEM;
+    if (!db)
+        return CRABDB_NOMEM;
 
     db->path = strdup(path);
-    if (!db->path) {
+    if (!db->path)
+    {
         free(db);
         return CRABDB_NOMEM;
     }
 
-    if (config) db->config = *config;
-    else {
+    if (config)
+        db->config = *config;
+    else
+    {
         db->config.thread_mode = CRABDB_THREAD_SINGLE;
         db->config.page_size = 4096;
         db->config.cache_size = 1024;
@@ -177,8 +200,10 @@ int fossil_io_crabdb_open(
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_close(crabdb_handle_t *db) {
-    if (!db) return CRABDB_INVALID;
+int fossil_io_crabdb_close(crabdb_handle_t *db)
+{
+    if (!db)
+        return CRABDB_INVALID;
 
     crabdb_mutex_destroy(&db->mutex);
 
@@ -188,7 +213,8 @@ int fossil_io_crabdb_close(crabdb_handle_t *db) {
     return CRABDB_OK;
 }
 
-const char *fossil_io_crabdb_errmsg(crabdb_handle_t *db) {
+const char *fossil_io_crabdb_errmsg(crabdb_handle_t *db)
+{
     return db ? db->errmsg : "no db";
 }
 
@@ -196,13 +222,16 @@ const char *fossil_io_crabdb_errmsg(crabdb_handle_t *db) {
  * Execution
  * ============================================================ */
 
-int fossil_io_crabdb_exec(crabdb_handle_t *db, const char *query) {
-    if (!db || !query) return CRABDB_INVALID;
+int fossil_io_crabdb_exec(crabdb_handle_t *db, const char *query)
+{
+    if (!db || !query)
+        return CRABDB_INVALID;
 
     crabdb_lock(db);
 
     size_t len = strlen(query);
-    if (len == 0) {
+    if (len == 0)
+    {
         crabdb_set_error(db, "empty query");
     }
 
@@ -213,12 +242,14 @@ int fossil_io_crabdb_exec(crabdb_handle_t *db, const char *query) {
 int fossil_io_crabdb_prepare(
     crabdb_handle_t *db,
     const char *query,
-    crabdb_stmt_t **out_stmt
-) {
-    if (!db || !query || !out_stmt) return CRABDB_INVALID;
+    crabdb_stmt_t **out_stmt)
+{
+    if (!db || !query || !out_stmt)
+        return CRABDB_INVALID;
 
     crabdb_stmt_t *stmt = calloc(1, sizeof(*stmt));
-    if (!stmt) return CRABDB_NOMEM;
+    if (!stmt)
+        return CRABDB_NOMEM;
 
     stmt->db = db;
     stmt->query = strdup(query);
@@ -231,15 +262,20 @@ int fossil_io_crabdb_prepare(
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_step(crabdb_stmt_t *stmt) {
-    if (!stmt) return CRABDB_INVALID;
+int fossil_io_crabdb_step(crabdb_stmt_t *stmt)
+{
+    if (!stmt)
+        return CRABDB_INVALID;
 
-    if (stmt->step_state++ == 0) return CRABDB_ROW;
+    if (stmt->step_state++ == 0)
+        return CRABDB_ROW;
     return CRABDB_DONE;
 }
 
-int fossil_io_crabdb_finalize(crabdb_stmt_t *stmt) {
-    if (!stmt) return CRABDB_INVALID;
+int fossil_io_crabdb_finalize(crabdb_stmt_t *stmt)
+{
+    if (!stmt)
+        return CRABDB_INVALID;
 
     free(stmt->query);
     free(stmt);
@@ -247,8 +283,10 @@ int fossil_io_crabdb_finalize(crabdb_stmt_t *stmt) {
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_reset(crabdb_stmt_t *stmt) {
-    if (!stmt) return CRABDB_INVALID;
+int fossil_io_crabdb_reset(crabdb_stmt_t *stmt)
+{
+    if (!stmt)
+        return CRABDB_INVALID;
 
     stmt->step_state = 0;
     return CRABDB_OK;
@@ -258,8 +296,10 @@ int fossil_io_crabdb_reset(crabdb_stmt_t *stmt) {
  * Transactions
  * ============================================================ */
 
-int fossil_io_crabdb_begin(crabdb_handle_t *db, crabdb_txn_t **out) {
-    if (!db || !out) return CRABDB_INVALID;
+int fossil_io_crabdb_begin(crabdb_handle_t *db, crabdb_txn_t **out)
+{
+    if (!db || !out)
+        return CRABDB_INVALID;
 
     crabdb_txn_t *txn = calloc(1, sizeof(*txn));
     txn->db = db;
@@ -269,8 +309,10 @@ int fossil_io_crabdb_begin(crabdb_handle_t *db, crabdb_txn_t **out) {
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_commit(crabdb_txn_t *txn) {
-    if (!txn || !txn->active) return CRABDB_INVALID;
+int fossil_io_crabdb_commit(crabdb_txn_t *txn)
+{
+    if (!txn || !txn->active)
+        return CRABDB_INVALID;
 
     txn->active = 0;
     free(txn);
@@ -278,8 +320,10 @@ int fossil_io_crabdb_commit(crabdb_txn_t *txn) {
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_rollback(crabdb_txn_t *txn) {
-    if (!txn || !txn->active) return CRABDB_INVALID;
+int fossil_io_crabdb_rollback(crabdb_txn_t *txn)
+{
+    if (!txn || !txn->active)
+        return CRABDB_INVALID;
 
     txn->active = 0;
     free(txn);
@@ -292,18 +336,23 @@ int fossil_io_crabdb_rollback(crabdb_txn_t *txn) {
  * ============================================================ */
 
 int fossil_io_crabdb_create_family(crabdb_handle_t *db,
-    const char *name, const char *schema) {
-    if (!db || !name || !schema) return CRABDB_INVALID;
+                                   const char *name, const char *schema)
+{
+    if (!db || !name || !schema)
+        return CRABDB_INVALID;
     return CRABDB_OK;
 }
 
 int fossil_io_crabdb_relate(crabdb_handle_t *db,
-    const char *pf, int64_t pid,
-    const char *cf, int64_t cid) {
+                            const char *pf, int64_t pid,
+                            const char *cf, int64_t cid)
+{
 
-    if (!db || !pf || !cf) return CRABDB_INVALID;
+    if (!db || !pf || !cf)
+        return CRABDB_INVALID;
 
-    if (pid == cid) {
+    if (pid == cid)
+    {
         crabdb_set_error(db, "self relation");
     }
 
@@ -314,9 +363,10 @@ int fossil_io_crabdb_query_lineage(
     crabdb_handle_t *db,
     const char *family,
     int64_t id,
-    crabdb_stmt_t **out_stmt
-) {
-    if (!db || !family || !out_stmt) return CRABDB_INVALID;
+    crabdb_stmt_t **out_stmt)
+{
+    if (!db || !family || !out_stmt)
+        return CRABDB_INVALID;
 
     char buf[64];
     snprintf(buf, sizeof(buf), "lineage:%s:%lld", family, (long long)id);
@@ -328,14 +378,17 @@ int fossil_io_crabdb_query_lineage(
  * Utility
  * ============================================================ */
 
-const char *fossil_io_crabdb_version(void) {
+const char *fossil_io_crabdb_version(void)
+{
     return "CrabDB 0.1.0";
 }
 
-int fossil_io_crabdb_init(void) {
+int fossil_io_crabdb_init(void)
+{
     return CRABDB_OK;
 }
 
-int fossil_io_crabdb_shutdown(void) {
+int fossil_io_crabdb_shutdown(void)
+{
     return CRABDB_OK;
 }

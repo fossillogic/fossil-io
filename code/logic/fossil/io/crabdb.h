@@ -34,11 +34,11 @@ extern "C"
 
 #include <stdint.h>
 
-/* ============================================================
+    /* ============================================================
 
- * Visibility / API macro
+     * Visibility / API macro
 
- * ============================================================ */
+     * ============================================================ */
 
 #ifndef FOSSIL_IO_CRABDB_API
 
@@ -46,450 +46,451 @@ extern "C"
 
 #endif
 
-/* ============================================================
+    /* ============================================================
 
- * Opaque Types
+     * Opaque Types
 
- * ============================================================ */
+     * ============================================================ */
 
-typedef struct crabdb_handle crabdb_handle_t;
+    typedef struct crabdb_handle crabdb_handle_t;
 
-typedef struct crabdb_stmt crabdb_stmt_t;
+    typedef struct crabdb_stmt crabdb_stmt_t;
 
-typedef struct crabdb_txn crabdb_txn_t;
+    typedef struct crabdb_txn crabdb_txn_t;
 
-/* ============================================================
+    /* ============================================================
 
- * Result Codes
+     * Result Codes
 
- * ============================================================ */
+     * ============================================================ */
 
-typedef enum {
+    typedef enum
+    {
+        CRABDB_OK = 0,
+        CRABDB_ERROR = -1,
+        CRABDB_BUSY = -2,
+        CRABDB_NOMEM = -3,
+        CRABDB_INVALID = -4,
+        CRABDB_NOTFOUND = -5,
+        CRABDB_DONE = 1,
+        CRABDB_ROW = 2
 
-    CRABDB_OK = 0,
+    } crabdb_result_t;
 
-    CRABDB_ERROR = -1,
+    /* ============================================================
 
-    CRABDB_BUSY = -2,
+     * Threading Modes
 
-    CRABDB_NOMEM = -3,
+     * ============================================================ */
 
-    CRABDB_INVALID = -4,
+    typedef enum
+    {
 
-    CRABDB_NOTFOUND = -5,
+        CRABDB_THREAD_SINGLE = 0,
+        CRABDB_THREAD_SERIALIZED = 1,
+        CRABDB_THREAD_MULTI = 2
 
-    CRABDB_DONE = 1,
+    } crabdb_thread_mode_t;
 
-    CRABDB_ROW = 2
+    /* ============================================================
 
-} crabdb_result_t;
+     * Data Types (Extended Numeric System)
 
-/* ============================================================
+     * ============================================================ */
 
- * Threading Modes
+    typedef enum
+    {
 
- * ============================================================ */
+        CRABDB_TYPE_NULL = 0,
 
-typedef enum {
+        /* Signed integers */
 
-    CRABDB_THREAD_SINGLE = 0,
+        CRABDB_TYPE_I8,
 
-    CRABDB_THREAD_SERIALIZED = 1,
+        CRABDB_TYPE_I16,
 
-    CRABDB_THREAD_MULTI = 2
+        CRABDB_TYPE_I32,
 
-} crabdb_thread_mode_t;
+        CRABDB_TYPE_I64,
 
-/* ============================================================
+        /* Unsigned integers */
 
- * Data Types (Extended Numeric System)
+        CRABDB_TYPE_U8,
 
- * ============================================================ */
+        CRABDB_TYPE_U16,
 
-typedef enum {
+        CRABDB_TYPE_U32,
 
-    CRABDB_TYPE_NULL = 0,
+        CRABDB_TYPE_U64,
 
-    /* Signed integers */
+        /* Floating point */
 
-    CRABDB_TYPE_I8,
+        CRABDB_TYPE_F32,
 
-    CRABDB_TYPE_I16,
+        CRABDB_TYPE_F64,
 
-    CRABDB_TYPE_I32,
+        /* Other */
 
-    CRABDB_TYPE_I64,
+        CRABDB_TYPE_BOOL,
 
-    /* Unsigned integers */
+        CRABDB_TYPE_TEXT,
 
-    CRABDB_TYPE_U8,
+        CRABDB_TYPE_BLOB,
 
-    CRABDB_TYPE_U16,
+        CRABDB_TYPE_DATE,
 
-    CRABDB_TYPE_U32,
+        CRABDB_TYPE_JSON,
 
-    CRABDB_TYPE_U64,
+        CRABDB_TYPE_UUID
 
-    /* Floating point */
+    } crabdb_type_t;
 
-    CRABDB_TYPE_F32,
+    /* ============================================================
+     * Numeric Range Metadata
+     * ============================================================ */
 
-    CRABDB_TYPE_F64,
+    typedef struct crabdb_numeric_range_signed_t
+    {
+        int64_t min;
+        int64_t max;
+    } crabdb_numeric_range_signed_t;
 
-    /* Other */
+    typedef struct crabdb_numeric_range_unsigned_t
+    {
+        uint64_t min;
+        uint64_t max;
+    } crabdb_numeric_range_unsigned_t;
 
-    CRABDB_TYPE_BOOL,
+    typedef struct crabdb_numeric_range
+    {
+        uint8_t bits;      /* 8, 16, 32, 64 */
+        uint8_t is_signed; /* 1 = signed, 0 = unsigned */
 
-    CRABDB_TYPE_TEXT,
+        union
+        {
+            crabdb_numeric_range_signed_t s;
+            crabdb_numeric_range_unsigned_t u;
+        } range;
 
-    CRABDB_TYPE_BLOB,
+    } crabdb_numeric_range_t;
 
-    CRABDB_TYPE_DATE,
+    /* ============================================================
 
-    CRABDB_TYPE_JSON,
+     * Value Container
 
-    CRABDB_TYPE_UUID
+     * ============================================================ */
 
-} crabdb_type_t;
+    typedef struct crabdb_value
+    {
 
-/* ============================================================
- * Numeric Range Metadata
- * ============================================================ */
+        crabdb_type_t type;
 
-typedef struct crabdb_numeric_range_signed_t {
-    int64_t min;
-    int64_t max;
-} crabdb_numeric_range_signed_t;
+        union
+        {
 
-typedef struct crabdb_numeric_range_unsigned_t {
-    uint64_t min;
-    uint64_t max;
-} crabdb_numeric_range_unsigned_t;
+            int64_t i64;
 
-typedef struct crabdb_numeric_range {
-    uint8_t bits;        /* 8, 16, 32, 64 */
-    uint8_t is_signed;   /* 1 = signed, 0 = unsigned */
+            uint64_t u64;
 
-    union {
-        crabdb_numeric_range_signed_t s;
-        crabdb_numeric_range_unsigned_t u;
-    } range;
+            double f64;
 
-} crabdb_numeric_range_t;
+            float f32;
 
-/* ============================================================
+            const char *s;
 
- * Value Container
+            struct
+            {
 
- * ============================================================ */
+                const void *data;
 
-typedef struct crabdb_value {
+                size_t size;
 
-    crabdb_type_t type;
+            } blob;
 
-    union {
+            int b;
 
-        int64_t     i64;
+        } as;
 
-        uint64_t    u64;
+    } crabdb_value_t;
 
-        double      f64;
+    /* ============================================================
 
-        float       f32;
+     * Configuration
 
-        const char *s;
+     * ============================================================ */
 
-        struct {
+    typedef struct crabdb_config
+    {
 
-            const void *data;
+        crabdb_thread_mode_t thread_mode;
 
-            size_t size;
+        int enable_wal;
 
-        } blob;
+        int enable_foreign_keys;
 
-        int         b;
+        size_t page_size;
 
-    } as;
+        size_t cache_size;
 
-} crabdb_value_t;
+    } crabdb_config_t;
 
-/* ============================================================
+    /* ============================================================
 
- * Configuration
+     * Core Lifecycle
 
- * ============================================================ */
+     * ============================================================ */
 
-typedef struct crabdb_config {
+    FOSSIL_IO_CRABDB_API int
 
-    crabdb_thread_mode_t thread_mode;
+    fossil_io_crabdb_open(
 
-    int enable_wal;
+        const char *path,
 
-    int enable_foreign_keys;
+        const crabdb_config_t *config,
 
-    size_t page_size;
+        crabdb_handle_t **out_db
 
-    size_t cache_size;
+    );
 
-} crabdb_config_t;
+    FOSSIL_IO_CRABDB_API int
 
-/* ============================================================
+    fossil_io_crabdb_close(
 
- * Core Lifecycle
+        crabdb_handle_t *db
 
- * ============================================================ */
+    );
 
-FOSSIL_IO_CRABDB_API int
+    FOSSIL_IO_CRABDB_API const char *
 
-fossil_io_crabdb_open(
+    fossil_io_crabdb_errmsg(
 
-    const char *path,
+        crabdb_handle_t *db
 
-    const crabdb_config_t *config,
+    );
 
-    crabdb_handle_t **out_db
+    /* ============================================================
 
-);
+     * Execution API
 
-FOSSIL_IO_CRABDB_API int
+     * ============================================================ */
 
-fossil_io_crabdb_close(
+    FOSSIL_IO_CRABDB_API int
 
-    crabdb_handle_t *db
+    fossil_io_crabdb_exec(
 
-);
+        crabdb_handle_t *db,
 
-FOSSIL_IO_CRABDB_API const char *
+        const char *query
 
-fossil_io_crabdb_errmsg(
+    );
 
-    crabdb_handle_t *db
+    FOSSIL_IO_CRABDB_API int
 
-);
+    fossil_io_crabdb_prepare(
 
-/* ============================================================
+        crabdb_handle_t *db,
 
- * Execution API
+        const char *query,
 
- * ============================================================ */
+        crabdb_stmt_t **out_stmt
 
-FOSSIL_IO_CRABDB_API int
+    );
 
-fossil_io_crabdb_exec(
+    FOSSIL_IO_CRABDB_API int
 
-    crabdb_handle_t *db,
+    fossil_io_crabdb_step(
 
-    const char *query
+        crabdb_stmt_t *stmt
 
-);
+    );
 
-FOSSIL_IO_CRABDB_API int
+    FOSSIL_IO_CRABDB_API int
 
-fossil_io_crabdb_prepare(
+    fossil_io_crabdb_finalize(
 
-    crabdb_handle_t *db,
+        crabdb_stmt_t *stmt
 
-    const char *query,
+    );
 
-    crabdb_stmt_t **out_stmt
+    FOSSIL_IO_CRABDB_API int
 
-);
+    fossil_io_crabdb_reset(
 
-FOSSIL_IO_CRABDB_API int
+        crabdb_stmt_t *stmt
 
-fossil_io_crabdb_step(
+    );
 
-    crabdb_stmt_t *stmt
+    /* ============================================================
 
-);
+     * Binding Parameters (Typed)
 
-FOSSIL_IO_CRABDB_API int
+     * ============================================================ */
 
-fossil_io_crabdb_finalize(
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i8(crabdb_stmt_t *, int, int8_t);
 
-    crabdb_stmt_t *stmt
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i16(crabdb_stmt_t *, int, int16_t);
 
-);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i32(crabdb_stmt_t *, int, int32_t);
 
-FOSSIL_IO_CRABDB_API int
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i64(crabdb_stmt_t *, int, int64_t);
 
-fossil_io_crabdb_reset(
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u8(crabdb_stmt_t *, int, uint8_t);
 
-    crabdb_stmt_t *stmt
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u16(crabdb_stmt_t *, int, uint16_t);
 
-);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u32(crabdb_stmt_t *, int, uint32_t);
 
-/* ============================================================
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u64(crabdb_stmt_t *, int, uint64_t);
 
- * Binding Parameters (Typed)
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_f32(crabdb_stmt_t *, int, float);
 
- * ============================================================ */
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_f64(crabdb_stmt_t *, int, double);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i8  (crabdb_stmt_t*, int, int8_t);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_text(
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i16 (crabdb_stmt_t*, int, int16_t);
+        crabdb_stmt_t *stmt, int index, const char *value);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i32 (crabdb_stmt_t*, int, int32_t);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_blob(
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_i64 (crabdb_stmt_t*, int, int64_t);
+        crabdb_stmt_t *stmt, int index, const void *data, size_t size);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u8  (crabdb_stmt_t*, int, uint8_t);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_null(
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u16 (crabdb_stmt_t*, int, uint16_t);
+        crabdb_stmt_t *stmt, int index);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u32 (crabdb_stmt_t*, int, uint32_t);
+    /* ============================================================
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_u64 (crabdb_stmt_t*, int, uint64_t);
+     * Column Access (Typed)
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_f32 (crabdb_stmt_t*, int, float);
+     * ============================================================ */
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_f64 (crabdb_stmt_t*, int, double);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_column_count(crabdb_stmt_t *);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_text(
+    FOSSIL_IO_CRABDB_API crabdb_type_t
 
-    crabdb_stmt_t *stmt, int index, const char *value);
+    fossil_io_crabdb_column_type(crabdb_stmt_t *, int col);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_blob(
+    FOSSIL_IO_CRABDB_API int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t *, int);
 
-    crabdb_stmt_t *stmt, int index, const void *data, size_t size);
+    FOSSIL_IO_CRABDB_API int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t *, int);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_bind_null(
+    FOSSIL_IO_CRABDB_API int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t *, int);
 
-    crabdb_stmt_t *stmt, int index);
+    FOSSIL_IO_CRABDB_API int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t *, int);
 
-/* ============================================================
+    FOSSIL_IO_CRABDB_API uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t *, int);
 
- * Column Access (Typed)
+    FOSSIL_IO_CRABDB_API uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t *, int);
 
- * ============================================================ */
+    FOSSIL_IO_CRABDB_API uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t *, int);
 
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_column_count(crabdb_stmt_t*);
+    FOSSIL_IO_CRABDB_API uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t *, int);
 
-FOSSIL_IO_CRABDB_API crabdb_type_t
+    FOSSIL_IO_CRABDB_API float fossil_io_crabdb_column_f32(crabdb_stmt_t *, int);
 
-fossil_io_crabdb_column_type(crabdb_stmt_t*, int col);
+    FOSSIL_IO_CRABDB_API double fossil_io_crabdb_column_f64(crabdb_stmt_t *, int);
 
-FOSSIL_IO_CRABDB_API int8_t   fossil_io_crabdb_column_i8 (crabdb_stmt_t*, int);
+    FOSSIL_IO_CRABDB_API const char *
 
-FOSSIL_IO_CRABDB_API int16_t  fossil_io_crabdb_column_i16(crabdb_stmt_t*, int);
+    fossil_io_crabdb_column_text(crabdb_stmt_t *, int);
 
-FOSSIL_IO_CRABDB_API int32_t  fossil_io_crabdb_column_i32(crabdb_stmt_t*, int);
+    FOSSIL_IO_CRABDB_API const void *
 
-FOSSIL_IO_CRABDB_API int64_t  fossil_io_crabdb_column_i64(crabdb_stmt_t*, int);
+    fossil_io_crabdb_column_blob(crabdb_stmt_t *, int, size_t *out_size);
 
-FOSSIL_IO_CRABDB_API uint8_t  fossil_io_crabdb_column_u8 (crabdb_stmt_t*, int);
+    /* ============================================================
 
-FOSSIL_IO_CRABDB_API uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t*, int);
+     * Transactions
 
-FOSSIL_IO_CRABDB_API uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t*, int);
+     * ============================================================ */
 
-FOSSIL_IO_CRABDB_API uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t*, int);
+    FOSSIL_IO_CRABDB_API int
 
-FOSSIL_IO_CRABDB_API float    fossil_io_crabdb_column_f32(crabdb_stmt_t*, int);
+    fossil_io_crabdb_begin(crabdb_handle_t *, crabdb_txn_t **);
 
-FOSSIL_IO_CRABDB_API double   fossil_io_crabdb_column_f64(crabdb_stmt_t*, int);
+    FOSSIL_IO_CRABDB_API int
 
-FOSSIL_IO_CRABDB_API const char *
+    fossil_io_crabdb_commit(crabdb_txn_t *);
 
-fossil_io_crabdb_column_text(crabdb_stmt_t*, int);
+    FOSSIL_IO_CRABDB_API int
 
-FOSSIL_IO_CRABDB_API const void *
+    fossil_io_crabdb_rollback(crabdb_txn_t *);
 
-fossil_io_crabdb_column_blob(crabdb_stmt_t*, int, size_t *out_size);
+    /* ============================================================
 
-/* ============================================================
+     * Family Tree Model
 
- * Transactions
+     * ============================================================ */
 
- * ============================================================ */
+    FOSSIL_IO_CRABDB_API int
 
-FOSSIL_IO_CRABDB_API int
+    fossil_io_crabdb_create_family(
 
-fossil_io_crabdb_begin(crabdb_handle_t*, crabdb_txn_t**);
+        crabdb_handle_t *db,
 
-FOSSIL_IO_CRABDB_API int
+        const char *name,
 
-fossil_io_crabdb_commit(crabdb_txn_t*);
+        const char *schema
 
-FOSSIL_IO_CRABDB_API int
+    );
 
-fossil_io_crabdb_rollback(crabdb_txn_t*);
+    FOSSIL_IO_CRABDB_API int
 
-/* ============================================================
+    fossil_io_crabdb_relate(
 
- * Family Tree Model
+        crabdb_handle_t *db,
 
- * ============================================================ */
+        const char *parent_family,
 
-FOSSIL_IO_CRABDB_API int
+        int64_t parent_id,
 
-fossil_io_crabdb_create_family(
+        const char *child_family,
 
-    crabdb_handle_t *db,
+        int64_t child_id
 
-    const char *name,
+    );
 
-    const char *schema
+    FOSSIL_IO_CRABDB_API int
 
-);
+    fossil_io_crabdb_query_lineage(
 
-FOSSIL_IO_CRABDB_API int
+        crabdb_handle_t *db,
 
-fossil_io_crabdb_relate(
+        const char *family,
 
-    crabdb_handle_t *db,
+        int64_t id,
 
-    const char *parent_family,
+        crabdb_stmt_t **out_stmt
 
-    int64_t parent_id,
+    );
 
-    const char *child_family,
+    /* ============================================================
 
-    int64_t child_id
+     * Type Introspection
 
-);
+     * ============================================================ */
 
-FOSSIL_IO_CRABDB_API int
+    FOSSIL_IO_CRABDB_API int
 
-fossil_io_crabdb_query_lineage(
+    fossil_io_crabdb_type_bits(crabdb_type_t type);
 
-    crabdb_handle_t *db,
+    FOSSIL_IO_CRABDB_API int
 
-    const char *family,
+    fossil_io_crabdb_type_is_signed(crabdb_type_t type);
 
-    int64_t id,
+    /* ============================================================
 
-    crabdb_stmt_t **out_stmt
+     * Utility
 
-);
+     * ============================================================ */
 
-/* ============================================================
+    FOSSIL_IO_CRABDB_API const char *
 
- * Type Introspection
+    fossil_io_crabdb_version(void);
 
- * ============================================================ */
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_init(void);
 
-FOSSIL_IO_CRABDB_API int
-
-fossil_io_crabdb_type_bits(crabdb_type_t type);
-
-FOSSIL_IO_CRABDB_API int
-
-fossil_io_crabdb_type_is_signed(crabdb_type_t type);
-
-/* ============================================================
-
- * Utility
-
- * ============================================================ */
-
-FOSSIL_IO_CRABDB_API const char *
-
-fossil_io_crabdb_version(void);
-
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_init(void);
-
-FOSSIL_IO_CRABDB_API int fossil_io_crabdb_shutdown(void);
+    FOSSIL_IO_CRABDB_API int fossil_io_crabdb_shutdown(void);
 
 #ifdef __cplusplus
 }
@@ -498,8 +499,6 @@ FOSSIL_IO_CRABDB_API int fossil_io_crabdb_shutdown(void);
 
 namespace fossil::io
 {
-
-
 
 } // namespace fossil
 
