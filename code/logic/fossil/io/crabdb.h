@@ -496,9 +496,427 @@ extern "C"
 }
 
 #include <string>
+#include <stdexcept>
+#include <vector>
 
 namespace fossil::io
 {
+
+class CrabDB {
+
+public:
+
+    CrabDB() = default;
+
+    explicit CrabDB(const std::string& path,
+
+                    const crabdb_config_t* config = nullptr) {
+
+        open(path, config);
+
+    }
+
+    ~CrabDB() {
+
+        close();
+
+    }
+
+    /* =========================
+
+     * Non-copyable
+
+     * ========================= */
+
+    CrabDB(const CrabDB&) = delete;
+
+    CrabDB& operator=(const CrabDB&) = delete;
+
+    /* =========================
+
+     * Movable
+
+     * ========================= */
+
+    CrabDB(CrabDB&& other) noexcept {
+
+        db_ = other.db_;
+
+        other.db_ = nullptr;
+
+    }
+
+    CrabDB& operator=(CrabDB&& other) noexcept {
+
+        if (this != &other) {
+
+            close();
+
+            db_ = other.db_;
+
+            other.db_ = nullptr;
+
+        }
+
+        return *this;
+
+    }
+
+    /* ============================================================
+
+     * Lifecycle
+
+     * ============================================================ */
+
+    void open(const std::string& path,
+
+              const crabdb_config_t* config = nullptr) {
+
+        close();
+
+        int rc = fossil_io_crabdb_open(
+
+            path.c_str(),
+
+            config,
+
+            &db_
+
+        );
+
+        if (rc != CRABDB_OK) {
+
+            throw std::runtime_error("crabdb_open failed");
+
+        }
+
+    }
+
+    void close() {
+
+        if (db_) {
+
+            fossil_io_crabdb_close(db_);
+
+            db_ = nullptr;
+
+        }
+
+    }
+
+    std::string errmsg() const {
+
+        return db_ ? fossil_io_crabdb_errmsg(db_) : "no db";
+
+    }
+
+    /* ============================================================
+
+     * Execution
+
+     * ============================================================ */
+
+    void exec(const std::string& query) {
+
+        check_db();
+
+        int rc = fossil_io_crabdb_exec(db_, query.c_str());
+
+        check(rc);
+
+    }
+
+    /* ============================================================
+
+     * Statement Wrapper
+
+     * ============================================================ */
+
+    class Statement {
+
+    public:
+
+        Statement() = default;
+
+        explicit Statement(crabdb_stmt_t* stmt)
+
+            : stmt_(stmt) {}
+
+        ~Statement() {
+
+            finalize();
+
+        }
+
+        Statement(const Statement&) = delete;
+
+        Statement& operator=(const Statement&) = delete;
+
+        Statement(Statement&& other) noexcept {
+
+            stmt_ = other.stmt_;
+
+            other.stmt_ = nullptr;
+
+        }
+
+        Statement& operator=(Statement&& other) noexcept {
+
+            if (this != &other) {
+
+                finalize();
+
+                stmt_ = other.stmt_;
+
+                other.stmt_ = nullptr;
+
+            }
+
+            return *this;
+
+        }
+
+        /* =========================
+
+         * Step
+
+         * ========================= */
+
+        bool step() {
+
+            int rc = fossil_io_crabdb_step(stmt_);
+
+            if (rc == CRABDB_ROW) return true;
+
+            if (rc == CRABDB_DONE) return false;
+
+            throw std::runtime_error("step failed");
+
+        }
+
+        void reset() {
+
+            fossil_io_crabdb_reset(stmt_);
+
+        }
+
+        void finalize() {
+
+            if (stmt_) {
+
+                fossil_io_crabdb_finalize(stmt_);
+
+                stmt_ = nullptr;
+
+            }
+
+        }
+
+        /* =========================
+
+         * Bindings (snake_case)
+
+         * ========================= */
+
+        void bind_i32(int idx, int32_t v) {
+
+            fossil_io_crabdb_bind_i32(stmt_, idx, v);
+
+        }
+
+        void bind_i64(int idx, int64_t v) {
+
+            fossil_io_crabdb_bind_i64(stmt_, idx, v);
+
+        }
+
+        void bind_u64(int idx, uint64_t v) {
+
+            fossil_io_crabdb_bind_u64(stmt_, idx, v);
+
+        }
+
+        void bind_f64(int idx, double v) {
+
+            fossil_io_crabdb_bind_f64(stmt_, idx, v);
+
+        }
+
+        void bind_text(int idx, const std::string& v) {
+
+            fossil_io_crabdb_bind_text(stmt_, idx, v.c_str());
+
+        }
+
+        void bind_null(int idx) {
+
+            fossil_io_crabdb_bind_null(stmt_, idx);
+
+        }
+
+        /* =========================
+
+         * Column Access
+
+         * ========================= */
+
+        int column_count() const {
+
+            return fossil_io_crabdb_column_count(stmt_);
+
+        }
+
+        int32_t column_i32(int col) const {
+
+            return fossil_io_crabdb_column_i32(stmt_, col);
+
+        }
+
+        int64_t column_i64(int col) const {
+
+            return fossil_io_crabdb_column_i64(stmt_, col);
+
+        }
+
+        uint64_t column_u64(int col) const {
+
+            return fossil_io_crabdb_column_u64(stmt_, col);
+
+        }
+
+        double column_f64(int col) const {
+
+            return fossil_io_crabdb_column_f64(stmt_, col);
+
+        }
+
+        std::string column_text(int col) const {
+
+            const char* s = fossil_io_crabdb_column_text(stmt_, col);
+
+            return s ? s : "";
+
+        }
+
+    private:
+
+        crabdb_stmt_t* stmt_ = nullptr;
+
+    };
+
+    /* ============================================================
+
+     * Prepare
+
+     * ============================================================ */
+
+    Statement prepare(const std::string& query) {
+
+        check_db();
+
+        crabdb_stmt_t* stmt = nullptr;
+
+        int rc = fossil_io_crabdb_prepare(
+
+            db_,
+
+            query.c_str(),
+
+            &stmt
+
+        );
+
+        check(rc);
+
+        return Statement(stmt);
+
+    }
+
+    /* ============================================================
+
+     * Transactions (RAII)
+
+     * ============================================================ */
+
+    class Transaction {
+
+    public:
+
+        Transaction(crabdb_handle_t* db) : db_(db) {
+
+            int rc = fossil_io_crabdb_begin(db_, &txn_);
+
+            if (rc != CRABDB_OK) {
+
+                throw std::runtime_error("begin failed");
+
+            }
+
+        }
+
+        ~Transaction() {
+
+            if (txn_) {
+
+                fossil_io_crabdb_rollback(txn_);
+
+            }
+
+        }
+
+        void commit() {
+
+            if (txn_) {
+
+                fossil_io_crabdb_commit(txn_);
+
+                txn_ = nullptr;
+
+            }
+
+        }
+
+    private:
+
+        crabdb_handle_t* db_ = nullptr;
+
+        crabdb_txn_t* txn_ = nullptr;
+
+    };
+
+    Transaction begin() {
+
+        check_db();
+
+        return Transaction(db_);
+
+    }
+
+private:
+
+    crabdb_handle_t* db_ = nullptr;
+
+    void check_db() const {
+
+        if (!db_) {
+
+            throw std::runtime_error("database not open");
+
+        }
+
+    }
+
+    void check(int rc) const {
+
+        if (rc != CRABDB_OK) {
+
+            throw std::runtime_error(errmsg());
+
+        }
+
+    }
+
+};
 
 } // namespace fossil
 
