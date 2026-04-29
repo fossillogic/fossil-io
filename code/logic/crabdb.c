@@ -162,6 +162,18 @@ static void crabdb_set_error(crabdb_handle_t *db, const char *msg)
     }
 }
 
+const char* custom_strdup(const char *s)
+{
+    if (!s)
+        return NULL;
+
+    size_t len = strlen(s);
+    char *copy = malloc(len + 1);
+    if (copy)
+        strcpy(copy, s);
+    return copy;
+}
+
 /* ============================================================
  * Lifecycle
  * ============================================================ */
@@ -178,7 +190,7 @@ int fossil_io_crabdb_open(
     if (!db)
         return CRABDB_NOMEM;
 
-    db->path = strdup(path);
+    db->path = custom_strdup(path);
     if (!db->path)
     {
         free(db);
@@ -222,20 +234,131 @@ const char *fossil_io_crabdb_errmsg(crabdb_handle_t *db)
  * Execution
  * ============================================================ */
 
+typedef enum {
+    CRABDB_EXPR_LITERAL,
+    CRABDB_EXPR_ADD,
+    CRABDB_EXPR_SUB
+} crabdb_expr_kind_t;
+
+typedef struct crabdb_expr {
+    crabdb_expr_kind_t kind;
+
+    crabdb_value_t value;
+
+    struct crabdb_expr *left;
+    struct crabdb_expr *right;
+
+} crabdb_expr_t;
+
+static crabdb_expr_t* parse_literal(const char* s, int* consumed) {
+    s = skip_ws(s);
+
+    int64_t v;
+    int n = parse_int64(s, &v);
+
+    if (n > 0) {
+        crabdb_expr_t* e = calloc(1, sizeof(*e));
+        e->kind = CRABDB_EXPR_LITERAL;
+        e->value.type = CRABDB_TYPE_I64;
+        e->value.as.i64 = v;
+
+        *consumed = n;
+        return e;
+    }
+
+    /* i32(123) */
+    if (strncmp(s, "i32(", 4) == 0) {
+        s += 4;
+        n = parse_int64(s, &v);
+        if (n > 0 && s[n] == ')') {
+            crabdb_expr_t* e = calloc(1, sizeof(*e));
+            e->kind = CRABDB_EXPR_LITERAL;
+            e->value.type = CRABDB_TYPE_I32;
+            e->value.as.i64 = v;
+
+            *consumed = 4 + n + 1;
+            return e;
+        }
+    }
+
+    return NULL;
+}
+
+static crabdb_expr_t* parse_expr(const char* s, int* consumed) {
+    int used = 0;
+
+    crabdb_expr_t* left = parse_literal(s, &used);
+    if (!left) return NULL;
+
+    s += used;
+
+    s = skip_ws(s);
+
+    if (*s == '+' || *s == '-') {
+        char op = *s++;
+        int right_used = 0;
+
+        crabdb_expr_t* right = parse_literal(s, &right_used);
+        if (!right) return left;
+
+        crabdb_expr_t* e = calloc(1, sizeof(*e));
+        e->kind = (op == '+') ? CRABDB_EXPR_ADD : CRABDB_EXPR_SUB;
+        e->left = left;
+        e->right = right;
+
+        *consumed = used + 1 + right_used;
+        return e;
+    }
+
+    *consumed = used;
+    return left;
+}
+
+static crabdb_value_t eval_expr(crabdb_expr_t* e) {
+    crabdb_value_t out = {0};
+
+    switch (e->kind) {
+        case CRABDB_EXPR_LITERAL:
+            return e->value;
+
+        case CRABDB_EXPR_ADD: {
+            crabdb_value_t a = eval_expr(e->left);
+            crabdb_value_t b = eval_expr(e->right);
+
+            out.type = CRABDB_TYPE_I64;
+            out.as.i64 = a.as.i64 + b.as.i64;
+            return out;
+        }
+
+        case CRABDB_EXPR_SUB: {
+            crabdb_value_t a = eval_expr(e->left);
+            crabdb_value_t b = eval_expr(e->right);
+
+            out.type = CRABDB_TYPE_I64;
+            out.as.i64 = a.as.i64 - b.as.i64;
+            return out;
+        }
+    }
+
+    return out;
+}
+
 int fossil_io_crabdb_exec(crabdb_handle_t *db, const char *query)
 {
     if (!db || !query)
         return CRABDB_INVALID;
 
-    crabdb_lock(db);
+    crabdb_stmt_t *stmt = NULL;
 
-    size_t len = strlen(query);
-    if (len == 0)
-    {
-        crabdb_set_error(db, "empty query");
+    int rc = fossil_io_crabdb_prepare(db, query, &stmt);
+    if (rc != CRABDB_OK)
+        return rc;
+
+    while ((rc = fossil_io_crabdb_step(stmt)) == CRABDB_ROW) {
+        /* discard results for now */
     }
 
-    crabdb_unlock(db);
+    fossil_io_crabdb_finalize(stmt);
     return CRABDB_OK;
 }
 
@@ -252,11 +375,31 @@ int fossil_io_crabdb_prepare(
         return CRABDB_NOMEM;
 
     stmt->db = db;
-    stmt->query = strdup(query);
-    stmt->column_count = 1;
+    stmt->query = custom_strdup(query);
 
-    stmt->result_row[0].type = CRABDB_TYPE_I32;
-    stmt->result_row[0].as.i64 = 42;
+    const char* s = skip_ws(query);
+
+    if (strncmp(s, "select", 6) == 0) {
+        s += 6;
+
+        int consumed = 0;
+        crabdb_expr_t* expr = parse_expr(s, &consumed);
+
+        if (!expr) {
+            crabdb_set_error(db, "parse error");
+            free(stmt);
+            return CRABDB_ERROR;
+        }
+
+        crabdb_value_t v = eval_expr(expr);
+
+        stmt->column_count = 1;
+        stmt->result_row[0] = v;
+    } else {
+        crabdb_set_error(db, "unknown query");
+        free(stmt);
+        return CRABDB_ERROR;
+    }
 
     *out_stmt = stmt;
     return CRABDB_OK;
@@ -290,6 +433,343 @@ int fossil_io_crabdb_reset(crabdb_stmt_t *stmt)
 
     stmt->step_state = 0;
     return CRABDB_OK;
+}
+ 
+/* ============================================================
+ * Binding Parameters (Typed)
+ * ============================================================ */
+
+int fossil_io_crabdb_bind_i8(crabdb_stmt_t * stmt, int index, int8_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_I8;
+    stmt->bindings[index - 1].as.i8 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_i16(crabdb_stmt_t * stmt, int index, int16_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_I16;
+    stmt->bindings[index - 1].as.i16 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_i32(crabdb_stmt_t * stmt, int index, int32_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_I32;
+    stmt->bindings[index - 1].as.i32 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_i64(crabdb_stmt_t * stmt, int index, int64_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_I64;
+    stmt->bindings[index - 1].as.i64 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_u8(crabdb_stmt_t * stmt, int index, uint8_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_U8;
+    stmt->bindings[index - 1].as.u8 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_u16(crabdb_stmt_t * stmt, int index, uint16_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_U16;
+    stmt->bindings[index - 1].as.u16 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_u32(crabdb_stmt_t * stmt, int index, uint32_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_U32;
+    stmt->bindings[index - 1].as.u32 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_u64(crabdb_stmt_t * stmt, int index, uint64_t value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_U64;
+    stmt->bindings[index - 1].as.u64 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_f32(crabdb_stmt_t * stmt, int index, float value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_F32;
+    stmt->bindings[index - 1].as.f32 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_f64(crabdb_stmt_t * stmt, int index, double value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_F64;
+    stmt->bindings[index - 1].as.f64 = value;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_text(
+    crabdb_stmt_t *stmt, int index, const char *value)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_TEXT;
+    strcpy(stmt->bindings[index - 1].as.s, value);
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_blob(
+    crabdb_stmt_t *stmt, int index, const void *data, size_t size)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_BLOB;
+    stmt->bindings[index - 1].as.blob.data = data;
+    stmt->bindings[index - 1].as.blob.size = size;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+int fossil_io_crabdb_bind_null(
+    crabdb_stmt_t *stmt, int index)
+{
+    if (!stmt || index <= 0 || index > 32)
+        return CRABDB_INVALID;
+
+    stmt->bindings[index - 1].type = CRABDB_TYPE_NULL;
+    if (index > stmt->binding_count)
+        stmt->binding_count = index;
+
+    return CRABDB_OK;
+}
+
+/* ============================================================
+ * Column Access (Typed)
+ * ============================================================ */
+
+int fossil_io_crabdb_column_count(crabdb_stmt_t * stmt)
+{
+    if (!stmt)
+        return CRABDB_INVALID;
+
+    return stmt->column_count;
+}
+
+crabdb_type_t fossil_io_crabdb_column_type(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return CRABDB_TYPE_NULL;
+
+    return stmt->result_row[col].type;
+}
+
+int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_I8)
+        return 0;
+
+    return val->as.i8;
+}
+
+int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_I16)
+        return 0;
+
+    return val->as.i16;
+}
+
+int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_I32)
+        return 0;
+
+    return val->as.i32;
+}
+
+int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_I64)
+        return 0;
+
+    return val->as.i64;
+}
+
+uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_U8)
+        return 0;
+
+    return val->as.u8;
+}
+
+uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_U16)
+        return 0;
+
+    return val->as.u16;
+}
+
+uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_U32)
+        return 0;
+
+    return val->as.u32;
+}
+
+uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_U64)
+        return 0;
+
+    return val->as.u64;
+}
+
+float fossil_io_crabdb_column_f32(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0.0f;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_F32)
+        return 0.0f;
+
+    return val->as.f32;
+}
+
+double fossil_io_crabdb_column_f64(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return 0.0f;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_F32)
+        return 0.0f;
+
+    return val->as.f32;
+}
+
+const char *fossil_io_crabdb_column_text(crabdb_stmt_t * stmt, int col)
+{
+    if (!stmt || col < 0 || col >= stmt->column_count)
+        return NULL;
+
+    crabdb_value_t *val = &stmt->result_row[col];
+    if (val->type != CRABDB_TYPE_TEXT)
+        return NULL;
+
+    return val->as.s;
+}
+
+const void *fossil_io_crabdb_column_blob(crabdb_stmt_t *stmt, size_t *out_size)
+{
+    if (!stmt || !out_size)
+        return NULL;
+
+    *out_size = 0;
+    return NULL;
 }
 
 /* ============================================================
