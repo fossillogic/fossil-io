@@ -150,12 +150,17 @@ typedef struct crabdb_value
     crabdb_type_t type;
     union
     {
-
+        int8_t i8;
+        int16_t i16;
+        int32_t i32;
         int64_t i64;
+        uint8_t u8;
+        uint16_t u16;
+        uint32_t u32;
         uint64_t u64;
         double f64;
         float f32;
-        const char *s;
+        char *s;
         struct
         {
             const void *data;
@@ -282,7 +287,7 @@ fossil_io_crabdb_reset(
  * @param value The int8_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_i8(crabdb_stmt_t *, int, int8_t);
+int fossil_io_crabdb_bind_i8(crabdb_stmt_t *stmt, int index, int8_t value);
 
 /**
  * Bind an int16_t value to a parameter in the prepared statement.
@@ -291,7 +296,7 @@ int fossil_io_crabdb_bind_i8(crabdb_stmt_t *, int, int8_t);
  * @param value The int16_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_i16(crabdb_stmt_t *, int, int16_t);
+int fossil_io_crabdb_bind_i16(crabdb_stmt_t *stmt, int index, int16_t value);
 
 /**
  * Bind an int32_t value to a parameter in the prepared statement.
@@ -300,7 +305,7 @@ int fossil_io_crabdb_bind_i16(crabdb_stmt_t *, int, int16_t);
  * @param value The int32_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_i32(crabdb_stmt_t *, int, int32_t);
+int fossil_io_crabdb_bind_i32(crabdb_stmt_t *stmt, int index, int32_t value);
 
 /**
  * Bind an int64_t value to a parameter in the prepared statement.
@@ -309,7 +314,7 @@ int fossil_io_crabdb_bind_i32(crabdb_stmt_t *, int, int32_t);
  * @param value The int64_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_i64(crabdb_stmt_t *, int, int64_t);
+int fossil_io_crabdb_bind_i64(crabdb_stmt_t *stmt, int index, int64_t value);
 
 /**
  * Bind a uint8_t value to a parameter in the prepared statement.
@@ -318,7 +323,7 @@ int fossil_io_crabdb_bind_i64(crabdb_stmt_t *, int, int64_t);
  * @param value The uint8_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_u8(crabdb_stmt_t *, int, uint8_t);
+int fossil_io_crabdb_bind_u8(crabdb_stmt_t *stmt, int index, uint8_t value);
 
 /**
  * Bind a uint16_t value to a parameter in the prepared statement.
@@ -327,7 +332,7 @@ int fossil_io_crabdb_bind_u8(crabdb_stmt_t *, int, uint8_t);
  * @param value The uint16_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_u16(crabdb_stmt_t *, int, uint16_t);
+int fossil_io_crabdb_bind_u16(crabdb_stmt_t *stmt, int index, uint16_t value);
 
 /**
  * Bind a uint32_t value to a parameter in the prepared statement.
@@ -336,7 +341,7 @@ int fossil_io_crabdb_bind_u16(crabdb_stmt_t *, int, uint16_t);
  * @param value The uint32_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_u32(crabdb_stmt_t *, int, uint32_t);
+int fossil_io_crabdb_bind_u32(crabdb_stmt_t *stmt, int index, uint32_t value);
 
 /**
  * Bind a uint64_t value to a parameter in the prepared statement.
@@ -345,7 +350,7 @@ int fossil_io_crabdb_bind_u32(crabdb_stmt_t *, int, uint32_t);
  * @param value The uint64_t value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_u64(crabdb_stmt_t *, int, uint64_t);
+int fossil_io_crabdb_bind_u64(crabdb_stmt_t *stmt, int index, uint64_t value);
 
 /**
  * Bind a float value to a parameter in the prepared statement.
@@ -354,7 +359,7 @@ int fossil_io_crabdb_bind_u64(crabdb_stmt_t *, int, uint64_t);
  * @param value The float value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_f32(crabdb_stmt_t *, int, float);
+int fossil_io_crabdb_bind_f32(crabdb_stmt_t *stmt, int index, float);
 
 /**
  * Bind a double value to a parameter in the prepared statement.
@@ -363,7 +368,7 @@ int fossil_io_crabdb_bind_f32(crabdb_stmt_t *, int, float);
  * @param value The double value to bind.
  * @return CRABDB_OK on success, or an error code on failure.
  */
-int fossil_io_crabdb_bind_f64(crabdb_stmt_t *, int, double);
+int fossil_io_crabdb_bind_f64(crabdb_stmt_t *stmt, int index, double);
 
 /**
  * Bind a text value to a parameter in the prepared statement.
@@ -420,7 +425,7 @@ crabdb_type_t fossil_io_crabdb_column_type(crabdb_stmt_t *, int col);
  * @param col The 0-based index of the column to retrieve.
  * @return The int8_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t *, int);
+int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as an int16_t.
@@ -428,7 +433,7 @@ int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The int16_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t *, int);
+int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as an int32_t.
@@ -436,7 +441,7 @@ int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The int32_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t *, int);
+int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as an int64_t.
@@ -444,7 +449,7 @@ int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The int64_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t *, int);
+int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a uint8_t.
@@ -452,7 +457,7 @@ int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The uint8_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t *, int);
+uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a uint16_t.
@@ -460,7 +465,7 @@ uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The uint16_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t *, int);
+uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a uint32_t.
@@ -468,7 +473,7 @@ uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The uint32_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t *, int);
+uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a uint64_t.
@@ -476,7 +481,7 @@ uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The uint64_t value of the column, or an error code if the statement, column index, or type is invalid.
  */
-uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t *, int);
+uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a float.
@@ -484,7 +489,15 @@ uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t *, int);
  * @param col The 0-based index of the column to retrieve.
  * @return The float value of the column, or an error code if the statement, column index, or type is invalid.
  */
-float fossil_io_crabdb_column_f32(crabdb_stmt_t *, int);
+float fossil_io_crabdb_column_f32(crabdb_stmt_t *stmt, int col);
+
+/**
+ * Get the value of a column in the current result row of the prepared statement as a double.
+ * @param stmt The prepared statement.
+ * @param col The 0-based index of the column to retrieve.
+ * @return The double value of the column, or an error code if the statement, column index, or type is invalid.
+ */
+double fossil_io_crabdb_column_f64(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a double.
@@ -492,7 +505,7 @@ float fossil_io_crabdb_column_f32(crabdb_stmt_t *, int);
  * @param col The 0-based index ofthe column to retrieve.
  * @return The double value ofthe column, or an error code ifthe statement, column index, or type is invalid.
  */
-const char *fossil_io_crabdb_column_text(crabdb_stmt_t *, int);
+const char *fossil_io_crabdb_column_text(crabdb_stmt_t *stmt, int col);
 
 /**
  * Get the value of a column in the current result row of the prepared statement as a blob.
@@ -501,7 +514,7 @@ const char *fossil_io_crabdb_column_text(crabdb_stmt_t *, int);
  * @param out_size Output parameter for the size of the blob data.
  * @return A pointer to the blob data, or NULL if the statement, column index, or type is invalid.
  */
-const void *fossil_io_crabdb_column_blob(crabdb_stmt_t *, int, size_t *out_size);
+const void *fossil_io_crabdb_column_blob(crabdb_stmt_t *stmt, int index, size_t *out_size);
 
 /* ============================================================
     * Transactions
@@ -619,43 +632,539 @@ int fossil_io_crabdb_shutdown(void);
 }
 
 #include <string>
-#include <stdexcept>
 #include <vector>
+#include <stdexcept>
 
 namespace fossil::io
 {
 
-    class CrabDBException : public std::runtime_error
-    {
-    public:
-        explicit CrabDBException(const std::string &message)
-            : std::runtime_error(message)
-        {
-        }
-    };
-
     class CrabDB
     {
     public:
-        explicit CrabDB(const std::string &path, const crabdb_config_t *config = nullptr)
+        /* =========================
+         * Nested Statement Wrapper
+         * ========================= */
+        class statement
         {
-            crabdb_handle_t *handle = nullptr;
-            int result = fossil_io_crabdb_open(path.c_str(), config, &handle);
-            if (result != CRABDB_OK)
-            {                throw CrabDBException("Failed to open database: " + std::string(fossil_io_crabdb_errmsg(handle)));
+        public:
+            statement(crabdb_stmt_t *stmt = nullptr)
+                : stmt_(stmt) {}
+
+            ~statement()
+            {
+                if (stmt_)
+                {
+                    fossil_io_crabdb_finalize(stmt_);
+                }
             }
-            db_handle = handle;
+
+            statement(const statement &) = delete;
+            statement &operator=(const statement &) = delete;
+
+            statement(statement &&other) noexcept
+            {
+                stmt_ = other.stmt_;
+                other.stmt_ = nullptr;
+            }
+
+            statement &operator=(statement &&other) noexcept
+            {
+                if (this != &other)
+                {
+                    if (stmt_)
+                    {
+                        fossil_io_crabdb_finalize(stmt_);
+                    }
+                    stmt_ = other.stmt_;
+                    other.stmt_ = nullptr;
+                }
+                return *this;
+            }
+
+            /**
+             * Step through the results of the prepared statement. Returns true if a new row is available, false if execution is complete.
+             * Throws an exception if an error occurs.
+             */
+            int step()
+            {
+                return fossil_io_crabdb_step(stmt_);
+            }
+
+            /**
+             * Reset the prepared statement to its initial state.
+             * Throws an exception if an error occurs.
+             */
+            void reset()
+            {
+                fossil_io_crabdb_reset(stmt_);
+            }
+
+            /* ---- Bindings ---- */
+
+            /**
+             * Bind an int8_t value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The int8_t value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_i8(int idx, int8_t v)
+            {
+                fossil_io_crabdb_bind_i8(stmt_, idx, v);
+            }
+
+            /**
+             * Bind an int16_t value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The int16_t value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_i16(int idx, int16_t v)
+            {
+                fossil_io_crabdb_bind_i16(stmt_, idx, v);
+            }
+
+            /**
+             * Bind an int32_t value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The int32_t value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_i32(int idx, int32_t v)
+            {
+                fossil_io_crabdb_bind_i32(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a 32-bit integer to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The 32-bit integer value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_i32(int idx, int32_t v)
+            {
+                fossil_io_crabdb_bind_i32(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a 64-bit integer to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The 64-bit integer value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_u8(int idx, uint8_t v)
+            {
+                fossil_io_crabdb_bind_u8(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a 16-bit unsigned integer to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The 16-bit unsigned integer value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_u16(int idx, uint16_t v)
+            {
+                fossil_io_crabdb_bind_u16(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a 32-bit unsigned integer to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The 32-bit unsigned integer value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_u32(int idx, uint32_t v)
+            {
+                fossil_io_crabdb_bind_u32(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a 64-bit unsigned integer to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The 64-bit unsigned integer value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_u64(int idx, uint64_t v)
+            {
+                fossil_io_crabdb_bind_u64(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a double value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The double value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_f64(int idx, double v)
+            {
+                fossil_io_crabdb_bind_f64(stmt_, idx, v);
+            }
+
+            /**
+             * Bind a text value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * @param v The text value to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_text(int idx, const std::string &v)
+            {
+                fossil_io_crabdb_bind_text(stmt_, idx, v.c_str());
+            }
+
+            /**
+             * Bind a NULL value to the prepared statement at the given index.
+             * @param idx The 1-based index of the parameter to bind.
+             * Throws an exception if an error occurs.
+             */
+            void bind_null(int idx)
+            {
+                fossil_io_crabdb_bind_null(stmt_, idx);
+            }
+
+            /* ---- Column access ---- */
+
+            /**
+             * Get the number of columns in the current result row of the prepared statement.
+             * @return The number of columns, or an error code if the statement is invalid.
+             */
+            int column_count() const
+            {
+                return fossil_io_crabdb_column_count(stmt_);
+            }
+
+            /**
+             * Get the data type of a column in the current result row of the prepared statement.
+             * @param col The 0-based index of the column to query.
+             * @return The data type of the column, or an error code if the statement or column index is invalid.
+             */
+            crabdb_type_t column_type(int col) const
+            {
+                return fossil_io_crabdb_column_type(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as an int8_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The int8_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            int8_t column_i8(int col) const
+            {
+                return fossil_io_crabdb_column_i8(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as an int16_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The int16_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            int16_t column_i16(int col) const
+            {
+                return fossil_io_crabdb_column_i16(stmt_, col);
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as an int32_t.
+            * @param col The 0-based index of the column to retrieve.
+            * @return The int32_t value of the column, or an error code if the statement, column index, or type is invalid.
+            */
+            int32_t column_i32(int col) const
+            {
+                return fossil_io_crabdb_column_i32(stmt_, col);
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as an int64_t.
+            * @param col The 0-based index of the column to retrieve.
+            * @return The int64_t value of the column, or an error code if the statement, column index, or type is invalid.
+            */
+            int64_t column_i64(int col) const
+            {
+                return fossil_io_crabdb_column_i64(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as a uint8_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The uint8_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            uint8_t column_u8(int col) const
+            {
+                return fossil_io_crabdb_column_u8(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as a uint16_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The uint16_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            uint16_t column_u16(int col) const
+            {
+                return fossil_io_crabdb_column_u16(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as a uint32_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The uint32_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            uint32_t column_u32(int col) const
+            {
+                return fossil_io_crabdb_column_u32(stmt_, col);
+            }
+
+            /**
+             * Get the value of a column in the current result row of the prepared statement as a uint64_t.
+             * @param col The 0-based index of the column to retrieve.
+             * @return The uint64_t value of the column, or an error code if the statement, column index, or type is invalid.
+             */
+            uint64_t column_u64(int col) const
+            {
+                return fossil_io_crabdb_column_u64(stmt_, col);
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as a float.
+            * @param col The 0-based index of the column to retrieve.
+            * @return The float value of the column, or an error code if the statement, column index, or type is invalid.
+            */
+            float column_f32(int col) const
+            {
+                return fossil_io_crabdb_column_f32(stmt_, col);
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as a double.
+            * @param col The 0-based index of the column to retrieve.
+            * @return The double value of the column, or an error code if the statement, column index, or type is invalid.
+            */
+            double column_f64(int col) const
+            {
+                return fossil_io_crabdb_column_f64(stmt_, col);
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as a text string.
+            * @param col The 0-based index of the column to retrieve.
+            * @return The text value of the column, or an empty string if the statement, column index, or type is invalid.
+            */
+            std::string column_text(int col) const
+            {
+                const char *s = fossil_io_crabdb_column_text(stmt_, col);
+                return s ? s : "";
+            }
+
+            /**
+            * Get the value of a column in the current result row of the prepared statement as a blob.
+            * @param col The 0-based index of the column to retrieve.
+            * @param out_size Output parameter for the size of the blob data.
+            * @return A pointer to the blob data, or nullptr if the statement, column index, or type is invalid.
+            */
+            const void *column_blob(int col, size_t *out_size) const
+            {
+                return fossil_io_crabdb_column_blob(stmt_, col, out_size);
+            }
+
+            crabdb_stmt_t *raw() { return stmt_; }
+
+        private:
+            crabdb_stmt_t *stmt_;
+        };
+
+    public:
+        /* =========================
+         * Lifecycle
+         * ========================= */
+
+        CrabDB(const std::string &path,
+               const crabdb_config_t *config = nullptr)
+            : db_(nullptr)
+        {
+            int rc = fossil_io_crabdb_open(path.c_str(), config, &db_);
+            if (rc != CRABDB_OK)
+            {
+                throw std::runtime_error("CrabDB open failed");
+            }
         }
 
         ~CrabDB()
         {
-            if (db_handle)
+            if (db_)
             {
-                fossil_io_crabdb_close(db_handle);
+                fossil_io_crabdb_close(db_);
             }
         }
 
-        // Additional methods for executing queries, preparing statements, etc. would go here.
+        CrabDB(const CrabDB &) = delete;
+        CrabDB &operator=(const CrabDB &) = delete;
+
+        CrabDB(CrabDB &&other) noexcept
+        {
+            db_ = other.db_;
+            other.db_ = nullptr;
+        }
+
+        CrabDB &operator=(CrabDB &&other) noexcept
+        {
+            if (this != &other)
+            {
+                if (db_)
+                {
+                    fossil_io_crabdb_close(db_);
+                }
+                db_ = other.db_;
+                other.db_ = nullptr;
+            }
+            return *this;
+        }
+
+        /* =========================
+         * Core API
+         * ========================= */
+
+        /**
+         * Execute a SQL query directly on the database without preparing a statement.
+         * @param query The SQL query string to execute.
+         * @return CRABDB_OK on success, or an error code on failure.
+         * Throws an exception if an error occurs.
+         */
+        int exec(const std::string &query)
+        {
+            return fossil_io_crabdb_exec(db_, query.c_str());
+        }
+
+        /**
+         * Prepare a SQL statement for execution.
+         * @param query The SQL query string to prepare.
+         * @return A statement object representing the prepared statement.
+         * Throws an exception if an error occurs.
+         */
+        statement prepare(const std::string &query)
+        {
+            crabdb_stmt_t *stmt = nullptr;
+
+            int rc = fossil_io_crabdb_prepare(db_, query.c_str(), &stmt);
+            if (rc != CRABDB_OK)
+            {
+                throw std::runtime_error(error_message());
+            }
+
+            return statement(stmt);
+        }
+
+        /**
+         * Get a string describing the last error that occurred on the database handle.
+         * @return A string describing the last error, or "no db" if the handle is NULL.
+         */
+        std::string error_message() const
+        {
+            return fossil_io_crabdb_errmsg(db_);
+        }
+
+        /* =========================
+         * Transactions
+         * ========================= */
+
+        class transaction
+        {
+        public:
+            transaction(crabdb_txn_t *txn) : txn_(txn) {}
+
+            ~transaction()
+            {
+                if (txn_)
+                {
+                    fossil_io_crabdb_rollback(txn_);
+                }
+            }
+
+            void commit()
+            {
+                if (txn_)
+                {
+                    fossil_io_crabdb_commit(txn_);
+                    txn_ = nullptr;
+                }
+            }
+
+        private:
+            crabdb_txn_t *txn_;
+        };
+
+        transaction begin()
+        {
+            crabdb_txn_t *txn = nullptr;
+
+            int rc = fossil_io_crabdb_begin(db_, &txn);
+            if (rc != CRABDB_OK)
+            {
+                throw std::runtime_error(error_message());
+            }
+
+            return transaction(txn);
+        }
+
+        /* =========================
+         * Family Tree API
+         * ========================= */
+
+        int create_family(const std::string &name,
+                          const std::string &schema)
+        {
+            return fossil_io_crabdb_create_family(
+                db_, name.c_str(), schema.c_str());
+        }
+
+        int relate(const std::string &parent_family,
+                   int64_t parent_id,
+                   const std::string &child_family,
+                   int64_t child_id)
+        {
+            return fossil_io_crabdb_relate(
+                db_,
+                parent_family.c_str(),
+                parent_id,
+                child_family.c_str(),
+                child_id);
+        }
+
+        statement query_lineage(const std::string &family,
+                                int64_t id)
+        {
+            crabdb_stmt_t *stmt = nullptr;
+
+            int rc = fossil_io_crabdb_query_lineage(
+                db_, family.c_str(), id, &stmt);
+
+            if (rc != CRABDB_OK)
+            {
+                throw std::runtime_error(error_message());
+            }
+
+            return statement(stmt);
+        }
+
+        /* =========================
+         * Static Utilities
+         * ========================= */
+
+        static std::string version()
+        {
+            return fossil_io_crabdb_version();
+        }
+
+        static void init()
+        {
+            fossil_io_crabdb_init();
+        }
+
+        static void shutdown()
+        {
+            fossil_io_crabdb_shutdown();
+        }
+
+    private:
+        crabdb_handle_t *db_;
+    };
 
 } // namespace fossil::io
 
