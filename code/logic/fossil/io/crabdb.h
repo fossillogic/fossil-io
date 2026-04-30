@@ -113,6 +113,13 @@ typedef enum
 } crabdb_type_t;
 
 /* ============================================================
+    * Forward Declarations
+    * ============================================================ */
+
+typedef struct crabdb_instr crabdb_instr_t;
+typedef struct crabdb_program crabdb_program_t;
+
+/* ============================================================
     * Numeric Range Metadata
     * ============================================================ */
 
@@ -227,13 +234,13 @@ fossil_io_crabdb_errmsg(crabdb_handle_t *db);
 /**
  * Execute a SQL query directly on the database without preparing a statement.
  * @param db The database handle.
- * @param query The SQL query string to execute.
+ * @param program The program to execute.
  * @return CRABDB_OK on success, or an error code on failure.
  */
 int
 fossil_io_crabdb_exec(
     crabdb_handle_t *db,
-    const char *query);
+    const crabdb_program_t *program);
 
 /**
  * Prepare a SQL statement for execution.
@@ -1022,20 +1029,31 @@ namespace fossil::io
          * ========================= */
 
         /**
-         * Execute a SQL query directly on the database without preparing a statement.
-         * @param query The SQL query string to execute.
+         * Execute a SQL query or precompiled CrabDB bytecode program.
+         * In the future, DSL will compile into bytecode before reaching this layer.
+         *
+         * @param query SQL string OR serialized bytecode program.
          * @return CRABDB_OK on success, or an error code on failure.
          * Throws an exception if an error occurs.
          */
         int exec(const std::string &query)
         {
-            return fossil_io_crabdb_exec(db_, query.c_str());
+            int rc = fossil_io_crabdb_exec(db_, query.c_str());
+
+            if (rc != CRABDB_OK)
+            {
+                throw std::runtime_error(error_message());
+            }
+
+            return rc;
         }
 
         /**
          * Prepare a SQL statement for execution.
-         * @param query The SQL query string to prepare.
-         * @return A statement object representing the prepared statement.
+         * In the future, this will compile SQL/DSL into CrabDB bytecode.
+         *
+         * @param query SQL or DSL query string.
+         * @return A statement object representing a compiled execution plan.
          * Throws an exception if an error occurs.
          */
         statement prepare(const std::string &query)
@@ -1043,6 +1061,7 @@ namespace fossil::io
             crabdb_stmt_t *stmt = nullptr;
 
             int rc = fossil_io_crabdb_prepare(db_, query.c_str(), &stmt);
+
             if (rc != CRABDB_OK)
             {
                 throw std::runtime_error(error_message());

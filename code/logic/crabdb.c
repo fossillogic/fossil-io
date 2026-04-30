@@ -231,19 +231,85 @@ const char *fossil_io_crabdb_errmsg(crabdb_handle_t *db)
 }
 
 /* ============================================================
+ * Parser
+ * ============================================================ */
+
+typedef enum {
+    CB_OP_NOP = 0,
+
+    CB_OP_CREATE_FAMILY,
+    CB_OP_INSERT,
+    CB_OP_SELECT,
+    CB_OP_RELATE,
+
+    CB_OP_BEGIN,
+    CB_OP_COMMIT,
+    CB_OP_ROLLBACK,
+
+    CB_OP_FILTER,
+    CB_OP_RETURN,
+
+} crabdb_opcode_t;
+
+typedef struct {
+    crabdb_opcode_t op;
+
+    int a;   /* generic arg (id / column / flags) */
+    int b;   /* generic arg */
+    int64_t i; /* immediate value */
+
+    const char *s; /* string operand */
+} crabdb_instr_t;
+
+typedef struct {
+    crabdb_instr_t *code;
+    size_t count;
+} crabdb_program_t;
+
+/* ============================================================
  * Execution
  * ============================================================ */
 
-int fossil_io_crabdb_exec(crabdb_handle_t *db, const char *query)
+int fossil_io_crabdb_exec(
+    crabdb_handle_t *db,
+    const crabdb_program_t *program)
 {
-    if (!db || !query)
+    if (!db || !program || !program->code)
         return CRABDB_INVALID;
+
     crabdb_lock(db);
-    size_t len = strlen(query);
-    if (len == 0)
-    {
-        crabdb_set_error(db, "empty query");
+
+    for (size_t i = 0; i < program->count; i++) {
+        crabdb_instr_t *ins = &program->code[i];
+
+        switch (ins->op) {
+
+        case CB_OP_CREATE_FAMILY:
+            /* call internal engine */
+            break;
+
+        case CB_OP_INSERT:
+            break;
+
+        case CB_OP_SELECT:
+            break;
+
+        case CB_OP_RELATE:
+            break;
+
+        case CB_OP_BEGIN:
+            break;
+
+        case CB_OP_COMMIT:
+            break;
+
+        default:
+            crabdb_set_error(db, "unknown opcode");
+            crabdb_unlock(db);
+            return CRABDB_ERROR;
+        }
     }
+
     crabdb_unlock(db);
     return CRABDB_OK;
 }
