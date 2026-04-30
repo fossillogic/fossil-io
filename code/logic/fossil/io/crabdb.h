@@ -25,557 +25,279 @@
 #ifndef FOSSIL_IO_CRABDB_H
 #define FOSSIL_IO_CRABDB_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
+/* =========================================================
+ * Core Handle
+ * ========================================================= */
 
-    /* ============================================================
-     * Visibility / API macro
-     * ============================================================ */
+typedef struct crabdb_handle crabdb_handle_t;
 
-#ifndef FOSSIL_IO_CRABDB_API
-#define FOSSIL_IO_CRABDB_API
+/* =========================================================
+ * Type System
+ * ========================================================= */
 
-#endif
+typedef enum
+{
+    CRAB_TYPE_I8,
+    CRAB_TYPE_I16,
+    CRAB_TYPE_I32,
+    CRAB_TYPE_I64,
 
-    /* ============================================================
-     * Opaque Types
-     * ============================================================ */
+    CRAB_TYPE_U8,
+    CRAB_TYPE_U16,
+    CRAB_TYPE_U32,
+    CRAB_TYPE_U64,
 
-    typedef struct crabdb_handle crabdb_handle_t;
-    typedef struct crabdb_stmt crabdb_stmt_t;
-    typedef struct crabdb_txn crabdb_txn_t;
+    CRAB_TYPE_F32,
+    CRAB_TYPE_F64,
 
-    /* ============================================================
-     * Result Codes
-     * ============================================================ */
+    CRAB_TYPE_BOOL,
+    CRAB_TYPE_CHAR,
+    CRAB_TYPE_CSTR,
 
-    typedef enum
+    CRAB_TYPE_HEX,
+    CRAB_TYPE_OCT,
+    CRAB_TYPE_BIN,
+
+    CRAB_TYPE_SIZE,
+    CRAB_TYPE_DATETIME,
+    CRAB_TYPE_DURATION,
+
+    CRAB_TYPE_ANY,
+    CRAB_TYPE_NULL
+
+} crabdb_type_t;
+
+/* =========================================================
+ * Value Container
+ * ========================================================= */
+
+typedef struct
+{
+    crabdb_type_t type;
+
+    union
     {
-        CRABDB_OK = 0,
-        CRABDB_ERROR = -1,
-        CRABDB_BUSY = -2,
-        CRABDB_NOMEM = -3,
-        CRABDB_INVALID = -4,
-        CRABDB_NOTFOUND = -5,
-        CRABDB_DONE = 1,
-        CRABDB_ROW = 2
-    } crabdb_result_t;
-
-    /* ============================================================
-     * Threading Modes
-     * ============================================================ */
-
-    typedef enum
-    {
-        CRABDB_THREAD_SINGLE = 0,
-        CRABDB_THREAD_SERIALIZED = 1,
-        CRABDB_THREAD_MULTI = 2
-    } crabdb_thread_mode_t;
-
-    /* ============================================================
-     * Data Types (Extended Numeric System)
-     * ============================================================ */
-
-    typedef enum
-    {
-        CRABDB_TYPE_NULL = 0,
-
-        /* Signed integers */
-        CRABDB_TYPE_I8,
-        CRABDB_TYPE_I16,
-        CRABDB_TYPE_I32,
-        CRABDB_TYPE_I64,
-
-        /* Unsigned integers */
-        CRABDB_TYPE_U8,
-        CRABDB_TYPE_U16,
-        CRABDB_TYPE_U32,
-        CRABDB_TYPE_U64,
-
-        /* Floating point */
-        CRABDB_TYPE_F32,
-        CRABDB_TYPE_F64,
-
-        /* Other */
-        CRABDB_TYPE_BOOL,
-        CRABDB_TYPE_TEXT,
-        CRABDB_TYPE_BLOB,
-        CRABDB_TYPE_DATE,
-        CRABDB_TYPE_JSON,
-        CRABDB_TYPE_UUID
-    } crabdb_type_t;
-
-    /* ============================================================
-     * Forward Declarations
-     * ============================================================ */
-
-    typedef struct crabdb_instr crabdb_instr_t;
-    typedef struct crabdb_program crabdb_program_t;
-
-    /* ============================================================
-     * Numeric Range Metadata
-     * ============================================================ */
-
-    typedef struct crabdb_numeric_range_signed_t
-    {
-        int64_t min;
-        int64_t max;
-    } crabdb_numeric_range_signed_t;
-
-    typedef struct crabdb_numeric_range_unsigned_t
-    {
-        uint64_t min;
-        uint64_t max;
-    } crabdb_numeric_range_unsigned_t;
-
-    typedef struct crabdb_numeric_range
-    {
-        uint8_t bits;      /* 8, 16, 32, 64 */
-        uint8_t is_signed; /* 1 = signed, 0 = unsigned */
-
-        union
-        {
-            crabdb_numeric_range_signed_t s;
-            crabdb_numeric_range_unsigned_t u;
-        } range;
-
-    } crabdb_numeric_range_t;
-
-    /* ============================================================
-     * Value Container
-     * ============================================================ */
-
-    typedef struct crabdb_value
-    {
-        crabdb_type_t type;
-        union
-        {
-            int8_t i8;
-            int16_t i16;
-            int32_t i32;
-            int64_t i64;
-            uint8_t u8;
-            uint16_t u16;
-            uint32_t u32;
-            uint64_t u64;
-            double f64;
-            float f32;
-            char *s;
-            struct
-            {
-                const void *data;
-                size_t size;
-            } blob;
-            int b;
-        } as;
-    } crabdb_value_t;
-
-    /* ============================================================
-     * Configuration
-     * ============================================================ */
-
-    typedef struct crabdb_config
-    {
-        crabdb_thread_mode_t thread_mode;
-        int enable_wal;
-        int enable_foreign_keys;
-        size_t page_size;
-        size_t cache_size;
-    } crabdb_config_t;
-
-    /* ============================================================
-     * Core Lifecycle
-     * ============================================================ */
-
-    /**
-     * Open a CrabDB database at the specified path with the given configuration.
-     * On success, returns CRABDB_OK and sets *out_db to a new handle.
-     * On failure, returns an error code and *out_db is set to NULL.
-     *
-     * The caller is responsible for calling fossil_io_crabdb_close() on the returned handle.
-     * @param path The filesystem path to the database file.
-     * @param config Optional configuration parameters (can be NULL for defaults).
-     * @param out_db Output parameter for the database handle.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_open(
-        const char *path,
-        const crabdb_config_t *config,
-        crabdb_handle_t **out_db);
-
-    /**
-     * Close a CrabDB database handle, releasing all associated resources.
-     * After this call, the handle is no longer valid and should not be used.
-     * @param db The database handle to close.
-     * @return CRABDB_OK on success, or an error code if the handle is invalid.
-     */
-    int fossil_io_crabdb_close(crabdb_handle_t *db);
-
-    /**
-     * Retrieve the last error message associated with the database handle.
-     * If the handle is NULL, returns a generic "no db" message.
-     * @param db The database handle to query for errors.
-     * @return A string describing the last error, or "no db" if the handle is NULL.
-     */
-    const char *
-    fossil_io_crabdb_errmsg(crabdb_handle_t *db);
-
-    /* ============================================================
-     * Binding Parameters (Typed)
-     * ============================================================ */
-
-    /**
-     * Bind an int8_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The int8_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_i8(crabdb_stmt_t *stmt, int index, int8_t value);
-
-    /**
-     * Bind an int16_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The int16_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_i16(crabdb_stmt_t *stmt, int index, int16_t value);
-
-    /**
-     * Bind an int32_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The int32_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_i32(crabdb_stmt_t *stmt, int index, int32_t value);
-
-    /**
-     * Bind an int64_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The int64_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_i64(crabdb_stmt_t *stmt, int index, int64_t value);
-
-    /**
-     * Bind a uint8_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The uint8_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_u8(crabdb_stmt_t *stmt, int index, uint8_t value);
-
-    /**
-     * Bind a uint16_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The uint16_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_u16(crabdb_stmt_t *stmt, int index, uint16_t value);
-
-    /**
-     * Bind a uint32_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The uint32_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_u32(crabdb_stmt_t *stmt, int index, uint32_t value);
-
-    /**
-     * Bind a uint64_t value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The uint64_t value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_u64(crabdb_stmt_t *stmt, int index, uint64_t value);
-
-    /**
-     * Bind a float value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The float value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_f32(crabdb_stmt_t *stmt, int index, float);
-
-    /**
-     * Bind a double value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The double value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_f64(crabdb_stmt_t *stmt, int index, double);
-
-    /**
-     * Bind a text value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param value The text value to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_text(
-        crabdb_stmt_t *stmt, int index, const char *value);
-
-    /**
-     * Bind a blob value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @param data The blob data to bind.
-     * @param size The size of the blob data.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_blob(
-        crabdb_stmt_t *stmt, int index, const void *data, size_t size);
-
-    /**
-     * Bind a NULL value to a parameter in the prepared statement.
-     * @param stmt The prepared statement.
-     * @param index The 1-based index of the parameter to bind.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_bind_null(
-        crabdb_stmt_t *stmt, int index);
-
-    /* ============================================================
-     * Column Access (Typed)
-     * ============================================================ */
-
-    /**
-     * Get the number of columns in the current result row of the prepared statement.
-     * @param stmt The prepared statement.
-     * @return The number of columns, or an error code if the statement is invalid.
-     */
-    int fossil_io_crabdb_column_count(crabdb_stmt_t *);
-
-    /**
-     * Get the data type of a column in the current result row of the prepared statement.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to query.
-     * @return The data type of the column, or an error code if the statement or column index is invalid.
-     */
-    crabdb_type_t fossil_io_crabdb_column_type(crabdb_stmt_t *, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as an int8_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The int8_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    int8_t fossil_io_crabdb_column_i8(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as an int16_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The int16_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    int16_t fossil_io_crabdb_column_i16(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as an int32_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The int32_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    int32_t fossil_io_crabdb_column_i32(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as an int64_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The int64_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    int64_t fossil_io_crabdb_column_i64(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a uint8_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The uint8_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    uint8_t fossil_io_crabdb_column_u8(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a uint16_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The uint16_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    uint16_t fossil_io_crabdb_column_u16(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a uint32_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The uint32_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    uint32_t fossil_io_crabdb_column_u32(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a uint64_t.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The uint64_t value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    uint64_t fossil_io_crabdb_column_u64(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a float.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The float value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    float fossil_io_crabdb_column_f32(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a double.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @return The double value of the column, or an error code if the statement, column index, or type is invalid.
-     */
-    double fossil_io_crabdb_column_f64(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a double.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index ofthe column to retrieve.
-     * @return The double value ofthe column, or an error code ifthe statement, column index, or type is invalid.
-     */
-    const char *fossil_io_crabdb_column_text(crabdb_stmt_t *stmt, int col);
-
-    /**
-     * Get the value of a column in the current result row of the prepared statement as a blob.
-     * @param stmt The prepared statement.
-     * @param col The 0-based index of the column to retrieve.
-     * @param out_size Output parameter for the size of the blob data.
-     * @return A pointer to the blob data, or NULL if the statement, column index, or type is invalid.
-     */
-    const void *fossil_io_crabdb_column_blob(crabdb_stmt_t *stmt, int index, size_t *out_size);
-
-    /* ============================================================
-     * Transactions
-     * ============================================================ */
-
-    /**
-     * Begin a new transaction on the database.
-     * @param db The database handle.
-     * @param out Output parameter for the new transaction handle.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_begin(crabdb_handle_t *, crabdb_txn_t **);
-
-    /**
-     * Commit a transaction.
-     * @param txn The transaction handle.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_commit(crabdb_txn_t *);
-
-    /**
-     * Rollback a transaction.
-     * @param txn The transaction handle.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_rollback(crabdb_txn_t *);
-
-    /* ============================================================
-     * Family Tree Model
-     * ============================================================ */
-
-    /**
-     * Create a new family in the database with the specified name and schema.
-     * @param db The database handle.
-     * @param name The name of the family to create.
-     * @param schema The schema definition for the family (e.g., column definitions).
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_create_family(
-        crabdb_handle_t *db,
-        const char *name,
-        const char *schema);
-
-    /**
-     * Create a parent-child relationship between two records in the family tree.
-     * @param db The database handle.
-     * @param parent_family The name of the parent family.
-     * @param parent_id The ID of the parent record.
-     * @param child_family The name of the child family.
-     * @param child_id The ID of the child record.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_relate(
-        crabdb_handle_t *db,
-        const char *parent_family,
-        int64_t parent_id,
-        const char *child_family,
-        int64_t child_id);
-
-    /**
-     * Query the lineage of a record in the family tree, returning a prepared statement that can be stepped through.
-     * @param db The database handle.
-     * @param family The name of the family to query.
-     * @param id The ID of the record to query lineage for.
-     * @param out_stmt Output parameter for the prepared statement containing the lineage results.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_query_lineage(
-        crabdb_handle_t *db,
-        const char *family,
-        int64_t id,
-        crabdb_stmt_t **out_stmt);
-
-    /* ============================================================
-     * Type Introspection
-     * ============================================================ */
-
-    /**
-     * Get the number of bits used to represent a given data type.
-     * @param type The data type to query.
-     * @return The number of bits for the type, or 0 if the type is invalid.
-     */
-    int fossil_io_crabdb_type_bits(crabdb_type_t type);
-
-    /**
-     * Check if a given data type is signed.
-     * @param type The data type to query.
-     * @return 1 if the type is signed, 0 if it is unsigned, or -1 if the type is invalid.
-     */
-    int fossil_io_crabdb_type_is_signed(crabdb_type_t type);
-
-    /* ============================================================
-     * Utility
-     * ============================================================ */
-
-    /**
-     * Get the version string of the CrabDB library.
-     * @return A string representing the version of the library.
-     */
-    const char *fossil_io_crabdb_version(void);
-
-    /**
-     * Initialize the CrabDB library. This should be called before any other functions are used.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_init(void);
-
-    /**
-     * Shutdown the CrabDB library, releasing any global resources. After this call, no other functions should be used.
-     * @return CRABDB_OK on success, or an error code on failure.
-     */
-    int fossil_io_crabdb_shutdown(void);
+        int8_t i8;
+        int16_t i16;
+        int32_t i32;
+        int64_t i64;
+
+        uint8_t u8;
+        uint16_t u16;
+        uint32_t u32;
+        uint64_t u64;
+
+        float f32;
+        double f64;
+
+        uint8_t b;
+        char c;
+
+        const char *cstr;
+
+        uint64_t size;
+        uint64_t datetime;
+        uint64_t duration;
+
+        void *any;
+
+    } as;
+
+} crabdb_value_t;
+
+/* =========================================================
+ * Row / Result Set
+ * ========================================================= */
+
+typedef struct
+{
+    crabdb_value_t *values;
+    size_t count;
+} crabdb_row_t;
+
+typedef struct
+{
+    crabdb_row_t *rows;
+    size_t count;
+} crabdb_result_t;
+
+/* =========================================================
+ * Database Lifecycle
+ * ========================================================= */
+
+/**
+ * Opens a connection to the CrabDB database.
+ *
+ * @param path The path to the database file.
+ * @return A pointer to the database handle, or NULL on failure.
+ */
+crabdb_handle_t *fossil_io_crabdb_open(const char *path);
+
+/**
+ * Closes the connection to the CrabDB database.
+ *
+ * @param db A pointer to the database handle.
+ */
+void fossil_io_crabdb_close(crabdb_handle_t *db);
+
+/**
+ * Flushes any pending changes to the CrabDB database.
+ *
+ * @param db A pointer to the database handle.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_flush(crabdb_handle_t *db);
+
+/* =========================================================
+ * Query Engine (D-inspired)
+ * ========================================================= */
+
+/**
+ * Executes a query against the CrabDB database.
+ *
+ * @param db A pointer to the database handle.
+ * @param query The query string to execute.
+ * @param out_result A pointer to a result structure to receive the query results.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_exec(
+    crabdb_handle_t *db,
+    const char *query);
+
+/**
+ * Executes a query against the CrabDB database and retrieves results.
+ *
+ * @param db A pointer to the database handle.
+ * @param query The query string to execute.
+ * @param out_result A pointer to a result structure to receive the query results.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_query(
+    crabdb_handle_t *db,
+    const char *query,
+    crabdb_result_t *out_result);
+
+/* =========================================================
+ * Typed Operations (Safer API Layer)
+ * ========================================================= */
+
+/**
+ * Inserts a new record into the specified table.
+ *
+ * @param db A pointer to the database handle.
+ * @param table The name of the table to insert into.
+ * @param values An array of values to insert, corresponding to the table schema.
+ * @param count The number of values in the array.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_insert(
+    crabdb_handle_t *db,
+    const char *table,
+    const crabdb_value_t *values,
+    size_t count);
+
+/**
+ * Updates records in the specified table based on a condition.
+ *
+ * @param db A pointer to the database handle.
+ * @param table The name of the table to update.
+ * @param values An array of values to update, corresponding to the table schema.
+ * @param count The number of values in the array.
+ * @param condition A query string specifying the condition for which records to update.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_update(
+    crabdb_handle_t *db,
+    const char *query);
+
+/**
+ * Deletes records from the specified table based on a condition.
+ *
+ * @param db A pointer to the database handle.
+ * @param table The name of the table to delete from.
+ * @param condition A query string specifying the condition for which records to delete.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_delete(
+    crabdb_handle_t *db,
+    const char *query);
+
+/* =========================================================
+ * Schema / Family Tree Model
+ * ========================================================= */
+
+/**
+ * Creates a new family (table) in the CrabDB database.
+ * @param db A pointer to the database handle.
+ * @param name The name of the family (table) to create.
+ * @param schema The schema definition for the family (table).
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_create_table(
+    crabdb_handle_t *db,
+    const char *name);
+
+/**
+ * Establishes a parent-child relationship between two families (tables).
+ *
+ * @param db A pointer to the database handle.
+ * @param parent_table The name of the parent family (table).
+ * @param child_table The name of the child family (table).
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_link_family(
+    crabdb_handle_t *db,
+    const char *parent_table,
+    const char *child_table);
+
+/* =========================================================
+ * Threading Control
+ * ========================================================= */
+
+/**
+ * Enables or disables threading support in the CrabDB database.
+ *
+ * @param db A pointer to the database handle.
+ * @param enable Non-zero to enable threading, zero to disable.
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_enable_threading(crabdb_handle_t *db, int enable);
+
+/**
+ * Sets the maximum number of threads that CrabDB can utilize for concurrent operations.
+ *
+ * @param db A pointer to the database handle.
+ * @param threads The maximum number of threads to allow (must be greater than 0).
+ * @return 0 on success, or a non-zero error code on failure.
+ */
+int fossil_io_crabdb_set_max_threads(crabdb_handle_t *db, size_t threads);
+
+/* =========================================================
+ * Utilities
+ * ========================================================= */
+
+/**
+ * Retrieves the last error message from the CrabDB database.
+ *
+ * @param db A pointer to the database handle.
+ * @return A string containing the last error message, or NULL if no error has occurred.
+ */
+const char *fossil_io_crabdb_last_error(crabdb_handle_t *db);
+
+/**
+ * Frees the memory associated with a CrabDB result set.
+ *
+ * @param result A pointer to the result set to free.
+ */
+void fossil_io_crabdb_free_result(crabdb_result_t *result);
 
 #ifdef __cplusplus
 }
@@ -587,253 +309,211 @@ extern "C"
 namespace fossil::io
 {
 
-    class CrabDB {
+    /* =========================================================
+     * Value Wrapper (C++ friendly)
+     * ========================================================= */
+
+    class Value
+    {
     public:
-        /* ============================================================
-        * Lifecycle
-        * ============================================================ */
+        crabdb_value_t raw;
 
-        CrabDB(const std::string& path, const crabdb_config_t* config = nullptr)
+        Value()
         {
-            crabdb_handle_t* raw = nullptr;
+            raw.type = CRAB_TYPE_NULL;
+            raw.as.any = nullptr;
+        }
 
-            if (fossil_io_crabdb_open(path.c_str(), config, &raw) != CRABDB_OK) {
-                throw std::runtime_error("CrabDB open failed");
-            }
+        static Value from_int64(int64_t v)
+        {
+            Value val;
+            val.raw.type = CRAB_TYPE_I64;
+            val.raw.as.i64 = v;
+            return val;
+        }
 
-            db_ = raw;
+        static Value from_string(const std::string &s)
+        {
+            Value val;
+            val.raw.type = CRAB_TYPE_CSTR;
+            val.raw.as.cstr = s.c_str(); // NOTE: lifetime must be managed by caller
+            return val;
+        }
+    };
+
+    /* =========================================================
+     * Result Wrapper
+     * ========================================================= */
+
+    class Result
+    {
+    public:
+        crabdb_result_t raw;
+
+        Result()
+        {
+            raw.rows = nullptr;
+            raw.count = 0;
+        }
+
+        size_t size() const { return raw.count; }
+    };
+
+    /* =========================================================
+     * Core Database Class
+     * ========================================================= */
+
+    class CrabDB
+    {
+    public:
+        CrabDB() : db_(nullptr) {}
+
+        explicit CrabDB(const std::string &path)
+        {
+            open(path);
         }
 
         ~CrabDB()
         {
-            if (db_) {
-                fossil_io_crabdb_close(db_);
-                db_ = nullptr;
-            }
+            close();
         }
 
-        CrabDB(const CrabDB&) = delete;
-        CrabDB& operator=(const CrabDB&) = delete;
+        CrabDB(const CrabDB &) = delete;
+        CrabDB &operator=(const CrabDB &) = delete;
 
-        CrabDB(CrabDB&& other) noexcept
+        CrabDB(CrabDB &&other) noexcept
         {
             db_ = other.db_;
             other.db_ = nullptr;
         }
 
-        CrabDB& operator=(CrabDB&& other) noexcept
+        CrabDB &operator=(CrabDB &&other) noexcept
         {
-            if (this != &other) {
-                if (db_) fossil_io_crabdb_close(db_);
+            if (this != &other)
+            {
+                close();
                 db_ = other.db_;
                 other.db_ = nullptr;
             }
             return *this;
         }
 
-        /* ============================================================
-        * Error handling
-        * ============================================================ */
+        /* =========================================================
+         * Lifecycle
+         * ========================================================= */
 
-        std::string error() const
+        bool open(const std::string &path)
         {
-            return db_ ? fossil_io_crabdb_errmsg(db_) : "no db";
+            db_ = fossil_io_crabdb_open(path.c_str());
+            return db_ != nullptr;
         }
 
-        /* ============================================================
-        * Execution (thin wrapper ONLY — no DSL here)
-        * ============================================================ */
-
-        void exec(const std::string& query)
+        void close()
         {
-            if (fossil_io_crabdb_exec(db_, query.c_str()) != CRABDB_OK) {
-                throw std::runtime_error(error());
+            if (db_)
+            {
+                fossil_io_crabdb_close(db_);
+                db_ = nullptr;
             }
         }
 
-        /* ============================================================
-        * Statement wrapper
-        * ============================================================ */
-
-        class Statement {
-        public:
-            explicit Statement(crabdb_stmt_t* stmt)
-                : stmt_(stmt) {}
-
-            ~Statement()
-            {
-                if (stmt_) {
-                    fossil_io_crabdb_finalize(stmt_);
-                    stmt_ = nullptr;
-                }
-            }
-
-            Statement(const Statement&) = delete;
-            Statement& operator=(const Statement&) = delete;
-
-            Statement(Statement&& other) noexcept
-            {
-                stmt_ = other.stmt_;
-                other.stmt_ = nullptr;
-            }
-
-            Statement& operator=(Statement&& other) noexcept
-            {
-                if (this != &other) {
-                    if (stmt_) fossil_io_crabdb_finalize(stmt_);
-                    stmt_ = other.stmt_;
-                    other.stmt_ = nullptr;
-                }
-                return *this;
-            }
-
-            bool step()
-            {
-                return fossil_io_crabdb_step(stmt_) == CRABDB_ROW;
-            }
-
-            void reset()
-            {
-                fossil_io_crabdb_reset(stmt_);
-            }
-
-            /* column access */
-            int8_t col_i8(int idx)
-            {
-                return fossil_io_crabdb_column_i8(stmt_, idx);
-            }
-
-            int16_t col_i16(int idx)
-            {
-                return fossil_io_crabdb_column_i16(stmt_, idx);
-            }
-
-            int32_t col_i32(int idx)
-            {
-                return fossil_io_crabdb_column_i32(stmt_, idx);
-            }
-
-            int64_t col_i64(int idx)
-            {
-                return fossil_io_crabdb_column_i64(stmt_, idx);
-            }
-
-            uint8_t col_u8(int idx)
-            {
-                return fossil_io_crabdb_column_u8(stmt_, idx);
-            }
-
-            uint16_t col_u16(int idx)
-            {
-                return fossil_io_crabdb_column_u16(stmt_, idx);
-            }
-
-            uint32_t col_u32(int idx)
-            {
-                return fossil_io_crabdb_column_u32(stmt_, idx);
-            }
-
-            uint64_t col_u64(int idx)
-            {
-                return fossil_io_crabdb_column_u64(stmt_, idx);
-            }
-
-            float col_f32(int idx)
-            {
-                return fossil_io_crabdb_column_f32(stmt_, idx);
-            }
-
-            double col_f64(int idx)
-            {
-                return fossil_io_crabdb_column_f64(stmt_, idx);
-            }
-
-            const char* col_text(int idx)
-            {
-                return fossil_io_crabdb_column_text(stmt_, idx);
-            }
-
-            const void* col_blob(int idx, size_t* out_size)
-            {
-                return fossil_io_crabdb_column_blob(stmt_, idx, out_size);
-            }
-
-            crabdb_stmt_t* raw() const { return stmt_; }
-
-        private:
-            crabdb_stmt_t* stmt_ = nullptr;
-        };
-
-        /* ============================================================
-        * Prepare
-        * ============================================================ */
-
-        Statement prepare(const std::string& query)
+        bool flush()
         {
-            crabdb_stmt_t* stmt = nullptr;
-
-            if (fossil_io_crabdb_prepare(db_, query.c_str(), &stmt) != CRABDB_OK) {
-                throw std::runtime_error(error());
-            }
-
-            return Statement(stmt);
+            return fossil_io_crabdb_flush(db_) == 0;
         }
 
-        /* ============================================================
-        * Transactions
-        * ============================================================ */
+        /* =========================================================
+         * Query Engine
+         * ========================================================= */
 
-        class Transaction {
-        public:
-            explicit Transaction(crabdb_handle_t* db)
-                : db_(db)
-            {
-                if (fossil_io_crabdb_begin(db_, &txn_) != CRABDB_OK) {
-                    throw std::runtime_error("transaction begin failed");
-                }
-            }
-
-            ~Transaction()
-            {
-                if (txn_) {
-                    fossil_io_crabdb_rollback(txn_);
-                }
-            }
-
-            void commit()
-            {
-                if (txn_) {
-                    fossil_io_crabdb_commit(txn_);
-                    txn_ = nullptr;
-                }
-            }
-
-            void rollback()
-            {
-                if (txn_) {
-                    fossil_io_crabdb_rollback(txn_);
-                    txn_ = nullptr;
-                }
-            }
-
-        private:
-            crabdb_handle_t* db_ = nullptr;
-            crabdb_txn_t* txn_ = nullptr;
-        };
-
-        Transaction begin()
+        bool exec(const std::string &query)
         {
-            return Transaction(db_);
+            return fossil_io_crabdb_exec(db_, query.c_str()) == 0;
         }
 
-        /* ============================================================
-        * Raw access (only if absolutely needed)
-        * ============================================================ */
+        bool query(const std::string &query, Result &out)
+        {
+            return fossil_io_crabdb_query(db_, query.c_str(), &out.raw) == 0;
+        }
 
-        crabdb_handle_t* raw() const { return db_; }
+        /* =========================================================
+         * Typed Operations
+         * ========================================================= */
+
+        bool insert(const std::string &table,
+                    const std::vector<Value> &values)
+        {
+
+            std::vector<crabdb_value_t> raw;
+            raw.reserve(values.size());
+
+            for (const auto &v : values)
+            {
+                raw.push_back(v.raw);
+            }
+
+            return fossil_io_crabdb_insert(
+                       db_,
+                       table.c_str(),
+                       raw.data(),
+                       raw.size()) == 0;
+        }
+
+        bool update(const std::string &query)
+        {
+            return fossil_io_crabdb_update(db_, query.c_str()) == 0;
+        }
+
+        bool remove(const std::string &query)
+        {
+            return fossil_io_crabdb_delete(db_, query.c_str()) == 0;
+        }
+
+        /* =========================================================
+         * Schema / Family Tree
+         * ========================================================= */
+
+        bool create_table(const std::string &name)
+        {
+            return fossil_io_crabdb_create_table(db_, name.c_str()) == 0;
+        }
+
+        bool link_family(const std::string &parent,
+                         const std::string &child)
+        {
+
+            return fossil_io_crabdb_link_family(
+                       db_,
+                       parent.c_str(),
+                       child.c_str()) == 0;
+        }
+
+        /* =========================================================
+         * Threading
+         * ========================================================= */
+
+        bool enable_threading(bool enable)
+        {
+            return fossil_io_crabdb_enable_threading(db_, enable ? 1 : 0) == 0;
+        }
+
+        bool set_max_threads(std::size_t threads)
+        {
+            return fossil_io_crabdb_set_max_threads(db_, threads) == 0;
+        }
+
+        /* =========================================================
+         * Errors
+         * ========================================================= */
+
+        std::string last_error() const
+        {
+            const char *err = fossil_io_crabdb_last_error(db_);
+            return err ? std::string(err) : std::string();
+        }
 
     private:
-        crabdb_handle_t* db_ = nullptr;
+        crabdb_handle_t *db_;
     };
 
 } // namespace fossil::io
