@@ -71,6 +71,45 @@ struct fossil_io_crabdb_txn {
  * Utilities
  * ========================================================= */
 
+static int write_u32(FILE* f, uint32_t v) {
+    return fwrite(&v, sizeof(v), 1, f) == 1;
+}
+
+static int read_u32(FILE* f, uint32_t* v) {
+    return fread(v, sizeof(*v), 1, f) == 1;
+}
+
+static int write_u64(FILE* f, uint64_t v) {
+    return fwrite(&v, sizeof(v), 1, f) == 1;
+}
+
+static int read_u64(FILE* f, uint64_t* v) {
+    return fread(v, sizeof(*v), 1, f) == 1;
+}
+
+static int write_string(FILE* f, const char* s) {
+    uint32_t len = s ? (uint32_t)strlen(s) : 0;
+    if (!write_u32(f, len)) return 0;
+    if (len && fwrite(s, 1, len, f) != len) return 0;
+    return 1;
+}
+
+static char* read_string(FILE* f) {
+    uint32_t len;
+    if (!read_u32(f, &len)) return NULL;
+
+    char* s = malloc(len + 1);
+    if (!s) return NULL;
+
+    if (len && fread(s, 1, len, f) != len) {
+        free(s);
+        return NULL;
+    }
+
+    s[len] = '\0';
+    return s;
+}
+
 static char* crabdb_strdup(const char* s) {
     if (!s) return NULL;
     size_t len = strlen(s);
@@ -96,6 +135,205 @@ static crabdb_column_t* find_column(crabdb_table_t* table, const char* name) {
     return NULL;
 }
 
+static int write_value(FILE* f, crabdb_value_t* v) {
+    if (!write_u32(f, (uint32_t)v->type)) return 0;
+
+    switch (v->type) {
+        case FOSSIL_IO_CRABDB_TYPE_I32:
+            return write_u32(f, (uint32_t)v->data.i32);
+
+        case FOSSIL_IO_CRABDB_TYPE_I64:
+            return write_u64(f, (uint64_t)v->data.i64);
+
+        case FOSSIL_IO_CRABDB_TYPE_CSTR:
+            return write_string(f, v->data.cstr);
+
+        case FOSSIL_IO_CRABDB_TYPE_BOOL:
+            return write_u32(f, v->data.boolean);
+
+        case FOSSIL_IO_CRABDB_TYPE_F64:
+            return fwrite(&v->data.f64, sizeof(double), 1, f) == 1;
+
+        case FOSSIL_IO_CRABDB_TYPE_NULL:
+            return 1;
+
+        default:
+            /* fallback raw blob */
+            if (!write_u64(f, v->size)) return 0;
+            return fwrite(v->data.any, 1, v->size, f) == v->size;
+    }
+}
+
+static int read_value(FILE* f, crabdb_value_t* v) {
+    uint32_t type;
+    if (!read_u32(f, &type)) return 0;
+
+    v->type = (fossil_io_crabdb_type_t)type;
+
+    switch (v->type) {
+        case FOSSIL_IO_CRABDB_TYPE_I32: {
+            uint32_t tmp;
+            if (!read_u32(f, &tmp)) return 0;
+            v->data.i32 = (int32_t)tmp;
+            break;
+        }
+
+        case FOSSIL_IO_CRABDB_TYPE_I64: {
+            uint64_t tmp;
+            if (!read_u64(f, &tmp)) return 0;
+            v->data.i64 = (int64_t)tmp;
+            break;
+        }
+
+        case FOSSIL_IO_CRABDB_TYPE_CSTR:
+            v->data.cstr = read_string(f);
+            break;
+
+        case FOSSIL_IO_CRABDB_TYPE_BOOL: {
+            uint32_t tmp;
+            if (!read_u32(f, &tmp)) return 0;
+            v->data.boolean = (uint8_t)tmp;
+            break;
+        }
+
+        case FOSSIL_IO_CRABDB_TYPE_F64:
+            if (fread(&v->data.f64, sizeof(double), 1, f) != 1)
+                return 0;
+            break;
+
+        case FOSSIL_IO_CRABDB_TYPE_NULL:
+            break;
+
+        default: {
+            uint64_t size;
+            if (!read_u64(f, &size)) return 0;
+            v->size = (size_t)size;
+            v->data.any = malloc(v->size);
+            if (!v->data.any) return 0;
+            if (fread(v->data.any, 1, v->size, f) != v->size)
+                return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int crabdb_save(crabdb_handle_t* db) {
+    FILE* f = fopen(db->path, "wb");
+    if (!f) return 0;
+
+    fwrite(CRABDB_MAGIC, 1, 6, f);
+    write_u32(f, CRABDB_VERSION);
+
+    write_u32(f, (uint32_t)db->table_count);
+
+    for (size_t i = 0; i < db->table_count; i++) {
+        crabdb_table_t* t = &db->tables[i];
+
+        write_string(f, t->name);
+        write_string(f, t->parent);
+
+        write_u32(f, (uint32_t)t->child_count);
+        for (size_t c = 0; c < t->child_count; c++)
+            write_string(f, t->children[c]);
+
+        /* columns */
+        write_u32(f, (uint32_t)t->column_count);
+        for (size_t c = 0; c < t->column_count; c++) {
+            crabdb_column_t* col = &t->columns[c];
+            write_string(f, col->name);
+            write_u32(f, col->type);
+            write_u32(f, col->is_primary_key);
+            write_u32(f, col->is_nullable);
+        }
+
+        /* rows */
+        write_u32(f, (uint32_t)t->row_count);
+        for (size_t r = 0; r < t->row_count; r++) {
+            crabdb_row_t* row = &t->rows[r];
+            for (size_t v = 0; v < row->column_count; v++) {
+                write_value(f, &row->values[v]);
+            }
+        }
+    }
+
+    fclose(f);
+    return 1;
+}
+
+static int crabdb_load(crabdb_handle_t* db) {
+    FILE* f = fopen(db->path, "rb");
+    if (!f) return 1; /* new db */
+
+    char magic[7] = {0};
+    fread(magic, 1, 6, f);
+
+    if (strcmp(magic, CRABDB_MAGIC) != 0) {
+        fclose(f);
+        return 0;
+    }
+
+    uint32_t version;
+    read_u32(f, &version);
+
+    uint32_t table_count;
+    read_u32(f, &table_count);
+
+    db->tables = calloc(table_count, sizeof(*db->tables));
+    db->table_count = table_count;
+
+    for (uint32_t i = 0; i < table_count; i++) {
+        crabdb_table_t* t = &db->tables[i];
+
+        t->name = read_string(f);
+        t->parent = read_string(f);
+
+        uint32_t child_count;
+        read_u32(f, &child_count);
+
+        t->children = malloc(sizeof(char*) * child_count);
+        t->child_count = child_count;
+
+        for (uint32_t c = 0; c < child_count; c++)
+            t->children[c] = read_string(f);
+
+        uint32_t col_count;
+        read_u32(f, &col_count);
+
+        t->columns = calloc(col_count, sizeof(*t->columns));
+        t->column_count = col_count;
+
+        for (uint32_t c = 0; c < col_count; c++) {
+            crabdb_column_t* col = &t->columns[c];
+            col->name = read_string(f);
+
+            uint32_t tmp;
+            read_u32(f, &tmp); col->type = tmp;
+            read_u32(f, &tmp); col->is_primary_key = tmp;
+            read_u32(f, &tmp); col->is_nullable = tmp;
+        }
+
+        uint32_t row_count;
+        read_u32(f, &row_count);
+
+        t->rows = calloc(row_count, sizeof(*t->rows));
+        t->row_count = row_count;
+
+        for (uint32_t r = 0; r < row_count; r++) {
+            crabdb_row_t* row = &t->rows[r];
+            row->column_count = col_count;
+            row->values = calloc(col_count, sizeof(crabdb_value_t));
+
+            for (uint32_t v = 0; v < col_count; v++) {
+                read_value(f, &row->values[v]);
+            }
+        }
+    }
+
+    fclose(f);
+    return 1;
+}
+
 /* =========================================================
  * Type validation
  * ========================================================= */
@@ -117,8 +355,8 @@ crabdb_handle_t* fossil_io_crabdb_open(const char* path) {
     if (!db) return NULL;
 
     db->path = crabdb_strdup(path);
-    db->fp = fopen(path, "ab+"); /* create if not exists */
-    if (!db->fp) {
+
+    if (!crabdb_load(db)) {
         free(db);
         return NULL;
     }
@@ -128,6 +366,8 @@ crabdb_handle_t* fossil_io_crabdb_open(const char* path) {
 
 void fossil_io_crabdb_close(crabdb_handle_t* db) {
     if (!db) return;
+
+    crabdb_save(db);
 
     if (db->fp) fclose(db->fp);
 
@@ -400,8 +640,12 @@ crabdb_txn_t* fossil_io_crabdb_begin(crabdb_handle_t* db) {
 
 fossil_io_crabdb_error_t fossil_io_crabdb_commit(crabdb_txn_t* txn) {
     if (!txn) return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_save(txn->db);
+
     free(txn->snapshot_tables);
     free(txn);
+
     return FOSSIL_IO_CRABDB_OK;
 }
 
