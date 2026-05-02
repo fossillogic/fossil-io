@@ -34,270 +34,320 @@ extern "C"
 #endif
 
 /* =========================================================
- * Core Handle
+ * Versioning
  * ========================================================= */
 
-typedef struct crabdb_handle crabdb_handle_t;
+#define FOSSIL_IO_CRABDB_VERSION_MAJOR 0
+#define FOSSIL_IO_CRABDB_VERSION_MINOR 1
+#define FOSSIL_IO_CRABDB_VERSION_PATCH 0
 
 /* =========================================================
- * Type System
+ * Error codes
  * ========================================================= */
-
-typedef enum
-{
-    CRAB_TYPE_I8,
-    CRAB_TYPE_I16,
-    CRAB_TYPE_I32,
-    CRAB_TYPE_I64,
-
-    CRAB_TYPE_U8,
-    CRAB_TYPE_U16,
-    CRAB_TYPE_U32,
-    CRAB_TYPE_U64,
-
-    CRAB_TYPE_F32,
-    CRAB_TYPE_F64,
-
-    CRAB_TYPE_BOOL,
-    CRAB_TYPE_CHAR,
-    CRAB_TYPE_CSTR,
-
-    CRAB_TYPE_HEX,
-    CRAB_TYPE_OCT,
-    CRAB_TYPE_BIN,
-
-    CRAB_TYPE_SIZE,
-    CRAB_TYPE_DATETIME,
-    CRAB_TYPE_DURATION,
-
-    CRAB_TYPE_ANY,
-    CRAB_TYPE_NULL
-
-} crabdb_type_t;
+typedef enum {
+    FOSSIL_IO_CRABDB_OK = 0,
+    FOSSIL_IO_CRABDB_ERR_GENERIC,
+    FOSSIL_IO_CRABDB_ERR_IO,
+    FOSSIL_IO_CRABDB_ERR_MEMORY,
+    FOSSIL_IO_CRABDB_ERR_SCHEMA,
+    FOSSIL_IO_CRABDB_ERR_TYPE_MISMATCH,
+    FOSSIL_IO_CRABDB_ERR_NOT_FOUND,
+    FOSSIL_IO_CRABDB_ERR_CONSTRAINT,
+    FOSSIL_IO_CRABDB_ERR_TRANSACTION,
+    FOSSIL_IO_CRABDB_ERR_QUERY,
+    FOSSIL_IO_CRABDB_ERR_INVALID_ARG
+} fossil_io_crabdb_error_t;
 
 /* =========================================================
- * Value Container
+ * Forward declarations
  * ========================================================= */
 
-typedef struct
-{
-    crabdb_type_t type;
+typedef struct fossil_io_crabdb_handle crabdb_handle_t;
+typedef struct fossil_io_crabdb_table  crabdb_table_t;
+typedef struct fossil_io_crabdb_row    crabdb_row_t;
+typedef struct fossil_io_crabdb_value  crabdb_value_t;
+typedef struct fossil_io_crabdb_txn    crabdb_txn_t;
 
-    union
-    {
-        int8_t i8;
-        int16_t i16;
-        int32_t i32;
-        int64_t i64;
+/* =========================================================
+ * Supported types (logical schema layer)
+ * ========================================================= */
+typedef enum {
+    FOSSIL_IO_CRABDB_TYPE_I8,
+    FOSSIL_IO_CRABDB_TYPE_I16,
+    FOSSIL_IO_CRABDB_TYPE_I32,
+    FOSSIL_IO_CRABDB_TYPE_I64,
 
-        uint8_t u8;
+    FOSSIL_IO_CRABDB_TYPE_U8,
+    FOSSIL_IO_CRABDB_TYPE_U16,
+    FOSSIL_IO_CRABDB_TYPE_U32,
+    FOSSIL_IO_CRABDB_TYPE_U64,
+
+    FOSSIL_IO_CRABDB_TYPE_HEX,
+    FOSSIL_IO_CRABDB_TYPE_OCT,
+    FOSSIL_IO_CRABDB_TYPE_BIN,
+
+    FOSSIL_IO_CRABDB_TYPE_F32,
+    FOSSIL_IO_CRABDB_TYPE_F64,
+
+    FOSSIL_IO_CRABDB_TYPE_CSTR,
+    FOSSIL_IO_CRABDB_TYPE_CHAR,
+
+    FOSSIL_IO_CRABDB_TYPE_BOOL,
+
+    FOSSIL_IO_CRABDB_TYPE_SIZE,
+
+    FOSSIL_IO_CRABDB_TYPE_DATETIME,
+    FOSSIL_IO_CRABDB_TYPE_DURATION,
+
+    FOSSIL_IO_CRABDB_TYPE_ANY,
+    FOSSIL_IO_CRABDB_TYPE_NULL
+} fossil_io_crabdb_type_t;
+
+/* =========================================================
+ * Value container
+ * ========================================================= */
+
+struct fossil_io_crabdb_value {
+    const char* column;
+    fossil_io_crabdb_type_t type;
+
+    union {
+        int8_t   i8;
+        int16_t  i16;
+        int32_t  i32;
+        int64_t  i64;
+
+        uint8_t  u8;
         uint16_t u16;
         uint32_t u32;
         uint64_t u64;
 
-        float f32;
-        double f64;
+        float    f32;
+        double   f64;
 
-        uint8_t b;
-        char c;
+        const char* cstr;
+        char        ch;
+        uint8_t     boolean;
 
-        const char *cstr;
+        size_t      size;
+        int64_t     datetime;
+        int64_t     duration;
 
-        uint64_t size;
-        uint64_t datetime;
-        uint64_t duration;
+        void* any;
+    } data;
 
-        void *any;
-
-    } as;
-
-} crabdb_value_t;
+    size_t size; /* used for any/blob-like data */
+};
 
 /* =========================================================
- * Row / Result Set
+ * Row container (opaque in implementation)
  * ========================================================= */
 
-typedef struct
-{
-    crabdb_value_t *values;
-    size_t count;
-} crabdb_row_t;
-
-typedef struct
-{
-    crabdb_row_t *rows;
-    size_t count;
-} crabdb_result_t;
+struct fossil_io_crabdb_row {
+    size_t column_count;
+    crabdb_value_t* values;
+};
 
 /* =========================================================
- * Database Lifecycle
+ * Database lifecycle
  * ========================================================= */
 
 /**
- * Opens a connection to the CrabDB database.
- *
- * @param path The path to the database file.
- * @return A pointer to the database handle, or NULL on failure.
+ * Open database at given path. If the file does not exist, it will be created.
+ * Returns NULL on failure (e.g. I/O error, permission issues).
+ * 
+ * @param path Filesystem path to the database file.
+ * @return Pointer to crabdb_handle_t on success, NULL on failure.
  */
-crabdb_handle_t *fossil_io_crabdb_open(const char *path);
+crabdb_handle_t* fossil_io_crabdb_open(const char* path);
 
 /**
- * Closes the connection to the CrabDB database.
- *
- * @param db A pointer to the database handle.
+ * Close the database and free all associated resources. After this call, the db pointer is invalid.
+ * 
+ * @param db Pointer to the database handle to close.
  */
-void fossil_io_crabdb_close(crabdb_handle_t *db);
-
-/**
- * Flushes any pending changes to the CrabDB database.
- *
- * @param db A pointer to the database handle.
- * @return 0 on success, or a non-zero error code on failure.
- */
-int fossil_io_crabdb_flush(crabdb_handle_t *db);
+void fossil_io_crabdb_close(crabdb_handle_t* db);
 
 /* =========================================================
- * Query Engine (D-inspired)
+ * Schema / Table management
  * ========================================================= */
 
 /**
- * Executes a query against the CrabDB database.
- *
- * @param db A pointer to the database handle.
- * @param query The query string to execute.
- * @param out_result A pointer to a result structure to receive the query results.
- * @return 0 on success, or a non-zero error code on failure.
+ * Create a new table with the specified name. Returns an error code indicating success or failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @param table_name Name of the table to create.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_exec(
-    crabdb_handle_t *db,
-    const char *query);
+fossil_io_crabdb_error_t fossil_io_crabdb_create_table(
+    crabdb_handle_t* db,
+    const char* table_name
+);
 
 /**
- * Executes a query against the CrabDB database and retrieves results.
- *
- * @param db A pointer to the database handle.
- * @param query The query string to execute.
- * @param out_result A pointer to a result structure to receive the query results.
- * @return 0 on success, or a non-zero error code on failure.
+ * Define a new column in the specified table with the given properties. Returns an error code indicating success or failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @param table_name Name of the table to modify.
+ * @param column_name Name of the column to define.
+ * @param type Data type of the column (from fossil_io_crabdb_type_t).
+ * @param is_primary_key Non-zero if this column is a primary key, zero otherwise.
+ * @param is_nullable Non-zero if this column can contain NULL values, zero otherwise.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_query(
-    crabdb_handle_t *db,
-    const char *query,
-    crabdb_result_t *out_result);
+fossil_io_crabdb_error_t fossil_io_crabdb_define_column(
+    crabdb_handle_t* db,
+    const char* table_name,
+    const char* column_name,
+    fossil_io_crabdb_type_t type,
+    int is_primary_key,
+    int is_nullable
+);
 
 /* =========================================================
- * Typed Operations (Safer API Layer)
+ * Family Tree relations (core innovation)
  * ========================================================= */
 
 /**
- * Inserts a new record into the specified table.
- *
- * @param db A pointer to the database handle.
- * @param table The name of the table to insert into.
- * @param values An array of values to insert, corresponding to the table schema.
- * @param count The number of values in the array.
- * @return 0 on success, or a non-zero error code on failure.
+ * Set the parent table for the specified child table.
+ * 
+ * @param db Pointer to the database handle.
+ * @param child_table Name of the child table.
+ * @param parent_table Name of the parent table.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_insert(
-    crabdb_handle_t *db,
-    const char *table,
-    const crabdb_value_t *values,
-    size_t count);
+fossil_io_crabdb_error_t fossil_io_crabdb_set_parent(
+    crabdb_handle_t* db,
+    const char* child_table,
+    const char* parent_table
+);
 
 /**
- * Updates records in the specified table based on a condition.
- *
- * @param db A pointer to the database handle.
- * @param table The name of the table to update.
- * @param values An array of values to update, corresponding to the table schema.
- * @param count The number of values in the array.
- * @param condition A query string specifying the condition for which records to update.
- * @return 0 on success, or a non-zero error code on failure.
+ * Set the child table for the specified parent table.
+ * 
+ * @param db Pointer to the database handle.
+ * @param parent_table Name of the parent table.
+ * @param child_table Name of the child table.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_update(
-    crabdb_handle_t *db,
-    const char *query);
-
-/**
- * Deletes records from the specified table based on a condition.
- *
- * @param db A pointer to the database handle.
- * @param table The name of the table to delete from.
- * @param condition A query string specifying the condition for which records to delete.
- * @return 0 on success, or a non-zero error code on failure.
- */
-int fossil_io_crabdb_delete(
-    crabdb_handle_t *db,
-    const char *query);
+fossil_io_crabdb_error_t fossil_io_crabdb_set_child(
+    crabdb_handle_t* db,
+    const char* parent_table,
+    const char* child_table
+);
 
 /* =========================================================
- * Schema / Family Tree Model
+ * CRUD operations
  * ========================================================= */
 
 /**
- * Creates a new family (table) in the CrabDB database.
- * @param db A pointer to the database handle.
- * @param name The name of the family (table) to create.
- * @param schema The schema definition for the family (table).
- * @return 0 on success, or a non-zero error code on failure.
+ * Insert a new row into the specified table with the given values. Returns an error code indicating success or failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @param table Name of the table to insert into.
+ * @param values Array of crabdb_value_t representing column-value pairs for the new row.
+ * @param value_count Number of elements in the values array.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_create_table(
-    crabdb_handle_t *db,
-    const char *name);
+fossil_io_crabdb_error_t fossil_io_crabdb_insert(
+    crabdb_handle_t* db,
+    const char* table,
+    crabdb_value_t* values,
+    size_t value_count
+);
 
 /**
- * Establishes a parent-child relationship between two families (tables).
- *
- * @param db A pointer to the database handle.
- * @param parent_table The name of the parent family (table).
- * @param child_table The name of the child family (table).
- * @return 0 on success, or a non-zero error code on failure.
+ * Update existing rows in the specified table that match the where_clause with the given values. Returns an error code indicating success or failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @param table Name of the table to update.
+ * @param values Array of crabdb_value_t representing column-value pairs for the update.
+ * @param where_clause SQL-like WHERE clause to specify which rows to update (e.g. "id = 5").
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-int fossil_io_crabdb_link_family(
-    crabdb_handle_t *db,
-    const char *parent_table,
-    const char *child_table);
+fossil_io_crabdb_error_t fossil_io_crabdb_update(
+    crabdb_handle_t* db,
+    const char* table,
+    crabdb_value_t* values,
+    const char* where_clause
+);
+
+/**
+ * Delete rows from the specified table that match the where_clause. Returns an error code indicating success or failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @param table Name of the table to delete from.
+ * @param where_clause SQL-like WHERE clause to specify which rows to delete (e.g. "id = 5").
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
+ */
+fossil_io_crabdb_error_t fossil_io_crabdb_delete(
+    crabdb_handle_t* db,
+    const char* table,
+    const char* where_clause
+);
 
 /* =========================================================
- * Threading Control
+ * Query engine
  * ========================================================= */
 
 /**
- * Enables or disables threading support in the CrabDB database.
- *
- * @param db A pointer to the database handle.
- * @param enable Non-zero to enable threading, zero to disable.
- * @return 0 on success, or a non-zero error code on failure.
+ * Execute a query on the database and return the resulting rows.
+ * 
+ * @param db Pointer to the database handle.
+ * @param query SQL-like query string to execute.
+ * @return Pointer to an array of crabdb_row_t representing the query results.
  */
-int fossil_io_crabdb_enable_threading(crabdb_handle_t *db, int enable);
-
-/**
- * Sets the maximum number of threads that CrabDB can utilize for concurrent operations.
- *
- * @param db A pointer to the database handle.
- * @param threads The maximum number of threads to allow (must be greater than 0).
- * @return 0 on success, or a non-zero error code on failure.
- */
-int fossil_io_crabdb_set_max_threads(crabdb_handle_t *db, size_t threads);
+crabdb_row_t* fossil_io_crabdb_query(
+    crabdb_handle_t* db,
+    const char* query
+);
 
 /* =========================================================
- * Utilities
+ * Transactions
  * ========================================================= */
 
 /**
- * Retrieves the last error message from the CrabDB database.
- *
- * @param db A pointer to the database handle.
- * @return A string containing the last error message, or NULL if no error has occurred.
+ * Begin a new transaction. Returns a pointer to a crabdb_txn_t representing the transaction context, or NULL on failure.
+ * 
+ * @param db Pointer to the database handle.
+ * @return Pointer to crabdb_txn_t on success, NULL on failure.
  */
-const char *fossil_io_crabdb_last_error(crabdb_handle_t *db);
+crabdb_txn_t* fossil_io_crabdb_begin(crabdb_handle_t* db);
 
 /**
- * Frees the memory associated with a CrabDB result set.
- *
- * @param result A pointer to the result set to free.
+ * Commit the specified transaction. Returns an error code indicating success or failure.
+ * 
+ * @param txn Pointer to the transaction context to commit.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
  */
-void fossil_io_crabdb_free_result(crabdb_result_t *result);
+fossil_io_crabdb_error_t fossil_io_crabdb_commit(crabdb_txn_t* txn);
+
+/**
+ * Rollback the specified transaction. Returns an error code indicating success or failure.
+ * 
+ * @param txn Pointer to the transaction context to rollback.
+ * @return FOSSIL_IO_CRABDB_OK on success, or an appropriate error code on failure.
+ */
+fossil_io_crabdb_error_t fossil_io_crabdb_rollback(crabdb_txn_t* txn);
+
+/* =========================================================
+ * Utility helpers
+ * ========================================================= */
+
+/**
+ * Get a human-readable error message for the specified error code.
+ * 
+ * @param err The error code to get the message for.
+ * @return A string describing the error.
+ */
+const char* fossil_io_crabdb_error_string(fossil_io_crabdb_error_t err);
+
+/**
+ * Get the version string of the CrabDB library.
+ * 
+ * @return A string representing the version of the library (e.g. "0.1.0").
+ */
+const char* fossil_io_crabdb_version(void);
 
 #ifdef __cplusplus
 }

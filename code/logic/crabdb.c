@@ -24,73 +24,104 @@
  */
 #include "fossil/io/crabdb.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* =========================================================
- * Internal Structures
+ * Internal structures
  * ========================================================= */
 
-typedef struct crabdb_kv {
-    char* key;
-    crabdb_value_t value;
-} crabdb_kv_t;
-
-typedef struct crabdb_row_internal {
-    crabdb_kv_t* cols;
-    size_t count;
-} crabdb_row_internal_t;
-
-typedef struct crabdb_table {
+typedef struct {
     char* name;
-    crabdb_row_internal_t* rows;
-    size_t row_count;
-} crabdb_table_t;
+    fossil_io_crabdb_type_t type;
+    int is_primary_key;
+    int is_nullable;
+} crabdb_column_t;
 
-struct crabdb_handle {
+struct fossil_io_crabdb_table {
+    char* name;
+
+    crabdb_column_t* columns;
+    size_t column_count;
+
+    crabdb_row_t* rows;
+    size_t row_count;
+
+    char* parent;
+    char** children;
+    size_t child_count;
+};
+
+struct fossil_io_crabdb_handle {
+    char* path;
+    FILE* fp;
+
     crabdb_table_t* tables;
     size_t table_count;
+};
 
-    char* last_error;
-
-    int threading_enabled;
-    size_t max_threads;
+struct fossil_io_crabdb_txn {
+    crabdb_handle_t* db;
+    crabdb_table_t* snapshot_tables;
+    size_t snapshot_count;
 };
 
 /* =========================================================
- * Utility Helpers
+ * Utilities
  * ========================================================= */
 
-static void set_error(crabdb_handle_t* db, const char* msg) {
-    if (!db) return;
-    free(db->last_error);
-    db->last_error = strdup(msg);
+static char* crabdb_strdup(const char* s) {
+    if (!s) return NULL;
+    size_t len = strlen(s);
+    char* out = (char*)malloc(len + 1);
+    if (!out) return NULL;
+    memcpy(out, s, len + 1);
+    return out;
 }
 
 static crabdb_table_t* find_table(crabdb_handle_t* db, const char* name) {
     for (size_t i = 0; i < db->table_count; i++) {
-        if (strcmp(db->tables[i].name, name) == 0) {
+        if (strcmp(db->tables[i].name, name) == 0)
             return &db->tables[i];
-        }
+    }
+    return NULL;
+}
+
+static crabdb_column_t* find_column(crabdb_table_t* table, const char* name) {
+    for (size_t i = 0; i < table->column_count; i++) {
+        if (strcmp(table->columns[i].name, name) == 0)
+            return &table->columns[i];
     }
     return NULL;
 }
 
 /* =========================================================
- * Database Lifecycle
+ * Type validation
+ * ========================================================= */
+
+static int validate_type(fossil_io_crabdb_type_t type, crabdb_value_t* v) {
+    if (!v) return 0;
+    if (v->type == FOSSIL_IO_CRABDB_TYPE_NULL) return 1;
+    return v->type == type || type == FOSSIL_IO_CRABDB_TYPE_ANY;
+}
+
+/* =========================================================
+ * Database lifecycle
  * ========================================================= */
 
 crabdb_handle_t* fossil_io_crabdb_open(const char* path) {
-    (void)path; /* no persistence in this version */
+    if (!path) return NULL;
 
-    crabdb_handle_t* db = (crabdb_handle_t*)calloc(1, sizeof(crabdb_handle_t));
+    crabdb_handle_t* db = calloc(1, sizeof(*db));
     if (!db) return NULL;
 
-    db->tables = NULL;
-    db->table_count = 0;
-    db->last_error = NULL;
-    db->threading_enabled = 0;
-    db->max_threads = 1;
+    db->path = crabdb_strdup(path);
+    db->fp = fopen(path, "ab+"); /* create if not exists */
+    if (!db->fp) {
+        free(db);
+        return NULL;
+    }
 
     return db;
 }
@@ -98,185 +129,312 @@ crabdb_handle_t* fossil_io_crabdb_open(const char* path) {
 void fossil_io_crabdb_close(crabdb_handle_t* db) {
     if (!db) return;
 
-    for (size_t t = 0; t < db->table_count; t++) {
-        crabdb_table_t* table = &db->tables[t];
+    if (db->fp) fclose(db->fp);
 
-        free(table->name);
+    for (size_t i = 0; i < db->table_count; i++) {
+        crabdb_table_t* t = &db->tables[i];
+        free(t->name);
 
-        for (size_t r = 0; r < table->row_count; r++) {
-            free(table->rows[r].cols);
+        for (size_t j = 0; j < t->column_count; j++)
+            free(t->columns[j].name);
+
+        free(t->columns);
+
+        for (size_t r = 0; r < t->row_count; r++) {
+            free(t->rows[r].values);
         }
-        free(table->rows);
+        free(t->rows);
+
+        free(t->parent);
+        for (size_t c = 0; c < t->child_count; c++)
+            free(t->children[c]);
+        free(t->children);
     }
 
     free(db->tables);
-    free(db->last_error);
+    free(db->path);
     free(db);
 }
 
-int fossil_io_crabdb_flush(crabdb_handle_t* db) {
-    if (!db) return 1;
-    return 0; /* no-op for in-memory version */
-}
-
 /* =========================================================
- * Query Engine (stub parser)
+ * Schema
  * ========================================================= */
 
-int fossil_io_crabdb_exec(crabdb_handle_t* db, const char* query) {
-    if (!db || !query) return 1;
-
-    /* minimal stub behavior */
-    if (strstr(query, "create") != NULL) {
-        return 0;
-    }
-
-    if (strstr(query, "insert") != NULL) {
-        return 0;
-    }
-
-    return 0;
-}
-
-int fossil_io_crabdb_query(
+fossil_io_crabdb_error_t fossil_io_crabdb_create_table(
     crabdb_handle_t* db,
-    const char* query,
-    crabdb_result_t* out_result
+    const char* table_name
 ) {
-    (void)db;
-    (void)query;
-    (void)out_result;
+    if (!db || !table_name) return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+    if (find_table(db, table_name)) return FOSSIL_IO_CRABDB_ERR_CONSTRAINT;
 
-    /* future: D-inspired parser → AST → executor */
-    return 0;
-}
+    db->tables = realloc(db->tables, sizeof(*db->tables) * (db->table_count + 1));
+    if (!db->tables) return FOSSIL_IO_CRABDB_ERR_MEMORY;
 
-/* =========================================================
- * Typed Operations
- * ========================================================= */
-
-int fossil_io_crabdb_insert(
-    crabdb_handle_t* db,
-    const char* table,
-    const crabdb_value_t* values,
-    size_t count
-) {
-    if (!db || !table || !values) return 1;
-
-    crabdb_table_t* t = find_table(db, table);
-    if (!t) {
-        set_error(db, "table not found");
-        return 1;
-    }
-
-    crabdb_row_internal_t* new_rows =
-        (crabdb_row_internal_t*)realloc(t->rows, sizeof(crabdb_row_internal_t) * (t->row_count + 1));
-
-    if (!new_rows) return 1;
-
-    t->rows = new_rows;
-
-    crabdb_kv_t* cols = (crabdb_kv_t*)calloc(count, sizeof(crabdb_kv_t));
-    if (!cols) return 1;
-
-    for (size_t i = 0; i < count; i++) {
-        cols[i].value = values[i];
-    }
-
-    t->rows[t->row_count].cols = cols;
-    t->rows[t->row_count].count = count;
-    t->row_count++;
-
-    return 0;
-}
-
-int fossil_io_crabdb_update(crabdb_handle_t* db, const char* query) {
-    (void)db;
-    (void)query;
-    return 0;
-}
-
-int fossil_io_crabdb_delete(crabdb_handle_t* db, const char* query) {
-    (void)db;
-    (void)query;
-    return 0;
-}
-
-/* =========================================================
- * Schema / Family Tree Model
- * ========================================================= */
-
-int fossil_io_crabdb_create_table(
-    crabdb_handle_t* db,
-    const char* name
-) {
-    if (!db || !name) return 1;
-
-    crabdb_table_t* new_tables =
-        (crabdb_table_t*)realloc(db->tables, sizeof(crabdb_table_t) * (db->table_count + 1));
-
-    if (!new_tables) return 1;
-
-    db->tables = new_tables;
-
-    crabdb_table_t* t = &db->tables[db->table_count];
+    crabdb_table_t* t = &db->tables[db->table_count++];
     memset(t, 0, sizeof(*t));
 
-    t->name = strdup(name);
-    t->rows = NULL;
-    t->row_count = 0;
+    t->name = crabdb_strdup(table_name);
 
-    db->table_count++;
-
-    return 0;
+    return FOSSIL_IO_CRABDB_OK;
 }
 
-int fossil_io_crabdb_link_family(
+fossil_io_crabdb_error_t fossil_io_crabdb_define_column(
+    crabdb_handle_t* db,
+    const char* table_name,
+    const char* column_name,
+    fossil_io_crabdb_type_t type,
+    int is_primary_key,
+    int is_nullable
+) {
+    if (!db || !table_name || !column_name)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_table_t* t = find_table(db, table_name);
+    if (!t) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    t->columns = realloc(t->columns, sizeof(*t->columns) * (t->column_count + 1));
+    if (!t->columns) return FOSSIL_IO_CRABDB_ERR_MEMORY;
+
+    crabdb_column_t* col = &t->columns[t->column_count++];
+    col->name = crabdb_strdup(column_name);
+    col->type = type;
+    col->is_primary_key = is_primary_key;
+    col->is_nullable = is_nullable;
+
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+/* =========================================================
+ * Relations
+ * ========================================================= */
+
+fossil_io_crabdb_error_t fossil_io_crabdb_set_parent(
+    crabdb_handle_t* db,
+    const char* child_table,
+    const char* parent_table
+) {
+    if (!db || !child_table || !parent_table)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_table_t* child = find_table(db, child_table);
+    crabdb_table_t* parent = find_table(db, parent_table);
+
+    if (!child || !parent) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    free(child->parent);
+    child->parent = crabdb_strdup(parent_table);
+
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+fossil_io_crabdb_error_t fossil_io_crabdb_set_child(
     crabdb_handle_t* db,
     const char* parent_table,
     const char* child_table
 ) {
-    (void)db;
-    (void)parent_table;
-    (void)child_table;
+    if (!db || !parent_table || !child_table)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
 
-    /* future: adjacency list or closure table */
+    crabdb_table_t* parent = find_table(db, parent_table);
+    if (!parent) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    parent->children = realloc(parent->children,
+        sizeof(char*) * (parent->child_count + 1));
+
+    parent->children[parent->child_count++] = crabdb_strdup(child_table);
+
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+/* =========================================================
+ * WHERE parser (simple: col=value)
+ * ========================================================= */
+
+static int match_where(crabdb_row_t* row, crabdb_table_t* table, const char* clause) {
+    if (!clause) return 1;
+
+    char col[64], val[64];
+    if (sscanf(clause, "%63s = %63s", col, val) != 2)
+        return 0;
+
+    for (size_t i = 0; i < table->column_count; i++) {
+        if (strcmp(table->columns[i].name, col) == 0) {
+            crabdb_value_t* v = &row->values[i];
+            if (v->type == FOSSIL_IO_CRABDB_TYPE_I32)
+                return atoi(val) == v->data.i32;
+        }
+    }
     return 0;
 }
 
 /* =========================================================
- * Threading Control
+ * CRUD
  * ========================================================= */
 
-int fossil_io_crabdb_enable_threading(crabdb_handle_t* db, int enable) {
-    if (!db) return 1;
-    db->threading_enabled = enable;
-    return 0;
+fossil_io_crabdb_error_t fossil_io_crabdb_insert(
+    crabdb_handle_t* db,
+    const char* table,
+    crabdb_value_t* values,
+    size_t value_count
+) {
+    if (!db || !table || !values)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_table_t* t = find_table(db, table);
+    if (!t) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    if (value_count != t->column_count)
+        return FOSSIL_IO_CRABDB_ERR_SCHEMA;
+
+    crabdb_row_t row;
+    row.column_count = value_count;
+    row.values = malloc(sizeof(crabdb_value_t) * value_count);
+
+    for (size_t i = 0; i < value_count; i++) {
+        crabdb_column_t* col = &t->columns[i];
+
+        if (!validate_type(col->type, &values[i]))
+            return FOSSIL_IO_CRABDB_ERR_TYPE_MISMATCH;
+
+        if (!col->is_nullable && values[i].type == FOSSIL_IO_CRABDB_TYPE_NULL)
+            return FOSSIL_IO_CRABDB_ERR_CONSTRAINT;
+
+        row.values[i] = values[i];
+    }
+
+    t->rows = realloc(t->rows, sizeof(*t->rows) * (t->row_count + 1));
+    t->rows[t->row_count++] = row;
+
+    return FOSSIL_IO_CRABDB_OK;
 }
 
-int fossil_io_crabdb_set_max_threads(crabdb_handle_t* db, size_t threads) {
-    if (!db || threads == 0) return 1;
-    db->max_threads = threads;
-    return 0;
+fossil_io_crabdb_error_t fossil_io_crabdb_update(
+    crabdb_handle_t* db,
+    const char* table,
+    crabdb_value_t* values,
+    const char* where_clause
+) {
+    if (!db || !table || !values)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_table_t* t = find_table(db, table);
+    if (!t) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    for (size_t r = 0; r < t->row_count; r++) {
+        if (!match_where(&t->rows[r], t, where_clause))
+            continue;
+
+        for (size_t c = 0; c < t->column_count; c++) {
+            if (strcmp(values[c].column, t->columns[c].name) == 0) {
+                if (!validate_type(t->columns[c].type, &values[c]))
+                    return FOSSIL_IO_CRABDB_ERR_TYPE_MISMATCH;
+
+                t->rows[r].values[c] = values[c];
+            }
+        }
+    }
+
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+fossil_io_crabdb_error_t fossil_io_crabdb_delete(
+    crabdb_handle_t* db,
+    const char* table,
+    const char* where_clause
+) {
+    if (!db || !table)
+        return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    crabdb_table_t* t = find_table(db, table);
+    if (!t) return FOSSIL_IO_CRABDB_ERR_NOT_FOUND;
+
+    size_t write = 0;
+    for (size_t read = 0; read < t->row_count; read++) {
+        if (!match_where(&t->rows[read], t, where_clause)) {
+            t->rows[write++] = t->rows[read];
+        }
+    }
+    t->row_count = write;
+
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+/* =========================================================
+ * Query (minimal SQL-like)
+ * ========================================================= */
+
+crabdb_row_t* fossil_io_crabdb_query(
+    crabdb_handle_t* db,
+    const char* query
+) {
+    if (!db || !query) return NULL;
+
+    char table[64];
+    if (sscanf(query, "SELECT * FROM %63s", table) != 1)
+        return NULL;
+
+    crabdb_table_t* t = find_table(db, table);
+    if (!t) return NULL;
+
+    return t->rows;
+}
+
+/* =========================================================
+ * Transactions (snapshot copy)
+ * ========================================================= */
+
+crabdb_txn_t* fossil_io_crabdb_begin(crabdb_handle_t* db) {
+    if (!db) return NULL;
+
+    crabdb_txn_t* txn = calloc(1, sizeof(*txn));
+    txn->db = db;
+
+    txn->snapshot_count = db->table_count;
+    txn->snapshot_tables = malloc(sizeof(*txn->snapshot_tables) * db->table_count);
+
+    memcpy(txn->snapshot_tables, db->tables,
+           sizeof(*txn->snapshot_tables) * db->table_count);
+
+    return txn;
+}
+
+fossil_io_crabdb_error_t fossil_io_crabdb_commit(crabdb_txn_t* txn) {
+    if (!txn) return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+    free(txn->snapshot_tables);
+    free(txn);
+    return FOSSIL_IO_CRABDB_OK;
+}
+
+fossil_io_crabdb_error_t fossil_io_crabdb_rollback(crabdb_txn_t* txn) {
+    if (!txn) return FOSSIL_IO_CRABDB_ERR_INVALID_ARG;
+
+    txn->db->tables = txn->snapshot_tables;
+    txn->db->table_count = txn->snapshot_count;
+
+    free(txn);
+    return FOSSIL_IO_CRABDB_OK;
 }
 
 /* =========================================================
  * Utilities
  * ========================================================= */
 
-const char* fossil_io_crabdb_last_error(crabdb_handle_t* db) {
-    if (!db) return NULL;
-    return db->last_error;
+const char* fossil_io_crabdb_error_string(fossil_io_crabdb_error_t err) {
+    switch (err) {
+        case FOSSIL_IO_CRABDB_OK: return "OK";
+        case FOSSIL_IO_CRABDB_ERR_IO: return "IO error";
+        case FOSSIL_IO_CRABDB_ERR_MEMORY: return "Memory error";
+        case FOSSIL_IO_CRABDB_ERR_SCHEMA: return "Schema error";
+        case FOSSIL_IO_CRABDB_ERR_TYPE_MISMATCH: return "Type mismatch";
+        case FOSSIL_IO_CRABDB_ERR_NOT_FOUND: return "Not found";
+        case FOSSIL_IO_CRABDB_ERR_CONSTRAINT: return "Constraint violation";
+        case FOSSIL_IO_CRABDB_ERR_TRANSACTION: return "Transaction error";
+        case FOSSIL_IO_CRABDB_ERR_QUERY: return "Query error";
+        case FOSSIL_IO_CRABDB_ERR_INVALID_ARG: return "Invalid argument";
+        default: return "Generic error";
+    }
 }
 
-void fossil_io_crabdb_free_result(crabdb_result_t* result) {
-    if (!result) return;
-
-    for (size_t i = 0; i < result->count; i++) {
-        free(result->rows[i].values);
-    }
-
-    free(result->rows);
-    result->rows = NULL;
-    result->count = 0;
+const char* fossil_io_crabdb_version(void) {
+    return "0.1.0";
 }
