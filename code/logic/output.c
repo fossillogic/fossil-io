@@ -718,7 +718,7 @@ static int fossil_io_format_internal(
 
         if (FOSSIL_IO_COLOR_ENABLE)
         {
-            const char *code = fossil_io_get_color_code(tag);
+            const char *code = fossil_io_apply_bg_color(tag);
             size_t code_len = strlen(code);
 
             if (out + code_len < size - 1)
