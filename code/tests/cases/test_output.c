@@ -121,8 +121,6 @@ FOSSIL_TEST(c_test_output_enable_flag_toggle)
     ASSUME_ITS_EQUAL_I32(1, FOSSIL_IO_OUTPUT_ENABLE);
 
     FOSSIL_IO_OUTPUT_ENABLE = original_output;
-    
-    fossil_io_printf("\n\nBrodcast: {green}OK{reset}");
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -136,6 +134,7 @@ FOSSIL_TEST_GROUP(c_output_tests)
     FOSSIL_TEST_ADD(c_output_suite, c_test_output_color_markup_enabled);
     FOSSIL_TEST_ADD(c_output_suite, c_test_output_output_preserves_formatting_when_disabled);
     FOSSIL_TEST_ADD(c_output_suite, c_test_output_enable_flag_toggle);
+    fossil_io_printf("\n\nBrodcast: {green}OK{reset}");
 
     FOSSIL_TEST_REGISTER(c_output_suite);
 }
