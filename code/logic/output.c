@@ -707,7 +707,10 @@ static int fossil_io_format_internal(
 
     if (!apply_markup)
     {
-        size_t len = (written < (size_t)(size - 1)) ? written : size - 1;
+        if (written < 0)
+            return -1;
+        
+        size_t len = ((size_t)written < size - 1) ? (size_t)written : size - 1;
         memcpy(buffer, temp, len);
         buffer[len] = '\0';
         return (int)len;
