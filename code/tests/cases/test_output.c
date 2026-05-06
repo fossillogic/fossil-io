@@ -76,7 +76,7 @@ FOSSIL_TEST(c_test_output_color_markup_disabled)
     char buffer[128];
 
     FOSSIL_IO_COLOR_ENABLE = 0;
-    int result = fossil_io_sprintf(buffer, sizeof(buffer), "Status: {green}OK{reset}");
+    int result = fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_TRUE(result >= 0);
     ASSUME_ITS_EQUAL_CSTR("Status: OK", buffer);
 
@@ -89,7 +89,7 @@ FOSSIL_TEST(c_test_output_color_markup_enabled)
     char buffer[128];
 
     FOSSIL_IO_COLOR_ENABLE = 1;
-    int result = fossil_io_sprintf(buffer, sizeof(buffer), "Status: {green}OK{reset}");
+    int result = fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_TRUE(result >= 0);
     ASSUME_ITS_TRUE(strstr(buffer, "\x1b[") != NULL);
     ASSUME_ITS_TRUE(strstr(buffer, "OK") != NULL);
@@ -103,7 +103,7 @@ FOSSIL_TEST(c_test_output_output_preserves_formatting_when_disabled)
     char buffer[128];
 
     FOSSIL_IO_OUTPUT_ENABLE = 0;
-    int result = fossil_io_sprintf(buffer, sizeof(buffer), "%s", "DryRun");
+    int result = fossil_io_sprintf(buffer, "%s", "DryRun");
     ASSUME_ITS_TRUE(result >= 0);
     ASSUME_ITS_EQUAL_CSTR("DryRun", buffer);
 
