@@ -125,6 +125,30 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
+static int fossil_io_is_valid_tag(const char *s, size_t len)
+{
+
+    if (!s || len == 0 || len > 64)
+        return 0;
+
+    // Only allow safe tag characters
+    for (size_t i = 0; i < len; i++)
+    {
+
+        if (!(isalnum((unsigned char)s[i]) || s[i] == ':' || s[i] == ',' || s[i] == '_' || s[i] == '-'))
+            return 0;
+    }
+
+    // Known valid patterns
+    if (strncmp(s, "bg:", 3) == 0) return 1;
+    if (strncmp(s, "pos:", 4) == 0) return 1;
+
+    // color / attribute must start with alpha
+    if (isalpha((unsigned char)s[0])) return 1;
+
+    return 0;
+}
+
 // Function to apply background color
 void fossil_io_apply_bg_color(ccstring bg_color)
 {
@@ -472,7 +496,7 @@ void fossil_io_print_with_attributes(ccstring str)
     if (!FOSSIL_IO_OUTPUT_ENABLE)
         return;
 
-    if (str == NULL)
+    if (!str)
     {
         fprintf(stderr, "cnullptr\n");
         return;
@@ -480,89 +504,92 @@ void fossil_io_print_with_attributes(ccstring str)
 
     ccstring current_pos = str;
     ccstring start = NULL;
-    ccstring end = NULL;
 
     while ((start = strchr(current_pos, '{')) != NULL)
     {
-        // Output text before '{'
+        // print text before '{'
         fwrite(current_pos, 1, start - current_pos, stdout);
 
-        // Find the matching '}'
-        end = strchr(start, '}');
-        if (end && end > start)
+        // ESCAPE: "{{" -> "{"
+        if (start[1] == '{')
         {
-            // Extract attributes inside '{}'
-            size_t length = end - start - 1;
-            if (length == 0)
-            {
-                // Empty braces, print as is
-                fossil_io_filesys_file_write(FOSSIL_STDOUT, "{", 1, 1);
-                fossil_io_filesys_file_write(FOSSIL_STDOUT, "}", 1, 1);
-                current_pos = end + 1;
-                continue;
-            }
-            char attributes[length + 1];
-            strncpy(attributes, start + 1, length);
-            attributes[length] = '\0';
+            fputc('{', stdout);
+            current_pos = start + 2;
+            continue;
+        }
 
-            // Check for bg: or pos: prefix
-            if (strncmp(attributes, "bg:", 3) == 0)
-            {
-                char *bg_color = attributes + 3;
-                char *comma_pos = strchr(bg_color, ',');
-                if (comma_pos)
-                {
-                    *comma_pos = '\0';
-                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0')
-                        fossil_io_apply_bg_color(bg_color);
-                    if (comma_pos[1] != '\0')
-                        fossil_io_apply_attribute(comma_pos + 1);
-                }
-                else
-                {
-                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0')
-                        fossil_io_apply_bg_color(bg_color);
-                }
-            }
-            else if (strncmp(attributes, "pos:", 4) == 0)
-            {
-                if (attributes[4] != '\0')
-                    fossil_io_apply_position(attributes + 4);
-            }
-            else
-            {
-                // Handle color and/or attribute
-                char *color = attributes;
-                char *attribute = NULL;
-                char *comma_pos = strchr(attributes, ',');
-                if (comma_pos)
-                {
-                    *comma_pos = '\0';
-                    color = attributes;
-                    attribute = comma_pos + 1;
-                }
-                if (FOSSIL_IO_COLOR_ENABLE && color && color[0] != '\0')
-                {
-                    fossil_io_apply_color(color);
-                }
-                if (attribute && attribute[0] != '\0')
-                {
-                    fossil_io_apply_attribute(attribute);
-                }
-            }
+        ccstring end = strchr(start, '}');
 
-            // Move past '}' and continue processing
+        if (!end)
+        {
+            // no closing brace → literal
+            fputc('{', stdout);
+            current_pos = start + 1;
+            continue;
+        }
+
+        size_t length = end - start - 1;
+
+        // VALIDATE TAG
+        if (!fossil_io_is_valid_tag(start + 1, length))
+        {
+            fwrite(start, 1, length + 2, stdout);
             current_pos = end + 1;
+            continue;
+        }
+
+        char attributes[65];
+        if (length >= sizeof(attributes))
+            length = sizeof(attributes) - 1;
+
+        memcpy(attributes, start + 1, length);
+        attributes[length] = '\0';
+
+        // ---- APPLY TAG ----
+        if (strncmp(attributes, "bg:", 3) == 0)
+        {
+            char *bg = attributes + 3;
+            char *comma = strchr(bg, ',');
+
+            if (comma)
+            {
+                *comma = '\0';
+                if (FOSSIL_IO_COLOR_ENABLE && *bg)
+                    fossil_io_apply_bg_color(bg);
+                if (*(comma + 1))
+                    fossil_io_apply_attribute(comma + 1);
+            }
+            else if (FOSSIL_IO_COLOR_ENABLE && *bg)
+            {
+                fossil_io_apply_bg_color(bg);
+            }
+        }
+        else if (strncmp(attributes, "pos:", 4) == 0)
+        {
+            if (attributes[4])
+                fossil_io_apply_position(attributes + 4);
         }
         else
         {
-            // No matching '}', print the rest and break
-            fwrite(start, 1, strlen(start), stdout);
-            break;
+            char *comma = strchr(attributes, ',');
+            if (comma)
+            {
+                *comma = '\0';
+                if (FOSSIL_IO_COLOR_ENABLE && *attributes)
+                    fossil_io_apply_color(attributes);
+                if (*(comma + 1))
+                    fossil_io_apply_attribute(comma + 1);
+            }
+            else
+            {
+                if (FOSSIL_IO_COLOR_ENABLE && *attributes)
+                    fossil_io_apply_color(attributes);
+            }
         }
+
+        current_pos = end + 1;
     }
 
-    // Output remaining text after last '}'
     fwrite(current_pos, 1, strlen(current_pos), stdout);
     fflush(stdout);
 }
@@ -570,35 +597,46 @@ void fossil_io_print_with_attributes(ccstring str)
 // Function to print a sanitized formatted string to a specific file stream with attributes
 void fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, ccstring str)
 {
-    if (str != NULL && stream != NULL)
-    {
-        char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str));
-        sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
+    if (!str || !stream)
+        return;
 
-        ccstring current_pos = sanitized_str;
-        ccstring start = NULL;
-        ccstring end = NULL;
-        while ((start = strchr(current_pos, '{')) != NULL)
+    ccstring cur = str;
+    ccstring start;
+
+    while ((start = strchr(cur, '{')) != NULL)
+    {
+        fossil_io_filesys_file_write(stream, cur, 1, start - cur);
+
+        // escape {{
+        if (start[1] == '{')
         {
-            // Write text before '{' to the file
-            fossil_io_filesys_file_write(stream, current_pos, 1, start - current_pos);
-            end = strchr(start, '}');
-            if (end && end > start)
-            {
-                // Skip the attribute section
-                current_pos = end + 1;
-            }
-            else
-            {
-                // No matching '}', write '{' and continue searching
-                fossil_io_filesys_file_write(stream, start, 1, 1);
-                current_pos = start + 1;
-            }
+            fossil_io_filesys_file_write(stream, "{", 1, 1);
+            cur = start + 2;
+            continue;
         }
-        // Write remaining text after last '}'
-        fossil_io_filesys_file_write(stream, current_pos, 1, strlen(current_pos));
+
+        ccstring end = strchr(start, '}');
+        if (!end)
+        {
+            fossil_io_filesys_file_write(stream, "{", 1, 1);
+            cur = start + 1;
+            continue;
+        }
+
+        size_t len = end - start - 1;
+
+        if (!fossil_io_is_valid_tag(start + 1, len))
+        {
+            fossil_io_filesys_file_write(stream, start, 1, len + 2);
+            cur = end + 1;
+            continue;
+        }
+
+        // valid tag → skip
+        cur = end + 1;
     }
+
+    fossil_io_filesys_file_write(stream, cur, 1, strlen(cur));
 }
 
 // ================================================================
@@ -615,35 +653,25 @@ static int fossil_io_format_internal(
     if (!buffer || !format || size == 0)
         return -1;
 
-    if (!FOSSIL_IO_OUTPUT_ENABLE)
-        return -1;
-
-    // Step 1: format raw string (printf-style)
     char temp[FOSSIL_IO_BUFFER_SIZE];
-
     int written = vsnprintf(temp, sizeof(temp), format, args);
     if (written < 0)
         return -1;
 
-    // Step 2: if markup disabled → plain copy
     if (!apply_markup)
     {
-        size_t len = ((size_t)written < size - 1) ? (size_t)written : (size - 1);
+        size_t len = (written < (int)(size - 1)) ? written : size - 1;
         memcpy(buffer, temp, len);
         buffer[len] = '\0';
         return (int)len;
     }
 
-    // Step 3: APPLY MARKUP INTO BUFFER (no stdout side effects)
-    ccstring cur = temp;
-    ccstring start = NULL;
-    ccstring end = NULL;
-
     size_t out = 0;
+    const char *cur = temp;
+    const char *start;
 
     while ((start = strchr(cur, '{')) != NULL)
     {
-        // copy text before '{'
         size_t chunk = start - cur;
         if (out + chunk >= size - 1)
             break;
@@ -651,59 +679,66 @@ static int fossil_io_format_internal(
         memcpy(buffer + out, cur, chunk);
         out += chunk;
 
-        end = strchr(start, '}');
+        // escape {{
+        if (start[1] == '{')
+        {
+            buffer[out++] = '{';
+            cur = start + 2;
+            continue;
+        }
+
+        const char *end = strchr(start, '}');
         if (!end)
-            break;
+        {
+            buffer[out++] = '{';
+            cur = start + 1;
+            continue;
+        }
 
-        char tag[128];
-        size_t tag_len = end - start - 1;
+        size_t len = end - start - 1;
 
-        if (tag_len >= sizeof(tag))
-            tag_len = sizeof(tag) - 1;
+        if (!fossil_io_is_valid_tag(start + 1, len))
+        {
+            size_t copy_len = len + 2;
+            if (out + copy_len >= size - 1)
+                break;
 
-        memcpy(tag, start + 1, tag_len);
-        tag[tag_len] = '\0';
+            memcpy(buffer + out, start, copy_len);
+            out += copy_len;
+            cur = end + 1;
+            continue;
+        }
 
-        // ---- APPLY TAGS (same logic as print_with_attributes) ----
+        char tag[65];
+        if (len >= sizeof(tag))
+            len = sizeof(tag) - 1;
+
+        memcpy(tag, start + 1, len);
+        tag[len] = '\0';
+
         if (FOSSIL_IO_COLOR_ENABLE)
         {
-            if (strncmp(tag, "bg:", 3) == 0)
+            const char *code = fossil_io_get_color_code(tag);
+            size_t code_len = strlen(code);
+
+            if (out + code_len < size - 1)
             {
-                fossil_io_apply_bg_color(tag + 3);
-            }
-            else if (strncmp(tag, "pos:", 4) == 0)
-            {
-                fossil_io_apply_position(tag + 4);
-            }
-            else
-            {
-                char *comma = strchr(tag, ',');
-                if (comma)
-                {
-                    *comma = '\0';
-                    fossil_io_apply_color(tag);
-                    fossil_io_apply_attribute(comma + 1);
-                }
-                else
-                {
-                    fossil_io_apply_color(tag);
-                    fossil_io_apply_attribute(tag);
-                }
+                memcpy(buffer + out, code, code_len);
+                out += code_len;
             }
         }
 
         cur = end + 1;
     }
 
-    // copy remainder
     size_t tail = strlen(cur);
     if (out + tail >= size - 1)
         tail = size - 1 - out;
 
     memcpy(buffer + out, cur, tail);
     out += tail;
-
     buffer[out] = '\0';
+
     return (int)out;
 }
 
