@@ -122,7 +122,7 @@ FOSSIL_TEST(c_test_output_enable_flag_toggle)
 
     FOSSIL_IO_OUTPUT_ENABLE = original_output;
     
-    fossil_io_printf(buffer, "Brodcast: {green}OK{reset}");
+    fossil_io_printf("\n\nBrodcast: {green}OK{reset}");
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
