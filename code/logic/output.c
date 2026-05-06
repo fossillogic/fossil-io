@@ -125,6 +125,53 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
+static const char *fossil_io_get_color_code(const char *color)
+{
+    if (!color) return "";
+
+    // ============================================================
+    // STANDARD COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "black"))   return FOSSIL_IO_COLOR_BLACK;
+    if (fossil_io_cstring_iequals(color, "red"))     return FOSSIL_IO_COLOR_RED;
+    if (fossil_io_cstring_iequals(color, "green"))   return FOSSIL_IO_COLOR_GREEN;
+    if (fossil_io_cstring_iequals(color, "yellow"))  return FOSSIL_IO_COLOR_YELLOW;
+    if (fossil_io_cstring_iequals(color, "blue"))    return FOSSIL_IO_COLOR_BLUE;
+    if (fossil_io_cstring_iequals(color, "magenta")) return FOSSIL_IO_COLOR_MAGENTA;
+    if (fossil_io_cstring_iequals(color, "cyan"))    return FOSSIL_IO_COLOR_CYAN;
+    if (fossil_io_cstring_iequals(color, "white"))   return FOSSIL_IO_COLOR_WHITE;
+
+    // ============================================================
+    // EXTENDED COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "gray"))    return FOSSIL_IO_COLOR_GRAY;
+    if (fossil_io_cstring_iequals(color, "orange"))  return FOSSIL_IO_COLOR_ORANGE;
+    if (fossil_io_cstring_iequals(color, "pink"))    return FOSSIL_IO_COLOR_PINK;
+    if (fossil_io_cstring_iequals(color, "purple"))  return FOSSIL_IO_COLOR_PURPLE;
+    if (fossil_io_cstring_iequals(color, "brown"))   return FOSSIL_IO_COLOR_BROWN;
+    if (fossil_io_cstring_iequals(color, "teal"))    return FOSSIL_IO_COLOR_TEAL;
+    if (fossil_io_cstring_iequals(color, "silver"))  return FOSSIL_IO_COLOR_SILVER;
+
+    // ============================================================
+    // BRIGHT COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "bright_black"))   return FOSSIL_IO_COLOR_BRIGHT_BLACK;
+    if (fossil_io_cstring_iequals(color, "bright_red"))     return FOSSIL_IO_COLOR_BRIGHT_RED;
+    if (fossil_io_cstring_iequals(color, "bright_green"))   return FOSSIL_IO_COLOR_BRIGHT_GREEN;
+    if (fossil_io_cstring_iequals(color, "bright_yellow"))  return FOSSIL_IO_COLOR_BRIGHT_YELLOW;
+    if (fossil_io_cstring_iequals(color, "bright_blue"))    return FOSSIL_IO_COLOR_BRIGHT_BLUE;
+    if (fossil_io_cstring_iequals(color, "bright_magenta")) return FOSSIL_IO_COLOR_BRIGHT_MAGENTA;
+    if (fossil_io_cstring_iequals(color, "bright_cyan"))    return FOSSIL_IO_COLOR_BRIGHT_CYAN;
+    if (fossil_io_cstring_iequals(color, "bright_white"))   return FOSSIL_IO_COLOR_BRIGHT_WHITE;
+
+    // ============================================================
+    // RESET / SPECIAL
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "reset")) return FOSSIL_IO_COLOR_RESET;
+
+    return "";
+}
+
 static int fossil_io_is_valid_tag(const char *s, size_t len)
 {
 
@@ -718,7 +765,7 @@ static int fossil_io_format_internal(
 
         if (FOSSIL_IO_COLOR_ENABLE)
         {
-            const char *code = fossil_io_apply_bg_color(tag);
+            const char *code = fossil_io_get_color_code(tag);
             size_t code_len = strlen(code);
 
             if (out + code_len < size - 1)
