@@ -601,6 +601,112 @@ void fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, ccstring
     }
 }
 
+// ================================================================
+// INTERNAL: CORE FORMAT ENGINE (MARKUP-AWARE)
+// ================================================================
+
+static int fossil_io_format_internal(
+    char *buffer,
+    size_t size,
+    ccstring format,
+    va_list args,
+    int apply_markup)
+{
+    if (!buffer || !format || size == 0)
+        return -1;
+
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+
+    // Step 1: format raw string (printf-style)
+    char temp[FOSSIL_IO_BUFFER_SIZE];
+
+    int written = vsnprintf(temp, sizeof(temp), format, args);
+    if (written < 0)
+        return -1;
+
+    // Step 2: if markup disabled → plain copy
+    if (!apply_markup)
+    {
+        size_t len = ((size_t)written < size - 1) ? (size_t)written : (size - 1);
+        memcpy(buffer, temp, len);
+        buffer[len] = '\0';
+        return (int)len;
+    }
+
+    // Step 3: APPLY MARKUP INTO BUFFER (no stdout side effects)
+    ccstring cur = temp;
+    ccstring start = NULL;
+    ccstring end = NULL;
+
+    size_t out = 0;
+
+    while ((start = strchr(cur, '{')) != NULL)
+    {
+        // copy text before '{'
+        size_t chunk = start - cur;
+        if (out + chunk >= size - 1)
+            break;
+
+        memcpy(buffer + out, cur, chunk);
+        out += chunk;
+
+        end = strchr(start, '}');
+        if (!end)
+            break;
+
+        char tag[128];
+        size_t tag_len = end - start - 1;
+
+        if (tag_len >= sizeof(tag))
+            tag_len = sizeof(tag) - 1;
+
+        memcpy(tag, start + 1, tag_len);
+        tag[tag_len] = '\0';
+
+        // ---- APPLY TAGS (same logic as print_with_attributes) ----
+        if (FOSSIL_IO_COLOR_ENABLE)
+        {
+            if (strncmp(tag, "bg:", 3) == 0)
+            {
+                fossil_io_apply_bg_color(tag + 3);
+            }
+            else if (strncmp(tag, "pos:", 4) == 0)
+            {
+                fossil_io_apply_position(tag + 4);
+            }
+            else
+            {
+                char *comma = strchr(tag, ',');
+                if (comma)
+                {
+                    *comma = '\0';
+                    fossil_io_apply_color(tag);
+                    fossil_io_apply_attribute(comma + 1);
+                }
+                else
+                {
+                    fossil_io_apply_color(tag);
+                    fossil_io_apply_attribute(tag);
+                }
+            }
+        }
+
+        cur = end + 1;
+    }
+
+    // copy remainder
+    size_t tail = strlen(cur);
+    if (out + tail >= size - 1)
+        tail = size - 1 - out;
+
+    memcpy(buffer + out, cur, tail);
+    out += tail;
+
+    buffer[out] = '\0';
+    return (int)out;
+}
+
 //
 // OUTPUT FUNCTIONS
 //
@@ -694,16 +800,40 @@ void fossil_io_fprintf(fossil_io_filesys_file_t *stream, ccstring format, ...)
     va_end(args);
 }
 
-// Function to format a string into a buffer
-int fossil_io_snprintf(char *buffer, size_t size, ccstring format, ...)
+int fossil_io_sprintf(char *buffer, const char *format, ...)
 {
     if (!FOSSIL_IO_OUTPUT_ENABLE)
         return -1;
     va_list args;
     va_start(args, format);
-    int result = vsnprintf(buffer, size, format, args);
+    int result = fossil_io_format_internal(buffer, FOSSIL_IO_BUFFER_SIZE, format, args, 1);
     va_end(args);
     return result;
+}
+
+int fossil_io_snprintf(char *buffer, size_t size, const char *format, ...)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    va_list args;
+    va_start(args, format);
+    int result = fossil_io_format_internal(buffer, size, format, args, 1);
+    va_end(args);
+    return result;
+}
+
+int fossil_io_vsprintf(char *buffer, const char *format, va_list args)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    return fossil_io_format_internal(buffer, FOSSIL_IO_BUFFER_SIZE, format, args, 1);
+}
+
+int fossil_io_vsnprintf(char *buffer, size_t size, const char *format, va_list args)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    return fossil_io_format_internal(buffer, size, format, args, 1);
 }
 
 // TUI PART
