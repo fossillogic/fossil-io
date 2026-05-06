@@ -168,6 +168,9 @@ FOSSIL_TEST_GROUP(cpp_output_tests)
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_color_flag_toggle);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_color_markup_disabled);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_color_markup_enabled);
+    FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_wrapper_sprintf_markup_disabled);
+    FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_wrapper_sprintf_markup_enabled);
+    FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_wrapper_snprintf_basic);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_output_preserves_formatting_when_disabled);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_output_enable_flag_toggle);
 
