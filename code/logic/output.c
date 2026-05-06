@@ -800,18 +800,6 @@ void fossil_io_fprintf(fossil_io_filesys_file_t *stream, ccstring format, ...)
     va_end(args);
 }
 
-// Function to format a string into a buffer
-int fossil_io_snprintf(char *buffer, size_t size, ccstring format, ...)
-{
-    if (!FOSSIL_IO_OUTPUT_ENABLE)
-        return -1;
-    va_list args;
-    va_start(args, format);
-    int result = vsnprintf(buffer, size, format, args);
-    va_end(args);
-    return result;
-}
-
 int fossil_io_sprintf(char *buffer, const char *format, ...)
 {
     if (!FOSSIL_IO_OUTPUT_ENABLE)
