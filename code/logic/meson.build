@@ -13,7 +13,6 @@ fossil_io_lib = library('fossil_io',
         'soap.c',
         'filesys.c',
         'cstring.c',
-        'crabdb.c',
         'cipher.c'
     ),
     install: true,
