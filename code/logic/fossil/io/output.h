@@ -445,26 +445,6 @@ namespace fossil::io
         }
 
         /**
-         * Size-safe version of sprintf that applies Fossil markup.
-         *
-         * This function is a combination of `fossil_io_snprintf` and `fossil_io_sprintf`. It formats the string according to the provided format and arguments, while also processing any Fossil-specific markup for colors and attributes. The resulting formatted string with ANSI codes is stored in the provided buffer, ensuring that it does not exceed the specified size.
-         *
-         * @param buffer The buffer where the formatted string with ANSI codes will be stored.
-         * @param size The size of the buffer.
-         * @param format The format string, which may contain Fossil markup for colors and attributes.
-         * @param ... Additional arguments to be formatted according to the format string.
-         * @return The number of characters written (excluding the null terminator), or a negative value on error.
-         */
-        static int snprintf(char *buffer, size_t size, const char *format, ...)
-        {
-            va_list args;
-            va_start(args, format);
-            int result = fossil_io_snprintf(buffer, size, format, args);
-            va_end(args);
-            return result;
-        }
-
-        /**
          * va_list version of sprintf that applies Fossil markup.
          *
          * This function is a variant of `fossil_io_sprintf` that takes a `va_list` instead of variadic arguments. It formats the string according to the provided format and arguments, while also processing any Fossil-specific markup for colors and attributes. The resulting formatted string with ANSI codes is stored in the provided buffer, ensuring that it does not exceed the specified size.
