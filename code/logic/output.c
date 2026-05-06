@@ -770,14 +770,13 @@ static int fossil_io_format_internal(
         {
             const char *code = fossil_io_get_color_code(tag);
             size_t code_len = strlen(code);
-
-            if (out + code_len < size - 1)
+        
+            if (code_len > 0 && out + code_len < size - 1)
             {
                 memcpy(buffer + out, code, code_len);
                 out += code_len;
             }
         }
-
         cur = end + 1;
     }
 
