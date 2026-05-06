@@ -121,6 +121,8 @@ FOSSIL_TEST(c_test_output_enable_flag_toggle)
     ASSUME_ITS_EQUAL_I32(1, FOSSIL_IO_OUTPUT_ENABLE);
 
     FOSSIL_IO_OUTPUT_ENABLE = original_output;
+    
+    fossil_io_printf(buffer, "Brodcast: {green}OK{reset}");
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
