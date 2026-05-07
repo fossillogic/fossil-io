@@ -84,6 +84,7 @@ extern int32_t FOSSIL_IO_OUTPUT_ENABLE; // Can disable output during unit testin
  *   - Inline markup uses curly braces, e.g.:
  *     {red}, {bold}, {bg:yellow}, {bg:blue,underline}, {pos:center}
  *     Combinations: {red,bold}, {bg:green,italic}
+ *   - Escape a literal left brace by doubling it: "{{" produces "{"
  *   - Markup is parsed and corresponding ANSI codes are applied.
  *   - For file output, markup is stripped for clean output.
  *
