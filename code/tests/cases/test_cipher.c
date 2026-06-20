@@ -220,19 +220,19 @@ FOSSIL_TEST(c_test_cipher_case_insensitive_id)
 
 FOSSIL_TEST_GROUP(c_cipher_tests)
 {
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_caesar);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_vigenere);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_base64);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_base32);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_binary);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_morse);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_baconian);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_railfence);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_haxor);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_leet);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_rot13);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_encode_decode_atbash);
-    FOSSIL_TEST_ADD(c_cipher_suite, c_test_cipher_case_insensitive_id);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_caesar);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_vigenere);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_base64);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_base32);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_binary);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_morse);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_baconian);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_railfence);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_haxor);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_leet);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_rot13);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_encode_decode_atbash);
+    FOSSIL_ADD_TEST(c_cipher_suite, c_test_cipher_case_insensitive_id);
 
-    FOSSIL_TEST_REGISTER(c_cipher_suite);
+    FOSSIL_ADD_SUITE(c_cipher_suite);
 }

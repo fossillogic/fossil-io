@@ -129,11 +129,11 @@ FOSSIL_TEST(c_test_output_enable_flag_toggle)
 
 FOSSIL_TEST_GROUP(c_output_tests)
 {
-    FOSSIL_TEST_ADD(c_output_suite, c_test_output_color_flag_toggle);
-    FOSSIL_TEST_ADD(c_output_suite, c_test_output_color_markup_disabled);
-    FOSSIL_TEST_ADD(c_output_suite, c_test_output_color_markup_enabled);
-    FOSSIL_TEST_ADD(c_output_suite, c_test_output_output_preserves_formatting_when_disabled);
-    FOSSIL_TEST_ADD(c_output_suite, c_test_output_enable_flag_toggle);
+    FOSSIL_ADD_TEST(c_output_suite, c_test_output_color_flag_toggle);
+    FOSSIL_ADD_TEST(c_output_suite, c_test_output_color_markup_disabled);
+    FOSSIL_ADD_TEST(c_output_suite, c_test_output_color_markup_enabled);
+    FOSSIL_ADD_TEST(c_output_suite, c_test_output_output_preserves_formatting_when_disabled);
+    FOSSIL_ADD_TEST(c_output_suite, c_test_output_enable_flag_toggle);
 
-    FOSSIL_TEST_REGISTER(c_output_suite);
+    FOSSIL_ADD_SUITE(c_output_suite);
 }

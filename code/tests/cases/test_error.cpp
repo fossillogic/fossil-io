@@ -310,20 +310,20 @@ FOSSIL_TEST(cpp_test_error_code_uniqueness_and_stability)
 
 FOSSIL_TEST_GROUP(cpp_error_tests)
 {
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_system_meta);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_io);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_memory);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_cpu);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_math);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_fs);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_network);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_security);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_database);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_ai);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_ui);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_policy);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_meta);
-    FOSSIL_TEST_ADD(cpp_error_suite, cpp_test_error_code_uniqueness_and_stability);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_system_meta);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_io);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_memory);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_cpu);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_math);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_fs);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_network);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_security);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_database);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_ai);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_ui);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_policy);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_meta);
+    FOSSIL_ADD_TEST(cpp_error_suite, cpp_test_error_code_uniqueness_and_stability);
 
-    FOSSIL_TEST_REGISTER(cpp_error_suite);
+    FOSSIL_ADD_SUITE(cpp_error_suite);
 }

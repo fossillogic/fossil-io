@@ -169,17 +169,17 @@ FOSSIL_TEST(cpp_test_regex_match_null_out_match)
 
 FOSSIL_TEST_GROUP(cpp_regex_tests)
 {
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_and_free);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_null_pattern);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_success);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_failure);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_null_args);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_group_count_and_group);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_empty_pattern);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_compile_with_options);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_partial);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_empty_text);
-    FOSSIL_TEST_ADD(cpp_regex_suite, cpp_test_regex_match_null_out_match);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_compile_and_free);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_compile_null_pattern);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_success);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_failure);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_null_args);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_group_count_and_group);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_compile_empty_pattern);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_compile_with_options);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_partial);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_empty_text);
+    FOSSIL_ADD_TEST(cpp_regex_suite, cpp_test_regex_match_null_out_match);
 
-    FOSSIL_TEST_REGISTER(cpp_regex_suite);
+    FOSSIL_ADD_SUITE(cpp_regex_suite);
 }

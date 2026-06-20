@@ -190,19 +190,19 @@ FOSSIL_TEST(c_test_archive_compression_levels)
 
 FOSSIL_TEST_GROUP(c_archive_tests)
 {
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_open_create);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_create_new);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_get_type);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_add_file);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_add_directory);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_extract_all);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_entry_size);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_get_stats);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_list);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_invalid_path);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_targz_type);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_tarbz2_type);
-    FOSSIL_TEST_ADD(c_archive_suite, c_test_archive_compression_levels);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_open_create);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_create_new);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_get_type);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_add_file);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_add_directory);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_extract_all);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_entry_size);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_get_stats);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_list);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_invalid_path);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_targz_type);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_tarbz2_type);
+    FOSSIL_ADD_TEST(c_archive_suite, c_test_archive_compression_levels);
 
-    FOSSIL_TEST_REGISTER(c_archive_suite);
+    FOSSIL_ADD_SUITE(c_archive_suite);
 }

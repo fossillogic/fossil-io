@@ -261,36 +261,36 @@ FOSSIL_TEST(cpp_test_validate_input_buffer_invalid)
 
 FOSSIL_TEST_GROUP(cpp_input_tests)
 {
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_int_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_int_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_float_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_float_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_alnum_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_alnum_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_email_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_email_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_length_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_length_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_too_short);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_weak_password_common);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_disposable_email_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_disposable_email_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_bot_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_bot_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_user_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_is_suspicious_user_invalid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_genericpp_context);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_script_detection);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_sql_detection);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_shell_detection);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_path_traversal);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_bot_detection);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_sanitize_string_html_context);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_trim_string);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_trim_empty_string);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_input_buffer_valid);
-    FOSSIL_TEST_ADD(cpp_input_suite, cpp_test_validate_input_buffer_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_int_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_int_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_float_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_float_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_alnum_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_alnum_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_email_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_email_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_length_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_length_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_weak_password_too_short);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_weak_password_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_weak_password_common);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_disposable_email_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_disposable_email_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_suspicious_bot_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_suspicious_bot_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_suspicious_user_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_is_suspicious_user_invalid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_genericpp_context);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_script_detection);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_sql_detection);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_shell_detection);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_path_traversal);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_bot_detection);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_sanitize_string_html_context);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_trim_string);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_trim_empty_string);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_input_buffer_valid);
+    FOSSIL_ADD_TEST(cpp_input_suite, cpp_test_validate_input_buffer_invalid);
 
-    FOSSIL_TEST_REGISTER(cpp_input_suite);
+    FOSSIL_ADD_SUITE(cpp_input_suite);
 }

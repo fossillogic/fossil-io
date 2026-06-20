@@ -176,17 +176,17 @@ FOSSIL_TEST(cpp_test_cipher_case_insensitive_id)
 
 FOSSIL_TEST_GROUP(cpp_cipher_tests)
 {
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_caesar);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_vigenere);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base64);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_base32);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_binary);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_morse);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_railfence);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_haxor);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_rot13);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_encode_decode_atbash);
-    FOSSIL_TEST_ADD(cpp_cipher_suite, cpp_test_cipher_case_insensitive_id);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_caesar);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_vigenere);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_base64);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_base32);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_binary);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_morse);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_railfence);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_haxor);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_rot13);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_encode_decode_atbash);
+    FOSSIL_ADD_TEST(cpp_cipher_suite, cpp_test_cipher_case_insensitive_id);
 
-    FOSSIL_TEST_REGISTER(cpp_cipher_suite);
+    FOSSIL_ADD_SUITE(cpp_cipher_suite);
 }
