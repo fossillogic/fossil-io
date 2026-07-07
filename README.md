@@ -19,7 +19,7 @@ Fossil IO is a robust C library designed for seamless input, output, and error m
 
 To get started, ensure you have the following installed:
 
-- **Meson Build System**: If you don’t have Meson `1.8.0` or newer installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
+- **Meson Build System**: If you don’t have Meson `1.10.0` or newer installed, follow the installation instructions on the official [Meson website](https://mesonbuild.com/Getting-meson.html).
 
 ### Adding Dependency
 
