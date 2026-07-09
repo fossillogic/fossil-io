@@ -448,7 +448,7 @@ void fossil_io_cube_clear(void)
     fossil_io_clear_screen();
 }
 
-void fossil_io_cube_refresh(void)
+void fossil_io_cube_flush(void)
 {
     fossil_io_flush();
 }
