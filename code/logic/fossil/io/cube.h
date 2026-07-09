@@ -322,7 +322,7 @@ int32_t fossil_io_cube_transaction_rollback(void);
 
 void fossil_io_cube_clear(void);
 
-void fossil_io_cube_refresh(void);
+void fossil_io_cube_flush(void);
 
 void fossil_io_cube_cursor_show(void);
 
