@@ -172,12 +172,14 @@ int32_t fossil_io_cube_context_destroy(const char *id)
 
 int32_t fossil_io_cube_context_use(const char *id)
 {
-    if (!id)
+    if (id == NULL)
         return -1;
 
-    strncpy(g_cube.current_context,
-            id,
-            sizeof(g_cube.current_context));
+    fossil_io_snprintf(
+        g_cube.current_context,
+        sizeof(g_cube.current_context),
+        "%s",
+        id);
 
     return 0;
 }
