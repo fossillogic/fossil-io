@@ -35,89 +35,124 @@
  * Internal regex logic
  * ============================================================================ */
 
-/*----------------------------------------------------------
- * Character Classification
- *----------------------------------------------------------*/
-
-static inline bool soap_is_word_char(char c)
+static inline int is_word_char(char c)
 {
-    unsigned char u = (unsigned char)c;
-
-    return isalnum(u) ||
-           c == '\'' ||
-           c == '_' ||
-           c == '-';
+    return isalnum((unsigned char)c) || c == '\'';
 }
 
-static inline bool soap_is_letter(char c)
+static inline int is_sentence_punct(char c)
 {
-    return isalpha((unsigned char)c);
+    return c == '.' || c == '!' || c == '?';
 }
 
-static inline bool soap_is_digit(char c)
+static inline int is_inner_punct(char c)
 {
-    return isdigit((unsigned char)c);
+    return c == ',' || c == ':' || c == ';';
 }
 
-static inline bool soap_is_whitespace(char c)
+static int match_word_pattern(const char *text, size_t pos, const char *pat)
 {
-    return c == ' ' ||
-           c == '\t' ||
-           c == '\n' ||
-           c == '\r' ||
-           c == '\f' ||
-           c == '\v';
+    size_t plen = strlen(pat);
+
+    if (strncasecmp(text + pos, pat, plen) != 0)
+        return 0;
+
+    char before = (pos == 0) ? ' ' : text[pos - 1];
+    char after = text[pos + plen];
+
+    if (is_word_char(before))
+        return 0;
+    if (is_word_char(after))
+        return 0;
+
+    return 1;
 }
 
-static inline bool soap_is_sentence_punct(char c)
+static int is_case_split(char prev, char curr)
 {
-    switch (c)
+    return islower((unsigned char)prev) &&
+           isupper((unsigned char)curr);
+}
+
+char *soap_decluster_words(const char *text)
+{
+    size_t cap = strlen(text) * 2 + 32;
+    char *out = malloc(cap);
+    if (!out)
+        return NULL;
+
+    const char *p = text;
+    char *q = out;
+
+    char prev = 0;
+
+    while (*p)
     {
-    case '.':
-    case '!':
-    case '?':
-        return true;
+        if (prev &&
+            isalpha((unsigned char)prev) &&
+            isalpha((unsigned char)*p) &&
+            is_case_split(prev, *p))
+        {
+            *q++ = ' ';
+        }
+
+        *q++ = *p;
+        prev = *p++;
     }
 
-    return false;
+    *q = 0;
+    return out;
 }
 
-static inline bool soap_is_inner_punct(char c)
+static void normalize_punctuation(const char *in, char *out)
 {
-    switch (c)
+    char prev = 0;
+    int dots = 0;
+
+    while (*in)
     {
-    case ',':
-    case ':':
-    case ';':
-    case '-':
-    case '/':
-        return true;
+        if (*in == '.')
+        {
+            dots++;
+            if (dots <= 3)
+                *out++ = '.';
+        }
+        else
+        {
+            dots = 0;
+            if (*in == '!' || *in == '?')
+            {
+                if (*in != prev)
+                    *out++ = *in;
+            }
+            else
+            {
+                *out++ = *in;
+            }
+        }
+        prev = *in++;
+    }
+    *out = 0;
+}
+
+static void finalize_sentences(char *s)
+{
+    for (size_t i = 0; s[i]; i++)
+    {
+        if (i == 0 && isalpha((unsigned char)s[i]))
+            s[i] = toupper((unsigned char)s[i]);
+
+        if (is_sentence_punct(s[i]) && s[i + 1] == ' ')
+            if (isalpha((unsigned char)s[i + 2]))
+                s[i + 2] = toupper((unsigned char)s[i + 2]);
     }
 
-    return false;
-}
-
-static inline bool soap_is_quote(char c)
-{
-    return c == '"' ||
-           c == '\'' ||
-           c == '`';
-}
-
-static inline bool soap_is_bracket(char c)
-{
-    switch (c)
+    size_t len = strlen(s);
+    if (len && !is_sentence_punct(s[len - 1]))
     {
-    case '(':
-    case ')':
-    case '[':
-    case ']':
-    case '{':
-    case '}':
-        return true;
+        s[len++] = '.';
+        s[len] = 0;
     }
-
-    return false;
 }
 
 // LOOKUP MAP
@@ -186,36 +221,6 @@ static const pattern_t snowflake_patterns[] = {
 
 static const pattern_t brain_rot_patterns[] = {
     {"lol"}, {"lmao"}, {"rofl"}, {"bruh"}, {"wtf"}, {"omg"}, {"haha"}, {"hehe"}, {"xd"}, {"xdxd"}, {"yo"}, {"hey"}, {"sup"}, {"what's up"}, {"man"}, {"dude"}, {"bro"}, {"broski"}, {"homie"}, {"fam"}, {"yolo"}, {"smh"}, {"fml"}, {"idk"}, {"ikr"}, {"tbh"}, {"ily"}, {"ily2"}, {"omfg"}, {"wtfv"}, {"heh"}, {"meh"}, {"ugh"}, {"aww"}, {"yay"}, {"yayyy"}, {"yesss"}, {"nope"}, {"nah"}, {"yep"}, {"bruhh"}, {"brooo"}, {"duuuude"}, {"lolz"}, {"lols"}, {"lul"}, {"lulz"}, {"hahaaha"}, {"roflmao"}, {"lmfao"}, {"kek"}, {"pog"}, {"poggers"}, {"pogchamp"}, {"rip"}, {"gg"}, {"ggwp"}, {"rekt"}, {"owned"}, {"clap"}, {"clapclap"}, {"facepalm"}, {"yikes"}, {"oops"}, {"oopsie"}, {"ayyy"}, {"ayyy lmao"}, {"hehehe"}, {"yayyyyy"}, {"nooooo"}, {"yaaaas"}, {"bruh moment"}, {"oh no"}, {"ikr"}, {"omgosh"}, {"lmaoed"}, {"lmaoing"}, {"haha lol"}, {"lol haha"}, {"xd lol"}, {"lol xd"}, {"fml lol"}, {"smdh"}, {"sksksk"}, {"and i oop"}, {"yeet"}, {"yeeted"}, {"yeeting"}, {"uwu"}, {"owo"}, {"uwu uwu"}, {"owo owo"}, {"rawr"}, {"rawr x3"}, {">:("}, {"<3"}, {":3"}, {"-_-"}, {"^_^"}, {"T_T"}, {";-;"}, {">:O"}, {"-.-"}, {">:("}, {"D:"}, {"XD"}, {"xD"}, {"XD XD"}, {">:|"}, {"-.-'"}, {"-__-"}, {"o.O"}, {"O.o"}, {"lolwut"}, {"lold"}, {"lolol"}, {"lololol"}, {"haha lmao"}, {"roflol"}, {"roflolmao"}, {"wtf lol"}, {"no cap"}, {"sus"}, {"sussy"}, {"sus af"}, {"based"}, {"cringe"}, {"bet"}, {"lit"}, {"fire"}, {"goat"}, {"slay"}, {"flex"}, {"vibe"}, {"vibing"}, {"mood"}, {"big mood"}, {"dead"}, {"i'm dead"}, {"rip me"}, {"lowkey"}, {"highkey"}, {"salty"}, {"thirsty"}, {"shade"}, {"shook"}, {"stan"}, {"simp"}, {"snacc"}, {"snack"}, {"bop"}, {"bussin"}, {"drip"}, {"drippy"}, {"fam jam"}, {"fam squad"}, {"fam bam"}, {"fam fam"}, {"famalam"}, {"fam squad"}, {"on fleek"}, {"fleek"}, {"savage"}, {"savage af"}, {"extra"}, {"basic"}, {"woke"}, {"cancelled"}, {"cancel"}, {"clout"}, {"clout chaser"}, {"receipts"}, {"tea"}, {"spill the tea"}, {"spill tea"}, {"big yikes"}, {"big oof"}, {"oof"}, {"oop"}, {"no chill"}, {"deadass"}, {"facts"}, {"big facts"}, {"periodt"}, {"period"}, {"sis"}, {"sis bro"}, {"sis fam"}, {"sis queen"}, {NULL}};
-
-static const pattern_t ai_generated_patterns[] = {
-    {"as an ai"}, {"as a language model"}, {"i cannot"}, {"i'm unable"}, {"i don't have access"}, {"my training data"}, {"based on my knowledge"}, {"i was designed"}, {"i am an artificial intelligence"}, {"certainly"}, {"absolutely"}, {"here are some"}, {"let's dive into"}, {"in conclusion"}, {"to summarize"}, {"it is important to note"}, {"keep in mind"}, {"furthermore"}, {"moreover"}, {"overall"}, {"in today's world"}, {"plays a crucial role"}, {"various factors"}, {"a wide range of"}, {"complex and multifaceted"}, {"this highlights the importance"}, {"it is worth mentioning"}, {"without further ado"}, {NULL}};
-
-static const pattern_t seo_patterns[] = {
-    {"best ways to"}, {"top 10"}, {"ultimate guide"}, {"everything you need to know"}, {"complete guide"}, {"step by step guide"}, {"learn more about"}, {"click here"}, {"read more"}, {"discover how"}, {"find out"}, {"explore our"}, {"best solution"}, {"number one choice"}, {"trusted by thousands"}, {"industry leading"}, {"premium quality"}, {"highly recommended"}, {"professional solution"}, {"expert tips"}, {"secret tips"}, {"ultimate solution"}, {"boost your"}, {"improve your"}, {"maximize your"}, {NULL}};
-
-static const pattern_t scam_patterns[] = {
-    {"guaranteed profit"}, {"guaranteed income"}, {"make money fast"}, {"easy money"}, {"double your money"}, {"investment opportunity"}, {"no risk"}, {"zero risk"}, {"act immediately"}, {"verify your account"}, {"confirm your identity"}, {"send payment"}, {"send crypto"}, {"wallet address"}, {"claim reward"}, {"you have won"}, {"winner selected"}, {"inheritance"}, {"lottery winner"}, {"bank transfer"}, {"wire transfer"}, {"gift card payment"}, {"urgent payment"}, {"account suspended"}, {"limited verification"}, {"security alert"}, {NULL}};
-
-static const pattern_t redundant_patterns[] = {
-    {"very very"}, {"really really"}, {"extremely extremely"}, {"again and again"}, {"repeat repeat"}, {"same same"}, {"more and more"}, {"very important important"}, {"basically basically"}, {"literally literally"}, {"actually actually"}, {"just just"}, {"the the"}, {"and and"}, {"that that"}, {"is is"}, {"to to"}, {NULL}};
-
-static const pattern_t uncertainty_patterns[] = {
-    {"maybe"}, {"possibly"}, {"perhaps"}, {"might"}, {"could be"}, {"probably"}, {"likely"}, {"unlikely"}, {"not sure"}, {"i think"}, {"i believe"}, {"i guess"}, {"it seems"}, {"appears to"}, {"possibly true"}, {"unclear"}, {"unknown"}, {"cannot confirm"}, {"not confirmed"}, {NULL}};
-
-static const pattern_t developer_patterns[] = {
-    {"api"}, {"sdk"}, {"framework"}, {"library"}, {"compiler"}, {"runtime"}, {"dependency"}, {"repository"}, {"commit"}, {"branch"}, {"merge"}, {"pull request"}, {"pipeline"}, {"build system"}, {"deployment"}, {"container"}, {"docker"}, {"kubernetes"}, {"endpoint"}, {"database"}, {"schema"}, {"query"}, {"algorithm"}, {"function"}, {"variable"}, {"pointer"}, {"memory allocation"}, {"garbage collector"}, {"debugging"}, {NULL}};
-
-static const pattern_t formatting_patterns[] = {
-    {"!!!"}, {"???"}, {"..."}, {"---"}, {"###"}, {"***"}, {"ALL CAPS"}, {"click here"}, {"read below"}, {"important:"}, {"warning:"}, {"breaking:"}, {"update:"}, {"announcement:"}, {"thread:"}, {"part 1"}, {"part 2"}, {"continued"}, {NULL}};
-
-static const pattern_t toxicity_patterns[] = {
-    {"shut up"}, {"nobody likes you"}, {"you are stupid"}, {"you are useless"}, {"get lost"}, {"go away"}, {"cry harder"}, {"stay mad"}, {"cope"}, {"seethe"}, {"loser"}, {"idiot"}, {"moron"}, {"clown"}, {"trash"}, {"garbage"}, {"worthless"}, {"pathetic"}, {"kill yourself"}, {"kys"}, {NULL}};
-
-static const pattern_t positive_patterns[] = {
-    {"great"}, {"excellent"}, {"awesome"}, {"amazing"}, {"wonderful"}, {"fantastic"}, {"love"}, {"enjoy"}, {"happy"}, {"excited"}, {"beautiful"}, {"perfect"}, {"brilliant"}, {"success"}, {"achievement"}, {"congratulations"}, {"thank you"}, {"appreciate"}, {"grateful"}, {"proud"}, {NULL}};
-
-static const pattern_t negative_patterns[] = {
-    {"bad"}, {"terrible"}, {"awful"}, {"horrible"}, {"hate"}, {"angry"}, {"sad"}, {"disappointed"}, {"failure"}, {"broken"}, {"useless"}, {"worst"}, {"problem"}, {"issue"}, {"error"}, {"wrong"}, {"frustrating"}, {"annoying"}, {"disgusting"}, {"painful"}, {NULL}};
 
 /* ============================================================================
  * Internal helpers
@@ -1166,19 +1171,13 @@ fossil_io_soap_scores_t fossil_io_soap_score(const char *text)
     /* ----------------------------
      * FINAL CLAMP
      * ---------------------------- */
-    if (s.readability > 100)
-        s.readability = 100;
-    if (s.clarity > 100)
-        s.clarity = 100;
-    if (s.quality > 100)
-        s.quality = 100;
+    if (s.readability > 100) s.readability = 100;
+    if (s.clarity > 100) s.clarity = 100;
+    if (s.quality > 100) s.quality = 100;
 
-    if (s.readability < 0)
-        s.readability = 0;
-    if (s.clarity < 0)
-        s.clarity = 0;
-    if (s.quality < 0)
-        s.quality = 0;
+    if (s.readability < 0) s.readability = 0;
+    if (s.clarity < 0) s.clarity = 0;
+    if (s.quality < 0) s.quality = 0;
 
     return s;
 }
@@ -1222,9 +1221,6 @@ typedef struct
 static const detector_map_t detector_map[] = {
     /* Document-level */
     {"conspiracy", conspiracy_patterns},
-    {"ai_generated", ai_generated_patterns},
-    {"seo", seo_patterns},
-    {"scam", scam_patterns},
 
     /* Sentence-level */
     {"spam", spam_patterns},
@@ -1252,15 +1248,9 @@ static const detector_map_t detector_map[] = {
     {"emotional", emotional_patterns},
     {"passive", passive_patterns},
     {"snowflake", snowflake_patterns},
-    {"redundant", redundant_patterns},
-    {"uncertainty", uncertainty_patterns},
-    {"developer", developer_patterns},
-    {"formatting", formatting_patterns},
-    {"toxicity", toxicity_patterns},
-    {"positive", positive_patterns},
-    {"negative", negative_patterns},
 
     /* Structural (logic handled separately) */
+    {"redundant", NULL},
     {"poor_cohesion", NULL},
     {"repeated_words", NULL},
 
@@ -2688,7 +2678,7 @@ char *fossil_io_soap_punctuate(const char *text)
                     !isspace((unsigned char)next) &&
                     next != '"' &&
                     next != '\'' &&
-                    next != ')')
+                    next != ')' )
                 {
                     *q++ = ' ';
                 }
