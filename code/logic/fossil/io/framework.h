@@ -35,7 +35,6 @@
 #include "cstring.h"
 #include "cipher.h"
 #include "soap.h"
-#include "cube.h"
 
 enum {
     FOSSIL_IO_SUCCESS = 0,
