@@ -17,12 +17,12 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/pizza/framework.h>
+#include <fossil/maip/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -442,34 +442,34 @@ FOSSIL_TEST(c_test_regex_escape_literal)
 
 FOSSIL_TEST_GROUP(c_regex_tests)
 {
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_and_free);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_null_pattern);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_success);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_failure);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_null_args);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_group_count_and_group);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_empty_pattern);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_compile_with_options);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_partial);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_empty_text);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_null_out_match);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_dot_any_char);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_caret_anchor);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_dollar_anchor);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_char_class);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_negated_char_class);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_escape_digit);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_escape_not_digit);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_escape_whitespace);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_escape_word_char);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_quantifier_star);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_quantifier_plus);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_quantifier_question);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_icase_option);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_anchored_option);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_group_length);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_match_length);
-    FOSSIL_TEST_ADD(c_regex_suite, c_test_regex_escape_literal);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_compile_and_free);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_compile_null_pattern);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_success);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_failure);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_null_args);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_group_count_and_group);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_compile_empty_pattern);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_compile_with_options);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_partial);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_empty_text);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_null_out_match);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_dot_any_char);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_caret_anchor);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_dollar_anchor);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_char_class);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_negated_char_class);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_escape_digit);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_escape_not_digit);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_escape_whitespace);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_escape_word_char);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_quantifier_star);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_quantifier_plus);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_quantifier_question);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_icase_option);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_anchored_option);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_group_length);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_match_length);
+    FOSSIL_ADD_TEST(c_regex_suite, c_test_regex_escape_literal);
 
-    FOSSIL_TEST_REGISTER(c_regex_suite);
+    FOSSIL_ADD_SUITE(c_regex_suite);
 }

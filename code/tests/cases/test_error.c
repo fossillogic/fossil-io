@@ -17,12 +17,12 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/pizza/framework.h>
+#include <fossil/maip/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -310,20 +310,20 @@ FOSSIL_TEST(c_test_error_code_uniqueness_and_stability)
 
 FOSSIL_TEST_GROUP(c_error_tests)
 {
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_system_meta);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_io);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_memory);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_cpu);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_math);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_fs);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_network);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_security);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_database);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_ai);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_ui);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_policy);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_meta);
-    FOSSIL_TEST_ADD(c_error_suite, c_test_error_code_uniqueness_and_stability);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_system_meta);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_io);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_memory);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_cpu);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_math);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_fs);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_network);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_security);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_database);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_ai);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_ui);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_policy);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_meta);
+    FOSSIL_ADD_TEST(c_error_suite, c_test_error_code_uniqueness_and_stability);
 
-    FOSSIL_TEST_REGISTER(c_error_suite);
+    FOSSIL_ADD_SUITE(c_error_suite);
 }

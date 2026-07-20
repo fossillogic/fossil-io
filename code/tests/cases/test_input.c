@@ -17,12 +17,12 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/pizza/framework.h>
+#include <fossil/maip/framework.h>
 
 #include "fossil/io/framework.h"
 
@@ -261,36 +261,36 @@ FOSSIL_TEST(c_test_validate_input_buffer_invalid)
 
 FOSSIL_TEST_GROUP(c_input_tests)
 {
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_int_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_int_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_float_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_float_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_alnum_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_alnum_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_email_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_email_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_length_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_length_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_weak_password_too_short);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_weak_password_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_weak_password_common);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_disposable_email_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_disposable_email_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_suspicious_bot_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_suspicious_bot_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_suspicious_user_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_is_suspicious_user_invalid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_generic_context);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_script_detection);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_sql_detection);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_shell_detection);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_path_traversal);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_bot_detection);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_sanitize_string_html_context);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_trim_string);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_trim_empty_string);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_input_buffer_valid);
-    FOSSIL_TEST_ADD(c_input_suite, c_test_validate_input_buffer_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_int_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_int_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_float_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_float_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_alnum_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_alnum_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_email_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_email_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_length_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_length_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_weak_password_too_short);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_weak_password_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_weak_password_common);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_disposable_email_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_disposable_email_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_suspicious_bot_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_suspicious_bot_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_suspicious_user_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_is_suspicious_user_invalid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_generic_context);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_script_detection);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_sql_detection);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_shell_detection);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_path_traversal);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_bot_detection);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_html_context);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_trim_string);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_trim_empty_string);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_input_buffer_valid);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_validate_input_buffer_invalid);
 
-    FOSSIL_TEST_REGISTER(c_input_suite);
+    FOSSIL_ADD_SUITE(c_input_suite);
 }

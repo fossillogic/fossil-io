@@ -17,12 +17,12 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include <fossil/pizza/framework.h>
+#include <fossil/maip/framework.h>
 
 #include "fossil/io/framework.h"
 #include <stdio.h> // for fpos_t or fpos64_t if needed
@@ -570,45 +570,45 @@ FOSSIL_TEST(cpp_test_filesys_chdir)
 
 FOSSIL_TEST_GROUP(cpp_filesys_tests)
 {
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_init_file);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_init_directory);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_init_nonexistent);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_refresh);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_exists_true);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_exists_false);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_open_write);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_write_read);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_seek);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_flush);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_size);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_file_truncate);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_dir_create_simple);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_dir_create_recursive);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_dir_list);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_dir_walk);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_getcwd);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_abspath);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_dirname);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_basename);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_extension);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_type_string_file);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_type_string_dir);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_type_string_link);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_type_string_unknown);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_stat_file);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_stat_directory);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_move);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_copy);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_remove_file);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_remove_directory_recursive);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_swap);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_tx_begin_commit);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_tx_rollback);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_link_create_symbolic);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_link_create_hard);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_link_is_symbolic);
-    FOSSIL_TEST_ADD(cpp_filesys_suite, cpp_test_filesys_chdir);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_init_file);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_init_directory);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_init_nonexistent);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_refresh);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_exists_true);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_exists_false);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_open_write);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_write_read);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_seek);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_flush);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_size);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_file_truncate);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_dir_create_simple);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_dir_create_recursive);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_dir_list);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_dir_walk);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_getcwd);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_abspath);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_dirname);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_basename);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_extension);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_type_string_file);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_type_string_dir);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_type_string_link);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_type_string_unknown);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_stat_file);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_stat_directory);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_move);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_copy);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_remove_file);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_remove_directory_recursive);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_swap);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_tx_begin_commit);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_tx_rollback);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_link_create_symbolic);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_link_create_hard);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_link_is_symbolic);
+    FOSSIL_ADD_TEST(cpp_filesys_suite, cpp_test_filesys_chdir);
 
 
-    FOSSIL_TEST_REGISTER(cpp_filesys_suite);
+    FOSSIL_ADD_SUITE(cpp_filesys_suite);
 }
