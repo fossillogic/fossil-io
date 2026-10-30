@@ -541,6 +541,12 @@ int fossil_io_validate_sanitize_string(const char *input,
 
 int fossil_io_scanf(const char *format, ...)
 {
+    if (format == NULL)
+    {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid format string.\n");
+        return -1;
+    }
+
     va_list args;
     va_start(args, format);
     int result = vscanf(format, args);
@@ -550,17 +556,23 @@ int fossil_io_scanf(const char *format, ...)
 
 int fossil_io_fscanf(fossil_io_filesys_file_t *input_stream, const char *format, ...)
 {
+    if (format == NULL)
+    {
+        fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid format string.\n");
+        return -1;
+    }
+
     va_list args;
     va_start(args, format);
     int result = 0;
-    
+
     if (input_stream == NULL || input_stream->handle == NULL)
     {
         fossil_io_fprintf(FOSSIL_STDERR, "Error: Invalid input stream.\n");
         va_end(args);
         return -1;
     }
-    
+
     result = vfscanf((FILE *)input_stream->handle, format, args);
     va_end(args);
     return result;
