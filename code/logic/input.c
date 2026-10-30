@@ -120,6 +120,17 @@ static int long_base64_run(const char *s, size_t len, size_t threshold)
     return 0;
 }
 
+static int hex_value(unsigned char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
 char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_filesys_file_t *input_stream, int *error_code)
 {
     if (buf == NULL || size == 0 || input_stream == NULL || error_code == NULL)
@@ -327,7 +338,18 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_filesys_file_
     return buf;
 }
 
-/* --- sanitizer --- */
+/*
+ * Sanitizer returns both the bounded, allow-listed output and detection flags.
+ * Use the matching context at the final output boundary; this is not a
+ * substitute for HTML escaping, parameterized SQL, or avoiding shell command
+ * interpolation (prefer argv-based process APIs). Filename output should also
+ * be joined beneath an application-controlled directory and checked there.
+ * The pattern tables below are centralized and can be extended with new
+ * signatures. This NUL-terminated API cannot inspect bytes after an embedded
+ * NUL; callers handling raw input must validate its explicit length first.
+ * Non-ASCII bytes are rejected by the context allow-lists; full Unicode
+ * normalization requires a Unicode library and is intentionally not guessed.
+ */
 int fossil_io_validate_sanitize_string(const char *input,
                                        char *output,
                                        size_t output_size,
@@ -340,9 +362,49 @@ int fossil_io_validate_sanitize_string(const char *input,
         return FOSSIL_SAN_MODIFIED;
     }
 
-    size_t in_len = fossil_io_cstring_length_safe(input, 4096); /* cap scanning to 4k */
+    size_t in_len = strlen(input);
     size_t out_i = 0;
     int flags = FOSSIL_SAN_OK;
+
+    /* Scan a percent-decoded view as well as the original representation. */
+    char *decoded = NULL;
+    const char *scan_input = input;
+    size_t scan_len = in_len;
+    if (in_len < (size_t)-1)
+    {
+        decoded = (char *)malloc(in_len + 1);
+        if (decoded != NULL)
+        {
+            size_t src = 0, dst = 0;
+            while (src < in_len)
+            {
+                if (input[src] == '%' && src + 2 < in_len)
+                {
+                    int high = hex_value((unsigned char)input[src + 1]);
+                    int low = hex_value((unsigned char)input[src + 2]);
+                    if (high >= 0 && low >= 0)
+                    {
+                        decoded[dst++] = (char)((high << 4) | low);
+                        src += 3;
+                        continue;
+                    }
+                }
+                decoded[dst++] = input[src++];
+            }
+            decoded[dst] = '\0';
+            scan_input = decoded;
+            scan_len = dst;
+        }
+        else
+        {
+            /* Still scan the complete original input if normalization fails. */
+            flags |= FOSSIL_SAN_MODIFIED;
+        }
+    }
+    else
+    {
+        flags |= FOSSIL_SAN_MODIFIED;
+    }
 
     /* Context-specific allowed char filter */
     int (*is_allowed)(char) = is_allowed_generic;
@@ -373,20 +435,23 @@ int fossil_io_validate_sanitize_string(const char *input,
         "onselect=", "onkeydown=", "onkeyup=", "onkeypress=", "onmousedown=",
         "onmouseup=", "onmousemove=", "onmouseenter=", "onmouseleave=", "onwheel=",
         "oncontextmenu=", "oncopy=", "oncut=", "onpaste=", "location.href",
-        "window.open", "window.location", NULL};
+        "window.open", "window.location", "<svg", "<object", "<embed",
+        "data:text/html", "srcdoc=", NULL};
     const char *sql_patterns[] = {
         "select ", "insert ", "update ", "delete ", "drop ", "union ",
         "--", ";--", "/*", "*/", "0x", "xp_", "exec ", "sp_", "information_schema",
         "truncate ", "alter ", "create ", "rename ", "grant ", "revoke ", "cast(",
         "convert(", "declare ", "fetch ", "open ", "close ", "rollback ", "commit ",
-        "savepoint ", "release ", "begin ", "end ", NULL};
+        "savepoint ", "release ", "begin ", "end ", " or 1=1", " and 1=1",
+        " waitfor ", "sleep(", "benchmark(", NULL};
     const char *shell_patterns[] = {
         "curl ", "wget ", "rm -rf", "powershell", "cmd.exe",
         "exec(", "system(", "|", "&&", "||", "bash", "sh", "zsh", "fish", "scp ",
         "ssh ", "ftp ", "tftp ", "nc ", "netcat ", "nmap ", "chmod ", "chown ",
         "sudo ", "kill ", "pkill ", "ps ", "ls ", "cat ", "dd ", "mkfs ", "mount ",
         "umount ", "service ", "systemctl ", "init ", "reboot ", "shutdown ",
-        "start ", "stop ", "restart ", NULL};
+        "start ", "stop ", "restart ", "base64 ", "eval ", "python ",
+        "perl ", "ruby ", "&", ";", "`", "$(", NULL};
     const char *bot_patterns[] = {
         "bot", "crawler", "spider", "curl/", "python-requests", "scrapy", "httpclient",
         "libwww", "wget", "java", "go-http-client", "phantomjs", "selenium", "headless",
@@ -406,35 +471,38 @@ int fossil_io_validate_sanitize_string(const char *input,
         "/proc/cpuinfo", "/proc/meminfo", "/boot.ini", "/windows/", "/winnt/", "/system32/",
         "/sys/", "/dev/", "/bin/", "/sbin/", "/usr/", "/var/", "/tmp/", "/root/", "/home/",
         "/Users/", "/Documents/", "/AppData/", "/Local/", "/Roaming/", "/Program Files/",
-        "/ProgramData/", "/Desktop/", "/Downloads/", NULL};
+        "/ProgramData/", "/Desktop/", "/Downloads/", "..%2f", "%2e%2e",
+        "%252e%252e", NULL};
 
     /* Scan categories */
     for (const char **p = script_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_SCRIPT;
 
     for (const char **p = sql_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_SQL;
 
     for (const char **p = shell_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_SHELL;
 
     for (const char **p = bot_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_BOT;
 
     for (const char **p = spam_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_SPAM;
 
     for (const char **p = path_patterns; *p; ++p)
-        if (strncase_contains(input, *p, in_len))
+        if (strncase_contains(scan_input, *p, scan_len))
             flags |= FOSSIL_SAN_PATH;
 
-    if (long_base64_run(input, in_len, 80))
+    if (long_base64_run(scan_input, scan_len, 80))
         flags |= FOSSIL_SAN_BASE64;
+
+    free(decoded);
 
     /* Sanitization pass */
     int modified = 0;
@@ -453,8 +521,8 @@ int fossil_io_validate_sanitize_string(const char *input,
     }
     output[out_i] = '\0';
 
-    /* Report data omitted because the scan or destination buffer was bounded. */
-    if (in_len == 4096 || out_i < in_len)
+    /* Report data omitted because the destination buffer was bounded. */
+    if (out_i < in_len)
         flags |= FOSSIL_SAN_MODIFIED;
 
     /* Edge case: SQL context, but input contains SQL keywords with only allowed chars */
