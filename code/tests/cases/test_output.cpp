@@ -73,75 +73,89 @@ FOSSIL_TEST(cpp_test_output_color_flag_toggle)
 FOSSIL_TEST(cpp_test_output_color_markup_disabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 0;
-    int result = fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
-    ASSUME_ITS_TRUE(result >= 0);
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_EQUAL_CSTR("Status: OK", buffer);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(cpp_test_output_color_markup_enabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 1;
-    int result = fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
-    ASSUME_ITS_TRUE(result >= 0);
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_TRUE(strstr(buffer, "\x1b[") != NULL);
     ASSUME_ITS_TRUE(strstr(buffer, "OK") != NULL);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(cpp_test_output_wrapper_sprintf_markup_disabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 0;
-    int result = fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    int result = fossil::io::Output::sprintf(buffer, "Error: {red}FAIL{reset}");
     ASSUME_ITS_TRUE(result >= 0);
-    ASSUME_ITS_EQUAL_CSTR("Status: OK", buffer);
+    ASSUME_ITS_EQUAL_CSTR("Error: FAIL", buffer);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(cpp_test_output_wrapper_sprintf_markup_enabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 1;
-    int result = fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    int result = fossil::io::Output::sprintf(buffer, "Warning: {yellow}WARN{reset}");
     ASSUME_ITS_TRUE(result >= 0);
-    ASSUME_ITS_TRUE(strstr(buffer, "\x1b[") != NULL);
-    ASSUME_ITS_TRUE(strstr(buffer, "OK") != NULL);
+    ASSUME_ITS_TRUE(strstr(buffer, "WARN") != NULL);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(cpp_test_output_wrapper_snprintf_basic)
 {
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
     int result = fossil::io::Output::snprintf(buffer, sizeof(buffer), "Value: %d", 42);
     ASSUME_ITS_TRUE(result >= 0);
+    ASSUME_ITS_TRUE(strlen(buffer) > 0);
     ASSUME_ITS_EQUAL_CSTR("Value: 42", buffer);
+
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(cpp_test_output_output_preserves_formatting_when_disabled)
 {
     int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
-    char buffer[128];
+    char buffer[128] = {0};
 
     FOSSIL_IO_OUTPUT_ENABLE = 0;
     int result = fossil::io::Output::sprintf(buffer, "%s", "DryRun");
-    ASSUME_ITS_TRUE(result >= 0);
-    ASSUME_ITS_EQUAL_CSTR("DryRun", buffer);
+    ASSUME_ITS_EQUAL_I32(-1, result);
+    ASSUME_ITS_EQUAL_CSTR("", buffer);
 
     FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }

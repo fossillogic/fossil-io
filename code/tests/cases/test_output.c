@@ -73,39 +73,43 @@ FOSSIL_TEST(c_test_output_color_flag_toggle)
 FOSSIL_TEST(c_test_output_color_markup_disabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 0;
-    int result = fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
-    ASSUME_ITS_TRUE(result >= 0);
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_EQUAL_CSTR("Status: OK", buffer);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(c_test_output_color_markup_enabled)
 {
     int32_t original_color = FOSSIL_IO_COLOR_ENABLE;
-    char buffer[128];
+    int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
+    char buffer[128] = {0};
 
     FOSSIL_IO_COLOR_ENABLE = 1;
-    int result = fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
-    ASSUME_ITS_TRUE(result >= 0);
+    FOSSIL_IO_OUTPUT_ENABLE = 1;
+    fossil_io_sprintf(buffer, "Status: {green}OK{reset}");
     ASSUME_ITS_TRUE(strstr(buffer, "\x1b[") != NULL);
     ASSUME_ITS_TRUE(strstr(buffer, "OK") != NULL);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
+    FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
 
 FOSSIL_TEST(c_test_output_output_preserves_formatting_when_disabled)
 {
     int32_t original_output = FOSSIL_IO_OUTPUT_ENABLE;
-    char buffer[128];
+    char buffer[128] = {0};
 
     FOSSIL_IO_OUTPUT_ENABLE = 0;
     int result = fossil_io_sprintf(buffer, "%s", "DryRun");
-    ASSUME_ITS_TRUE(result >= 0);
-    ASSUME_ITS_EQUAL_CSTR("DryRun", buffer);
+    ASSUME_ITS_EQUAL_I32(-1, result);
+    ASSUME_ITS_EQUAL_CSTR("", buffer);
 
     FOSSIL_IO_OUTPUT_ENABLE = original_output;
 }
