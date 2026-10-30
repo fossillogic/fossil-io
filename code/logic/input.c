@@ -128,6 +128,13 @@ char *fossil_io_gets_from_stream_ex(char *buf, size_t size, fossil_io_filesys_fi
         return NULL;
     }
 
+    if (size == 1)
+    {
+        buf[0] = '\0';
+        *error_code = 0;
+        return buf;
+    }
+
     // Use filesys file read to get the input from the stream
     size_t bytes_read = fossil_io_filesys_file_read(input_stream, buf, 1, size - 1);
     
@@ -446,6 +453,10 @@ int fossil_io_validate_sanitize_string(const char *input,
     }
     output[out_i] = '\0';
 
+    /* Report data omitted because the scan or destination buffer was bounded. */
+    if (in_len == 4096 || out_i < in_len)
+        flags |= FOSSIL_SAN_MODIFIED;
+
     /* Edge case: SQL context, but input contains SQL keywords with only allowed chars */
     if ((ctx == FOSSIL_CTX_SQL) && (flags & FOSSIL_SAN_SQL) && !modified)
     {
@@ -499,9 +510,15 @@ int fossil_io_validate_input_buffer(const char *buf, size_t size)
 
 char *fossil_io_gets_utf8(char *buf, size_t size, fossil_io_filesys_file_t *input_stream)
 {
-    if (!fossil_io_validate_input_buffer(buf, size))
+    if (!fossil_io_validate_input_buffer(buf, size) || input_stream == NULL)
     {
         return NULL;
+    }
+
+    if (size == 1)
+    {
+        buf[0] = '\0';
+        return buf;
     }
 
     // Use filesys file read to get the input from the stream
@@ -832,7 +849,7 @@ int fossil_io_validate_is_alnum(const char *input)
 
     while (*input != '\0')
     {
-        if (!isalnum(*input))
+        if (!isalnum((unsigned char)*input))
         {
             return 0;
         }
@@ -896,6 +913,11 @@ int fossil_io_validate_is_length(const char *input, size_t max_length)
 
 int fossil_io_gets(char *buffer, size_t size)
 {
+    if (buffer == NULL || size == 0)
+    {
+        return -1;
+    }
+
     if (fgets(buffer, size, stdin) == NULL)
     {
         return -1; // Error or EOF
