@@ -1446,6 +1446,78 @@ int32_t fossil_io_filesys_file_open(
     return 0;
 }
 
+/* Open a file only when its canonical path is contained by base_dir.
+ * Relative paths are interpreted relative to base_dir. */
+int32_t fossil_io_filesys_file_open_under(
+    fossil_io_filesys_file_t *f,
+    const char *base_dir,
+    const char *path,
+    const char *mode)
+{
+    if (!f || !base_dir || !*base_dir || !path || !*path || !mode)
+        return -1;
+
+    char resolved_base[FOSSIL_FILESYS_MAX_PATH];
+    if (fossil_path_resolve(base_dir, resolved_base, sizeof(resolved_base)) != 0 ||
+        fossil_io_filesys_dir_exists(resolved_base) != 1)
+        return -1;
+
+    char candidate[FOSSIL_FILESYS_MAX_PATH];
+    bool path_is_absolute = path[0] == '/' || path[0] == '\\';
+#ifdef _WIN32
+    path_is_absolute = path_is_absolute ||
+                       (path[0] != '\0' && path[1] == ':');
+#endif
+
+    if (path_is_absolute)
+    {
+        if (fossil_path_resolve(path, candidate, sizeof(candidate)) != 0)
+            return -1;
+    }
+    else
+    {
+        int written = snprintf(candidate, sizeof(candidate), "%s%c%s",
+                               resolved_base, PATH_SEP, path);
+        if (written < 0 || (size_t)written >= sizeof(candidate) ||
+            fossil_path_resolve(candidate, candidate, sizeof(candidate)) != 0)
+            return -1;
+    }
+
+    size_t base_len = strlen(resolved_base);
+#ifdef _WIN32
+    int prefix_matches = _strnicmp(candidate, resolved_base, base_len) == 0;
+#else
+    int prefix_matches = strncmp(candidate, resolved_base, base_len) == 0;
+#endif
+    if (!prefix_matches ||
+        (candidate[base_len] != '\0' &&
+         candidate[base_len] != '/' && candidate[base_len] != '\\' &&
+         (base_len == 0 ||
+          (resolved_base[base_len - 1] != '/' &&
+           resolved_base[base_len - 1] != '\\'))))
+        return -1;
+
+    memset(f, 0, sizeof(*f));
+    if (fossil_io_filesys_init(&f->base, candidate) != 0)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+    FILE *fp = fopen(candidate, mode);
+    if (!fp)
+    {
+        fossil_mutex_unlock(&f->base.lock);
+        return -1;
+    }
+
+    f->handle = fp;
+    f->fd = fileno(fp);
+    f->is_open = true;
+    f->append_mode = (strchr(mode, 'a') != NULL);
+    f->position = 0;
+    fossil_mutex_unlock(&f->base.lock);
+    return 0;
+}
+
 int32_t fossil_io_filesys_file_close(fossil_io_filesys_file_t *f)
 {
     if (!f || !f->is_open)
