@@ -1418,13 +1418,18 @@ int32_t fossil_io_filesys_file_open(
         }
     }
 
+    /* Resolve once so metadata and the opened stream refer to the same path. */
+    char resolved_path[FOSSIL_FILESYS_MAX_PATH];
+    if (fossil_path_resolve(path, resolved_path, sizeof(resolved_path)) != 0)
+        return -1;
+
     /* init base object */
-    if (fossil_io_filesys_init(&f->base, path) != 0)
+    if (fossil_io_filesys_init(&f->base, resolved_path) != 0)
         return -1;
 
     fossil_mutex_lock(&f->base.lock);
 
-    FILE *fp = fopen(path, actual_mode);
+    FILE *fp = fopen(resolved_path, actual_mode);
     if (!fp)
     {
         fossil_mutex_unlock(&f->base.lock);
