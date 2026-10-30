@@ -308,6 +308,21 @@ int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj);
 int32_t fossil_io_filesys_file_open(fossil_io_filesys_file_t *f, const char *path, const char *mode);
 
 /**
+ * @brief Open a file under a specified base directory and initialize a file object.
+ *
+ * Opens a file at the specified path relative to the base directory with the given
+ * access mode and initializes the provided file object structure. The file object
+ * will contain handle, position, and other metadata needed for subsequent file operations.
+ *
+ * @param f Pointer to the file object to initialize
+ * @param base_dir Base directory for the relative path
+ * @param path Relative path to the file under the base directory
+ * @param mode File access mode (e.g., "r", "w", "a", "rb", "wb")
+ * @return 0 on success, negative error code on failure
+ */
+int32_t fossil_io_filesys_file_open_under(fossil_io_filesys_file_t *f, const char *base_dir, const char *path, const char *mode);
+
+/**
  * @brief Close an open file and release resources.
  *
  * Closes the file associated with the given file object, flushes any buffered data,
@@ -1116,6 +1131,24 @@ namespace fossil::io
         int32_t file_rewrite(const std::string &path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data)
         {
             return fossil_io_filesys_file_rewrite(path.c_str(), transform, user_data);
+        }
+
+        /**
+         * @brief Open a file under a specified base directory and initialize a file object.
+         *
+         * Opens a file at the specified path relative to the base directory with the given
+         * access mode and initializes the provided file object structure. The file object
+         * will contain handle, position, and other metadata needed for subsequent file operations.
+         *
+         * @param f Pointer to the file object to initialize
+         * @param base_dir Base directory for the relative path
+         * @param path Relative path to the file under the base directory
+         * @param mode File access mode (e.g., "r", "w", "a", "rb", "wb")
+         * @return 0 on success, negative error code on failure
+         */
+        int32_t file_open_under(fossil_io_filesys_file_t *f, const std::string &base_dir, const std::string &path, const std::string &mode)
+        {
+            return fossil_io_filesys_file_open_under(f, base_dir.c_str(), path.c_str(), mode.c_str());
         }
 
         /**
