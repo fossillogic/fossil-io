@@ -967,6 +967,34 @@ FOSSIL_TEST(c_test_filesys_link_set_owner)
     ASSUME_NOT_LESS_THAN_I32(result, -1);
 }
 
+FOSSIL_TEST(c_test_filesys_file_open_under)
+{
+    fossil_io_filesys_file_t file;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "test_open_under.txt", "w+");
+#else
+    int32_t result = fossil_io_filesys_file_open_under(&file, "/tmp", "test_open_under.txt", "w+");
+#endif
+    ASSUME_ITS_EQUAL_I32(0, result);
+    if (result == 0) {
+        const char *data = "open under base directory";
+        size_t written = fossil_io_filesys_file_write(&file, data, 1, strlen(data));
+        ASSUME_ITS_EQUAL_SIZE(written, strlen(data));
+        fossil_io_filesys_file_close(&file);
+    }
+}
+
+FOSSIL_TEST(c_test_filesys_file_open_under_missing_file)
+{
+    fossil_io_filesys_file_t file;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "fossil_missing_open_under.txt", "r");
+#else
+    int32_t result = fossil_io_filesys_file_open_under(&file, "/tmp", "fossil_missing_open_under.txt", "r");
+#endif
+    ASSUME_NOT_EQUAL_I32(result, 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1047,6 +1075,8 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_dir_set_owner);
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_link_set_perms);
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_link_set_owner);
+    FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under);
+    FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under_missing_file);
 
     FOSSIL_ADD_SUITE(c_filesys_suite);
 }
