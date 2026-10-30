@@ -22,10 +22,10 @@
  * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#include "fossil/io/filesys.h"
-
 #define _DEFAULT_SOURCE
 #define _POSIX_C_SOURCE 200809L
+
+#include "fossil/io/filesys.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -39,11 +39,6 @@
 #include <sys/types.h> // sometimes needed for mode_t
 #include <errno.h>     // optional, if checking errors
 #include <fcntl.h>     // open, O_* flags
-
-/* Ensure realpath is available on all POSIX systems */
-#ifndef _WIN32
-#define _DEFAULT_SOURCE
-#endif
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -162,24 +157,124 @@ static uint64_t hash_fnv1a(FILE *f)
 
 int32_t fossil_path_resolve(const char *path, char *out, size_t max_len)
 {
-    if (!path || !out)
+    if (!path || !out || max_len == 0)
         return -1;
 
-    // Absolute path → just copy
-    if (path[0] == '/')
+#ifdef _WIN32
+    if (!_fullpath(out, path, max_len))
+        return -1;
+    return 0;
+#else
+    // Make the path absolute before normalizing its components.
+    char cwd[PATH_MAX];
+    size_t path_len = strlen(path);
+    size_t cwd_len = 0;
+    if (path[0] != '/')
     {
-        strncpy(out, path, max_len - 1);
-        out[max_len - 1] = '\0';
-        return 0;
+        if (!getcwd(cwd, sizeof(cwd)))
+            return -1;
+        cwd_len = strlen(cwd);
     }
 
-    // Relative path → prepend cwd
-    char cwd[PATH_MAX];
-    if (!getcwd(cwd, sizeof(cwd)))
+    if (path_len > SIZE_MAX - cwd_len - 2)
         return -1;
+    size_t capacity = cwd_len + path_len + 2;
+    char *absolute = malloc(capacity);
+    if (!absolute)
+        return -1;
+    if (path[0] == '/')
+        memcpy(absolute, path, path_len + 1);
+    else
+        snprintf(absolute, capacity, "%s/%s", cwd, path);
 
-    snprintf(out, max_len, "%s/%s", cwd, path);
-    return 0;
+    // Collapse repeated separators and dot components, and clamp .. at root.
+    size_t read_pos = 0;
+    size_t write_pos = 1;
+    absolute[0] = '/';
+    while (absolute[read_pos] == '/')
+        read_pos++;
+    while (absolute[read_pos])
+    {
+        size_t start = read_pos;
+        while (absolute[read_pos] && absolute[read_pos] != '/')
+            read_pos++;
+        size_t component_len = read_pos - start;
+        while (absolute[read_pos] == '/')
+            read_pos++;
+
+        if (component_len == 1 && absolute[start] == '.')
+            continue;
+        if (component_len == 2 && absolute[start] == '.' && absolute[start + 1] == '.')
+        {
+            if (write_pos > 1)
+            {
+                while (write_pos > 1 && absolute[write_pos - 1] != '/')
+                    write_pos--;
+                if (write_pos > 1)
+                    write_pos--;
+            }
+            continue;
+        }
+        if (component_len)
+        {
+            if (write_pos > 1)
+                absolute[write_pos++] = '/';
+            memmove(absolute + write_pos, absolute + start, component_len);
+            write_pos += component_len;
+        }
+    }
+    absolute[write_pos] = '\0';
+
+    // Resolve symlinks in existing components. For a not-yet-created target,
+    // resolve its nearest existing ancestor and retain the normalized suffix.
+    size_t prefix_len = write_pos;
+    size_t suffix_start = write_pos;
+    char *resolved = NULL;
+    for (;;)
+    {
+        char saved = absolute[prefix_len];
+        absolute[prefix_len] = '\0';
+        resolved = realpath(absolute, NULL);
+        absolute[prefix_len] = saved;
+        if (resolved)
+            break;
+        if (prefix_len == 1)
+            break;
+
+        size_t slash = prefix_len - 1;
+        while (slash > 0 && absolute[slash] != '/')
+            slash--;
+        if (slash == 0)
+        {
+            prefix_len = 1;
+            suffix_start = 1;
+        }
+        else
+        {
+            prefix_len = slash;
+            suffix_start = slash;
+        }
+    }
+
+    int32_t result = -1;
+    if (resolved)
+    {
+        const char *suffix = absolute + suffix_start;
+        size_t resolved_len = strlen(resolved);
+        if (resolved_len == 1 && resolved[0] == '/' && suffix[0] == '/')
+            suffix++;
+        size_t suffix_len = strlen(suffix);
+        if (resolved_len <= SIZE_MAX - suffix_len - 1 && resolved_len + suffix_len + 1 <= max_len)
+        {
+            memcpy(out, resolved, resolved_len);
+            memcpy(out + resolved_len, suffix, suffix_len + 1);
+            result = 0;
+        }
+        free(resolved);
+    }
+    free(absolute);
+    return result;
+#endif
 }
 
 static int copy_file_stream(const char *src, const char *dest)
