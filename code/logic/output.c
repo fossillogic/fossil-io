@@ -123,6 +123,10 @@ int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 #define FOSSIL_IO_ATTR_RESET_HIDDEN "\033[28m"
 #define FOSSIL_IO_ATTR_RESET_STRIKE "\033[29m"
 
+/* Legacy APIs use a 1000-byte buffer and retain at most 999 output bytes.
+ * The snprintf-family APIs accept a caller-provided capacity and return the
+ * full required length (excluding NUL), so truncation is detectable when the
+ * return value is >= the supplied capacity. */
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
 static const char *fossil_io_get_color_code(const char *color)
@@ -690,6 +694,26 @@ void fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, ccstring
 // INTERNAL: CORE FORMAT ENGINE (MARKUP-AWARE)
 // ================================================================
 
+static int fossil_io_format_append(
+    char *buffer,
+    size_t size,
+    size_t *written,
+    size_t *required,
+    const char *text,
+    size_t length)
+{
+    if (length > (size_t)-1 - *required)
+        return -1;
+
+    size_t available = size - 1 - *written;
+    size_t copy_length = length < available ? length : available;
+    if (copy_length > 0)
+        memcpy(buffer + *written, text, copy_length);
+    *written += copy_length;
+    *required += length;
+    return 0;
+}
+
 static int fossil_io_format_internal(
     char *buffer,
     size_t size,
@@ -700,95 +724,116 @@ static int fossil_io_format_internal(
     if (!buffer || !format || size == 0)
         return -1;
 
-    char temp[FOSSIL_IO_BUFFER_SIZE];
-    int written = vsnprintf(temp, sizeof(temp), format, args);
-    if (written < 0)
+    va_list sizing_args;
+    va_copy(sizing_args, args);
+    int formatted_length = vsnprintf(NULL, 0, format, sizing_args);
+    va_end(sizing_args);
+    if (formatted_length < 0)
         return -1;
+
+    size_t temp_size = (size_t)formatted_length + 1;
+    char *temp = malloc(temp_size);
+    if (!temp)
+        return -1;
+
+    va_list format_args;
+    va_copy(format_args, args);
+    int result = vsnprintf(temp, temp_size, format, format_args);
+    va_end(format_args);
+    if (result < 0)
+    {
+        free(temp);
+        return -1;
+    }
+
+    size_t written = 0;
+    size_t required = 0;
+    int status = 0;
 
     if (!apply_markup)
     {
-        if (written < 0)
-            return -1;
-        
-        size_t len = ((size_t)written < size - 1) ? (size_t)written : size - 1;
-        memcpy(buffer, temp, len);
-        buffer[len] = '\0';
-        return (int)len;
+        status = fossil_io_format_append(buffer, size, &written, &required, temp, (size_t)result);
     }
-
-    size_t out = 0;
-    const char *cur = temp;
-    const char *start;
-
-    while ((start = strchr(cur, '{')) != NULL)
+    else
     {
-        size_t chunk = start - cur;
-        if (out + chunk >= size - 1)
-            break;
+        const char *cur = temp;
+        const char *start;
 
-        memcpy(buffer + out, cur, chunk);
-        out += chunk;
-
-        // escape {{
-        if (start[1] == '{')
+        while ((start = strchr(cur, '{')) != NULL)
         {
-            buffer[out++] = '{';
-            cur = start + 2;
-            continue;
-        }
-
-        const char *end = strchr(start, '}');
-        if (!end)
-        {
-            buffer[out++] = '{';
-            cur = start + 1;
-            continue;
-        }
-
-        size_t len = end - start - 1;
-
-        if (!fossil_io_is_valid_tag(start + 1, len))
-        {
-            size_t copy_len = len + 2;
-            if (out + copy_len >= size - 1)
-                break;
-
-            memcpy(buffer + out, start, copy_len);
-            out += copy_len;
-            cur = end + 1;
-            continue;
-        }
-
-        char tag[65];
-        if (len >= sizeof(tag))
-            len = sizeof(tag) - 1;
-
-        memcpy(tag, start + 1, len);
-        tag[len] = '\0';
-
-        if (FOSSIL_IO_COLOR_ENABLE)
-        {
-            const char *code = fossil_io_get_color_code(tag);
-            size_t code_len = strlen(code);
-        
-            if (code_len > 0 && out + code_len < size - 1)
+            if (fossil_io_format_append(buffer, size, &written, &required, cur, (size_t)(start - cur)) < 0)
             {
-                memcpy(buffer + out, code, code_len);
-                out += code_len;
+                status = -1;
+                break;
             }
+
+            // escape {{
+            if (start[1] == '{')
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, "{", 1) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = start + 2;
+                continue;
+            }
+
+            const char *end = strchr(start, '}');
+            if (!end)
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, "{", 1) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = start + 1;
+                continue;
+            }
+
+            size_t len = (size_t)(end - start - 1);
+
+            if (!fossil_io_is_valid_tag(start + 1, len))
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, start, len + 2) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = end + 1;
+                continue;
+            }
+
+            char tag[65];
+            if (len >= sizeof(tag))
+                len = sizeof(tag) - 1;
+
+            memcpy(tag, start + 1, len);
+            tag[len] = '\0';
+
+            if (FOSSIL_IO_COLOR_ENABLE)
+            {
+                const char *code = fossil_io_get_color_code(tag);
+                size_t code_len = strlen(code);
+                if (code_len > 0 && fossil_io_format_append(buffer, size, &written, &required, code, code_len) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+            }
+            cur = end + 1;
         }
-        cur = end + 1;
+
+        if (status == 0 && fossil_io_format_append(buffer, size, &written, &required, cur, strlen(cur)) < 0)
+            status = -1;
     }
 
-    size_t tail = strlen(cur);
-    if (out + tail >= size - 1)
-        tail = size - 1 - out;
+    buffer[written] = '\0';
+    free(temp);
 
-    memcpy(buffer + out, cur, tail);
-    out += tail;
-    buffer[out] = '\0';
-
-    return (int)out;
+    if (status < 0 || required > INT_MAX)
+        return -1;
+    return (int)required;
 }
 
 //
