@@ -214,6 +214,43 @@ FOSSIL_TEST(c_test_sanitize_string_path_traversal)
     ASSUME_ITS_TRUE((result & FOSSIL_SAN_PATH) != 0);
 }
 
+FOSSIL_TEST(c_test_sanitize_string_encoded_path_traversal)
+{
+    char output[256];
+    int result = fossil_io_validate_sanitize_string("%2e%2e%2fetc%2fpasswd", output, sizeof(output), FOSSIL_CTX_FILENAME);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_PATH) != 0);
+}
+
+FOSSIL_TEST(c_test_sanitize_string_mixed_encoded_path_traversal)
+{
+    char output[256];
+    int result = fossil_io_validate_sanitize_string("..%2f..%5csecret", output, sizeof(output), FOSSIL_CTX_FILENAME);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_PATH) != 0);
+}
+
+FOSSIL_TEST(c_test_sanitize_string_double_encoded_path_traversal)
+{
+    char output[256];
+    int result = fossil_io_validate_sanitize_string("%252e%252e%252fsecret", output, sizeof(output), FOSSIL_CTX_FILENAME);
+    ASSUME_ITS_TRUE((result & FOSSIL_SAN_PATH) != 0);
+}
+
+FOSSIL_TEST(c_test_sanitize_string_empty_input)
+{
+    char output[8] = "x";
+    int result = fossil_io_validate_sanitize_string("", output, sizeof(output), FOSSIL_CTX_GENERIC);
+    ASSUME_ITS_TRUE(result == FOSSIL_SAN_OK);
+    ASSUME_ITS_EQUAL_CSTR(output, "");
+}
+
+FOSSIL_TEST(c_test_sanitize_string_exact_output_capacity)
+{
+    char output[6];
+    int result = fossil_io_validate_sanitize_string("hello", output, sizeof(output), FOSSIL_CTX_GENERIC);
+    ASSUME_ITS_TRUE(result == FOSSIL_SAN_OK);
+    ASSUME_ITS_EQUAL_CSTR(output, "hello");
+}
+
 FOSSIL_TEST(c_test_sanitize_string_bot_detection)
 {
     char output[256];
@@ -285,6 +322,11 @@ FOSSIL_TEST_GROUP(c_input_tests)
     FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_sql_detection);
     FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_shell_detection);
     FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_path_traversal);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_encoded_path_traversal);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_mixed_encoded_path_traversal);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_double_encoded_path_traversal);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_empty_input);
+    FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_exact_output_capacity);
     FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_bot_detection);
     FOSSIL_ADD_TEST(c_input_suite, c_test_sanitize_string_html_context);
     FOSSIL_ADD_TEST(c_input_suite, c_test_trim_string);

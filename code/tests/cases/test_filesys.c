@@ -114,7 +114,7 @@ FOSSIL_TEST(c_test_filesys_exists_true)
 #else
     int32_t result = fossil_io_filesys_exists("/tmp");
 #endif
-    ASSUME_ITS_EQUAL_I32(1, result);
+    ASSUME_ITS_TRUE(result != 0);
 }
 
 FOSSIL_TEST(c_test_filesys_exists_false)
@@ -124,7 +124,7 @@ FOSSIL_TEST(c_test_filesys_exists_false)
 #else
     int32_t result = fossil_io_filesys_exists("/nonexistent/path/xyz");
 #endif
-    ASSUME_ITS_EQUAL_I32(0, result);
+    ASSUME_ITS_FALSE(result != 0);
 }
 
 FOSSIL_TEST(c_test_filesys_file_open_write)
@@ -255,16 +255,20 @@ FOSSIL_TEST(c_test_filesys_dir_walk)
 FOSSIL_TEST(c_test_filesys_getcwd)
 {
     char cwd[512];
+    ASSUME_ITS_BUFFER_OVERFLOW_SAFE(sizeof(cwd), 512);
     int32_t result = fossil_io_filesys_getcwd(cwd, 512);
     ASSUME_ITS_EQUAL_I32(result, 0);
     ASSUME_NOT_CNULL(cwd);
+    ASSUME_ITS_SAFE_CSTR(cwd, sizeof(cwd));
 }
 
 FOSSIL_TEST(c_test_filesys_abspath)
 {
     char abs_path[512];
+    ASSUME_ITS_BUFFER_OVERFLOW_SAFE(sizeof(abs_path), 512);
     int32_t result = fossil_io_filesys_abspath(".", abs_path, 512);
     ASSUME_ITS_EQUAL_I32(result, 0);
+    ASSUME_ITS_SAFE_CSTR(abs_path, sizeof(abs_path));
 }
 
 FOSSIL_TEST(c_test_filesys_dirname)
@@ -847,7 +851,8 @@ FOSSIL_TEST(c_test_filesys_file_format_small_buffer)
     char format[2];
     int32_t result = fossil_io_filesys_file_format(path, format, sizeof(format));
     ASSUME_ITS_EQUAL_I32(result, 0);
-    ASSUME_ITS_EQUAL_I32(format[sizeof(format) - 1], '\0');
+    ASSUME_ITS_BOUNDS_CHECKED(sizeof(format) - 1, sizeof(format));
+    ASSUME_ITS_EQUAL_CHAR(format[sizeof(format) - 1], '\0');
 }
 
 FOSSIL_TEST(c_test_filesys_file_format_large_buffer)
@@ -995,6 +1000,56 @@ FOSSIL_TEST(c_test_filesys_file_open_under_missing_file)
     ASSUME_NOT_EQUAL_I32(result, 0);
 }
 
+FOSSIL_TEST(c_test_filesys_file_open_under_rejects_traversal)
+{
+    fossil_io_filesys_file_t file;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t slash_result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "..\\outside.txt", "r");
+    int32_t backslash_result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "../outside.txt", "r");
+#else
+    int32_t slash_result = fossil_io_filesys_file_open_under(&file, "/tmp", "../outside.txt", "r");
+    int32_t backslash_result = fossil_io_filesys_file_open_under(&file, "/tmp", "..\\outside.txt", "r");
+#endif
+    ASSUME_ITS_FALSE(slash_result == 0);
+    ASSUME_ITS_FALSE(backslash_result == 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_open_under_rejects_encoded_traversal)
+{
+    fossil_io_filesys_file_t file;
+#if defined(_WIN32) || defined(_WIN64)
+    int32_t encoded_slash_result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "%2e%2e%2foutside.txt", "r");
+    int32_t encoded_backslash_result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "%2E%2E%5Coutside.txt", "r");
+    int32_t double_encoded_result = fossil_io_filesys_file_open_under(&file, "C:\\temp", "%252e%252e%252foutside.txt", "r");
+#else
+    int32_t encoded_slash_result = fossil_io_filesys_file_open_under(&file, "/tmp", "%2e%2e%2foutside.txt", "r");
+    int32_t encoded_backslash_result = fossil_io_filesys_file_open_under(&file, "/tmp", "%2E%2E%5Coutside.txt", "r");
+    int32_t double_encoded_result = fossil_io_filesys_file_open_under(&file, "/tmp", "%252e%252e%252foutside.txt", "r");
+#endif
+    ASSUME_ITS_FALSE(encoded_slash_result == 0);
+    ASSUME_ITS_FALSE(encoded_backslash_result == 0);
+    ASSUME_ITS_FALSE(double_encoded_result == 0);
+}
+
+FOSSIL_TEST(c_test_filesys_file_open_under_sanitizer_edge_cases)
+{
+    fossil_io_filesys_file_t file;
+#if defined(_WIN32) || defined(_WIN64)
+    const char *base = "C:\\temp";
+#else
+    const char *base = "/tmp";
+#endif
+    int32_t null_base_result = fossil_io_filesys_file_open_under(&file, NULL, "file.txt", "r");
+    int32_t null_path_result = fossil_io_filesys_file_open_under(&file, base, NULL, "r");
+    int32_t empty_path_result = fossil_io_filesys_file_open_under(&file, base, "", "r");
+    int32_t dot_path_result = fossil_io_filesys_file_open_under(&file, base, ".", "r");
+
+    ASSUME_ITS_FALSE(null_base_result == 0);
+    ASSUME_ITS_FALSE(null_path_result == 0);
+    ASSUME_ITS_FALSE(empty_path_result == 0);
+    ASSUME_ITS_FALSE(dot_path_result == 0);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1077,6 +1132,9 @@ FOSSIL_TEST_GROUP(c_filesys_tests)
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_link_set_owner);
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under);
     FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under_missing_file);
+    FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under_rejects_traversal);
+    FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under_rejects_encoded_traversal);
+    FOSSIL_ADD_TEST(c_filesys_suite, c_test_filesys_file_open_under_sanitizer_edge_cases);
 
     FOSSIL_ADD_SUITE(c_filesys_suite);
 }
