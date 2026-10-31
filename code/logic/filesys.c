@@ -2680,14 +2680,13 @@ int32_t fossil_io_filesys_link_resolve(
     if (buf[0] != '/')
     {
         char dir[PATH_MAX];
-        strncpy(dir, link_path, sizeof(dir) - 1);
-        dir[sizeof(dir) - 1] = '\0';
+        snprintf(dir, sizeof(dir), "%s", link_path);
 
         char *slash = strrchr(dir, '/');
         if (slash)
             *slash = '\0';
         else
-            strcpy(dir, ".");
+            snprintf(dir, sizeof(dir), ".");
 
         snprintf(target_out, max_len, "%s/%s", dir, buf);
     }

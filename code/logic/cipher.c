@@ -667,7 +667,7 @@ static cstring cipher_haxor(ccstring text, int decode)
         if (!out)
             return NULL;
         for (size_t i = 0; i < len; ++i)
-            sprintf(out + i * 2, "%02X", (unsigned char)text[i]);
+            snprintf(out + i * 2, 3, "%02X", (unsigned char)text[i]);
         out[len * 2] = '\0';
         return out;
     }

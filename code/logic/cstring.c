@@ -1036,13 +1036,12 @@ int fossil_io_cstring_number_to_words(int num, char *buffer, size_t size)
         int thousands = num / 1000;
         if (thousands < 0 || thousands > 19)
             return -1; // Prevent out-of-bounds access
-        if (strlen(buffer) + strlen(units[thousands]) + 10 >= size)
+        if (fossil_io_cstring_append_literal(buffer, size, units[thousands]) != 0 ||
+            fossil_io_cstring_append_literal(buffer, size, " thousand") != 0)
             return -1;
-        strcat(buffer, units[thousands]);
-        strcat(buffer, " thousand");
         num %= 1000;
-        if (num > 0)
-            strcat(buffer, " ");
+        if (num > 0 && fossil_io_cstring_append_literal(buffer, size, " ") != 0)
+            return -1;
     }
 
     if (num > 0 || strlen(buffer) == 0)
@@ -1655,17 +1654,18 @@ cstring fossil_io_cstring_join(ccstring *strings, size_t count, char delimiter)
     if (!result)
         return NULL;
 
-    result[0] = '\0';
+    size_t offset = 0;
     for (size_t i = 0; i < count; ++i)
     {
-        strcat(result, strings[i]);
+        size_t length = strlen(strings[i]);
+        memcpy(result + offset, strings[i], length);
+        offset += length;
         if (i != count - 1)
         {
-            size_t len = strlen(result);
-            result[len] = delimiter;
-            result[len + 1] = '\0';
+            result[offset++] = delimiter;
         }
     }
+    result[offset] = '\0';
 
     return result;
 }
