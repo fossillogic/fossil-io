@@ -418,7 +418,7 @@ namespace fossil::io
         {
             va_list args;
             va_start(args, format);
-            int result = fossil_io_snprintf(buffer, size, format, args);
+            int result = fossil_io_vsnprintf(buffer, size, format, args);
             va_end(args);
             return result;
         }

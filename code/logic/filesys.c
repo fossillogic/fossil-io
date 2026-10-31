@@ -1489,7 +1489,8 @@ int32_t fossil_io_filesys_file_open_under(
 #else
     int prefix_matches = strncmp(candidate, resolved_base, base_len) == 0;
 #endif
-    if (!prefix_matches ||
+    /* A path resolving to the base directory is not a file beneath it. */
+    if (!prefix_matches || candidate[base_len] == '\0' ||
         (candidate[base_len] != '\0' &&
          candidate[base_len] != '/' && candidate[base_len] != '\\' &&
          (base_len == 0 ||
