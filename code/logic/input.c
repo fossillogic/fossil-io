@@ -344,8 +344,12 @@ char *fossil_io_gets_from_stream(char *buf, size_t size, fossil_io_filesys_file_
  * substitute for HTML escaping, parameterized SQL, or avoiding shell command
  * interpolation (prefer argv-based process APIs). Filename output should also
  * be joined beneath an application-controlled directory and checked there.
- * The pattern tables below are centralized and can be extended with new
- * signatures. This NUL-terminated API cannot inspect bytes after an embedded
+ * The pattern tables below are heuristic blacklist checks and are necessarily
+ * incomplete. They are only a defense-in-depth aid, not a security boundary;
+ * use strict application-specific allow-lists and context-appropriate escaping
+ * or parameterized queries for actual protection. Extend these patterns as
+ * useful, but do not rely on them to make untrusted input safe. This
+ * NUL-terminated API cannot inspect bytes after an embedded
  * NUL; callers handling raw input must validate its explicit length first.
  * Non-ASCII bytes are rejected by the context allow-lists; full Unicode
  * normalization requires a Unicode library and is intentionally not guessed.
@@ -436,14 +440,19 @@ int fossil_io_validate_sanitize_string(const char *input,
         "onmouseup=", "onmousemove=", "onmouseenter=", "onmouseleave=", "onwheel=",
         "oncontextmenu=", "oncopy=", "oncut=", "onpaste=", "location.href",
         "window.open", "window.location", "<svg", "<object", "<embed",
-        "data:text/html", "srcdoc=", NULL};
+        "data:text/html", "srcdoc=", "<img", "<form", "<body", "<video",
+        "<audio", "<link", "<meta", "<base", "<style", "expression(",
+        "vbscript:", "xlink:href", "formaction=", "srcset=", "onanimation",
+        "ontransition", "onpointer", NULL};
     const char *sql_patterns[] = {
         "select ", "insert ", "update ", "delete ", "drop ", "union ",
         "--", ";--", "/*", "*/", "0x", "xp_", "exec ", "sp_", "information_schema",
         "truncate ", "alter ", "create ", "rename ", "grant ", "revoke ", "cast(",
         "convert(", "declare ", "fetch ", "open ", "close ", "rollback ", "commit ",
         "savepoint ", "release ", "begin ", "end ", " or 1=1", " and 1=1",
-        " waitfor ", "sleep(", "benchmark(", NULL};
+        " waitfor ", "sleep(", "benchmark(", "union select", "into outfile",
+        "into dumpfile", "load_file(", "group_concat(", "having ", " order by ",
+        " group by ", " or true", " and true", " is null", " is not null", NULL};
     const char *shell_patterns[] = {
         "curl ", "wget ", "rm -rf", "powershell", "cmd.exe",
         "exec(", "system(", "|", "&&", "||", "bash", "sh", "zsh", "fish", "scp ",
@@ -451,7 +460,9 @@ int fossil_io_validate_sanitize_string(const char *input,
         "sudo ", "kill ", "pkill ", "ps ", "ls ", "cat ", "dd ", "mkfs ", "mount ",
         "umount ", "service ", "systemctl ", "init ", "reboot ", "shutdown ",
         "start ", "stop ", "restart ", "base64 ", "eval ", "python ",
-        "perl ", "ruby ", "&", ";", "`", "$(", NULL};
+        "perl ", "ruby ", "&", ";", "`", "$(", "invoke-expression",
+        "child_process", "subprocess", "runtime.exec", "popen(", "telnet ",
+        "whoami", "printenv", "crontab ", "iptables ", "useradd ", "userdel ", NULL};
     const char *bot_patterns[] = {
         "bot", "crawler", "spider", "curl/", "python-requests", "scrapy", "httpclient",
         "libwww", "wget", "java", "go-http-client", "phantomjs", "selenium", "headless",
@@ -472,7 +483,8 @@ int fossil_io_validate_sanitize_string(const char *input,
         "/sys/", "/dev/", "/bin/", "/sbin/", "/usr/", "/var/", "/tmp/", "/root/", "/home/",
         "/Users/", "/Documents/", "/AppData/", "/Local/", "/Roaming/", "/Program Files/",
         "/ProgramData/", "/Desktop/", "/Downloads/", "..%2f", "%2e%2e",
-        "%252e%252e", NULL};
+        "%252e%252e", "%2e%2e%2f", "%2e%2e/", "%2e%2e%5c", "%2e%2e\\",
+        "%252e%252e%252f", "%c0%ae%c0%ae", NULL};
 
     /* Scan categories */
     for (const char **p = script_patterns; *p; ++p)
@@ -539,6 +551,10 @@ int fossil_io_validate_sanitize_string(const char *input,
     return flags == 0 ? FOSSIL_SAN_OK : flags;
 }
 
+/* These wrappers pass `format` directly to scanf/vfscanf without validating
+ * conversion specifiers. Callers must provide a trusted format literal;
+ * never pass user-controlled or otherwise untrusted data as `format`.
+ */
 int fossil_io_scanf(const char *format, ...)
 {
     if (format == NULL)
