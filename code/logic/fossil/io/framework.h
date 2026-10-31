@@ -17,15 +17,16 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
 #ifndef FOSSIL_IO_FRAMEWORK_H
 #define FOSSIL_IO_FRAMEWORK_H
 
 // Include the necessary headers
+#include "filesys.h"
 #include "regex.h"
 #include "output.h"
 #include "input.h"
@@ -33,9 +34,7 @@
 #include "archive.h"
 #include "cstring.h"
 #include "cipher.h"
-#include "file.h"
 #include "soap.h"
-#include "dir.h"
 
 enum {
     FOSSIL_IO_SUCCESS = 0,

@@ -17,9 +17,9 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/output.h"
@@ -30,280 +30,511 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <limits.h>
 
-int32_t FOSSIL_IO_COLOR_ENABLE = 1; // Flag to enable/disable color output
-int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing 
+int32_t FOSSIL_IO_COLOR_ENABLE = 1;  // Flag to enable/disable color output
+int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
 
 // ================================================================
 // RESET
 // ================================================================
-#define FOSSIL_IO_COLOR_RESET            "\033[0m"
-
+#define FOSSIL_IO_COLOR_RESET "\033[0m"
 
 // ================================================================
 // DARK (STANDARD) COLORS
 // ================================================================
-#define FOSSIL_IO_COLOR_BLACK            "\033[30m"
-#define FOSSIL_IO_COLOR_RED              "\033[31m"
-#define FOSSIL_IO_COLOR_GREEN            "\033[32m"
-#define FOSSIL_IO_COLOR_YELLOW           "\033[33m"
-#define FOSSIL_IO_COLOR_BLUE             "\033[34m"
-#define FOSSIL_IO_COLOR_MAGENTA          "\033[35m"
-#define FOSSIL_IO_COLOR_CYAN             "\033[36m"
-#define FOSSIL_IO_COLOR_WHITE            "\033[37m"
-#define FOSSIL_IO_COLOR_GRAY             "\033[90m"
-#define FOSSIL_IO_COLOR_ORANGE           "\033[38;5;208m"
-#define FOSSIL_IO_COLOR_PINK             "\033[38;5;205m"
-#define FOSSIL_IO_COLOR_PURPLE           "\033[38;5;93m"
-#define FOSSIL_IO_COLOR_BROWN            "\033[38;5;94m"
-#define FOSSIL_IO_COLOR_TEAL             "\033[38;5;30m"
-#define FOSSIL_IO_COLOR_SILVER           "\033[38;5;7m"
+#define FOSSIL_IO_COLOR_BLACK "\033[30m"
+#define FOSSIL_IO_COLOR_RED "\033[31m"
+#define FOSSIL_IO_COLOR_GREEN "\033[32m"
+#define FOSSIL_IO_COLOR_YELLOW "\033[33m"
+#define FOSSIL_IO_COLOR_BLUE "\033[34m"
+#define FOSSIL_IO_COLOR_MAGENTA "\033[35m"
+#define FOSSIL_IO_COLOR_CYAN "\033[36m"
+#define FOSSIL_IO_COLOR_WHITE "\033[37m"
+#define FOSSIL_IO_COLOR_GRAY "\033[90m"
+#define FOSSIL_IO_COLOR_ORANGE "\033[38;5;208m"
+#define FOSSIL_IO_COLOR_PINK "\033[38;5;205m"
+#define FOSSIL_IO_COLOR_PURPLE "\033[38;5;93m"
+#define FOSSIL_IO_COLOR_BROWN "\033[38;5;94m"
+#define FOSSIL_IO_COLOR_TEAL "\033[38;5;30m"
+#define FOSSIL_IO_COLOR_SILVER "\033[38;5;7m"
 
 // ================================================================
 // BRIGHT COLORS
 // ================================================================
-#define FOSSIL_IO_COLOR_BRIGHT_BLACK     "\033[90m"
-#define FOSSIL_IO_COLOR_BRIGHT_RED       "\033[91m"
-#define FOSSIL_IO_COLOR_BRIGHT_GREEN     "\033[92m"
-#define FOSSIL_IO_COLOR_BRIGHT_YELLOW    "\033[93m"
-#define FOSSIL_IO_COLOR_BRIGHT_BLUE      "\033[94m"
-#define FOSSIL_IO_COLOR_BRIGHT_MAGENTA   "\033[95m"
-#define FOSSIL_IO_COLOR_BRIGHT_CYAN      "\033[96m"
-#define FOSSIL_IO_COLOR_BRIGHT_WHITE     "\033[97m"
+#define FOSSIL_IO_COLOR_BRIGHT_BLACK "\033[90m"
+#define FOSSIL_IO_COLOR_BRIGHT_RED "\033[91m"
+#define FOSSIL_IO_COLOR_BRIGHT_GREEN "\033[92m"
+#define FOSSIL_IO_COLOR_BRIGHT_YELLOW "\033[93m"
+#define FOSSIL_IO_COLOR_BRIGHT_BLUE "\033[94m"
+#define FOSSIL_IO_COLOR_BRIGHT_MAGENTA "\033[95m"
+#define FOSSIL_IO_COLOR_BRIGHT_CYAN "\033[96m"
+#define FOSSIL_IO_COLOR_BRIGHT_WHITE "\033[97m"
 
 // ================================================================
 // BACKGROUND COLORS
 // ================================================================
-#define FOSSIL_IO_BG_BLACK            "\033[40m"
-#define FOSSIL_IO_BG_RED              "\033[41m"
-#define FOSSIL_IO_BG_GREEN            "\033[42m"
-#define FOSSIL_IO_BG_YELLOW           "\033[43m"
-#define FOSSIL_IO_BG_BLUE             "\033[44m"
-#define FOSSIL_IO_BG_MAGENTA          "\033[45m"
-#define FOSSIL_IO_BG_CYAN             "\033[46m"
-#define FOSSIL_IO_BG_WHITE            "\033[47m"
-#define FOSSIL_IO_BG_GRAY             "\033[100m"
-#define FOSSIL_IO_BG_ORANGE           "\033[48;5;208m"
-#define FOSSIL_IO_BG_PINK             "\033[48;5;205m"
-#define FOSSIL_IO_BG_PURPLE           "\033[48;5;93m"
-#define FOSSIL_IO_BG_BROWN            "\033[48;5;94m"
-#define FOSSIL_IO_BG_TEAL             "\033[48;5;30m"
-#define FOSSIL_IO_BG_SILVER           "\033[48;5;7m"
+#define FOSSIL_IO_BG_BLACK "\033[40m"
+#define FOSSIL_IO_BG_RED "\033[41m"
+#define FOSSIL_IO_BG_GREEN "\033[42m"
+#define FOSSIL_IO_BG_YELLOW "\033[43m"
+#define FOSSIL_IO_BG_BLUE "\033[44m"
+#define FOSSIL_IO_BG_MAGENTA "\033[45m"
+#define FOSSIL_IO_BG_CYAN "\033[46m"
+#define FOSSIL_IO_BG_WHITE "\033[47m"
+#define FOSSIL_IO_BG_GRAY "\033[100m"
+#define FOSSIL_IO_BG_ORANGE "\033[48;5;208m"
+#define FOSSIL_IO_BG_PINK "\033[48;5;205m"
+#define FOSSIL_IO_BG_PURPLE "\033[48;5;93m"
+#define FOSSIL_IO_BG_BROWN "\033[48;5;94m"
+#define FOSSIL_IO_BG_TEAL "\033[48;5;30m"
+#define FOSSIL_IO_BG_SILVER "\033[48;5;7m"
 
 // Bright background colors
-#define FOSSIL_IO_BG_BRIGHT_BLACK     "\033[100m"
-#define FOSSIL_IO_BG_BRIGHT_RED       "\033[101m"
-#define FOSSIL_IO_BG_BRIGHT_GREEN     "\033[102m"
-#define FOSSIL_IO_BG_BRIGHT_YELLOW    "\033[103m"
-#define FOSSIL_IO_BG_BRIGHT_BLUE      "\033[104m"
-#define FOSSIL_IO_BG_BRIGHT_MAGENTA   "\033[105m"
-#define FOSSIL_IO_BG_BRIGHT_CYAN      "\033[106m"
-#define FOSSIL_IO_BG_BRIGHT_WHITE     "\033[107m"
+#define FOSSIL_IO_BG_BRIGHT_BLACK "\033[100m"
+#define FOSSIL_IO_BG_BRIGHT_RED "\033[101m"
+#define FOSSIL_IO_BG_BRIGHT_GREEN "\033[102m"
+#define FOSSIL_IO_BG_BRIGHT_YELLOW "\033[103m"
+#define FOSSIL_IO_BG_BRIGHT_BLUE "\033[104m"
+#define FOSSIL_IO_BG_BRIGHT_MAGENTA "\033[105m"
+#define FOSSIL_IO_BG_BRIGHT_CYAN "\033[106m"
+#define FOSSIL_IO_BG_BRIGHT_WHITE "\033[107m"
 
 // ================================================================
 // TEXT ATTRIBUTES
 // ================================================================
-#define FOSSIL_IO_ATTR_BOLD              "\033[1m"
-#define FOSSIL_IO_ATTR_DIM               "\033[2m"
-#define FOSSIL_IO_ATTR_ITALIC            "\033[3m"
-#define FOSSIL_IO_ATTR_UNDERLINE         "\033[4m"
-#define FOSSIL_IO_ATTR_BLINK             "\033[5m"
-#define FOSSIL_IO_ATTR_REVERSE           "\033[7m"
-#define FOSSIL_IO_ATTR_HIDDEN            "\033[8m"
-#define FOSSIL_IO_ATTR_STRIKETHROUGH     "\033[9m"
-#define FOSSIL_IO_ATTR_NORMAL            "\033[22;23;24;25;27;28m" // Reset all attributes
-#define FOSSIL_IO_ATTR_REVERSED          "\033[7m"
+#define FOSSIL_IO_ATTR_BOLD "\033[1m"
+#define FOSSIL_IO_ATTR_DIM "\033[2m"
+#define FOSSIL_IO_ATTR_ITALIC "\033[3m"
+#define FOSSIL_IO_ATTR_UNDERLINE "\033[4m"
+#define FOSSIL_IO_ATTR_BLINK "\033[5m"
+#define FOSSIL_IO_ATTR_REVERSE "\033[7m"
+#define FOSSIL_IO_ATTR_HIDDEN "\033[8m"
+#define FOSSIL_IO_ATTR_STRIKETHROUGH "\033[9m"
+#define FOSSIL_IO_ATTR_NORMAL "\033[22;23;24;25;27;28m" // Reset all attributes
+#define FOSSIL_IO_ATTR_REVERSED "\033[7m"
 
 // Reset specific attributes
-#define FOSSIL_IO_ATTR_RESET_BOLD        "\033[22m"
-#define FOSSIL_IO_ATTR_RESET_DIM         "\033[22m"
-#define FOSSIL_IO_ATTR_RESET_ITALIC      "\033[23m"
-#define FOSSIL_IO_ATTR_RESET_UNDERLINE   "\033[24m"
-#define FOSSIL_IO_ATTR_RESET_BLINK       "\033[25m"
-#define FOSSIL_IO_ATTR_RESET_REVERSE     "\033[27m"
-#define FOSSIL_IO_ATTR_RESET_HIDDEN      "\033[28m"
-#define FOSSIL_IO_ATTR_RESET_STRIKE      "\033[29m"
+#define FOSSIL_IO_ATTR_RESET_BOLD "\033[22m"
+#define FOSSIL_IO_ATTR_RESET_DIM "\033[22m"
+#define FOSSIL_IO_ATTR_RESET_ITALIC "\033[23m"
+#define FOSSIL_IO_ATTR_RESET_UNDERLINE "\033[24m"
+#define FOSSIL_IO_ATTR_RESET_BLINK "\033[25m"
+#define FOSSIL_IO_ATTR_RESET_REVERSE "\033[27m"
+#define FOSSIL_IO_ATTR_RESET_HIDDEN "\033[28m"
+#define FOSSIL_IO_ATTR_RESET_STRIKE "\033[29m"
 
+/* Legacy APIs use a 1000-byte buffer and retain at most 999 output bytes.
+ * The snprintf-family APIs accept a caller-provided capacity and return the
+ * full required length (excluding NUL), so truncation is detectable when the
+ * return value is >= the supplied capacity. */
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
+static const char *fossil_io_get_color_code(const char *color)
+{
+    if (!color) return "";
+
+    // ============================================================
+    // STANDARD COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "black"))   return FOSSIL_IO_COLOR_BLACK;
+    if (fossil_io_cstring_iequals(color, "red"))     return FOSSIL_IO_COLOR_RED;
+    if (fossil_io_cstring_iequals(color, "green"))   return FOSSIL_IO_COLOR_GREEN;
+    if (fossil_io_cstring_iequals(color, "yellow"))  return FOSSIL_IO_COLOR_YELLOW;
+    if (fossil_io_cstring_iequals(color, "blue"))    return FOSSIL_IO_COLOR_BLUE;
+    if (fossil_io_cstring_iequals(color, "magenta")) return FOSSIL_IO_COLOR_MAGENTA;
+    if (fossil_io_cstring_iequals(color, "cyan"))    return FOSSIL_IO_COLOR_CYAN;
+    if (fossil_io_cstring_iequals(color, "white"))   return FOSSIL_IO_COLOR_WHITE;
+
+    // ============================================================
+    // EXTENDED COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "gray"))    return FOSSIL_IO_COLOR_GRAY;
+    if (fossil_io_cstring_iequals(color, "orange"))  return FOSSIL_IO_COLOR_ORANGE;
+    if (fossil_io_cstring_iequals(color, "pink"))    return FOSSIL_IO_COLOR_PINK;
+    if (fossil_io_cstring_iequals(color, "purple"))  return FOSSIL_IO_COLOR_PURPLE;
+    if (fossil_io_cstring_iequals(color, "brown"))   return FOSSIL_IO_COLOR_BROWN;
+    if (fossil_io_cstring_iequals(color, "teal"))    return FOSSIL_IO_COLOR_TEAL;
+    if (fossil_io_cstring_iequals(color, "silver"))  return FOSSIL_IO_COLOR_SILVER;
+
+    // ============================================================
+    // BRIGHT COLORS
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "bright_black"))   return FOSSIL_IO_COLOR_BRIGHT_BLACK;
+    if (fossil_io_cstring_iequals(color, "bright_red"))     return FOSSIL_IO_COLOR_BRIGHT_RED;
+    if (fossil_io_cstring_iequals(color, "bright_green"))   return FOSSIL_IO_COLOR_BRIGHT_GREEN;
+    if (fossil_io_cstring_iequals(color, "bright_yellow"))  return FOSSIL_IO_COLOR_BRIGHT_YELLOW;
+    if (fossil_io_cstring_iequals(color, "bright_blue"))    return FOSSIL_IO_COLOR_BRIGHT_BLUE;
+    if (fossil_io_cstring_iequals(color, "bright_magenta")) return FOSSIL_IO_COLOR_BRIGHT_MAGENTA;
+    if (fossil_io_cstring_iequals(color, "bright_cyan"))    return FOSSIL_IO_COLOR_BRIGHT_CYAN;
+    if (fossil_io_cstring_iequals(color, "bright_white"))   return FOSSIL_IO_COLOR_BRIGHT_WHITE;
+
+    // ============================================================
+    // RESET / SPECIAL
+    // ============================================================
+    if (fossil_io_cstring_iequals(color, "reset")) return FOSSIL_IO_COLOR_RESET;
+
+    return "";
+}
+
+static int fossil_io_is_valid_tag(const char *s, size_t len)
+{
+
+    if (!s || len == 0 || len > 64)
+        return 0;
+
+    // Only allow safe tag characters
+    for (size_t i = 0; i < len; i++)
+    {
+
+        if (!(isalnum((unsigned char)s[i]) || s[i] == ':' || s[i] == ',' || s[i] == '_' || s[i] == '-'))
+            return 0;
+    }
+
+    // Known valid patterns
+    if (strncmp(s, "bg:", 3) == 0) return 1;
+    if (strncmp(s, "pos:", 4) == 0) return 1;
+
+    // color / attribute must start with alpha
+    if (isalpha((unsigned char)s[0])) return 1;
+
+    return 0;
+}
+
 // Function to apply background color
-void fossil_io_apply_bg_color(ccstring bg_color) {
-    if (fossil_io_cstring_iequals(bg_color, "black")) {
+void fossil_io_apply_bg_color(ccstring bg_color)
+{
+    if (fossil_io_cstring_iequals(bg_color, "black"))
+    {
         printf(FOSSIL_IO_BG_BLACK);
-    } else if (fossil_io_cstring_iequals(bg_color, "red")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "red"))
+    {
         printf(FOSSIL_IO_BG_RED);
-    } else if (fossil_io_cstring_iequals(bg_color, "green")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "green"))
+    {
         printf(FOSSIL_IO_BG_GREEN);
-    } else if (fossil_io_cstring_iequals(bg_color, "yellow")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "yellow"))
+    {
         printf(FOSSIL_IO_BG_YELLOW);
-    } else if (fossil_io_cstring_iequals(bg_color, "blue")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "blue"))
+    {
         printf(FOSSIL_IO_BG_BLUE);
-    } else if (fossil_io_cstring_iequals(bg_color, "magenta")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "magenta"))
+    {
         printf(FOSSIL_IO_BG_MAGENTA);
-    } else if (fossil_io_cstring_iequals(bg_color, "cyan")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "cyan"))
+    {
         printf(FOSSIL_IO_BG_CYAN);
-    } else if (fossil_io_cstring_iequals(bg_color, "white")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "white"))
+    {
         printf(FOSSIL_IO_BG_WHITE);
-    } else if (fossil_io_cstring_iequals(bg_color, "gray")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "gray"))
+    {
         printf(FOSSIL_IO_BG_GRAY);
-    } else if (fossil_io_cstring_iequals(bg_color, "orange")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "orange"))
+    {
         printf(FOSSIL_IO_BG_ORANGE);
-    } else if (fossil_io_cstring_iequals(bg_color, "pink")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "pink"))
+    {
         printf(FOSSIL_IO_BG_PINK);
-    } else if (fossil_io_cstring_iequals(bg_color, "purple")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "purple"))
+    {
         printf(FOSSIL_IO_BG_PURPLE);
-    } else if (fossil_io_cstring_iequals(bg_color, "brown")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "brown"))
+    {
         printf(FOSSIL_IO_BG_BROWN);
-    } else if (fossil_io_cstring_iequals(bg_color, "teal")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "teal"))
+    {
         printf(FOSSIL_IO_BG_TEAL);
-    } else if (fossil_io_cstring_iequals(bg_color, "silver")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "silver"))
+    {
         printf(FOSSIL_IO_BG_SILVER);
     }
     // Bright background colors
-    else if (fossil_io_cstring_iequals(bg_color, "bright_black")) {
+    else if (fossil_io_cstring_iequals(bg_color, "bright_black"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_BLACK);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_red")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_red"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_RED);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_green")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_green"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_GREEN);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_yellow")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_yellow"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_YELLOW);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_blue")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_blue"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_BLUE);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_magenta")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_magenta"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_MAGENTA);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_cyan")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_cyan"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_CYAN);
-    } else if (fossil_io_cstring_iequals(bg_color, "bright_white")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "bright_white"))
+    {
         printf(FOSSIL_IO_BG_BRIGHT_WHITE);
-    } else if (fossil_io_cstring_iequals(bg_color, "reset")) {
+    }
+    else if (fossil_io_cstring_iequals(bg_color, "reset"))
+    {
         printf(FOSSIL_IO_COLOR_RESET);
     }
 }
 
 // Function to apply color
-void fossil_io_apply_color(ccstring color) {
-    if (fossil_io_cstring_iequals(color, "black")) {
+void fossil_io_apply_color(ccstring color)
+{
+    if (fossil_io_cstring_iequals(color, "black"))
+    {
         printf(FOSSIL_IO_COLOR_BLACK);
-    } else if (fossil_io_cstring_iequals(color, "red")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "red"))
+    {
         printf(FOSSIL_IO_COLOR_RED);
-    } else if (fossil_io_cstring_iequals(color, "green")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "green"))
+    {
         printf(FOSSIL_IO_COLOR_GREEN);
-    } else if (fossil_io_cstring_iequals(color, "yellow")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "yellow"))
+    {
         printf(FOSSIL_IO_COLOR_YELLOW);
-    } else if (fossil_io_cstring_iequals(color, "blue")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "blue"))
+    {
         printf(FOSSIL_IO_COLOR_BLUE);
-    } else if (fossil_io_cstring_iequals(color, "magenta")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "magenta"))
+    {
         printf(FOSSIL_IO_COLOR_MAGENTA);
-    } else if (fossil_io_cstring_iequals(color, "cyan")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "cyan"))
+    {
         printf(FOSSIL_IO_COLOR_CYAN);
-    } else if (fossil_io_cstring_iequals(color, "white")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "white"))
+    {
         printf(FOSSIL_IO_COLOR_WHITE);
-    } else if (fossil_io_cstring_iequals(color, "gray")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "gray"))
+    {
         printf(FOSSIL_IO_COLOR_GRAY);
-    } else if (fossil_io_cstring_iequals(color, "orange")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "orange"))
+    {
         printf(FOSSIL_IO_COLOR_ORANGE);
-    } else if (fossil_io_cstring_iequals(color, "pink")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "pink"))
+    {
         printf(FOSSIL_IO_COLOR_PINK);
-    } else if (fossil_io_cstring_iequals(color, "purple")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "purple"))
+    {
         printf(FOSSIL_IO_COLOR_PURPLE);
-    } else if (fossil_io_cstring_iequals(color, "brown")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "brown"))
+    {
         printf(FOSSIL_IO_COLOR_BROWN);
-    } else if (fossil_io_cstring_iequals(color, "teal")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "teal"))
+    {
         printf(FOSSIL_IO_COLOR_TEAL);
-    } else if (fossil_io_cstring_iequals(color, "silver")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "silver"))
+    {
         printf(FOSSIL_IO_COLOR_SILVER);
     }
     // Bright colors
-    else if (fossil_io_cstring_iequals(color, "bright_black")) {
+    else if (fossil_io_cstring_iequals(color, "bright_black"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_BLACK);
-    } else if (fossil_io_cstring_iequals(color, "bright_red")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_red"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_RED);
-    } else if (fossil_io_cstring_iequals(color, "bright_green")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_green"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_GREEN);
-    } else if (fossil_io_cstring_iequals(color, "bright_yellow")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_yellow"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_YELLOW);
-    } else if (fossil_io_cstring_iequals(color, "bright_blue")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_blue"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_BLUE);
-    } else if (fossil_io_cstring_iequals(color, "bright_magenta")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_magenta"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_MAGENTA);
-    } else if (fossil_io_cstring_iequals(color, "bright_cyan")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_cyan"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_CYAN);
-    } else if (fossil_io_cstring_iequals(color, "bright_white")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "bright_white"))
+    {
         printf(FOSSIL_IO_COLOR_BRIGHT_WHITE);
-    } else if (fossil_io_cstring_iequals(color, "reset")) {
+    }
+    else if (fossil_io_cstring_iequals(color, "reset"))
+    {
         printf(FOSSIL_IO_COLOR_RESET);
     }
 }
 
 // Function to apply text attributes (e.g., bold, underline, dim, etc.)
-void fossil_io_apply_attribute(ccstring attribute) {
-    if (fossil_io_cstring_iequals(attribute, "bold")) {
+void fossil_io_apply_attribute(ccstring attribute)
+{
+    if (fossil_io_cstring_iequals(attribute, "bold"))
+    {
         printf(FOSSIL_IO_ATTR_BOLD);
-    } else if (fossil_io_cstring_iequals(attribute, "dim")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "dim"))
+    {
         printf(FOSSIL_IO_ATTR_DIM);
-    } else if (fossil_io_cstring_iequals(attribute, "italic")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "italic"))
+    {
         printf(FOSSIL_IO_ATTR_ITALIC);
-    } else if (fossil_io_cstring_iequals(attribute, "underline")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "underline"))
+    {
         printf(FOSSIL_IO_ATTR_UNDERLINE);
-    } else if (fossil_io_cstring_iequals(attribute, "blink")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "blink"))
+    {
         printf(FOSSIL_IO_ATTR_BLINK);
-    } else if (fossil_io_cstring_iequals(attribute, "reverse")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reverse"))
+    {
         printf(FOSSIL_IO_ATTR_REVERSE);
-    } else if (fossil_io_cstring_iequals(attribute, "reversed")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reversed"))
+    {
         printf(FOSSIL_IO_ATTR_REVERSED);
-    } else if (fossil_io_cstring_iequals(attribute, "hidden")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "hidden"))
+    {
         printf(FOSSIL_IO_ATTR_HIDDEN);
-    } else if (fossil_io_cstring_iequals(attribute, "strikethrough")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "strikethrough"))
+    {
         printf(FOSSIL_IO_ATTR_STRIKETHROUGH);
-    } else if (fossil_io_cstring_iequals(attribute, "normal")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "normal"))
+    {
         printf(FOSSIL_IO_ATTR_NORMAL);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_bold")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_bold"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_BOLD);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_dim")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_dim"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_DIM);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_italic")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_italic"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_ITALIC);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_underline")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_underline"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_UNDERLINE);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_blink")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_blink"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_BLINK);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_reverse")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_reverse"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_REVERSE);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_hidden")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_hidden"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_HIDDEN);
-    } else if (fossil_io_cstring_iequals(attribute, "reset_strike")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset_strike"))
+    {
         printf(FOSSIL_IO_ATTR_RESET_STRIKE);
-    } else if (fossil_io_cstring_iequals(attribute, "reset")) {
+    }
+    else if (fossil_io_cstring_iequals(attribute, "reset"))
+    {
         printf(FOSSIL_IO_ATTR_NORMAL);
     }
 }
 
 // Function to handle named positions (like top, bottom, left, right)
-void fossil_io_apply_position(ccstring pos) {
-    if (fossil_io_cstring_iequals(pos, "top")) {
+void fossil_io_apply_position(ccstring pos)
+{
+    if (fossil_io_cstring_iequals(pos, "top"))
+    {
         printf("\033[1;1H");
-    } else if (fossil_io_cstring_iequals(pos, "bottom")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "bottom"))
+    {
         printf("\033[1000;1H");
-    } else if (fossil_io_cstring_iequals(pos, "left")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "left"))
+    {
         printf("\033[1;1H");
-    } else if (fossil_io_cstring_iequals(pos, "right")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "right"))
+    {
         printf("\033[1;1000H");
-    } else if (fossil_io_cstring_iequals(pos, "center")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "center"))
+    {
         printf("\033[25;40H");
-    } else if (fossil_io_cstring_iequals(pos, "top-left")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "top-left"))
+    {
         printf("\033[1;1H");
-    } else if (fossil_io_cstring_iequals(pos, "top-right")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "top-right"))
+    {
         printf("\033[1;1000H");
-    } else if (fossil_io_cstring_iequals(pos, "bottom-left")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "bottom-left"))
+    {
         printf("\033[1000;1H");
-    } else if (fossil_io_cstring_iequals(pos, "bottom-right")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "bottom-right"))
+    {
         printf("\033[1000;1000H");
-    } else if (fossil_io_cstring_iequals(pos, "middle-left")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "middle-left"))
+    {
         printf("\033[25;1H");
-    } else if (fossil_io_cstring_iequals(pos, "middle-right")) {
+    }
+    else if (fossil_io_cstring_iequals(pos, "middle-right"))
+    {
         printf("\033[25;1000H");
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Unknown position: %s\n", pos);
     }
 }
@@ -312,109 +543,298 @@ void fossil_io_apply_position(ccstring pos) {
  * Function to print text with attributes, colors, background colors, positions, and format specifiers.
  * Supports {color}, {color,attribute}, {bg:bg_color}, {bg:bg_color,attribute}, {pos:name}, and combinations.
  */
-void fossil_io_print_with_attributes(ccstring str) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_print_with_attributes(ccstring str)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
 
-    if (str == NULL) {
+    if (!str)
+    {
         fprintf(stderr, "cnullptr\n");
         return;
     }
 
     ccstring current_pos = str;
     ccstring start = NULL;
-    ccstring end = NULL;
 
-    while ((start = strchr(current_pos, '{')) != NULL) {
-        // Output text before '{'
+    while ((start = strchr(current_pos, '{')) != NULL)
+    {
+        // print text before '{'
         fwrite(current_pos, 1, start - current_pos, stdout);
 
-        // Find the matching '}'
-        end = strchr(start, '}');
-        if (end && end > start) {
-            // Extract attributes inside '{}'
-            size_t length = end - start - 1;
-            if (length == 0) {
-                // Empty braces, print as is
-                fossil_io_file_write(FOSSIL_STDOUT, "{", 1, 1);
-                fossil_io_file_write(FOSSIL_STDOUT, "}", 1, 1);
-                current_pos = end + 1;
-                continue;
-            }
-            char attributes[length + 1];
-            strncpy(attributes, start + 1, length);
-            attributes[length] = '\0';
-
-            // Check for bg: or pos: prefix
-            if (strncmp(attributes, "bg:", 3) == 0) {
-                char *bg_color = attributes + 3;
-                char *comma_pos = strchr(bg_color, ',');
-                if (comma_pos) {
-                    *comma_pos = '\0';
-                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
-                    if (comma_pos[1] != '\0') fossil_io_apply_attribute(comma_pos + 1);
-                } else {
-                    if (FOSSIL_IO_COLOR_ENABLE && bg_color[0] != '\0') fossil_io_apply_bg_color(bg_color);
-                }
-            } else if (strncmp(attributes, "pos:", 4) == 0) {
-                if (attributes[4] != '\0') fossil_io_apply_position(attributes + 4);
-            } else {
-                // Handle color and/or attribute
-                char *color = attributes;
-                char *attribute = NULL;
-                char *comma_pos = strchr(attributes, ',');
-                if (comma_pos) {
-                    *comma_pos = '\0';
-                    color = attributes;
-                    attribute = comma_pos + 1;
-                }
-                if (FOSSIL_IO_COLOR_ENABLE && color && color[0] != '\0') {
-                    fossil_io_apply_color(color);
-                }
-                if (attribute && attribute[0] != '\0') {
-                    fossil_io_apply_attribute(attribute);
-                }
-            }
-
-            // Move past '}' and continue processing
-            current_pos = end + 1;
-        } else {
-            // No matching '}', print the rest and break
-            fwrite(start, 1, strlen(start), stdout);
-            break;
+        // ESCAPE: "{{" -> "{"
+        if (start[1] == '{')
+        {
+            fputc('{', stdout);
+            current_pos = start + 2;
+            continue;
         }
+
+        ccstring end = strchr(start, '}');
+
+        if (!end)
+        {
+            // no closing brace → literal
+            fputc('{', stdout);
+            current_pos = start + 1;
+            continue;
+        }
+
+        size_t length = end - start - 1;
+
+        // VALIDATE TAG
+        if (!fossil_io_is_valid_tag(start + 1, length))
+        {
+            fwrite(start, 1, length + 2, stdout);
+            current_pos = end + 1;
+            continue;
+        }
+
+        char attributes[65];
+        if (length >= sizeof(attributes))
+            length = sizeof(attributes) - 1;
+
+        memcpy(attributes, start + 1, length);
+        attributes[length] = '\0';
+
+        // ---- APPLY TAG ----
+        if (strncmp(attributes, "bg:", 3) == 0)
+        {
+            char *bg = attributes + 3;
+            char *comma = strchr(bg, ',');
+
+            if (comma)
+            {
+                *comma = '\0';
+                if (FOSSIL_IO_COLOR_ENABLE && *bg)
+                    fossil_io_apply_bg_color(bg);
+                if (*(comma + 1))
+                    fossil_io_apply_attribute(comma + 1);
+            }
+            else if (FOSSIL_IO_COLOR_ENABLE && *bg)
+            {
+                fossil_io_apply_bg_color(bg);
+            }
+        }
+        else if (strncmp(attributes, "pos:", 4) == 0)
+        {
+            if (attributes[4])
+                fossil_io_apply_position(attributes + 4);
+        }
+        else
+        {
+            char *comma = strchr(attributes, ',');
+            if (comma)
+            {
+                *comma = '\0';
+                if (FOSSIL_IO_COLOR_ENABLE && *attributes)
+                    fossil_io_apply_color(attributes);
+                if (*(comma + 1))
+                    fossil_io_apply_attribute(comma + 1);
+            }
+            else
+            {
+                if (FOSSIL_IO_COLOR_ENABLE && *attributes)
+                    fossil_io_apply_color(attributes);
+            }
+        }
+
+        current_pos = end + 1;
     }
 
-    // Output remaining text after last '}'
     fwrite(current_pos, 1, strlen(current_pos), stdout);
     fflush(stdout);
 }
 
 // Function to print a sanitized formatted string to a specific file stream with attributes
-void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
-    if (str != NULL && stream != NULL) {
-        char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
-        strncpy(sanitized_str, str, sizeof(sanitized_str));
-        sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
+void fossil_io_fprint_with_attributes(fossil_io_filesys_file_t *stream, ccstring str)
+{
+    if (!str || !stream)
+        return;
 
-        ccstring current_pos = sanitized_str;
-        ccstring start = NULL;
-        ccstring end = NULL;
-        while ((start = strchr(current_pos, '{')) != NULL) {
-            // Write text before '{' to the file
-            fossil_io_file_write(stream, current_pos, 1, start - current_pos);
-            end = strchr(start, '}');
-            if (end && end > start) {
-                // Skip the attribute section
-                current_pos = end + 1;
-            } else {
-                // No matching '}', write '{' and continue searching
-                fossil_io_file_write(stream, start, 1, 1);
-                current_pos = start + 1;
-            }
+    ccstring cur = str;
+    ccstring start;
+
+    while ((start = strchr(cur, '{')) != NULL)
+    {
+        fossil_io_filesys_file_write(stream, cur, 1, start - cur);
+
+        // escape {{
+        if (start[1] == '{')
+        {
+            fossil_io_filesys_file_write(stream, "{", 1, 1);
+            cur = start + 2;
+            continue;
         }
-        // Write remaining text after last '}'
-        fossil_io_file_write(stream, current_pos, 1, strlen(current_pos));
+
+        ccstring end = strchr(start, '}');
+        if (!end)
+        {
+            fossil_io_filesys_file_write(stream, "{", 1, 1);
+            cur = start + 1;
+            continue;
+        }
+
+        size_t len = end - start - 1;
+
+        if (!fossil_io_is_valid_tag(start + 1, len))
+        {
+            fossil_io_filesys_file_write(stream, start, 1, len + 2);
+            cur = end + 1;
+            continue;
+        }
+
+        // valid tag → skip
+        cur = end + 1;
     }
+
+    fossil_io_filesys_file_write(stream, cur, 1, strlen(cur));
+}
+
+// ================================================================
+// INTERNAL: CORE FORMAT ENGINE (MARKUP-AWARE)
+// ================================================================
+
+static int fossil_io_format_append(
+    char *buffer,
+    size_t size,
+    size_t *written,
+    size_t *required,
+    const char *text,
+    size_t length)
+{
+    if (length > (size_t)-1 - *required)
+        return -1;
+
+    size_t available = size - 1 - *written;
+    size_t copy_length = length < available ? length : available;
+    if (copy_length > 0)
+        memcpy(buffer + *written, text, copy_length);
+    *written += copy_length;
+    *required += length;
+    return 0;
+}
+
+static int fossil_io_format_internal(
+    char *buffer,
+    size_t size,
+    ccstring format,
+    va_list args,
+    int apply_markup)
+{
+    if (!buffer || !format || size == 0)
+        return -1;
+
+    va_list sizing_args;
+    va_copy(sizing_args, args);
+    int formatted_length = vsnprintf(NULL, 0, format, sizing_args);
+    va_end(sizing_args);
+    if (formatted_length < 0)
+        return -1;
+
+    size_t temp_size = (size_t)formatted_length + 1;
+    char *temp = malloc(temp_size);
+    if (!temp)
+        return -1;
+
+    va_list format_args;
+    va_copy(format_args, args);
+    int result = vsnprintf(temp, temp_size, format, format_args);
+    va_end(format_args);
+    if (result < 0)
+    {
+        free(temp);
+        return -1;
+    }
+
+    size_t written = 0;
+    size_t required = 0;
+    int status = 0;
+
+    if (!apply_markup)
+    {
+        status = fossil_io_format_append(buffer, size, &written, &required, temp, (size_t)result);
+    }
+    else
+    {
+        const char *cur = temp;
+        const char *start;
+
+        while ((start = strchr(cur, '{')) != NULL)
+        {
+            if (fossil_io_format_append(buffer, size, &written, &required, cur, (size_t)(start - cur)) < 0)
+            {
+                status = -1;
+                break;
+            }
+
+            // escape {{
+            if (start[1] == '{')
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, "{", 1) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = start + 2;
+                continue;
+            }
+
+            const char *end = strchr(start, '}');
+            if (!end)
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, "{", 1) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = start + 1;
+                continue;
+            }
+
+            size_t len = (size_t)(end - start - 1);
+
+            if (!fossil_io_is_valid_tag(start + 1, len))
+            {
+                if (fossil_io_format_append(buffer, size, &written, &required, start, len + 2) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+                cur = end + 1;
+                continue;
+            }
+
+            char tag[65];
+            if (len >= sizeof(tag))
+                len = sizeof(tag) - 1;
+
+            memcpy(tag, start + 1, len);
+            tag[len] = '\0';
+
+            if (FOSSIL_IO_COLOR_ENABLE)
+            {
+                const char *code = fossil_io_get_color_code(tag);
+                size_t code_len = strlen(code);
+                if (code_len > 0 && fossil_io_format_append(buffer, size, &written, &required, code, code_len) < 0)
+                {
+                    status = -1;
+                    break;
+                }
+            }
+            cur = end + 1;
+        }
+
+        if (status == 0 && fossil_io_format_append(buffer, size, &written, &required, cur, strlen(cur)) < 0)
+            status = -1;
+    }
+
+    buffer[written] = '\0';
+    free(temp);
+
+    if (status < 0 || required > INT_MAX)
+        return -1;
+    return (int)required;
 }
 
 //
@@ -422,29 +842,38 @@ void fossil_io_fprint_with_attributes(fossil_io_file_t *stream, ccstring str) {
 //
 
 // Function to print a sanitized string with attributes inside {}
-void fossil_io_puts(ccstring str) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    if (str != NULL) {
+void fossil_io_puts(ccstring str)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    if (str != NULL)
+    {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
-        
+
         // Print the sanitized string with attributes
         fossil_io_print_with_attributes(sanitized_str);
-    } else {
-        fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+    }
+    else
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
 }
 
 // Function to print a single character
-void fossil_io_putchar(char c) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    fossil_io_file_write(FOSSIL_STDOUT, &c, 1, 1);
+void fossil_io_putchar(char c)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, &c, 1, 1);
 }
 
 // Function to print sanitized formatted output with attributes
-void fossil_io_printf(ccstring format, ...) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_printf(ccstring format, ...)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
     va_list args;
     va_start(args, format);
 
@@ -459,23 +888,35 @@ void fossil_io_printf(ccstring format, ...) {
 }
 
 // Function to print a sanitized string to a specific file stream
-void fossil_io_fputs(fossil_io_file_t *stream, ccstring str) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    if (str != NULL && stream != NULL) {
+void fossil_io_fputs(fossil_io_filesys_file_t *stream, ccstring str)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    if (str != NULL && stream != NULL)
+    {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
 
         // Apply color/attributes and sanitize the string before printing
         fossil_io_fprint_with_attributes(stream, sanitized_str);
-    } else {
-        fossil_io_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+    }
+    else
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
     }
 }
 
 // Function to print a sanitized formatted string to a specific file stream
-void fossil_io_fprintf(fossil_io_file_t *stream, ccstring format, ...) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_fprintf(fossil_io_filesys_file_t *stream, ccstring format, ...)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    if (format == NULL || stream == NULL)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDERR, "cnullptr\n", 1, strlen("cnullptr\n"));
+        return;
+    }
     va_list args;
     va_start(args, format);
 
@@ -489,63 +930,105 @@ void fossil_io_fprintf(fossil_io_file_t *stream, ccstring format, ...) {
     va_end(args);
 }
 
-// Function to format a string into a buffer
-int fossil_io_snprintf(char *buffer, size_t size, ccstring format, ...) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return -1;
+int fossil_io_sprintf(char *buffer, const char *format, ...)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
     va_list args;
     va_start(args, format);
-    int result = vsnprintf(buffer, size, format, args);
+    int result = fossil_io_format_internal(buffer, FOSSIL_IO_BUFFER_SIZE, format, args, 1);
     va_end(args);
     return result;
 }
 
+int fossil_io_snprintf(char *buffer, size_t size, const char *format, ...)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    va_list args;
+    va_start(args, format);
+    int result = fossil_io_format_internal(buffer, size, format, args, 1);
+    va_end(args);
+    return result;
+}
+
+int fossil_io_vsprintf(char *buffer, const char *format, va_list args)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    return fossil_io_format_internal(buffer, FOSSIL_IO_BUFFER_SIZE, format, args, 1);
+}
+
+int fossil_io_vsnprintf(char *buffer, size_t size, const char *format, va_list args)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+    return fossil_io_format_internal(buffer, size, format, args, 1);
+}
+
 // TUI PART
 
-void fossil_io_clear_screen(void) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_clear_screen(void)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
     cstring esc = fossil_io_cstring_create("\033[2J\033[H");
-    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
     fossil_io_cstring_free(esc);
 }
 
-void fossil_io_move_cursor(int row, int col) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_move_cursor(int row, int col)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
     cstring buf = fossil_io_cstring_format("\033[%d;%dH", row, col);
-    fossil_io_file_write(FOSSIL_STDOUT, buf, 1, fossil_io_cstring_length(buf));
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, buf, 1, fossil_io_cstring_length(buf));
     fossil_io_cstring_free(buf);
 }
 
-void fossil_io_hide_cursor(void) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_hide_cursor(void)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
     cstring esc = fossil_io_cstring_create("\033[?25l");
-    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
     fossil_io_cstring_free(esc);
 }
 
-void fossil_io_show_cursor(void) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
+void fossil_io_show_cursor(void)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
     cstring esc = fossil_io_cstring_create("\033[?25h");
-    fossil_io_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, esc, 1, fossil_io_cstring_length(esc));
     fossil_io_cstring_free(esc);
 }
 
-void fossil_io_draw_horizontal_line(int length, char ch) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    for (int i = 0; i < length; ++i) {
-        fossil_io_file_write(FOSSIL_STDOUT, &ch, 1, 1);
+void fossil_io_draw_horizontal_line(int length, char ch)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    for (int i = 0; i < length; ++i)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1);
     }
-    fossil_io_file_write(FOSSIL_STDOUT, "\n", 1, 1);
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, "\n", 1, 1);
 }
 
-void fossil_io_draw_vertical_line(int length, char ch) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    for (int i = 0; i < length; ++i) {
-        fossil_io_file_write(FOSSIL_STDOUT, &ch, 1, 1);
-        fossil_io_file_write(FOSSIL_STDOUT, "\n", 1, 1);
+void fossil_io_draw_vertical_line(int length, char ch)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    for (int i = 0; i < length; ++i)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1);
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, "\n", 1, 1);
     }
 }
 
-void fossil_io_flush(void) {
-    if (!FOSSIL_IO_OUTPUT_ENABLE) return;
-    fossil_io_file_flush(FOSSIL_STDOUT);
+void fossil_io_flush(void)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    fossil_io_filesys_file_flush(FOSSIL_STDOUT);
 }

@@ -1,0 +1,3103 @@
+/**
+ * -----------------------------------------------------------------------------
+ * Project: Fossil Logic
+ *
+ * This file is part of the Fossil Logic project, which aims to develop
+ * high-performance, cross-platform applications and libraries. The code
+ * contained herein is licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain
+ * a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * Author: Michael Gene Brockus (Dreamer)
+ * Date: 04/05/2013
+ *
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
+ * -----------------------------------------------------------------------------
+ */
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+#include "fossil/io/filesys.h"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h> // malloc, free, realpath
+#include <string.h>
+#include <time.h>
+#include <unistd.h>    // truncate, ftruncate, getcwd, chdir
+#include <limits.h>    // PATH_MAX
+#include <sys/stat.h>  // stat, mkdir
+#include <sys/types.h> // sometimes needed for mode_t
+#include <errno.h>     // optional, if checking errors
+#include <fcntl.h>     // open, O_* flags
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#include <fileapi.h>
+#include <sys/stat.h>
+#else
+#include <sys/stat.h>
+#include <libgen.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <utime.h>
+#include <pwd.h>
+#include <grp.h>
+#endif
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#include <dirent.h>
+#endif
+
+fossil_io_filesys_file_t *_FOSSIL_STDIN;
+fossil_io_filesys_file_t *_FOSSIL_STDOUT;
+fossil_io_filesys_file_t *_FOSSIL_STDERR;
+
+#if defined(_WIN32)
+#define PATH_SEP '\\'
+#else
+#define PATH_SEP '/'
+#endif
+
+#define FOSSIL_MERGE_CONCAT 1
+#define FOSSIL_MERGE_INTERLEAVE 2
+
+/* ------------------------------------------------------------
+ * Internal hash algorithms
+ * ------------------------------------------------------------ */
+
+static inline uint64_t rotl64(uint64_t x, unsigned int r)
+{
+    return (x << r) | (x >> (64 - r));
+}
+
+static uint64_t fossil_hash_file(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return 0;
+
+    uint64_t hash = 14695981039346656037ULL; // FNV offset basis
+    const uint64_t prime = 1099511628211ULL;
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+        for (size_t i = 0; i < n; ++i)
+        {
+            hash ^= buf[i];
+            hash *= prime;
+            hash ^= (hash >> 33);
+            hash = rotl64(hash, 27);
+        }
+    }
+
+    fclose(f);
+
+    // final avalanche
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+
+    return hash;
+}
+
+static uint64_t hash_fnv1a(FILE *f)
+{
+    if (!f)
+        return 0;
+
+    uint64_t hash = 14695981039346656037ULL; // FNV offset basis
+    const uint64_t prime = 1099511628211ULL;
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+        for (size_t i = 0; i < n; i++)
+        {
+            hash ^= buf[i];
+            hash *= prime;
+            hash ^= (hash >> 33);
+            hash = rotl64(hash, 27);
+        }
+    }
+
+    // final avalanche
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+
+    return hash;
+}
+
+/* ------------------------------------------------------------
+ * Internal utilites and platform abstractions
+ * ------------------------------------------------------------ */
+
+int32_t fossil_path_resolve(const char *path, char *out, size_t max_len)
+{
+    if (!path || !out || max_len == 0)
+        return -1;
+
+#ifdef _WIN32
+    if (!_fullpath(out, path, max_len))
+        return -1;
+    return 0;
+#else
+    // Make the path absolute before normalizing its components.
+    char cwd[PATH_MAX];
+    size_t path_len = strlen(path);
+    size_t cwd_len = 0;
+    if (path[0] != '/')
+    {
+        if (!getcwd(cwd, sizeof(cwd)))
+            return -1;
+        cwd_len = strlen(cwd);
+    }
+
+    if (path_len > SIZE_MAX - cwd_len - 2)
+        return -1;
+    size_t capacity = cwd_len + path_len + 2;
+    char *absolute = malloc(capacity);
+    if (!absolute)
+        return -1;
+    if (path[0] == '/')
+        memcpy(absolute, path, path_len + 1);
+    else
+        snprintf(absolute, capacity, "%s/%s", cwd, path);
+
+    // Collapse repeated separators and dot components, and clamp .. at root.
+    size_t read_pos = 0;
+    size_t write_pos = 1;
+    absolute[0] = '/';
+    while (absolute[read_pos] == '/')
+        read_pos++;
+    while (absolute[read_pos])
+    {
+        size_t start = read_pos;
+        while (absolute[read_pos] && absolute[read_pos] != '/')
+            read_pos++;
+        size_t component_len = read_pos - start;
+        while (absolute[read_pos] == '/')
+            read_pos++;
+
+        if (component_len == 1 && absolute[start] == '.')
+            continue;
+        if (component_len == 2 && absolute[start] == '.' && absolute[start + 1] == '.')
+        {
+            if (write_pos > 1)
+            {
+                while (write_pos > 1 && absolute[write_pos - 1] != '/')
+                    write_pos--;
+                if (write_pos > 1)
+                    write_pos--;
+            }
+            continue;
+        }
+        if (component_len)
+        {
+            if (write_pos > 1)
+                absolute[write_pos++] = '/';
+            memmove(absolute + write_pos, absolute + start, component_len);
+            write_pos += component_len;
+        }
+    }
+    absolute[write_pos] = '\0';
+
+    // Resolve symlinks in existing components. For a not-yet-created target,
+    // resolve its nearest existing ancestor and retain the normalized suffix.
+    size_t prefix_len = write_pos;
+    size_t suffix_start = write_pos;
+    char *resolved = NULL;
+    for (;;)
+    {
+        char saved = absolute[prefix_len];
+        absolute[prefix_len] = '\0';
+        resolved = realpath(absolute, NULL);
+        absolute[prefix_len] = saved;
+        if (resolved)
+            break;
+        if (prefix_len == 1)
+            break;
+
+        size_t slash = prefix_len - 1;
+        while (slash > 0 && absolute[slash] != '/')
+            slash--;
+        if (slash == 0)
+        {
+            prefix_len = 1;
+            suffix_start = 1;
+        }
+        else
+        {
+            prefix_len = slash;
+            suffix_start = slash;
+        }
+    }
+
+    int32_t result = -1;
+    if (resolved)
+    {
+        const char *suffix = absolute + suffix_start;
+        size_t resolved_len = strlen(resolved);
+        if (resolved_len == 1 && resolved[0] == '/' && suffix[0] == '/')
+            suffix++;
+        size_t suffix_len = strlen(suffix);
+        if (resolved_len <= SIZE_MAX - suffix_len - 1 && resolved_len + suffix_len + 1 <= max_len)
+        {
+            memcpy(out, resolved, resolved_len);
+            memcpy(out + resolved_len, suffix, suffix_len + 1);
+            result = 0;
+        }
+        free(resolved);
+    }
+    free(absolute);
+    return result;
+#endif
+}
+
+static int copy_file_stream(const char *src, const char *dest)
+{
+    FILE *in = fopen(src, "rb");
+    if (!in)
+        return -1;
+
+    FILE *out = fopen(dest, "wb");
+    if (!out)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    unsigned char buf[8192];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+    {
+        if (fwrite(buf, 1, n, out) != n)
+        {
+            fclose(in);
+            fclose(out);
+            return -1;
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+    return 0;
+}
+
+static int file_needs_update(const char *src, const char *dest)
+{
+#if defined(_WIN32)
+
+    WIN32_FILE_ATTRIBUTE_DATA s, d;
+
+    if (!GetFileAttributesExA(src, GetFileExInfoStandard, &s))
+        return 1;
+
+    if (!GetFileAttributesExA(dest, GetFileExInfoStandard, &d))
+        return 1;
+
+    uint64_t ssize = ((uint64_t)s.nFileSizeHigh << 32) | s.nFileSizeLow;
+    uint64_t dsize = ((uint64_t)d.nFileSizeHigh << 32) | d.nFileSizeLow;
+
+    if (ssize != dsize)
+        return 1;
+
+    return (CompareFileTime(&s.ftLastWriteTime, &d.ftLastWriteTime) != 0);
+
+#else
+
+    struct stat s, d;
+
+    if (stat(src, &s) != 0)
+        return 1;
+
+    if (stat(dest, &d) != 0)
+        return 1;
+
+    if (s.st_size != d.st_size)
+        return 1;
+
+    return (s.st_mtime != d.st_mtime);
+
+#endif
+}
+
+static int remove_path(const char *path)
+{
+#if defined(_WIN32)
+    WIN32_FILE_ATTRIBUTE_DATA attr;
+    if (!GetFileAttributesExA(path, GetFileExInfoStandard, &attr))
+        return -1;
+
+    if (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        char search[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(search, sizeof(search), "%s\\*", path);
+
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(search, &fd);
+
+        if (h != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+                    continue;
+
+                char full[FOSSIL_FILESYS_MAX_PATH];
+                snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+                remove_path(full);
+
+            } while (FindNextFileA(h, &fd));
+
+            FindClose(h);
+        }
+
+        return RemoveDirectoryA(path);
+    }
+    else
+    {
+        return DeleteFileA(path);
+    }
+
+#else
+
+    struct stat st;
+    if (lstat(path, &st) != 0)
+        return -1;
+
+    if (S_ISDIR(st.st_mode))
+    {
+        DIR *dir = opendir(path);
+        if (!dir)
+            return -1;
+
+        struct dirent *entry;
+        char full[512];
+
+        while ((entry = readdir(dir)))
+        {
+            if (!strcmp(entry->d_name, ".") ||
+                !strcmp(entry->d_name, ".."))
+                continue;
+
+            snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+            remove_path(full);
+        }
+
+        closedir(dir);
+        return rmdir(path);
+    }
+    else
+    {
+        return unlink(path);
+    }
+
+#endif
+}
+
+static int mirror_recursive(
+    const char *src,
+    const char *dest,
+    bool delete_extras)
+{
+    /* ensure destination exists */
+    fossil_io_filesys_dir_create(dest, true);
+
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", src);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char sfull[FOSSIL_FILESYS_MAX_PATH], dfull[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
+        snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            mirror_recursive(sfull, dfull, delete_extras);
+        }
+        else
+        {
+            if (file_needs_update(sfull, dfull))
+                copy_file_stream(sfull, dfull);
+        }
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    DIR *dir = opendir(src);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+    char sfull[512], dfull[512];
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(sfull, sizeof(sfull), "%s/%s", src, entry->d_name);
+        snprintf(dfull, sizeof(dfull), "%s/%s", dest, entry->d_name);
+
+        struct stat st;
+        if (lstat(sfull, &st) != 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode))
+        {
+            mirror_recursive(sfull, dfull, delete_extras);
+        }
+        else if (S_ISREG(st.st_mode))
+        {
+            if (file_needs_update(sfull, dfull))
+                copy_file_stream(sfull, dfull);
+        }
+    }
+
+    closedir(dir);
+
+#endif
+
+    /* delete extras */
+    if (delete_extras)
+    {
+#if defined(_WIN32)
+
+        char search[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(search, sizeof(search), "%s\\*", dest);
+
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(search, &fd);
+
+        if (h != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+                    continue;
+
+                char dfull[FOSSIL_FILESYS_MAX_PATH], sfull[FOSSIL_FILESYS_MAX_PATH];
+                snprintf(dfull, sizeof(dfull), "%s\\%s", dest, fd.cFileName);
+                snprintf(sfull, sizeof(sfull), "%s\\%s", src, fd.cFileName);
+
+                if (GetFileAttributesA(sfull) == INVALID_FILE_ATTRIBUTES)
+                    remove_path(dfull);
+
+            } while (FindNextFileA(h, &fd));
+
+            FindClose(h);
+        }
+
+#else
+
+        DIR *dir2 = opendir(dest);
+        if (dir2)
+        {
+            struct dirent *entry;
+            char dfull[512], sfull[512];
+
+            while ((entry = readdir(dir2)))
+            {
+                if (!strcmp(entry->d_name, ".") ||
+                    !strcmp(entry->d_name, ".."))
+                    continue;
+
+                snprintf(dfull, sizeof(dfull), "%s/%s", dest, entry->d_name);
+                snprintf(sfull, sizeof(sfull), "%s/%s", src, entry->d_name);
+
+                if (access(sfull, F_OK) != 0)
+                    remove_path(dfull);
+            }
+
+            closedir(dir2);
+        }
+
+#endif
+    }
+
+    return 0;
+}
+
+typedef struct dedup_entry
+{
+    uint64_t hash;
+    size_t size;
+    char path[FOSSIL_FILESYS_MAX_PATH];
+} dedup_entry_t;
+
+#define DEDUP_MAX 8192
+
+static int dedup_walk(
+    const char *path,
+    bool recursive,
+    dedup_entry_t *table,
+    size_t *count)
+{
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char full[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            if (recursive)
+                dedup_walk(full, true, table, count);
+            continue;
+        }
+
+        size_t size =
+            ((size_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+
+#else
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+    char full[512];
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (lstat(full, &st) != 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode))
+        {
+            if (recursive)
+                dedup_walk(full, true, table, count);
+            continue;
+        }
+
+        if (!S_ISREG(st.st_mode))
+            continue;
+
+        size_t size = st.st_size;
+
+#endif
+
+        /* compute hash */
+        uint64_t hash = fossil_hash_file(full);
+
+        /* check duplicates */
+        for (size_t i = 0; i < *count; ++i)
+        {
+            if (table[i].hash == hash && table[i].size == size)
+            {
+                /* duplicate → remove */
+#if defined(_WIN32)
+                DeleteFileA(full);
+#else
+                unlink(full);
+#endif
+                return 1; /* one removed */
+            }
+        }
+
+        /* insert */
+        if (*count < DEDUP_MAX)
+        {
+            table[*count].hash = hash;
+            table[*count].size = size;
+            snprintf(table[*count].path, sizeof(table[*count].path), "%s", full);
+            (*count)++;
+        }
+
+#if defined(_WIN32)
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+    }
+
+    closedir(dir);
+
+#endif
+
+    return 0;
+}
+
+static int remove_recursive(const char *path)
+{
+#if defined(_WIN32)
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char full[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            remove_recursive(full);
+            RemoveDirectoryA(full);
+        }
+        else
+        {
+            DeleteFileA(full);
+        }
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+    return RemoveDirectoryA(path) ? 0 : -1;
+
+#else
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+    char full[512];
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (lstat(full, &st) != 0)
+            continue;
+
+        if (S_ISDIR(st.st_mode))
+        {
+            remove_recursive(full);
+            rmdir(full);
+        }
+        else
+        {
+            unlink(full);
+        }
+    }
+
+    closedir(dir);
+    return rmdir(path);
+
+#endif
+}
+
+/* ------------------------------------------------------------
+ * Thread / Mutex Abstraction
+ * ------------------------------------------------------------ */
+
+#if defined(_WIN32)
+#include <windows.h>
+typedef HANDLE fossil_mutex_native_t;
+#else
+#include <pthread.h>
+typedef pthread_mutex_t fossil_mutex_native_t;
+#endif
+
+static int fossil_mutex_init(fossil_io_filesys_lock_t *lock)
+{
+    if (!lock)
+        return -1;
+
+#if defined(_WIN32)
+    lock->handle = CreateMutex(NULL, FALSE, NULL);
+    if (!lock->handle)
+        return -1;
+#else
+    lock->handle = malloc(sizeof(pthread_mutex_t));
+    if (!lock->handle)
+        return -1;
+    if (pthread_mutex_init((pthread_mutex_t *)lock->handle, NULL) != 0)
+        return -1;
+#endif
+
+    lock->locked = false;
+    return 0;
+}
+
+static int fossil_mutex_lock(fossil_io_filesys_lock_t *lock)
+{
+#if defined(_WIN32)
+    WaitForSingleObject(lock->handle, INFINITE);
+#else
+    pthread_mutex_lock((pthread_mutex_t *)lock->handle);
+#endif
+    lock->locked = true;
+    return 0;
+}
+
+static int fossil_mutex_unlock(fossil_io_filesys_lock_t *lock)
+{
+#if defined(_WIN32)
+    ReleaseMutex(lock->handle);
+#else
+    pthread_mutex_unlock((pthread_mutex_t *)lock->handle);
+#endif
+    lock->locked = false;
+    return 0;
+}
+
+/* ------------------------------------------------------------
+ * General Filesystem Operations
+ * ------------------------------------------------------------ */
+
+static void fossil_generate_id(const char *path, char *out, size_t len)
+{
+    /* simple stable hash (FNV-1a) */
+    uint32_t hash = 2166136261u;
+
+    for (const char *p = path; *p; ++p)
+    {
+        hash ^= (unsigned char)(*p);
+        hash *= 16777619;
+    }
+
+    snprintf(out, len, "%08x", hash);
+}
+
+int32_t fossil_io_filesys_init(fossil_io_filesys_obj_t *obj, const char *path)
+{
+    if (!obj || !path)
+        return -1;
+
+    memset(obj, 0, sizeof(*obj));
+
+    /* copy path safely */
+    strncpy(obj->path, path, FOSSIL_FILESYS_MAX_PATH - 1);
+    obj->path[FOSSIL_FILESYS_MAX_PATH - 1] = '\0';
+
+    /* init lock */
+    if (fossil_mutex_init(&obj->lock) != 0)
+        return -1;
+
+    /* generate stable ID */
+    fossil_generate_id(path, obj->id, sizeof(obj->id));
+
+    /* initialize default values */
+    obj->type = FOSSIL_FILESYS_TYPE_UNKNOWN;
+    obj->size = 0;
+    obj->mode = 0;
+    obj->flags = 0;
+    obj->created_at = 0;
+    obj->modified_at = 0;
+    obj->accessed_at = 0;
+
+    /* infer type from path hints */
+    size_t len = strlen(path);
+    if (len > 0 && (path[len - 1] == '/' || path[len - 1] == '\\'))
+    {
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+    }
+    else if (len > 0)
+    {
+        const char *dot = strrchr(path, '.');
+        if (dot)
+        {
+            /* Enhanced link detection */
+            if (strcmp(dot, ".lnk") == 0 || strcmp(dot, ".link") == 0 ||
+                strcmp(dot, ".symlink") == 0)
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_LINK;
+            }
+            /* Detect common archive types */
+            else if (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                     strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                     strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0)
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+            }
+            else
+            {
+                obj->type = FOSSIL_FILESYS_TYPE_FILE;
+            }
+        }
+        else
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
+    }
+
+    /* initial metadata load (don't fail if path doesn't exist) */
+    fossil_io_filesys_refresh(obj);
+
+    /* If the path exists and is a directory, force type to DIR */
+    int32_t exists = fossil_io_filesys_dir_exists(obj->path);
+    if (exists == 1)
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_refresh(fossil_io_filesys_obj_t *obj)
+{
+    if (!obj || !obj->path[0])
+        return -1;
+
+    fossil_mutex_lock(&obj->lock);
+
+#if defined(_WIN32)
+
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (!GetFileAttributesExA(obj->path, GetFileExInfoStandard, &data))
+    {
+        fossil_mutex_unlock(&obj->lock);
+        return -1;
+    }
+
+    obj->size =
+        ((size_t)data.nFileSizeHigh << 32) | data.nFileSizeLow;
+
+    obj->created_at = data.ftCreationTime.dwLowDateTime;
+    obj->modified_at = data.ftLastWriteTime.dwLowDateTime;
+    obj->accessed_at = data.ftLastAccessTime.dwLowDateTime;
+
+    if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+    else
+    {
+        /* Check if file is an archive based on extension */
+        const char *dot = strrchr(obj->path, '.');
+        if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                    strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                    strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+        }
+        else
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
+    }
+
+#else
+
+    struct stat st;
+    if (lstat(obj->path, &st) != 0)
+    {
+        fossil_mutex_unlock(&obj->lock);
+        return -1;
+    }
+
+    obj->size = st.st_size;
+    obj->mode = st.st_mode;
+
+    obj->created_at = st.st_ctime;
+    obj->modified_at = st.st_mtime;
+    obj->accessed_at = st.st_atime;
+
+    if (S_ISREG(st.st_mode))
+    {
+        /* Check if file is an archive based on extension */
+        const char *dot = strrchr(obj->path, '.');
+        if (dot && (strcmp(dot, ".zip") == 0 || strcmp(dot, ".tar") == 0 ||
+                    strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 ||
+                    strcmp(dot, ".7z") == 0 || strcmp(dot, ".rar") == 0))
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_ARCHIVE;
+        }
+        else
+        {
+            obj->type = FOSSIL_FILESYS_TYPE_FILE;
+        }
+    }
+    else if (S_ISDIR(st.st_mode))
+        obj->type = FOSSIL_FILESYS_TYPE_DIR;
+    else if (S_ISLNK(st.st_mode))
+        obj->type = FOSSIL_FILESYS_TYPE_LINK;
+    else
+        obj->type = FOSSIL_FILESYS_TYPE_UNKNOWN;
+
+    obj->perms.read = (st.st_mode & S_IRUSR) != 0;
+    obj->perms.write = (st.st_mode & S_IWUSR) != 0;
+    obj->perms.execute = (st.st_mode & S_IXUSR) != 0;
+
+#endif
+
+    fossil_mutex_unlock(&obj->lock);
+    return 0;
+}
+
+int32_t fossil_io_filesys_exists(const char *path)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND ||
+            GetLastError() == ERROR_PATH_NOT_FOUND)
+            return 0;
+        return -1;
+    }
+    return 1;
+#else
+    struct stat st;
+    if (lstat(path, &st) == 0)
+        return 1;
+
+    if (errno == ENOENT)
+        return 0;
+
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_remove(const char *path, bool recursive)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return -1;
+
+    if (attr & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        if (!recursive)
+            return RemoveDirectoryA(path) ? 0 : -1;
+
+        return remove_recursive(path);
+    }
+    else
+    {
+        return DeleteFileA(path) ? 0 : -1;
+    }
+
+#else
+
+    struct stat st;
+    if (lstat(path, &st) != 0)
+        return -1;
+
+    if (S_ISDIR(st.st_mode))
+    {
+        if (!recursive)
+            return rmdir(path);
+
+        return remove_recursive(path);
+    }
+    else
+    {
+        return unlink(path);
+    }
+
+#endif
+}
+
+int32_t fossil_io_filesys_move(const char *src, const char *dest)
+{
+    if (!src || !dest)
+        return -1;
+
+#if defined(_WIN32)
+    if (MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        return 0;
+    return -1;
+#else
+    if (rename(src, dest) == 0)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_copy(const char *src, const char *dest, bool preserve_meta)
+{
+    FILE *in = fopen(src, "rb");
+    if (!in)
+        return -1;
+
+    FILE *out = fopen(dest, "wb");
+    if (!out)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    char buffer[8192];
+    size_t n;
+
+    while ((n = fread(buffer, 1, sizeof(buffer), in)) > 0)
+    {
+        if (fwrite(buffer, 1, n, out) != n)
+        {
+            fclose(in);
+            fclose(out);
+            return -1;
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+
+    /* Optional metadata copy */
+    if (preserve_meta)
+    {
+        struct stat st;
+        if (stat(src, &st) == 0)
+        {
+            chmod(dest, st.st_mode);
+        }
+    }
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_swap(const char *path1, const char *path2)
+{
+    if (!path1 || !path2)
+        return -1;
+
+    char tmp[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(tmp, sizeof(tmp), "%s.swap.tmp", path1);
+
+    /* Step 1: path1 -> tmp */
+    if (rename(path1, tmp) != 0)
+        return -1;
+
+    /* Step 2: path2 -> path1 */
+    if (rename(path2, path1) != 0)
+    {
+        rename(tmp, path1); /* rollback */
+        return -1;
+    }
+
+    /* Step 3: tmp -> path2 */
+    if (rename(tmp, path2) != 0)
+    {
+        /* catastrophic but recoverable */
+        rename(path1, path2);
+        rename(tmp, path1);
+        return -1;
+    }
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_deduplicate(const char *path, bool recursive)
+{
+    if (!path)
+        return -1;
+
+    dedup_entry_t table[DEDUP_MAX];
+    size_t count = 0;
+    int removed = 0;
+
+#if defined(_WIN32)
+    removed += dedup_walk(path, recursive, table, &count);
+#else
+    removed += dedup_walk(path, recursive, table, &count);
+#endif
+
+    return removed;
+}
+
+int32_t fossil_io_filesys_stat(const char *path, fossil_io_filesys_obj_t *obj)
+{
+    if (!path || !obj)
+        return -1;
+
+    // Always initialize with the given path, then refresh metadata.
+    if (fossil_io_filesys_init(obj, path) != 0)
+        return -1;
+
+    // Refresh to get up-to-date type and metadata.
+    if (fossil_io_filesys_refresh(obj) != 0)
+        return -1;
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_format(const char *path, char *format_out, size_t max_len)
+{
+    if (!path || !format_out || max_len == 0)
+        return -1;
+
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return -1;
+
+    unsigned char magic[16];
+    size_t n = fread(magic, 1, sizeof(magic), f);
+    fclose(f);
+
+    if (n == 0)
+    {
+        strncpy(format_out, "empty", max_len - 1);
+        format_out[max_len - 1] = '\0';
+        return 0;
+    }
+
+    /* Check magic bytes */
+    if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x03 && magic[3] == 0x04)
+    {
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x05 && magic[3] == 0x06)
+    {
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B && magic[2] == 0x07 && magic[3] == 0x08)
+    {
+        strncpy(format_out, "zip", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0x1F && magic[1] == 0x8B && magic[2] == 0x08)
+    {
+        strncpy(format_out, "gzip", max_len - 1);
+    }
+    else if (n >= 6 && magic[0] == 0x37 && magic[1] == 0x7A && magic[2] == 0x58 && magic[3] == 0x5A && magic[4] == 0x00)
+    {
+        strncpy(format_out, "xz", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0x42 && magic[1] == 0x5A)
+    {
+        strncpy(format_out, "bzip2", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x89 && magic[1] == 0x50 && magic[2] == 0x4E && magic[3] == 0x47)
+    {
+        strncpy(format_out, "png", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0xFF && magic[1] == 0xD8 && magic[2] == 0xFF)
+    {
+        strncpy(format_out, "jpeg", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x47 && magic[1] == 0x49 && magic[2] == 0x46)
+    {
+        strncpy(format_out, "gif", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x25 && magic[1] == 0x50 && magic[2] == 0x44 && magic[3] == 0x46)
+    {
+        strncpy(format_out, "pdf", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0x7F && magic[1] == 0x45 && magic[2] == 0x4C && magic[3] == 0x46)
+    {
+        strncpy(format_out, "elf", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0x4D && magic[1] == 0x5A)
+    {
+        strncpy(format_out, "pe", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0xFF && magic[1] == 0xFE)
+    {
+        strncpy(format_out, "utf16le", max_len - 1);
+    }
+    else if (n >= 2 && magic[0] == 0xFE && magic[1] == 0xFF)
+    {
+        strncpy(format_out, "utf16be", max_len - 1);
+    }
+    else if (n >= 3 && magic[0] == 0xEF && magic[1] == 0xBB && magic[2] == 0xBF)
+    {
+        strncpy(format_out, "utf8", max_len - 1);
+    }
+    else if (n >= 4 && magic[0] == 0xCA && magic[1] == 0xFE && magic[2] == 0xBA && magic[3] == 0xBE)
+    {
+        strncpy(format_out, "class", max_len - 1);
+    }
+    else
+    {
+        /* Fallback to extension */
+        const char *dot = strrchr(path, '.');
+        if (dot && *(dot + 1) != '\0')
+        {
+            strncpy(format_out, dot + 1, max_len - 1);
+        }
+        else
+        {
+            strncpy(format_out, "unknown", max_len - 1);
+        }
+    }
+
+    format_out[max_len - 1] = '\0';
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_rewrite(const char *path, int (*transform)(void *buf, size_t *size, void *user_data), void *user_data)
+{
+    if (!path || !transform)
+        return -1;
+
+    char tmp_path[PATH_MAX];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.rewrite", path);
+
+    /* Read original file */
+    FILE *in = fopen(path, "rb");
+    if (!in)
+        return -1;
+
+    fseek(in, 0, SEEK_END);
+    size_t file_size = ftell(in);
+    fseek(in, 0, SEEK_SET);
+
+    unsigned char *buffer = malloc(file_size);
+    if (!buffer)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    if (fread(buffer, 1, file_size, in) != file_size)
+    {
+        free(buffer);
+        fclose(in);
+        return -1;
+    }
+
+    fclose(in);
+
+    /* Apply transformation */
+    size_t new_size = file_size;
+    int rc = transform(buffer, &new_size, user_data);
+    if (rc != 0)
+    {
+        free(buffer);
+        return -1;
+    }
+
+    /* Write to temporary file */
+    FILE *out = fopen(tmp_path, "wb");
+    if (!out)
+    {
+        free(buffer);
+        return -1;
+    }
+
+    if (fwrite(buffer, 1, new_size, out) != new_size)
+    {
+        fclose(out);
+        free(buffer);
+        remove(tmp_path);
+        return -1;
+    }
+
+    fclose(out);
+    free(buffer);
+
+    /* Atomic swap */
+    if (fossil_io_filesys_move(tmp_path, path) != 0)
+    {
+        remove(tmp_path);
+        return -1;
+    }
+
+    return 0;
+}
+
+/* File Operations */
+
+// feature from file stream preservide for filesys
+typedef struct
+{
+    const char *keyword;
+    const char *mode;
+} fossil_io_file_mode_entry_t;
+
+static const fossil_io_file_mode_entry_t fossil_io_file_mode_table[] = {
+    // Classic C modes (standard fopen strings)
+    {"r", "r"},
+    {"rb", "rb"},
+    {"w", "w"},
+    {"wb", "wb"},
+    {"a", "a"},
+    {"ab", "ab"},
+    {"r+", "r+"},
+    {"rb+", "r+b"},
+    {"r+b", "r+b"},
+    {"w+", "w+"},
+    {"wb+", "w+b"},
+    {"w+b", "w+b"},
+    {"a+", "a+"},
+    {"ab+", "a+b"},
+    {"a+b", "a+b"},
+
+    // Extended readable modes
+    {"read", "r"},
+    {"readb", "rb"},
+    {"write", "w"},
+    {"writeb", "wb"},
+    {"append", "a"},
+    {"appendb", "ab"},
+    {"read+write", "r+"},
+    {"read+writeb", "r+b"},
+    {"write+read", "w+"},
+    {"write+readb", "w+b"},
+    {"append+read", "a+"},
+    {"append+readb", "a+b"},
+    {"read+t", "rt"},
+    {"write+t", "wt"},
+    {"read+write+t", "r+t"},
+
+    {NULL, NULL}};
+
+int32_t fossil_io_filesys_file_open(
+    fossil_io_filesys_file_t *f,
+    const char *path,
+    const char *mode)
+{
+    if (!f || !path || !mode)
+        return -1;
+
+    memset(f, 0, sizeof(*f));
+
+    /* Translate mode keyword to standard fopen mode */
+    const char *actual_mode = mode;
+    for (size_t i = 0; fossil_io_file_mode_table[i].keyword != NULL; ++i)
+    {
+        if (strcmp(fossil_io_file_mode_table[i].keyword, mode) == 0)
+        {
+            actual_mode = fossil_io_file_mode_table[i].mode;
+            break;
+        }
+    }
+
+    /* Resolve once so metadata and the opened stream refer to the same path. */
+    char resolved_path[FOSSIL_FILESYS_MAX_PATH];
+    if (fossil_path_resolve(path, resolved_path, sizeof(resolved_path)) != 0)
+        return -1;
+
+    /* init base object */
+    if (fossil_io_filesys_init(&f->base, resolved_path) != 0)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = fopen(resolved_path, actual_mode);
+    if (!fp)
+    {
+        fossil_mutex_unlock(&f->base.lock);
+        return -1;
+    }
+
+    f->handle = fp;
+    f->fd = fileno(fp);
+    f->is_open = true;
+    f->append_mode = (strchr(actual_mode, 'a') != NULL);
+    f->position = 0;
+
+    fossil_mutex_unlock(&f->base.lock);
+    return 0;
+}
+
+/* Open a file only when its canonical path is contained by base_dir.
+ * Relative paths are interpreted relative to base_dir. */
+int32_t fossil_io_filesys_file_open_under(
+    fossil_io_filesys_file_t *f,
+    const char *base_dir,
+    const char *path,
+    const char *mode)
+{
+    if (!f || !base_dir || !*base_dir || !path || !*path || !mode)
+        return -1;
+
+    char resolved_base[FOSSIL_FILESYS_MAX_PATH];
+    if (fossil_path_resolve(base_dir, resolved_base, sizeof(resolved_base)) != 0 ||
+        fossil_io_filesys_dir_exists(resolved_base) != 1)
+        return -1;
+
+    char candidate[FOSSIL_FILESYS_MAX_PATH];
+    bool path_is_absolute = path[0] == '/' || path[0] == '\\';
+#ifdef _WIN32
+    path_is_absolute = path_is_absolute ||
+                       (path[0] != '\0' && path[1] == ':');
+#endif
+
+    if (path_is_absolute)
+    {
+        if (fossil_path_resolve(path, candidate, sizeof(candidate)) != 0)
+            return -1;
+    }
+    else
+    {
+        int written = snprintf(candidate, sizeof(candidate), "%s%c%s",
+                               resolved_base, PATH_SEP, path);
+        if (written < 0 || (size_t)written >= sizeof(candidate) ||
+            fossil_path_resolve(candidate, candidate, sizeof(candidate)) != 0)
+            return -1;
+    }
+
+    size_t base_len = strlen(resolved_base);
+#ifdef _WIN32
+    int prefix_matches = _strnicmp(candidate, resolved_base, base_len) == 0;
+#else
+    int prefix_matches = strncmp(candidate, resolved_base, base_len) == 0;
+#endif
+    /* A path resolving to the base directory is not a file beneath it. */
+    if (!prefix_matches || candidate[base_len] == '\0' ||
+        (candidate[base_len] != '\0' &&
+         candidate[base_len] != '/' && candidate[base_len] != '\\' &&
+         (base_len == 0 ||
+          (resolved_base[base_len - 1] != '/' &&
+           resolved_base[base_len - 1] != '\\'))))
+        return -1;
+
+    memset(f, 0, sizeof(*f));
+    if (fossil_io_filesys_init(&f->base, candidate) != 0)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+    FILE *fp = fopen(candidate, mode);
+    if (!fp)
+    {
+        fossil_mutex_unlock(&f->base.lock);
+        return -1;
+    }
+
+    f->handle = fp;
+    f->fd = fileno(fp);
+    f->is_open = true;
+    f->append_mode = (strchr(mode, 'a') != NULL);
+    f->position = 0;
+    fossil_mutex_unlock(&f->base.lock);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_close(fossil_io_filesys_file_t *f)
+{
+    if (!f || !f->is_open)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+    int rc = fclose(fp);
+
+    f->handle = NULL;
+    f->is_open = false;
+
+    fossil_mutex_unlock(&f->base.lock);
+    return (rc == 0) ? 0 : -1;
+}
+
+size_t fossil_io_filesys_file_read(
+    fossil_io_filesys_file_t *f,
+    void *buf,
+    size_t size,
+    size_t count)
+{
+    if (!f || !f->is_open || !buf)
+        return 0;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+    size_t n = fread(buf, size, count, fp);
+
+    f->position = ftell(fp);
+
+    fossil_mutex_unlock(&f->base.lock);
+    return n;
+}
+
+size_t fossil_io_filesys_file_write(
+    fossil_io_filesys_file_t *f,
+    const void *buf,
+    size_t size,
+    size_t count)
+{
+    if (!f || !f->is_open || !buf)
+        return 0;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+
+    if (f->append_mode)
+        fseek(fp, 0, SEEK_END);
+
+    size_t n = fwrite(buf, size, count, fp);
+
+    f->position = ftell(fp);
+
+    fossil_mutex_unlock(&f->base.lock);
+    return n;
+}
+
+int32_t fossil_io_filesys_file_seek(
+    fossil_io_filesys_file_t *f,
+    int64_t offset,
+    int32_t origin)
+{
+    if (!f || !f->is_open)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+
+#if defined(_WIN32)
+    int rc = _fseeki64(fp, offset, origin);
+#else
+    int rc = fseeko(fp, offset, origin);
+#endif
+
+    if (rc == 0)
+        f->position = ftell(fp);
+
+    fossil_mutex_unlock(&f->base.lock);
+    return (rc == 0) ? 0 : -1;
+}
+
+int64_t fossil_io_filesys_file_tell(fossil_io_filesys_file_t *f)
+{
+    if (!f || !f->is_open)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+
+#if defined(_WIN32)
+    int64_t pos = _ftelli64(fp);
+#else
+    int64_t pos = ftello(fp);
+#endif
+
+    f->position = pos;
+
+    fossil_mutex_unlock(&f->base.lock);
+    return pos;
+}
+
+int32_t fossil_io_filesys_file_flush(fossil_io_filesys_file_t *f)
+{
+    if (!f || !f->is_open)
+        return -1;
+
+    fossil_mutex_lock(&f->base.lock);
+
+    FILE *fp = (FILE *)f->handle;
+    int rc = fflush(fp);
+
+#if defined(_WIN32)
+    _commit(_fileno(fp));
+#else
+    fsync(fileno(fp));
+#endif
+
+    fossil_mutex_unlock(&f->base.lock);
+    return (rc == 0) ? 0 : -1;
+}
+
+int32_t fossil_io_filesys_file_size(const char *path)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data))
+        return -1;
+
+    return (int32_t)(((uint64_t)data.nFileSizeHigh << 32) | data.nFileSizeLow);
+#else
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return -1;
+
+    return (int32_t)st.st_size;
+#endif
+}
+
+int32_t fossil_io_filesys_file_truncate(const char *path, size_t size)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    LARGE_INTEGER li;
+    li.QuadPart = size;
+
+    if (!SetFilePointerEx(h, li, NULL, FILE_BEGIN) ||
+        !SetEndOfFile(h))
+    {
+        CloseHandle(h);
+        return -1;
+    }
+
+    CloseHandle(h);
+    return 0;
+#else
+    return truncate(path, size);
+#endif
+}
+
+int32_t fossil_io_filesys_file_hash(
+    const char *path,
+    unsigned char *hash_out,
+    size_t hash_size,
+    const char *algorithm)
+{
+    if (!path || !hash_out || !algorithm)
+        return -1;
+
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return -1;
+
+    if (strcmp(algorithm, "fnv1a") == 0)
+    {
+        uint64_t h = hash_fnv1a(f);
+
+        if (hash_size < sizeof(uint64_t))
+        {
+            fclose(f);
+            return -1;
+        }
+
+        memcpy(hash_out, &h, sizeof(uint64_t));
+    }
+    else
+    {
+        fclose(f);
+        return -1; /* unsupported */
+    }
+
+    fclose(f);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_merge(
+    const char *src1,
+    const char *src2,
+    const char *dest,
+    uint32_t strategy)
+{
+    FILE *a = fopen(src1, "rb");
+    FILE *b = fopen(src2, "rb");
+    FILE *out = fopen(dest, "wb");
+
+    if (!a || !b || !out)
+        return -1;
+
+    char buf1[4096], buf2[4096];
+
+    if (strategy == FOSSIL_MERGE_CONCAT)
+    {
+        size_t n;
+        while ((n = fread(buf1, 1, sizeof(buf1), a)) > 0)
+            fwrite(buf1, 1, n, out);
+
+        while ((n = fread(buf2, 1, sizeof(buf2), b)) > 0)
+            fwrite(buf2, 1, n, out);
+    }
+    else if (strategy == FOSSIL_MERGE_INTERLEAVE)
+    {
+        size_t n1, n2;
+        do
+        {
+            n1 = fread(buf1, 1, sizeof(buf1), a);
+            if (n1)
+                fwrite(buf1, 1, n1, out);
+
+            n2 = fread(buf2, 1, sizeof(buf2), b);
+            if (n2)
+                fwrite(buf2, 1, n2, out);
+
+        } while (n1 || n2);
+    }
+
+    fclose(a);
+    fclose(b);
+    fclose(out);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_split(
+    const char *path,
+    size_t part_size,
+    const char *prefix)
+{
+    if (!path || !prefix || part_size == 0)
+        return -1;
+
+    FILE *in = fopen(path, "rb");
+    if (!in)
+        return -1;
+
+    unsigned char *buffer = malloc(part_size);
+    if (!buffer)
+    {
+        fclose(in);
+        return -1;
+    }
+
+    size_t part = 0;
+    size_t read_bytes;
+
+    while ((read_bytes = fread(buffer, 1, part_size, in)) > 0)
+    {
+        char out_path[512];
+        snprintf(out_path, sizeof(out_path),
+                 "%s.part%03zu", prefix, part++);
+
+        FILE *out = fopen(out_path, "wb");
+        if (!out)
+        {
+            free(buffer);
+            fclose(in);
+            return -1;
+        }
+
+        fwrite(buffer, 1, read_bytes, out);
+        fclose(out);
+    }
+
+    free(buffer);
+    fclose(in);
+    return (int32_t)part;
+}
+
+int32_t fossil_io_filesys_file_join(
+    const char **parts,
+    size_t count,
+    const char *dest)
+{
+    if (!parts || count == 0 || !dest)
+        return -1;
+
+    FILE *out = fopen(dest, "wb");
+    if (!out)
+        return -1;
+
+    unsigned char buffer[8192];
+
+    for (size_t i = 0; i < count; ++i)
+    {
+        FILE *in = fopen(parts[i], "rb");
+        if (!in)
+        {
+            fclose(out);
+            return -1;
+        }
+
+        size_t n;
+        while ((n = fread(buffer, 1, sizeof(buffer), in)) > 0)
+        {
+            fwrite(buffer, 1, n, out);
+        }
+
+        fclose(in);
+    }
+
+    fclose(out);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_compress(
+    const char *src,
+    const char *dest,
+    const char *algorithm)
+{
+    if (!src || !dest)
+        return -1;
+
+    FILE *in = fopen(src, "rb");
+    FILE *out = fopen(dest, "wb");
+
+    if (!in || !out)
+    {
+        if (in)
+            fclose(in);
+        if (out)
+            fclose(out);
+        return -1;
+    }
+
+    /* Only RLE for now */
+    if (algorithm && strcmp(algorithm, "rle") != 0)
+    {
+        fclose(in);
+        fclose(out);
+        return -1;
+    }
+
+    int prev = fgetc(in);
+    if (prev == EOF)
+    {
+        fclose(in);
+        fclose(out);
+        return 0;
+    }
+
+    uint8_t count = 1;
+    int c;
+
+    while ((c = fgetc(in)) != EOF)
+    {
+        if (c == prev && count < 255)
+        {
+            count++;
+        }
+        else
+        {
+            fputc(count, out);
+            fputc(prev, out);
+
+            prev = c;
+            count = 1;
+        }
+    }
+
+    /* flush last */
+    fputc(count, out);
+    fputc(prev, out);
+
+    fclose(in);
+    fclose(out);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_decompress(
+    const char *src,
+    const char *dest)
+{
+    if (!src || !dest)
+        return -1;
+
+    FILE *in = fopen(src, "rb");
+    FILE *out = fopen(dest, "wb");
+
+    if (!in || !out)
+    {
+        if (in)
+            fclose(in);
+        if (out)
+            fclose(out);
+        return -1;
+    }
+
+    int count, value;
+
+    while ((count = fgetc(in)) != EOF)
+    {
+        value = fgetc(in);
+        if (value == EOF)
+            break;
+
+        for (int i = 0; i < count; ++i)
+            fputc(value, out);
+    }
+
+    fclose(in);
+    fclose(out);
+    return 0;
+}
+
+int32_t fossil_io_filesys_file_is_readable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, R_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_file_is_writable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, W_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_file_set_perms(const char *path, fossil_io_filesys_perms_t perms)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Windows does not support POSIX permissions; no-op
+    (void)perms;
+    return 0;
+#else
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return chmod(path, mode);
+#endif
+}
+
+int32_t fossil_io_filesys_file_set_owner(const char *path, const char *owner, const char *group)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+    return chown(path, uid, gid);
+#endif
+}
+
+/* Directory Operations */
+
+int32_t fossil_io_filesys_dir_create(const char *path, bool recursive)
+{
+    if (!path || !*path)
+        return -1;
+
+    if (!recursive)
+    {
+#if defined(_WIN32)
+        return (_mkdir(path) == 0) ? 0 : -1;
+#else
+        return (mkdir(path, 0755) == 0) ? 0 : -1;
+#endif
+    }
+
+    char tmp[PATH_MAX];
+    strncpy(tmp, path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+    size_t len = strlen(tmp);
+    if (len == 0)
+        return -1;
+
+    /* strip trailing slash */
+    if (tmp[len - 1] == '/' || tmp[len - 1] == '\\')
+        tmp[len - 1] = '\0';
+
+    for (char *p = tmp + 1; *p; ++p)
+    {
+        if (*p == '/' || *p == '\\')
+        {
+            *p = '\0';
+#if defined(_WIN32)
+            _mkdir(tmp);
+#else
+            mkdir(tmp, 0755);
+#endif
+            *p = PATH_SEP;
+        }
+    }
+
+#if defined(_WIN32)
+    if (_mkdir(tmp) == 0)
+        return 0;
+    return (GetLastError() == ERROR_ALREADY_EXISTS) ? 0 : -1;
+#else
+    if (mkdir(tmp, 0755) == 0)
+        return 0;
+    return (errno == EEXIST) ? 0 : -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_list(
+    const char *path,
+    fossil_io_filesys_obj_t *entries,
+    size_t max_entries,
+    size_t *out_count)
+{
+    if (!path || !entries || !out_count)
+        return -1;
+
+    *out_count = 0;
+
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        if (*out_count >= max_entries)
+            break;
+
+        char full[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        fossil_io_filesys_stat(full, &entries[*out_count]);
+        (*out_count)++;
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        if (*out_count >= max_entries)
+            break;
+
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        fossil_io_filesys_stat(full, &entries[*out_count]);
+        (*out_count)++;
+    }
+
+    closedir(dir);
+
+#endif
+
+    return 0;
+}
+
+static int dir_walk_internal(
+    const char *path,
+    int (*callback)(const fossil_io_filesys_obj_t *, void *),
+    void *user_data)
+{
+    fossil_io_filesys_obj_t obj;
+    memset(&obj, 0, sizeof(obj));
+
+    if (fossil_io_filesys_stat(path, &obj) != 0)
+        return -1;
+
+    /* invoke callback */
+    int rc = callback(&obj, user_data);
+    if (rc != 0)
+        return rc;
+
+#if defined(_WIN32)
+
+    if (obj.type != FOSSIL_FILESYS_TYPE_DIR)
+        return 0;
+
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", path);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        char full[FOSSIL_FILESYS_MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", path, fd.cFileName);
+
+        rc = dir_walk_internal(full, callback, user_data);
+        if (rc != 0)
+        {
+            FindClose(h);
+            return rc;
+        }
+
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+
+#else
+
+    if (!S_ISDIR(obj.mode))
+        return 0;
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)))
+    {
+        if (!strcmp(entry->d_name, ".") ||
+            !strcmp(entry->d_name, ".."))
+            continue;
+
+        char full[512];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        rc = dir_walk_internal(full, callback, user_data);
+        if (rc != 0)
+        {
+            closedir(dir);
+            return rc;
+        }
+    }
+
+    closedir(dir);
+
+#endif
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_dir_walk(
+    const char *path,
+    int (*callback)(const fossil_io_filesys_obj_t *, void *),
+    void *user_data)
+{
+    if (!path || !callback)
+        return -1;
+
+    return dir_walk_internal(path, callback, user_data);
+}
+
+int32_t fossil_io_filesys_dir_merge(
+    const char *src,
+    const char *dest,
+    bool overwrite,
+    bool recursive)
+{
+#if defined(_WIN32)
+
+    WIN32_FIND_DATAA fd;
+    char search[FOSSIL_FILESYS_MAX_PATH];
+    snprintf(search, sizeof(search), "%s\\*", src);
+
+    HANDLE h = FindFirstFileA(search, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    char src_path[FOSSIL_FILESYS_MAX_PATH], dest_path[FOSSIL_FILESYS_MAX_PATH];
+
+    do
+    {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, ".."))
+            continue;
+
+        snprintf(src_path, sizeof(src_path), "%s\\%s", src, fd.cFileName);
+        snprintf(dest_path, sizeof(dest_path), "%s\\%s", dest, fd.cFileName);
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            if (recursive)
+            {
+                CreateDirectoryA(dest_path, NULL);
+                fossil_io_filesys_dir_merge(src_path, dest_path, overwrite, true);
+            }
+        }
+        else
+        {
+            if (!overwrite && GetFileAttributesA(dest_path) != INVALID_FILE_ATTRIBUTES)
+                continue;
+
+            fossil_io_filesys_copy(src_path, dest_path, true);
+        }
+    } while (FindNextFileA(h, &fd));
+
+    FindClose(h);
+    return 0;
+
+#else
+
+    DIR *dir = opendir(src);
+    if (!dir)
+        return -1;
+
+    struct dirent *entry;
+    char src_path[512], dest_path[512];
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        snprintf(src_path, sizeof(src_path), "%s/%s", src, entry->d_name);
+        snprintf(dest_path, sizeof(dest_path), "%s/%s", dest, entry->d_name);
+
+        struct stat st;
+        stat(src_path, &st);
+
+        if (S_ISDIR(st.st_mode) && recursive)
+        {
+            mkdir(dest_path, 0755);
+            fossil_io_filesys_dir_merge(src_path, dest_path, overwrite, true);
+        }
+        else
+        {
+            if (!overwrite && access(dest_path, F_OK) == 0)
+                continue;
+
+            fossil_io_filesys_copy(src_path, dest_path, true);
+        }
+    }
+
+    closedir(dir);
+    return 0;
+
+#endif
+}
+
+int32_t fossil_io_filesys_dir_mirror(
+    const char *src,
+    const char *dest,
+    bool delete_extras)
+{
+    if (!src || !dest)
+        return -1;
+
+    return mirror_recursive(src, dest, delete_extras);
+}
+
+int32_t fossil_io_filesys_dir_exists(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND ||
+            GetLastError() == ERROR_PATH_NOT_FOUND)
+            return 0;
+        return -1;
+    }
+    return (attr & FILE_ATTRIBUTE_DIRECTORY) ? 1 : 0;
+#else
+    struct stat st;
+    if (stat(path, &st) == 0)
+        return S_ISDIR(st.st_mode) ? 1 : 0;
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_is_readable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || !(attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, R_OK | X_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_is_writable(const char *path)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES || !(attr & FILE_ATTRIBUTE_DIRECTORY))
+        return 0;
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return 0;
+    CloseHandle(h);
+    return 1;
+#else
+    if (access(path, W_OK | X_OK) == 0)
+    {
+        struct stat st;
+        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
+            return 1;
+        return 0;
+    }
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_dir_set_perms(const char *path, fossil_io_filesys_perms_t perms)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Windows does not support POSIX permissions; no-op
+    (void)perms;
+    return 0;
+#else
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return chmod(path, mode);
+#endif
+}
+
+int32_t fossil_io_filesys_dir_set_owner(const char *path, const char *owner, const char *group)
+{
+    if (!path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+    return chown(path, uid, gid);
+#endif
+}
+
+/* Link Operations */
+
+int32_t fossil_io_filesys_link_create(
+    const char *target,
+    const char *link_path,
+    bool symbolic)
+{
+    if (!target || !link_path)
+        return -1;
+
+#if defined(_WIN32)
+
+    if (symbolic)
+    {
+        DWORD flags = 0;
+
+        /* detect directory target */
+        DWORD attr = GetFileAttributesA(target);
+        if (attr != INVALID_FILE_ATTRIBUTES &&
+            (attr & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+        }
+
+        /* allow unprivileged (Windows 10+) */
+#ifdef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+        flags |= SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+#endif
+
+        return CreateSymbolicLinkA(link_path, target, flags) ? 0 : -1;
+    }
+    else
+    {
+        return CreateHardLinkA(link_path, target, NULL) ? 0 : -1;
+    }
+
+#else
+
+    if (symbolic)
+        return symlink(target, link_path);
+    else
+        return link(target, link_path);
+
+#endif
+}
+
+int32_t fossil_io_filesys_link_read(
+    const char *link_path,
+    char *target_out,
+    size_t max_len)
+{
+    if (!link_path || !target_out || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+
+    HANDLE h = CreateFileA(
+        link_path,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    DWORD len = GetFinalPathNameByHandleA(
+        h,
+        target_out,
+        (DWORD)max_len,
+        FILE_NAME_NORMALIZED);
+
+    CloseHandle(h);
+
+    if (len == 0 || len >= max_len)
+        return -1;
+
+    return 0;
+
+#else
+
+    ssize_t len = readlink(link_path, target_out, max_len - 1);
+    if (len < 0)
+        return -1;
+
+    target_out[len] = '\0';
+    return 0;
+
+#endif
+}
+
+int32_t fossil_io_filesys_link_resolve(
+    const char *link_path,
+    char *target_out,
+    size_t max_len)
+{
+    if (!link_path || !target_out || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+
+    HANDLE h = CreateFileA(
+        link_path,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+
+    DWORD len = GetFinalPathNameByHandleA(
+        h,
+        target_out,
+        (DWORD)max_len,
+        FILE_NAME_NORMALIZED);
+
+    CloseHandle(h);
+
+    if (len == 0 || len >= max_len)
+        return -1;
+
+    return 0;
+
+#else
+
+    char buf[PATH_MAX];
+
+    ssize_t len = readlink(link_path, buf, sizeof(buf) - 1);
+
+    if (len < 0)
+    {
+        // Not a symlink → fallback: just copy path
+        strncpy(target_out, link_path, max_len - 1);
+        target_out[max_len - 1] = '\0';
+        return 0;
+    }
+
+    buf[len] = '\0';
+
+    // If relative symlink → resolve against directory
+    if (buf[0] != '/')
+    {
+        char dir[PATH_MAX];
+        snprintf(dir, sizeof(dir), "%s", link_path);
+
+        char *slash = strrchr(dir, '/');
+        if (slash)
+            *slash = '\0';
+        else
+            snprintf(dir, sizeof(dir), ".");
+
+        snprintf(target_out, max_len, "%s/%s", dir, buf);
+    }
+    else
+    {
+        // Absolute target
+        strncpy(target_out, buf, max_len - 1);
+        target_out[max_len - 1] = '\0';
+    }
+
+    return 0;
+
+#endif
+}
+
+int32_t fossil_io_filesys_link_is_symbolic(
+    const char *link_path,
+    bool *is_symbolic)
+{
+    if (!link_path || !is_symbolic)
+        return -1;
+
+#if defined(_WIN32)
+
+    DWORD attr = GetFileAttributesA(link_path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return -1;
+
+    *is_symbolic = (attr & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+    return 0;
+
+#else
+
+    struct stat st;
+    if (lstat(link_path, &st) != 0)
+        return -1;
+
+    *is_symbolic = S_ISLNK(st.st_mode);
+    return 0;
+
+#endif
+}
+
+int32_t fossil_io_filesys_link_remove(const char *link_path)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // On Windows, DeleteFileA removes both files and links (symbolic/hard)
+    return DeleteFileA(link_path) ? 0 : -1;
+#else
+    // Use unlink to remove the link itself, not the target
+    return (unlink(link_path) == 0) ? 0 : -1;
+#endif
+}
+
+int32_t fossil_io_filesys_link_exists(const char *link_path)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    DWORD attr = GetFileAttributesA(link_path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return (GetLastError() == ERROR_FILE_NOT_FOUND ||
+                GetLastError() == ERROR_PATH_NOT_FOUND) ? 0 : -1;
+    // Check if it's a reparse point (symbolic link) or a file (hard link indistinguishable)
+    return (attr & FILE_ATTRIBUTE_REPARSE_POINT) ? 1 : 0;
+#else
+    struct stat st;
+    if (lstat(link_path, &st) == 0)
+        return (S_ISLNK(st.st_mode)) ? 1 : 0;
+    if (errno == ENOENT)
+        return 0;
+    return -1;
+#endif
+}
+
+int32_t fossil_io_filesys_link_set_perms(const char *link_path, fossil_io_filesys_perms_t perms)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)perms;
+    return 0;
+#else
+# if defined(HAVE_LCHMOD)
+    mode_t mode = 0;
+    if (perms.read)
+        mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    if (perms.write)
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    if (perms.execute)
+        mode |= S_IXUSR | S_IXGRP | S_IXOTH;
+    return lchmod(link_path, mode);
+# else
+    // Most systems do not support changing symlink perms
+    (void)perms;
+    return 0;
+# endif
+#endif
+}
+
+int32_t fossil_io_filesys_link_set_owner(const char *link_path, const char *owner, const char *group)
+{
+    if (!link_path)
+        return -1;
+#if defined(_WIN32)
+    // Not supported on Windows
+    (void)owner;
+    (void)group;
+    return 0;
+#else
+    uid_t uid = (uid_t)-1;
+    gid_t gid = (gid_t)-1;
+    if (owner)
+    {
+        struct passwd *pw = getpwnam(owner);
+        if (pw)
+            uid = pw->pw_uid;
+        else
+        {
+            char *endptr;
+            uid = (uid_t)strtol(owner, &endptr, 10);
+            if (*endptr != '\0')
+                uid = (uid_t)-1;
+        }
+    }
+    if (group)
+    {
+        struct group *gr = getgrnam(group);
+        if (gr)
+            gid = gr->gr_gid;
+        else
+        {
+            char *endptr;
+            gid = (gid_t)strtol(group, &endptr, 10);
+            if (*endptr != '\0')
+                gid = (gid_t)-1;
+        }
+    }
+    if (uid == (uid_t)-1 && gid == (gid_t)-1)
+        return -1;
+# if defined(HAVE_LCHOWN)
+    return lchown(link_path, uid, gid);
+# else
+    // If lchown is not available, fallback is not possible
+    return -1;
+# endif
+#endif
+}
+
+/* Transaction Operations */
+
+static fossil_io_filesys_lock_t g_tx_lock;
+
+int32_t fossil_io_filesys_tx_init(void)
+{
+    return fossil_mutex_init(&g_tx_lock);
+}
+
+int32_t fossil_io_filesys_tx_begin(void)
+{
+    if (!g_tx_lock.handle)
+        return fossil_io_filesys_tx_init();
+
+    return fossil_mutex_lock(&g_tx_lock);
+}
+
+int32_t fossil_io_filesys_tx_commit(void)
+{
+    if (!g_tx_lock.handle || !g_tx_lock.locked)
+        return -1;
+
+    return fossil_mutex_unlock(&g_tx_lock);
+}
+
+int32_t fossil_io_filesys_tx_rollback(void)
+{
+    if (!g_tx_lock.handle || !g_tx_lock.locked)
+        return -1;
+
+    return fossil_mutex_unlock(&g_tx_lock);
+}
+
+int32_t fossil_io_filesys_tx_is_active(void)
+{
+    return (g_tx_lock.locked) ? 1 : 0;
+}
+
+/* Path / Utility Operations */
+
+int32_t fossil_io_filesys_getcwd(char *buf, size_t size)
+{
+    if (!buf || size == 0)
+        return -1;
+
+#if defined(_WIN32)
+    if (!_getcwd(buf, (int)size))
+        return -1;
+#else
+    if (!getcwd(buf, size))
+        return -1;
+#endif
+    return 0;
+}
+
+int32_t fossil_io_filesys_chdir(const char *path)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32)
+    return _chdir(path);
+#else
+    return chdir(path);
+#endif
+}
+
+int32_t fossil_io_filesys_abspath(const char *path, char *abs_path, size_t max_len)
+{
+    if (!path || !abs_path || max_len == 0)
+        return -1;
+
+#if defined(_WIN32)
+
+    if (!_fullpath(abs_path, path, max_len))
+        return -1;
+
+#else
+
+    // Already absolute
+    if (path[0] == '/')
+    {
+        strncpy(abs_path, path, max_len - 1);
+        abs_path[max_len - 1] = '\0';
+        return 0;
+    }
+
+    // Relative → prepend cwd
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, sizeof(cwd)))
+        return -1;
+
+    int written = snprintf(abs_path, max_len, "%s/%s", cwd, path);
+    if (written < 0 || (size_t)written >= max_len)
+        return -1;
+
+#endif
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_dirname(const char *path, char *dir_out, size_t max_len)
+{
+    if (!path || !dir_out || max_len == 0)
+        return -1;
+
+    char tmp[PATH_MAX];
+    strncpy(tmp, path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+#if defined(_WIN32)
+    char *last_sep = strrchr(tmp, '\\');
+#else
+    char *last_sep = strrchr(tmp, '/');
+#endif
+
+    if (!last_sep)
+    {
+        /* no separator, return "." */
+        strncpy(dir_out, ".", max_len);
+        dir_out[max_len - 1] = '\0';
+    }
+    else
+    {
+        size_t len = (size_t)(last_sep - tmp);
+        if (len >= max_len)
+            len = max_len - 1;
+        strncpy(dir_out, tmp, len);
+        dir_out[len] = '\0';
+    }
+
+    return 0;
+}
+
+int32_t fossil_io_filesys_basename(const char *path, char *name_out, size_t max_len)
+{
+    if (!path || !name_out || max_len == 0)
+        return -1;
+
+    const char *base = path;
+
+#if defined(_WIN32)
+    const char *last_sep = strrchr(path, '\\');
+#else
+    const char *last_sep = strrchr(path, '/');
+#endif
+    if (last_sep)
+        base = last_sep + 1;
+
+    strncpy(name_out, base, max_len);
+    name_out[max_len - 1] = '\0';
+    return 0;
+}
+
+int32_t fossil_io_filesys_extension(const char *path, char *ext_out, size_t max_len)
+{
+    if (!path || !ext_out || max_len == 0)
+        return -1;
+
+    const char *base = path;
+#if defined(_WIN32)
+    const char *last_sep = strrchr(path, '\\');
+#else
+    const char *last_sep = strrchr(path, '/');
+#endif
+    if (last_sep)
+        base = last_sep + 1;
+
+    const char *dot = strrchr(base, '.');
+    if (!dot || dot == base)
+    {
+        ext_out[0] = '\0';
+    }
+    else
+    {
+        strncpy(ext_out, dot, max_len);
+        ext_out[max_len - 1] = '\0';
+    }
+
+    return 0;
+}
+
+char *fossil_io_filesys_path_normalize(const char *path)
+{
+    if (!path)
+        return NULL;
+
+    char *normalized = malloc(PATH_MAX);
+    if (!normalized)
+        return NULL;
+#if defined(_WIN32)
+    char *p = normalized;
+    for (const char *s = path; *s; ++s)
+    {
+        if (*s == '\\')
+            *p++ = '/';
+        else
+            *p++ = *s;
+    }
+    *p = '\0';
+#else
+    strncpy(normalized, path, PATH_MAX - 1);
+    normalized[PATH_MAX - 1] = '\0';
+#endif
+    return normalized;
+}
+
+int fossil_io_filesys_set_times(const char *path, time_t accessed_at, time_t modified_at)
+{
+    if (!path)
+        return -1;
+
+#if defined(_WIN32) || defined(_WIN64)
+    // Convert time_t to FILETIME
+    HANDLE hFile = CreateFileA(
+        path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return -1;
+
+    // Windows FILETIME is in 100-nanosecond intervals since Jan 1, 1601 (UTC)
+    ULONGLONG unix_epoch = 11644473600ULL;
+    ULONGLONG access_time = ((ULONGLONG)accessed_at + unix_epoch) * 10000000ULL;
+    ULONGLONG mod_time = ((ULONGLONG)modified_at + unix_epoch) * 10000000ULL;
+
+    FILETIME ftAccess, ftWrite;
+    ftAccess.dwLowDateTime = (DWORD)access_time;
+    ftAccess.dwHighDateTime = (DWORD)(access_time >> 32);
+    ftWrite.dwLowDateTime = (DWORD)mod_time;
+    ftWrite.dwHighDateTime = (DWORD)(mod_time >> 32);
+
+    int result = 0;
+    if (!SetFileTime(hFile, NULL, &ftAccess, &ftWrite))
+        result = -1;
+
+    CloseHandle(hFile);
+    return result;
+#else
+    struct utimbuf times;
+    times.actime = accessed_at;
+    times.modtime = modified_at;
+    return utime(path, &times);
+#endif
+}
+
+const char *fossil_io_filesys_type_string(fossil_io_filesys_type_t type)
+{
+    switch (type)
+    {
+    case FOSSIL_FILESYS_TYPE_FILE:
+        return "file";
+    case FOSSIL_FILESYS_TYPE_DIR:
+        return "directory";
+    case FOSSIL_FILESYS_TYPE_LINK:
+        return "link";
+    case FOSSIL_FILESYS_TYPE_ARCHIVE:
+        return "archive";
+    default:
+        return "unknown";
+    }
+}

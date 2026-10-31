@@ -17,16 +17,17 @@
  * under the License.
  *
  * Author: Michael Gene Brockus (Dreamer)
- * Date: 04/05/2014
+ * Date: 04/05/2013
  *
- * Copyright (C) 2014-2025 Fossil Logic. All rights reserved.
+ * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
 #ifndef FOSSIL_IO_ERROR_H
 #define FOSSIL_IO_ERROR_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -329,60 +330,63 @@ int fossil_io_code(const char *error_code);
 
 #include <string>
 
-namespace fossil {
+namespace fossil::io
+{
 
-    namespace io {
-    
-        class Error final {
-        public:
-            Error() = delete; // static-only utility class
+    class Error final
+    {
+    public:
+        Error() = delete; // static-only utility class
 
-            /**
-             * Report an error using printf-style formatting.
-             */
-            static void report(const char *format, ...) noexcept {
-                va_list args;
-                va_start(args, format);
-                fossil_io_error(format, args);
-                va_end(args);
-            }
+        /**
+         * Report an error using printf-style formatting.
+         */
+        static void report(const char *format, ...) noexcept
+        {
+            va_list args;
+            va_start(args, format);
+            fossil_io_error(format, args);
+            va_end(args);
+        }
 
-            /**
-             * Retrieve the symbolic name for an error code.
-             *
-             * Example: "system.ok", "io.read", "memory.alloc"
-             */
-            static const char *what(const char *error_code) noexcept {
-                return fossil_io_what(error_code);
-            }
+        /**
+         * Retrieve the symbolic name for an error code.
+         *
+         * Example: "system.ok", "io.read", "memory.alloc"
+         */
+        static const char *what(const char *error_code) noexcept
+        {
+            return fossil_io_what(error_code);
+        }
 
-            /**
-             * Convenience overload for std::string.
-             */
-            static const char *what(const std::string &error_code) noexcept {
-                return fossil_io_what(error_code.c_str());
-            }
+        /**
+         * Convenience overload for std::string.
+         */
+        static const char *what(const std::string &error_code) noexcept
+        {
+            return fossil_io_what(error_code.c_str());
+        }
 
-            /**
-             * Retrieve the numeric error code ID for a symbolic error code.
-             *
-             * @param error_code The symbolic error code string (e.g., "io.read").
-             * @return A non-negative integer error ID on success,
-             *         or -1 if the error code is NULL or unrecognized.
-             */
-            static int code(const char *error_code) noexcept {
-                return fossil_io_code(error_code);
-            }
+        /**
+         * Retrieve the numeric error code ID for a symbolic error code.
+         *
+         * @param error_code The symbolic error code string (e.g., "io.read").
+         * @return A non-negative integer error ID on success,
+         *         or -1 if the error code is NULL or unrecognized.
+         */
+        static int code(const char *error_code) noexcept
+        {
+            return fossil_io_code(error_code);
+        }
 
-            /**
-             * Convenience overload for std::string.
-             */
-            static int code(const std::string &error_code) noexcept {
-                return fossil_io_code(error_code.c_str());
-            }
-        };
-    
-    } // namespace io
+        /**
+         * Convenience overload for std::string.
+         */
+        static int code(const std::string &error_code) noexcept
+        {
+            return fossil_io_code(error_code.c_str());
+        }
+    };
 
 } // namespace fossil
 
